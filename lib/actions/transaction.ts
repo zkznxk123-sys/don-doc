@@ -2,6 +2,54 @@
 
 import { prisma } from '@/lib/prisma'
 
+export interface AccountSummary {
+  id: string
+  name: string
+  type: string
+  balance: number
+  isShared: boolean
+}
+
+export interface FamilyWealth {
+  totalAssets: number
+  sharedAssets: number
+  personalAssets: number
+  accounts: AccountSummary[]
+}
+
+/**
+ * 가족 전체 계좌의 잔액 합계를 가져오는 Server Action
+ */
+export async function getFamilyWealth(
+  familyId: string,
+  currentUserId?: string
+): Promise<FamilyWealth> {
+  const accounts = await prisma.account.findMany({
+    where: { familyId },
+  })
+
+  const totalAssets = accounts.reduce((sum, acc) => sum + acc.balance, 0)
+  const sharedAssets = accounts
+    .filter((a) => a.isShared)
+    .reduce((sum, acc) => sum + acc.balance, 0)
+  const personalAssets = accounts
+    .filter((a) => !a.isShared && a.userId === currentUserId)
+    .reduce((sum, acc) => sum + acc.balance, 0)
+
+  return {
+    totalAssets,
+    sharedAssets,
+    personalAssets,
+    accounts: accounts.map((a) => ({
+      id: a.id,
+      name: a.name,
+      type: a.type,
+      balance: a.balance,
+      isShared: a.isShared,
+    })),
+  }
+}
+
 export interface MaskedTransaction {
   id: string
   amount: number

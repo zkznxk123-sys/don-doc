@@ -6,7 +6,7 @@ import { formatCurrency, formatLargeNumber, cn } from '@/lib/utils'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell, Legend, BarChart, Bar, XAxis as BarXAxis, YAxis as BarYAxis } from 'recharts'
 import { SwipeableRow } from '@/components/ui/swipeable-row'
 import { MobileDrawer, QuickAction } from '@/components/ui/mobile-drawer'
-import { getFamilyTransactions, type MaskedTransaction } from '@/lib/actions/transaction'
+import { getFamilyTransactions, getFamilyWealth, type MaskedTransaction, type FamilyWealth, type AccountSummary } from '@/lib/actions/transaction'
 
 interface Transaction {
   id: string
@@ -82,16 +82,26 @@ const Dashboard = () => {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS)
   const [isLoading, setIsLoading] = useState(true)
+  const [wealthData, setWealthData] = useState<WealthData>({
+    totalAssets: 0,
+    personalBudget: 0,
+    totalLiabilities: 0,
+    netWorth: 0,
+    monthlyChange: 0,
+    monthlyChangePercent: 0,
+  })
+  const [assets, setAssets] = useState<Asset[]>([])
   
   const currentUserId = 'cmmrrs8o90002894qf9p14zu0' // 아빠(CFO) - TODO: 실제 인증 연동 시 교체
   const familyId = 'cmmrrs8nh0000894qtg9a15og'     // 우리집 패밀리오피스
 
   useEffect(() => {
-    async function loadTransactions() {
+    async function loadData() {
       try {
-        const data = await getFamilyTransactions(currentUserId, familyId)
-        if (data.length > 0) {
-          setTransactions(data.map(tx => ({
+        // 거래 내역 로드
+        const txData = await getFamilyTransactions(currentUserId, familyId)
+        if (txData.length > 0) {
+          setTransactions(txData.map(tx => ({
             id: tx.id,
             amount: tx.amount,
             description: tx.description,
@@ -103,30 +113,37 @@ const Dashboard = () => {
             isMasked: tx.isMasked,
           })))
         }
+
+        // 계좌 잔액 합계 로드
+        const wealth = await getFamilyWealth(familyId, currentUserId)
+        setWealthData({
+          totalAssets: wealth.totalAssets,
+          personalBudget: wealth.personalAssets,
+          totalLiabilities: 0,
+          netWorth: wealth.totalAssets,
+          monthlyChange: 0,
+          monthlyChangePercent: 0,
+        })
+
+        // 계좌별 자산 배분 차트 데이터
+        if (wealth.accounts.length > 0) {
+          setAssets(wealth.accounts.map((acc, i) => ({
+            id: acc.id,
+            name: acc.name,
+            value: acc.balance,
+            allocation: Math.round((acc.balance / wealth.totalAssets) * 10000) / 100,
+            change: 0,
+            changePercent: 0,
+          })))
+        }
       } catch {
         console.log('DB 미연결 — 목업 데이터 사용')
       } finally {
         setIsLoading(false)
       }
     }
-    loadTransactions()
+    loadData()
   }, [currentUserId, familyId])
-  
-  const wealthData: WealthData = {
-    totalAssets: 12500000000,
-    personalBudget: 250000000,
-    totalLiabilities: 2100000000,
-    netWorth: 10400000000,
-    monthlyChange: 125000000,
-    monthlyChangePercent: 1.2
-  }
-
-  const assets: Asset[] = [
-    { id: '1', name: '주식 포트폴리오', value: 5200000000, allocation: 41.6, change: 78000000, changePercent: 1.5 },
-    { id: '2', name: '부동산', value: 4800000000, allocation: 38.4, change: -120000000, changePercent: -2.4 },
-    { id: '3', name: '채권', value: 1500000000, allocation: 12.0, change: 15000000, changePercent: 1.0 },
-    { id: '4', name: '현금 및 예금', value: 1000000000, allocation: 8.0, change: 5000000, changePercent: 0.5 }
-  ]
 
 
   const netWorthHistory: NetWorthData[] = [
