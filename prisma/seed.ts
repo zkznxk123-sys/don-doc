@@ -16,20 +16,20 @@ async function main() {
     data: { name: '우리집 패밀리오피스' },
   })
 
-  // 2. 아빠(CFO) & 엄마(MEMBER)
-  const dad = await prisma.user.create({
+  // 2. 사용자 A (나) & 사용자 B (가족)
+  const userA = await prisma.user.create({
     data: {
-      email: 'dad@family.com',
-      name: '아빠',
+      email: 'me@family.com',
+      name: '나',
       role: Role.CFO,
       familyId: family.id,
     },
   })
 
-  const mom = await prisma.user.create({
+  const userB = await prisma.user.create({
     data: {
-      email: 'mom@family.com',
-      name: '엄마',
+      email: 'family@family.com',
+      name: '가족',
       role: Role.MEMBER,
       familyId: family.id,
     },
@@ -38,7 +38,7 @@ async function main() {
   // 3. 계좌
   const sharedAccount = await prisma.account.create({
     data: {
-      name: '가족 생활비 통장',
+      name: '가족 공동 통장',
       type: AccountType.CASH,
       balance: 5000000,
       isShared: true,
@@ -46,149 +46,65 @@ async function main() {
     },
   })
 
-  const momPersonal = await prisma.account.create({
+  const personalB = await prisma.account.create({
     data: {
-      name: '엄마 개인 통장',
+      name: '가족 개인 통장',
       type: AccountType.CASH,
       balance: 2000000,
       isShared: false,
       familyId: family.id,
-      userId: mom.id,
+      userId: userB.id,
     },
   })
 
-  const dadPersonal = await prisma.account.create({
-    data: {
-      name: '아빠 개인 통장',
-      type: AccountType.CASH,
-      balance: 3000000,
-      isShared: false,
-      familyId: family.id,
-      userId: dad.id,
-    },
-  })
-
-  const investAccount = await prisma.account.create({
-    data: {
-      name: '가족 투자 계좌',
-      type: AccountType.INVESTMENT,
-      balance: 50000000,
-      isShared: true,
-      familyId: family.id,
-    },
-  })
-
-  // 4. 거래 내역 — 선별적 투명성 테스트용
+  // 4. 테스트 거래 내역
   await prisma.transaction.createMany({
     data: [
-      // ── 아빠(CFO)의 SHARED 지출 ──
+      // ✅ 사용자 A(나)의 SHARED 지출 → 누구나 볼 수 있음
       {
-        amount: -50000,
+        amount: -10000,
         date: new Date('2024-03-15'),
-        description: '마트 장보기',
+        description: '점심 식사',
         category: '식비',
         visibility: Visibility.SHARED,
-        userId: dad.id,
+        userId: userA.id,
         accountId: sharedAccount.id,
       },
+
+      // 🔒 사용자 B(가족)의 PRIVATE 지출 → 내가 봤을 때 "🔒 개인 지출"로 마스킹
       {
         amount: -200000,
         date: new Date('2024-03-14'),
-        description: '아이 학원비',
-        category: '교육',
-        visibility: Visibility.SHARED,
-        userId: dad.id,
-        accountId: sharedAccount.id,
-      },
-      {
-        amount: -120000,
-        date: new Date('2024-03-10'),
-        description: '가족 외식',
-        category: '식비',
-        visibility: Visibility.SHARED,
-        userId: dad.id,
-        accountId: sharedAccount.id,
-      },
-      {
-        amount: 5000000,
-        date: new Date('2024-03-01'),
-        description: '월급',
-        category: '수입',
-        visibility: Visibility.SHARED,
-        userId: dad.id,
-        accountId: sharedAccount.id,
+        description: '깜짝 선물',
+        category: '쇼핑',
+        visibility: Visibility.PRIVATE,
+        userId: userB.id,
+        accountId: personalB.id,
       },
 
-      // ── 아빠(CFO)의 PRIVATE 지출 ──
+      // ✅ 사용자 B(가족)의 SHARED 지출 → 내가 봤을 때 제목이 보여야 함
       {
-        amount: -80000,
+        amount: -150000,
         date: new Date('2024-03-13'),
-        description: '동창 모임 회비',
-        category: '여가',
-        visibility: Visibility.PRIVATE,
-        userId: dad.id,
-        accountId: dadPersonal.id,
-      },
-
-      // ── 엄마(MEMBER)의 SHARED 지출 ──
-      {
-        amount: -35000,
-        date: new Date('2024-03-14'),
-        description: '유치원 간식비',
-        category: '교육',
+        description: '관리비',
+        category: '주거',
         visibility: Visibility.SHARED,
-        userId: mom.id,
+        userId: userB.id,
         accountId: sharedAccount.id,
-      },
-      {
-        amount: -15000,
-        date: new Date('2024-03-12'),
-        description: '세탁소',
-        category: '생활',
-        visibility: Visibility.SHARED,
-        userId: mom.id,
-        accountId: sharedAccount.id,
-      },
-
-      // ── 엄마(MEMBER)의 PRIVATE 지출 — 아빠 화면에서 마스킹 대상 ──
-      {
-        amount: -30000,
-        date: new Date('2024-03-13'),
-        description: '친구 생일 선물',
-        category: '선물',
-        visibility: Visibility.PRIVATE,
-        userId: mom.id,
-        accountId: momPersonal.id,
-      },
-      {
-        amount: -55000,
-        date: new Date('2024-03-11'),
-        description: '네일 케어',
-        category: '뷰티',
-        visibility: Visibility.PRIVATE,
-        userId: mom.id,
-        accountId: momPersonal.id,
-      },
-      {
-        amount: -120000,
-        date: new Date('2024-03-09'),
-        description: '요가 수업',
-        category: '건강',
-        visibility: Visibility.PRIVATE,
-        userId: mom.id,
-        accountId: momPersonal.id,
       },
     ],
   })
 
   console.log('✅ 시드 완료!')
-  console.log(`   가족: ${family.name}`)
-  console.log(`   아빠(CFO): ${dad.id}`)
-  console.log(`   엄마(MEMBER): ${mom.id}`)
-  console.log(`   가족ID: ${family.id}`)
   console.log('')
-  console.log('🎯 테스트: 아빠 로그인 시 엄마의 PRIVATE 지출 3건이')
-  console.log('   "🔒 개인 지출"로 마스킹되어야 합니다.')
+  console.log(`   사용자 A (나):   ${userA.id}`)
+  console.log(`   사용자 B (가족): ${userB.id}`)
+  console.log(`   가족 ID:        ${family.id}`)
+  console.log('')
+  console.log('🎯 테스트 기대 결과 (사용자 A 로그인 시):')
+  console.log('   1. "점심 식사"  → ✅ 그대로 보임 (내 SHARED 지출)')
+  console.log('   2. "깜짝 선물"  → 🔒 "개인 지출"로 마스킹 (B의 PRIVATE)')
+  console.log('   3. "관리비"     → ✅ 그대로 보임 (B의 SHARED 지출)')
 }
 
 main()

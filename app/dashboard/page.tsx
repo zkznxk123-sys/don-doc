@@ -92,8 +92,8 @@ const Dashboard = () => {
   })
   const [assets, setAssets] = useState<Asset[]>([])
   
-  const currentUserId = 'cmmrrs8o90002894qf9p14zu0' // 아빠(CFO) - TODO: 실제 인증 연동 시 교체
-  const familyId = 'cmmrrs8nh0000894qtg9a15og'     // 우리집 패밀리오피스
+  const currentUserId = 'cmmrsnywv000255rry84p6wan' // 사용자 A (나) - TODO: 실제 인증 연동 시 교체
+  const familyId = 'cmmrsnyvu000055rr3i1wf8mr'     // 우리집 패밀리오피스
 
   useEffect(() => {
     async function loadData() {
