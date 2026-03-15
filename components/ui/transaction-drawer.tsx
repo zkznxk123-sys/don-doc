@@ -38,6 +38,7 @@ export function TransactionDrawer({ isOpen, onClose, onSubmit }: TransactionDraw
   const [description, setDescription] = useState('')
   const [visibility, setVisibility] = useState<'SHARED' | 'PRIVATE'>('SHARED')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState('')
   const [showCategories, setShowCategories] = useState(false)
   const [isExpense, setIsExpense] = useState(true)
 
@@ -53,12 +54,17 @@ export function TransactionDrawer({ isOpen, onClose, onSubmit }: TransactionDraw
 
   const handleClose = () => {
     resetForm()
+    setError('')
     onClose()
   }
 
   const handleSubmit = async () => {
-    if (!amount || !category) return
+    if (!amount || !category) {
+      setError('금액과 카테고리를 입력해주세요.')
+      return
+    }
 
+    setError('')
     setIsSubmitting(true)
     try {
       const numAmount = parseFloat(amount)
@@ -72,6 +78,7 @@ export function TransactionDrawer({ isOpen, onClose, onSubmit }: TransactionDraw
       handleClose()
     } catch (e) {
       console.error('거래 추가 실패:', e)
+      setError('저장에 실패했습니다. 다시 시도해주세요.')
     } finally {
       setIsSubmitting(false)
     }
@@ -296,6 +303,13 @@ export function TransactionDrawer({ isOpen, onClose, onSubmit }: TransactionDraw
                     : '금액만 공개되고, 상세 내역은 나만 볼 수 있습니다.'}
                 </p>
               </div>
+
+              {/* 에러 메시지 */}
+              {error && (
+                <div className="mb-4 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400">
+                  {error}
+                </div>
+              )}
 
               {/* 제출 버튼 */}
               <button

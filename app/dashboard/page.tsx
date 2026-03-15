@@ -868,12 +868,9 @@ const Dashboard = () => {
           isOpen={isTransactionDrawerOpen}
           onClose={() => setIsTransactionDrawerOpen(false)}
           onSubmit={async (data: TransactionFormData) => {
-            // 첫 번째 공동 계좌를 기본 계좌로 사용
-            const accountId = assets.length > 0 ? assets[0].id : ''
             await addTransaction({
               ...data,
               userId: currentUserId,
-              accountId,
             })
             // 거래 목록 새로고침
             const txData = await getFamilyTransactions(currentUserId, familyId)
