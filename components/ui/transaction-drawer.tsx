@@ -51,6 +51,52 @@ const CATEGORIES = [
   { value: '수입', emoji: '💰' },
 ]
 
+// 키워드 → 카테고리 자동 추천 매핑
+const KEYWORD_CATEGORY_MAP: Record<string, string> = {
+  // 식비
+  '스타벅스': '식비', '카페': '식비', '커피': '식비', '맥도날드': '식비', '배달': '식비',
+  '치킨': '식비', '피자': '식비', '편의점': '식비', '마트': '식비', '식당': '식비',
+  '점심': '식비', '저녁': '식비', '아침': '식비', '반찬': '식비', '쿠팡이츠': '식비',
+  '요기요': '식비', '배민': '식비', '버거킹': '식비', '서브웨이': '식비',
+  // 교통
+  '택시': '교통', '버스': '교통', '지하철': '교통', '주유': '교통', '주차': '교통',
+  '카카오택시': '교통', '톨비': '교통', 'KTX': '교통', '기차': '교통', '하이패스': '교통',
+  // 쇼핑
+  '쿠팡': '쇼핑', '네이버': '쇼핑', '무신사': '쇼핑', '올리브영': '쇼핑', '다이소': '쇼핑',
+  '백화점': '쇼핑', '아울렛': '쇼핑', '옷': '쇼핑', '신발': '쇼핑',
+  // 주거
+  '관리비': '주거', '월세': '주거', '전기': '주거', '가스': '주거', '수도': '주거',
+  '인터넷': '주거', '통신비': '주거',
+  // 교육
+  '학원': '교육', '강의': '교육', '책': '교육', '수업': '교육', '등록금': '교육',
+  '인강': '교육', '유데미': '교육',
+  // 건강
+  '병원': '건강', '약국': '건강', '헬스': '건강', '필라테스': '건강', '치과': '건강',
+  '안과': '건강', '한의원': '건강', '영양제': '건강',
+  // 여가
+  '영화': '여가', '넷플릭스': '여가', '게임': '여가', '콘서트': '여가', '여행': '여가',
+  '호텔': '여가', '항공': '여가', '유튜브': '여가', '스포티파이': '여가',
+  // 생활
+  '세탁': '생활', '이사': '생활', '청소': '생활', '미용실': '생활', '헤어': '생활',
+  // 수입
+  '급여': '수입', '월급': '수입', '보너스': '수입', '용돈': '수입', '이자': '수입',
+  '배당': '수입', '환급': '수입',
+}
+
+function suggestCategory(text: string): string | null {
+  const lower = text.toLowerCase()
+  for (const [keyword, cat] of Object.entries(KEYWORD_CATEGORY_MAP)) {
+    if (lower.includes(keyword.toLowerCase())) return cat
+  }
+  return null
+}
+
+const QUICK_AMOUNTS = [
+  { label: '+1만', value: 10000 },
+  { label: '+5만', value: 50000 },
+  { label: '+10만', value: 100000 },
+]
+
 export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, onSuccess }: TransactionDrawerProps) {
   // Form state
   const [amount, setAmount] = useState('')
@@ -65,6 +111,22 @@ export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, on
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [accounts, setAccounts] = useState<AccountOption[]>([])
+  const [autoSuggestedCategory, setAutoSuggestedCategory] = useState<string | null>(null)
+
+  // 메모 입력 시 카테고리 자동 추천
+  const handleDescriptionChange = (text: string) => {
+    setDescription(text)
+    const suggested = suggestCategory(text)
+    if (suggested && !category) {
+      setCategory(suggested)
+      setAutoSuggestedCategory(suggested)
+    } else if (suggested && category === autoSuggestedCategory) {
+      setCategory(suggested)
+      setAutoSuggestedCategory(suggested)
+    } else {
+      setAutoSuggestedCategory(null)
+    }
+  }
 
   // Load accounts when drawer opens
   useEffect(() => {
@@ -95,6 +157,7 @@ export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, on
     setIsExpense(true)
     setAccountId(accounts.length > 0 ? accounts[0].id : '')
     setError('')
+    setAutoSuggestedCategory(null)
   }, [accounts])
 
   const handleOpenChange = (open: boolean) => {
@@ -225,6 +288,27 @@ export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, on
                 {formatCurrency(isExpense ? -Number(amount) : Number(amount))}
               </p>
             )}
+
+            {/* Quick amount buttons */}
+            <div className="flex items-center justify-center gap-2 mt-4">
+              {QUICK_AMOUNTS.map((q) => (
+                <button
+                  key={q.label}
+                  onClick={() => setAmount(String(Number(amount || '0') + q.value))}
+                  className="px-4 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-xs font-medium text-zinc-300 hover:bg-zinc-700 hover:text-white transition-colors active:scale-95"
+                >
+                  {q.label}
+                </button>
+              ))}
+              {selectedAccount && (
+                <button
+                  onClick={() => setAmount(String(Math.abs(selectedAccount.balance)))}
+                  className="px-4 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-xs font-medium text-blue-400 hover:bg-zinc-700 hover:text-blue-300 transition-colors active:scale-95"
+                >
+                  전액
+                </button>
+              )}
+            </div>
           </div>
 
           {/* ━━ Form Fields ━━ */}
@@ -301,16 +385,22 @@ export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, on
               />
             </div>
 
-            {/* Description */}
+            {/* Description — with auto category suggest */}
             <div>
               <Label className="mb-2.5 block">메모 <span className="text-zinc-600">(선택)</span></Label>
               <input
                 type="text"
                 value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="어디서, 무엇을 했나요?"
+                onChange={(e) => handleDescriptionChange(e.target.value)}
+                placeholder="어디서, 무엇을 했나요? (예: 스타벅스)"
                 className="w-full h-11 bg-zinc-800 rounded-xl px-4 border border-zinc-700 text-sm text-white placeholder-zinc-600 outline-none focus:ring-2 focus:ring-zinc-600 focus:ring-offset-2 focus:ring-offset-zinc-900 transition-all"
               />
+              {autoSuggestedCategory && (
+                <p className="text-xs text-emerald-400/80 mt-1.5 pl-1 flex items-center gap-1">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                  &lsquo;{description}&rsquo; → <span className="font-medium">{autoSuggestedCategory}</span> 카테고리 자동 선택됨
+                </p>
+              )}
             </div>
 
             {/* ━━ Visibility Toggle — Core Widget ━━ */}
@@ -341,6 +431,17 @@ export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, on
                 onCheckedChange={setIsShared}
               />
             </div>
+
+            {/* ━━ Privacy Notice ━━ */}
+            {!isShared && (
+              <div className="flex items-start gap-2.5 rounded-xl px-4 py-3 bg-amber-500/5 border border-amber-500/15">
+                <Lock className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-amber-300/80 leading-relaxed">
+                  이 지출의 상세 내역은 가족에게 공개되지 않습니다.<br />
+                  <span className="text-amber-400/50">가족 대시보드에는 금액과 &lsquo;🔒 개인 지출&rsquo;만 표시됩니다.</span>
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Error */}
