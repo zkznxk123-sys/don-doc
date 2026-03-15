@@ -9,6 +9,7 @@ import { MobileDrawer, QuickAction } from '@/components/ui/mobile-drawer'
 // server actions no longer used directly — using API routes instead
 import { motion, AnimatePresence } from 'framer-motion'
 import { TransactionDrawer, type TransactionFormData } from '@/components/ui/transaction-drawer'
+import { AssetDonutChart, type AssetTypeData } from '@/components/ui/asset-donut-chart'
 
 interface Transaction {
   id: string
@@ -94,9 +95,10 @@ const Dashboard = () => {
     monthlyChangePercent: 0,
   })
   const [assets, setAssets] = useState<Asset[]>([])
+  const [assetsByType, setAssetsByType] = useState<AssetTypeData[]>([])
   
-  const currentUserId = 'cmmrsnywv000255rry84p6wan' // 사용자 A (나) - TODO: 실제 인증 연동 시 교체
-  const familyId = 'cmmrsnyvu000055rr3i1wf8mr'     // 우리집 패밀리오피스
+  const currentUserId = 'cmmruag6e0002lyspny3dswl7' // 사용자 A (나) - TODO: 실제 인증 연동 시 교체
+  const familyId = 'cmmruag5b0000lyspag78b27b'     // 우리집 패밀리오피스
 
   useEffect(() => {
     async function loadData() {
@@ -140,6 +142,10 @@ const Dashboard = () => {
               change: 0,
               changePercent: 0,
             })))
+          }
+
+          if (wJson.assetsByType) {
+            setAssetsByType(wJson.assetsByType)
           }
         }
       } catch {
@@ -859,7 +865,7 @@ const Dashboard = () => {
 
               {/* ── CFO: 자산 배분 도넛 + 현금 흐름 ── */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <AssetAllocationChart />
+                <AssetDonutChart data={assetsByType} totalAssets={wealthData.totalAssets} />
                 <CashFlowChart />
               </div>
 

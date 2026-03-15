@@ -31,11 +31,36 @@ export async function GET(req: NextRequest) {
       isShared: acc.isShared,
     }))
 
+    // 자산 유형별 그룹핑
+    const typeMap: Record<string, { label: string; balance: number; accounts: typeof accountSummary }> = {}
+    const TYPE_LABELS: Record<string, string> = {
+      CASH: '현금 · 예적금',
+      INVESTMENT: '주식 · 펀드',
+      CRYPTO: '가상자산',
+      REAL_ESTATE: '부동산',
+      STO: '토큰증권',
+    }
+    for (const acc of accountSummary) {
+      if (!typeMap[acc.type]) {
+        typeMap[acc.type] = { label: TYPE_LABELS[acc.type] || acc.type, balance: 0, accounts: [] }
+      }
+      typeMap[acc.type].balance += acc.balance
+      typeMap[acc.type].accounts.push(acc)
+    }
+    const assetsByType = Object.entries(typeMap).map(([type, data]) => ({
+      type,
+      label: data.label,
+      balance: data.balance,
+      percentage: totalAssets > 0 ? Math.round((data.balance / totalAssets) * 10000) / 100 : 0,
+      accounts: data.accounts,
+    })).sort((a, b) => b.balance - a.balance)
+
     return NextResponse.json({
       success: true,
       totalAssets,
       personalAssets,
       accounts: accountSummary,
+      assetsByType,
     })
   } catch (e) {
     console.error('[GET /api/wealth] ERROR:', e)

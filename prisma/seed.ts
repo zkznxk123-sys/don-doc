@@ -35,14 +35,78 @@ async function main() {
     },
   })
 
-  // 3. 계좌
+  // 3. 계좌 (다양한 자산 유형)
   const sharedAccount = await prisma.account.create({
     data: {
       name: '가족 공동 통장',
       type: AccountType.CASH,
+      balance: 45000000,
+      isShared: true,
+      familyId: family.id,
+    },
+  })
+
+  await prisma.account.create({
+    data: {
+      name: '비상금 적금',
+      type: AccountType.CASH,
+      balance: 12000000,
+      isShared: true,
+      familyId: family.id,
+    },
+  })
+
+  await prisma.account.create({
+    data: {
+      name: '국내주식 (삼성전자 외)',
+      type: AccountType.INVESTMENT,
+      balance: 38000000,
+      isShared: true,
+      familyId: family.id,
+      userId: userA.id,
+    },
+  })
+
+  await prisma.account.create({
+    data: {
+      name: 'ETF 포트폴리오',
+      type: AccountType.INVESTMENT,
+      balance: 22000000,
+      isShared: true,
+      familyId: family.id,
+      userId: userA.id,
+    },
+  })
+
+  await prisma.account.create({
+    data: {
+      name: '비트코인 + 이더리움',
+      type: AccountType.CRYPTO,
+      balance: 8500000,
+      isShared: false,
+      familyId: family.id,
+      userId: userA.id,
+    },
+  })
+
+  await prisma.account.create({
+    data: {
+      name: '강남 오피스텔',
+      type: AccountType.REAL_ESTATE,
+      balance: 320000000,
+      isShared: true,
+      familyId: family.id,
+    },
+  })
+
+  await prisma.account.create({
+    data: {
+      name: 'STO 부동산 토큰',
+      type: AccountType.STO,
       balance: 5000000,
       isShared: true,
       familyId: family.id,
+      userId: userA.id,
     },
   })
 
@@ -50,7 +114,7 @@ async function main() {
     data: {
       name: '가족 개인 통장',
       type: AccountType.CASH,
-      balance: 2000000,
+      balance: 8000000,
       isShared: false,
       familyId: family.id,
       userId: userB.id,
