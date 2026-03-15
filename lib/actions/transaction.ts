@@ -118,34 +118,40 @@ export async function addTransaction(input: {
   visibility: 'SHARED' | 'PRIVATE'
   userId: string
   accountId?: string
-}) {
-  // accountId가 없으면 유저의 가족에서 첫 번째 계좌를 자동으로 찾음
-  let accountId = input.accountId
-  if (!accountId) {
-    const user = await prisma.user.findUnique({
-      where: { id: input.userId },
-      select: { familyId: true },
-    })
-    if (!user) throw new Error('사용자를 찾을 수 없습니다.')
+}): Promise<{ success: boolean; id?: string; error?: string }> {
+  try {
+    // accountId가 없으면 유저의 가족에서 첫 번째 계좌를 자동으로 찾음
+    let accountId = input.accountId
+    if (!accountId) {
+      const user = await prisma.user.findUnique({
+        where: { id: input.userId },
+        select: { familyId: true },
+      })
+      if (!user) return { success: false, error: '사용자를 찾을 수 없습니다.' }
 
-    const account = await prisma.account.findFirst({
-      where: { familyId: user.familyId },
-      orderBy: { isShared: 'desc' },
+      const account = await prisma.account.findFirst({
+        where: { familyId: user.familyId },
+        orderBy: { isShared: 'desc' },
+      })
+      if (!account) return { success: false, error: '계좌를 찾을 수 없습니다.' }
+      accountId = account.id
+    }
+
+    const transaction = await prisma.transaction.create({
+      data: {
+        amount: input.amount,
+        date: new Date(input.date),
+        category: input.category,
+        description: input.description,
+        visibility: input.visibility,
+        userId: input.userId,
+        accountId,
+      },
     })
-    if (!account) throw new Error('계좌를 찾을 수 없습니다.')
-    accountId = account.id
+
+    return { success: true, id: transaction.id }
+  } catch (e) {
+    console.error('[addTransaction] ERROR:', e)
+    return { success: false, error: String(e) }
   }
-
-  const transaction = await prisma.transaction.create({
-    data: {
-      amount: input.amount,
-      date: new Date(input.date),
-      category: input.category,
-      description: input.description,
-      visibility: input.visibility,
-      userId: input.userId,
-      accountId,
-    },
-  })
-  return transaction
 }

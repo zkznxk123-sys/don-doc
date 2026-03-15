@@ -6,7 +6,7 @@ import { formatCurrency, formatLargeNumber, cn } from '@/lib/utils'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell, Legend, BarChart, Bar, XAxis as BarXAxis, YAxis as BarYAxis } from 'recharts'
 import { SwipeableRow } from '@/components/ui/swipeable-row'
 import { MobileDrawer, QuickAction } from '@/components/ui/mobile-drawer'
-import { getFamilyTransactions, getFamilyWealth, addTransaction, type MaskedTransaction, type FamilyWealth, type AccountSummary } from '@/lib/actions/transaction'
+// server actions no longer used directly — using API routes instead
 import { motion, AnimatePresence } from 'framer-motion'
 import { TransactionDrawer, type TransactionFormData } from '@/components/ui/transaction-drawer'
 
@@ -101,15 +101,16 @@ const Dashboard = () => {
   useEffect(() => {
     async function loadData() {
       try {
-        // 거래 내역 로드
-        const txData = await getFamilyTransactions(currentUserId, familyId)
-        if (txData.length > 0) {
-          setTransactions(txData.map(tx => ({
+        // 거래 내역 로드 (API Route)
+        const txRes = await fetch(`/api/transactions/list?userId=${currentUserId}&familyId=${familyId}`)
+        const txJson = await txRes.json()
+        if (txJson.success && txJson.transactions.length > 0) {
+          setTransactions(txJson.transactions.map((tx: any) => ({
             id: tx.id,
             amount: tx.amount,
             description: tx.description,
             category: tx.category,
-            date: tx.date.toISOString().split('T')[0],
+            date: tx.date.split('T')[0],
             visibility: tx.visibility,
             userId: tx.userId,
             userName: tx.userName,
@@ -117,27 +118,29 @@ const Dashboard = () => {
           })))
         }
 
-        // 계좌 잔액 합계 로드
-        const wealth = await getFamilyWealth(familyId, currentUserId)
-        setWealthData({
-          totalAssets: wealth.totalAssets,
-          personalBudget: wealth.personalAssets,
-          totalLiabilities: 0,
-          netWorth: wealth.totalAssets,
-          monthlyChange: 0,
-          monthlyChangePercent: 0,
-        })
+        // 계좌 잔액 합계 로드 (API Route)
+        const wRes = await fetch(`/api/wealth?familyId=${familyId}&userId=${currentUserId}`)
+        const wJson = await wRes.json()
+        if (wJson.success) {
+          setWealthData({
+            totalAssets: wJson.totalAssets,
+            personalBudget: wJson.personalAssets,
+            totalLiabilities: 0,
+            netWorth: wJson.totalAssets,
+            monthlyChange: 0,
+            monthlyChangePercent: 0,
+          })
 
-        // 계좌별 자산 배분 차트 데이터
-        if (wealth.accounts.length > 0) {
-          setAssets(wealth.accounts.map((acc, i) => ({
-            id: acc.id,
-            name: acc.name,
-            value: acc.balance,
-            allocation: Math.round((acc.balance / wealth.totalAssets) * 10000) / 100,
-            change: 0,
-            changePercent: 0,
-          })))
+          if (wJson.accounts.length > 0) {
+            setAssets(wJson.accounts.map((acc: any) => ({
+              id: acc.id,
+              name: acc.name,
+              value: acc.balance,
+              allocation: Math.round((acc.balance / wJson.totalAssets) * 10000) / 100,
+              change: 0,
+              changePercent: 0,
+            })))
+          }
         }
       } catch {
         console.log('DB 미연결 — 목업 데이터 사용')
@@ -184,14 +187,44 @@ const Dashboard = () => {
     { category: '여가', amount: 6000000, percentage: 20.0, color: '#8b5cf6' }
   ]
 
-  const personalBudgetData: PersonalBudgetData = {
-    totalBudget: 250000000,
-    spent: 125000000,
-    remaining: 125000000,
-    burnRate: 4166667, // 일일 소비율
-    daysRemaining: 30,
-    monthlyAverage: 8333333
-  }
+  // 개인 예산 데이터 (실제 거래 기반으로 계산)
+  const myExpenses = transactions
+    .filter(tx => tx.userId === currentUserId && tx.amount < 0)
+    .reduce((s, tx) => s + Math.abs(tx.amount), 0)
+  const myIncome = transactions
+    .filter(tx => tx.userId === currentUserId && tx.amount > 0)
+    .reduce((s, tx) => s + tx.amount, 0)
+  const myTxCount = transactions.filter(tx => tx.userId === currentUserId && tx.amount < 0).length
+  const myMaxExpense = transactions
+    .filter(tx => tx.userId === currentUserId && tx.amount < 0)
+    .reduce((max, tx) => Math.max(max, Math.abs(tx.amount)), 0)
+  const myBudget = wealthData.personalBudget || myIncome || 1
+  const myBurnRate = myTxCount > 0 ? Math.round(myExpenses / Math.max(myTxCount, 1)) : 0
+  const mySavingsRate = myIncome > 0 ? Math.round(((myIncome - myExpenses) / myIncome) * 100) : 0
+
+  // 개인 카테고리별 지출
+  const myCategoryExpenses = transactions
+    .filter(tx => tx.userId === currentUserId && tx.amount < 0 && !tx.isMasked)
+    .reduce((acc, tx) => {
+      acc[tx.category] = (acc[tx.category] || 0) + Math.abs(tx.amount)
+      return acc
+    }, {} as Record<string, number>)
+  const myCategoryData = Object.entries(myCategoryExpenses)
+    .map(([category, amount]) => ({ category, amount, percentage: myExpenses > 0 ? Math.round((amount / myExpenses) * 100) : 0 }))
+    .sort((a, b) => b.amount - a.amount)
+
+  // 가족 전체 카테고리별 지출 (실제 데이터)
+  const familyCategoryExpenses = transactions
+    .filter(tx => tx.amount < 0 && !tx.isMasked)
+    .reduce((acc, tx) => {
+      acc[tx.category] = (acc[tx.category] || 0) + Math.abs(tx.amount)
+      return acc
+    }, {} as Record<string, number>)
+  const familyCategoryData = Object.entries(familyCategoryExpenses)
+    .map(([category, amount]) => ({ category, amount, percentage: monthlyExpenses > 0 ? Math.round((amount / monthlyExpenses) * 100) : 0 }))
+    .sort((a, b) => b.amount - a.amount)
+
+  const CATEGORY_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444', '#ec4899', '#14b8a6', '#f97316']
 
 
   const WealthCard = ({ title, value, change, changePercent, showTrend = true }: {
@@ -416,93 +449,116 @@ const Dashboard = () => {
     </div>
   )
 
-  const CFOStatsWidget = () => (
-    <div className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <Calculator className="w-5 h-5" />
-          가족 자산 통계
+  // 가족 현금 흐름 차트 데이터
+  const cashFlowData = [
+    { month: '1월', income: 5000000, expense: 360000 },
+    { month: '2월', income: 5000000, expense: 420000 },
+    { month: '3월', income: monthlyIncome, expense: monthlyExpenses },
+  ]
+
+  const CashFlowChart = () => (
+    <div className="bg-zinc-900 rounded-2xl p-4 md:p-6 border border-zinc-800">
+      <div className="flex items-center justify-between mb-4 md:mb-6">
+        <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
+          <AreaChartIcon className="w-4 h-4 md:w-5 md:h-5" />
+          현금 흐름 (Cash Flow)
         </h2>
+        <div className="text-xs md:text-sm text-zinc-400">수입 vs 지출</div>
       </div>
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div className="bg-zinc-800 rounded-xl p-4">
-          <div className="text-sm text-zinc-400 mb-1">가족 총자산</div>
-          <div className="text-2xl font-bold text-white">{formatLargeNumber(wealthData.totalAssets)}</div>
-          <div className="text-xs text-green-500 mt-1">+1.2% vs 전월</div>
-        </div>
-        <div className="bg-zinc-800 rounded-xl p-4">
-          <div className="text-sm text-zinc-400 mb-1">가족 순자산</div>
-          <div className="text-2xl font-bold text-white">{formatLargeNumber(wealthData.netWorth)}</div>
-          <div className="text-xs text-green-500 mt-1">+1.2% vs 전월</div>
-        </div>
-      </div>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-zinc-400">월평균 지출</span>
-          <span className="text-sm font-medium text-white">{formatCurrency(30000000)}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-zinc-400">월평균 수입</span>
-          <span className="text-sm font-medium text-green-500">{formatCurrency(113000000)}</span>
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-sm text-zinc-400">저축률</span>
-          <span className="text-sm font-medium text-white">73.5%</span>
-        </div>
-      </div>
+      <ResponsiveContainer width="100%" height={200}>
+        <BarChart data={cashFlowData}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+          <BarXAxis dataKey="month" stroke="#9ca3af" style={{ fontSize: '11px' }} />
+          <BarYAxis stroke="#9ca3af" style={{ fontSize: '11px' }} tickFormatter={(v) => `${(v / 10000).toFixed(0)}만`} />
+          <Tooltip contentStyle={{ backgroundColor: '#18181b', border: '1px solid #374151', borderRadius: '8px' }} formatter={(value: number, name: string) => [formatCurrency(value), name === 'income' ? '수입' : '지출']} />
+          <Bar dataKey="income" fill="#10b981" radius={[6, 6, 0, 0]} name="income" />
+          <Bar dataKey="expense" fill="#ef4444" radius={[6, 6, 0, 0]} name="expense" />
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   )
+
+  const CFOStatsWidget = () => {
+    const familySavingsRate = monthlyIncome > 0 ? Math.round(((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100) : 0
+    return (
+      <div className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Calculator className="w-5 h-5" />
+            가족 자산 통계
+          </h2>
+        </div>
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="bg-zinc-800 rounded-xl p-4">
+            <div className="text-sm text-zinc-400 mb-1">가족 총자산</div>
+            <div className="text-2xl font-bold text-white">{formatLargeNumber(wealthData.totalAssets)}</div>
+          </div>
+          <div className="bg-zinc-800 rounded-xl p-4">
+            <div className="text-sm text-zinc-400 mb-1">가족 순자산</div>
+            <div className="text-2xl font-bold text-white">{formatLargeNumber(wealthData.netWorth)}</div>
+          </div>
+        </div>
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-zinc-400">이번 달 지출</span>
+            <span className="text-sm font-medium text-red-400">{formatCurrency(monthlyExpenses)}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-zinc-400">이번 달 수입</span>
+            <span className="text-sm font-medium text-green-500">{formatCurrency(monthlyIncome)}</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-zinc-400">저축률</span>
+            <span className={cn("text-sm font-medium", familySavingsRate >= 0 ? "text-green-500" : "text-red-500")}>{familySavingsRate}%</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-zinc-400">거래 건수</span>
+            <span className="text-sm font-medium text-white">{transactions.length}건</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   const ExpenseCategoriesChart = () => (
     <div className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           <CreditCard className="w-5 h-5" />
-          카테고리별 지출
+          가족 카테고리별 지출
         </h2>
-        <div className="text-sm text-zinc-400">
-          이번 달
-        </div>
+        <div className="text-sm text-zinc-400">이번 달</div>
       </div>
-      <ResponsiveContainer width="100%" height={250}>
-        <BarChart data={expenseCategories}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-          <BarXAxis 
-            dataKey="category" 
-            stroke="#9ca3af"
-            style={{ fontSize: '12px' }}
-          />
-          <BarYAxis 
-            stroke="#9ca3af"
-            style={{ fontSize: '12px' }}
-            tickFormatter={(value) => `${(value / 10000).toFixed(0)}만`}
-          />
-          <Tooltip 
-            contentStyle={{ 
-              backgroundColor: '#18181b', 
-              border: '1px solid #374151',
-              borderRadius: '8px'
-            }}
-            formatter={(value: number) => [formatCurrency(value), '지출액']}
-          />
-          <Bar dataKey="amount" fill="#3b82f6" radius={[8, 8, 0, 0]}>
-            {expenseCategories.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
+      {familyCategoryData.length > 0 ? (
+        <>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={familyCategoryData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <BarXAxis dataKey="category" stroke="#9ca3af" style={{ fontSize: '12px' }} />
+              <BarYAxis stroke="#9ca3af" style={{ fontSize: '12px' }} tickFormatter={(value) => `${(value / 10000).toFixed(0)}만`} />
+              <Tooltip contentStyle={{ backgroundColor: '#18181b', border: '1px solid #374151', borderRadius: '8px' }} formatter={(value: number) => [formatCurrency(value), '지출액']} />
+              <Bar dataKey="amount" radius={[8, 8, 0, 0]}>
+                {familyCategoryData.map((_, index) => (
+                  <Cell key={`cell-${index}`} fill={CATEGORY_COLORS[index % CATEGORY_COLORS.length]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+          <div className="grid grid-cols-2 gap-3 mt-4">
+            {familyCategoryData.map((cat, i) => (
+              <div key={cat.category} className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: CATEGORY_COLORS[i % CATEGORY_COLORS.length] }} />
+                  <span className="text-sm text-zinc-400">{cat.category}</span>
+                </div>
+                <span className="text-sm font-medium text-white">{cat.percentage}%</span>
+              </div>
             ))}
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
-      <div className="grid grid-cols-2 gap-4 mt-4">
-        {expenseCategories.map((category, index) => (
-          <div key={index} className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color }} />
-              <span className="text-sm text-zinc-400">{category.category}</span>
-            </div>
-            <span className="text-sm font-medium text-white">{category.percentage}%</span>
           </div>
-        ))}
-      </div>
+        </>
+      ) : (
+        <div className="text-center py-12 text-zinc-500 text-sm">지출 내역이 없습니다</div>
+      )}
     </div>
   )
 
@@ -511,40 +567,45 @@ const Dashboard = () => {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           <DollarSign className="w-5 h-5" />
-          개인 예산 현황
+          내 예산 현황
         </h2>
       </div>
+      {/* 예산 프로그레스 바 */}
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm text-zinc-400">사용한 예산</span>
           <span className="text-sm font-medium text-white">
-            {formatCurrency(personalBudgetData.spent)} / {formatCurrency(personalBudgetData.totalBudget)}
+            {formatCurrency(myExpenses)} / {formatCurrency(myBudget)}
           </span>
         </div>
         <div className="w-full bg-zinc-800 rounded-full h-3 mb-2">
           <div 
-            className="bg-gradient-to-r from-blue-500 to-blue-600 h-3 rounded-full transition-all duration-300"
-            style={{ width: `${(personalBudgetData.spent / personalBudgetData.totalBudget) * 100}%` }}
+            className={cn(
+              "h-3 rounded-full transition-all duration-300",
+              (myExpenses / myBudget) > 0.8 ? "bg-gradient-to-r from-red-500 to-red-600" : "bg-gradient-to-r from-blue-500 to-blue-600"
+            )}
+            style={{ width: `${Math.min((myExpenses / myBudget) * 100, 100)}%` }}
           />
         </div>
         <div className="flex items-center justify-between">
-          <span className="text-xs text-zinc-500">{((personalBudgetData.spent / personalBudgetData.totalBudget) * 100).toFixed(1)}% 사용</span>
-          <span className="text-xs text-zinc-500">{formatCurrency(personalBudgetData.remaining)} 남음</span>
+          <span className="text-xs text-zinc-500">{Math.round((myExpenses / myBudget) * 100)}% 사용</span>
+          <span className="text-xs text-zinc-500">{formatCurrency(Math.max(myBudget - myExpenses, 0))} 남음</span>
         </div>
       </div>
+      {/* 핵심 지표 */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-zinc-800 rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2">
             <BurnRateIcon className="w-4 h-4 text-orange-500" />
-            <span className="text-sm text-zinc-400">Burn Rate</span>
+            <span className="text-sm text-zinc-400">건당 평균</span>
           </div>
-          <div className="text-xl font-bold text-white">{formatCurrency(personalBudgetData.burnRate)}</div>
-          <div className="text-xs text-zinc-500">/일</div>
+          <div className="text-xl font-bold text-white">{formatCurrency(myBurnRate)}</div>
+          <div className="text-xs text-zinc-500">/건</div>
         </div>
         <div className="bg-zinc-800 rounded-xl p-4">
-          <div className="text-sm text-zinc-400 mb-2">예상 소진일</div>
-          <div className="text-xl font-bold text-white">{personalBudgetData.daysRemaining}</div>
-          <div className="text-xs text-zinc-500">일 남음</div>
+          <div className="text-sm text-zinc-400 mb-2">저축률</div>
+          <div className={cn("text-xl font-bold", mySavingsRate >= 0 ? "text-green-500" : "text-red-500")}>{mySavingsRate}%</div>
+          <div className="text-xs text-zinc-500">수입 대비</div>
         </div>
       </div>
     </div>
@@ -555,39 +616,46 @@ const Dashboard = () => {
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-bold text-white flex items-center gap-2">
           <TrendingDown className="w-5 h-5" />
-          이번 달 지출 현황
+          내 지출 분석
         </h2>
-        <div className="text-sm text-zinc-400">
-          개인 통계
+        <div className="text-sm text-zinc-400">{myTxCount}건</div>
+      </div>
+      {/* 핵심 수치 */}
+      <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="bg-zinc-800 rounded-xl p-3 text-center">
+          <div className="text-lg font-bold text-red-400 tabular-nums">{formatCurrency(myExpenses)}</div>
+          <div className="text-xs text-zinc-500 mt-1">총 지출</div>
+        </div>
+        <div className="bg-zinc-800 rounded-xl p-3 text-center">
+          <div className="text-lg font-bold text-white tabular-nums">{formatCurrency(myMaxExpense)}</div>
+          <div className="text-xs text-zinc-500 mt-1">최대 지출</div>
+        </div>
+        <div className="bg-zinc-800 rounded-xl p-3 text-center">
+          <div className="text-lg font-bold text-green-500 tabular-nums">{formatCurrency(myIncome)}</div>
+          <div className="text-xs text-zinc-500 mt-1">수입</div>
         </div>
       </div>
-      <div className="space-y-4">
-        <div className="flex items-center justify-between py-3 border-b border-zinc-800">
-          <span className="text-sm text-zinc-400">총 지출</span>
-          <span className="text-lg font-bold text-red-500">{formatCurrency(personalBudgetData.spent)}</span>
+      {/* 카테고리별 지출 바 */}
+      {myCategoryData.length > 0 ? (
+        <div className="space-y-3">
+          {myCategoryData.map((cat, i) => (
+            <div key={cat.category}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-sm text-zinc-300">{cat.category}</span>
+                <span className="text-sm font-medium text-white tabular-nums">{formatCurrency(cat.amount)}</span>
+              </div>
+              <div className="w-full bg-zinc-800 rounded-full h-2">
+                <div
+                  className="h-2 rounded-full transition-all"
+                  style={{ width: `${cat.percentage}%`, backgroundColor: CATEGORY_COLORS[i % CATEGORY_COLORS.length] }}
+                />
+              </div>
+            </div>
+          ))}
         </div>
-        <div className="flex items-center justify-between py-3 border-b border-zinc-800">
-          <span className="text-sm text-zinc-400">일일 평균</span>
-          <span className="text-sm font-medium text-white">{formatCurrency(personalBudgetData.monthlyAverage)}</span>
-        </div>
-        <div className="flex items-center justify-between py-3 border-b border-zinc-800">
-          <span className="text-sm text-zinc-400">최대 지출</span>
-          <span className="text-sm font-medium text-white">{formatCurrency(8500000)}</span>
-        </div>
-        <div className="flex items-center justify-between py-3">
-          <span className="text-sm text-zinc-400">지출 횟수</span>
-          <span className="text-sm font-medium text-white">24회</span>
-        </div>
-      </div>
-      <div className="mt-6 p-4 bg-zinc-800 rounded-xl">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-zinc-400">저축률</span>
-          <span className="text-sm font-medium text-green-500">50.0%</span>
-        </div>
-        <div className="text-xs text-zinc-500">
-          월 수입 {formatCurrency(250000000)} 중 {formatCurrency(personalBudgetData.spent)} 지출
-        </div>
-      </div>
+      ) : (
+        <div className="text-center py-8 text-zinc-500 text-sm">지출 내역이 없습니다</div>
+      )}
     </div>
   )
 
@@ -655,6 +723,14 @@ const Dashboard = () => {
           </button>
         </div>
 
+        {/* 🔧 개발용 뷰 모드 표시 */}
+        <div className="mb-4 flex items-center gap-2">
+          <span className="text-xs px-2 py-1 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono">
+            DEV: {viewMode === 'CFO' ? '👑 CFO 모드' : '👤 Member 모드'}
+          </span>
+          <span className="text-xs text-zinc-600">위 탭으로 전환 가능</span>
+        </div>
+
         {/* 뷰 모드별 콘텐츠 */}
         <AnimatePresence mode="wait">
           {viewMode === 'MEMBER' ? (
@@ -665,12 +741,12 @@ const Dashboard = () => {
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.25 }}
             >
-              {/* 개인 뷰 요약 카드 */}
+              {/* ── Member: 개인 요약 카드 ── */}
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-6">
                 <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
                   <div className="flex items-center gap-2 mb-2">
                     <Wallet className="w-4 h-4 text-blue-400" />
-                    <h3 className="text-zinc-400 text-xs font-medium">내 자산</h3>
+                    <h3 className="text-zinc-400 text-xs font-medium">내 가용 자산</h3>
                   </div>
                   <div className="text-xl md:text-2xl font-bold text-white">
                     {isLoading ? '...' : formatCurrency(wealthData.personalBudget)}
@@ -679,32 +755,57 @@ const Dashboard = () => {
                 <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
                   <div className="flex items-center gap-2 mb-2">
                     <CreditCard className="w-4 h-4 text-red-400" />
-                    <h3 className="text-zinc-400 text-xs font-medium">내 지출</h3>
+                    <h3 className="text-zinc-400 text-xs font-medium">이번 달 내 지출</h3>
                   </div>
                   <div className="text-xl md:text-2xl font-bold text-red-400">
-                    {isLoading ? '...' : formatCurrency(
-                      transactions.filter(tx => tx.userId === currentUserId && tx.amount < 0)
-                        .reduce((s, tx) => s + Math.abs(tx.amount), 0)
-                    )}
+                    {isLoading ? '...' : formatCurrency(myExpenses)}
                   </div>
+                  <div className="text-xs text-zinc-500 mt-1">{myTxCount}건</div>
                 </div>
                 <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800 col-span-2 md:col-span-1">
                   <div className="flex items-center gap-2 mb-2">
                     <DollarSign className="w-4 h-4 text-green-400" />
-                    <h3 className="text-zinc-400 text-xs font-medium">내 수입</h3>
+                    <h3 className="text-zinc-400 text-xs font-medium">이번 달 내 수입</h3>
                   </div>
                   <div className="text-xl md:text-2xl font-bold text-green-500">
-                    {isLoading ? '...' : formatCurrency(
-                      transactions.filter(tx => tx.userId === currentUserId && tx.amount > 0)
-                        .reduce((s, tx) => s + tx.amount, 0)
-                    )}
+                    {isLoading ? '...' : formatCurrency(myIncome)}
                   </div>
                 </div>
               </div>
 
-              <PersonalExpenseChart />
-              <div className="mt-6">
+              {/* ── Member: 예산 + 지출 분석 ── */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <PersonalBudgetWidget />
+                <PersonalExpenseChart />
+              </div>
+
+              {/* ── Member: 내 거래 내역 ── */}
+              <div className="bg-zinc-900 rounded-2xl p-4 md:p-6 border border-zinc-800">
+                <div className="flex items-center justify-between mb-4 md:mb-6">
+                  <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
+                    <Wallet className="w-4 h-4 md:w-5 md:h-5" />
+                    내 거래 내역
+                  </h2>
+                  <div className="text-xs md:text-sm text-zinc-400">최근 10건</div>
+                </div>
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="text-zinc-500 text-sm">데이터를 불러오는 중...</div>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {transactions
+                      .filter(tx => tx.userId === currentUserId)
+                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                      .slice(0, 10)
+                      .map(transaction => (
+                        <TransactionRow key={transaction.id} transaction={transaction} />
+                      ))}
+                    {transactions.filter(tx => tx.userId === currentUserId).length === 0 && (
+                      <div className="text-center py-8 text-zinc-500 text-sm">거래 내역이 없습니다</div>
+                    )}
+                  </div>
+                )}
               </div>
             </motion.div>
           ) : (
@@ -715,12 +816,12 @@ const Dashboard = () => {
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.25 }}
             >
-              {/* 패밀리 뷰 요약 카드 */}
+              {/* ── CFO: 패밀리 요약 카드 ── */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
                 <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
                   <div className="flex items-center gap-2 mb-2">
                     <Wallet className="w-4 h-4 text-emerald-500" />
-                    <h3 className="text-zinc-400 text-xs font-medium">총 자산</h3>
+                    <h3 className="text-zinc-400 text-xs font-medium">가족 총자산</h3>
                   </div>
                   <div className="text-xl md:text-2xl font-bold text-white">
                     {isLoading ? '...' : formatCurrency(wealthData.totalAssets)}
@@ -748,7 +849,7 @@ const Dashboard = () => {
                 <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
                   <div className="flex items-center gap-2 mb-2">
                     <Calculator className="w-4 h-4 text-blue-400" />
-                    <h3 className="text-zinc-400 text-xs font-medium">개인 자산</h3>
+                    <h3 className="text-zinc-400 text-xs font-medium">내 자산</h3>
                   </div>
                   <div className="text-xl md:text-2xl font-bold text-blue-400">
                     {isLoading ? '...' : formatCurrency(wealthData.personalBudget)}
@@ -756,67 +857,73 @@ const Dashboard = () => {
                 </div>
               </div>
 
-              <NetWorthChart />
+              {/* ── CFO: 자산 배분 도넛 + 현금 흐름 ── */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <AssetAllocationChart />
+                <CashFlowChart />
+              </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 mt-6">
+              {/* ── CFO: 순자산 추이 ── */}
+              <div className="mb-6">
+                <NetWorthChart />
+              </div>
+
+              {/* ── CFO: 카테고리 지출 + 통계 ── */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                 <div className="lg:col-span-2">
                   <ExpenseCategoriesChart />
                 </div>
                 <CFOStatsWidget />
               </div>
+
+              {/* ── CFO: 가족 거래 내역 + 투자 성과 ── */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <div className="lg:col-span-2">
+                  <div className="bg-zinc-900 rounded-2xl p-4 md:p-6 border border-zinc-800">
+                    <div className="flex items-center justify-between mb-4 md:mb-6">
+                      <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
+                        <Wallet className="w-4 h-4 md:w-5 md:h-5" />
+                        가족 거래 내역
+                      </h2>
+                      <div className="text-xs md:text-sm text-zinc-400">선별적 투명성 적용</div>
+                    </div>
+                    {isLoading ? (
+                      <div className="flex items-center justify-center py-12">
+                        <div className="text-zinc-500 text-sm">데이터를 불러오는 중...</div>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        {transactions
+                          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                          .slice(0, 10)
+                          .map(transaction => (
+                            <TransactionRow key={transaction.id} transaction={transaction} />
+                          ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="bg-zinc-900 rounded-2xl p-4 md:p-6 border border-zinc-800">
+                  <h2 className="text-lg md:text-xl font-bold text-white mb-4 md:mb-6">투자 성과</h2>
+                  <div className="space-y-6">
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-green-500 mb-1">+12.4%</div>
+                      <div className="text-xs text-zinc-400">연간 수익률</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-white mb-1">7.2</div>
+                      <div className="text-xs text-zinc-400">샤프 비율</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl font-bold text-zinc-300 mb-1">18.3%</div>
+                      <div className="text-xs text-zinc-400">변동성</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8 mb-8">
-          <div className="lg:col-span-2">
-            <div className="bg-zinc-900 rounded-2xl p-4 md:p-6 border border-zinc-800">
-              <div className="flex items-center justify-between mb-4 md:mb-6">
-                <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
-                  <Wallet className="w-4 h-4 md:w-5 md:h-5" />
-                  {viewMode === 'CFO' ? '가족 지출 내역' : '최근 지출 내역'}
-                </h2>
-                <div className="text-xs md:text-sm text-zinc-400">
-                  선별적 투명성 적용
-                </div>
-              </div>
-              {isLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <div className="text-zinc-500 text-sm">데이터를 불러오는 중...</div>
-                </div>
-              ) : (
-                <div className="space-y-1">
-                  {transactions
-                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                    .slice(0, 10)
-                    .map(transaction => (
-                      <TransactionRow key={transaction.id} transaction={transaction} />
-                    ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <AssetAllocationChart />
-        </div>
-
-        <div className="bg-zinc-900 rounded-2xl p-4 md:p-6 border border-zinc-800">
-          <h2 className="text-lg md:text-xl font-bold text-white mb-4 md:mb-6">투자 성과 요약</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-            <div className="text-center">
-              <div className="text-xl md:text-2xl font-bold text-green-500 mb-2">+12.4%</div>
-              <div className="text-xs md:text-sm text-zinc-400">연간 수익률</div>
-            </div>
-            <div className="text-center">
-              <div className="text-xl md:text-2xl font-bold text-white mb-2">7.2</div>
-              <div className="text-xs md:text-sm text-zinc-400">샤프 비율</div>
-            </div>
-            <div className="text-center">
-              <div className="text-xl md:text-2xl font-bold text-zinc-300 mb-2">18.3%</div>
-              <div className="text-xs md:text-sm text-zinc-400">변동성</div>
-            </div>
-          </div>
-        </div>
 
         {/* 모바일 전용 퀵액션 드로어 */}
         <MobileDrawer
@@ -867,25 +974,26 @@ const Dashboard = () => {
         <TransactionDrawer
           isOpen={isTransactionDrawerOpen}
           onClose={() => setIsTransactionDrawerOpen(false)}
-          onSubmit={async (data: TransactionFormData) => {
-            await addTransaction({
-              ...data,
-              userId: currentUserId,
-            })
-            // 거래 목록 새로고침
-            const txData = await getFamilyTransactions(currentUserId, familyId)
-            if (txData.length > 0) {
-              setTransactions(txData.map(tx => ({
-                id: tx.id,
-                amount: tx.amount,
-                description: tx.description,
-                category: tx.category,
-                date: tx.date.toISOString().split('T')[0],
-                visibility: tx.visibility,
-                userId: tx.userId,
-                userName: tx.userName,
-                isMasked: tx.isMasked,
-              })))
+          currentUserId={currentUserId}
+          onSuccess={async () => {
+            try {
+              const res = await fetch(`/api/transactions/list?userId=${currentUserId}&familyId=${familyId}`)
+              const data = await res.json()
+              if (data.success && data.transactions.length > 0) {
+                setTransactions(data.transactions.map((tx: any) => ({
+                  id: tx.id,
+                  amount: tx.amount,
+                  description: tx.description,
+                  category: tx.category,
+                  date: tx.date.split('T')[0],
+                  visibility: tx.visibility,
+                  userId: tx.userId,
+                  userName: tx.userName,
+                  isMasked: tx.isMasked,
+                })))
+              }
+            } catch (e) {
+              console.error('거래 목록 새로고침 실패:', e)
             }
           }}
         />

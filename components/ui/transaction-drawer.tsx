@@ -8,7 +8,8 @@ import { cn } from '@/lib/utils'
 interface TransactionDrawerProps {
   isOpen: boolean
   onClose: () => void
-  onSubmit: (data: TransactionFormData) => Promise<void>
+  currentUserId: string
+  onSuccess: () => void
 }
 
 export interface TransactionFormData {
@@ -31,7 +32,7 @@ const CATEGORIES = [
   { value: '수입', emoji: '💰' },
 ]
 
-export function TransactionDrawer({ isOpen, onClose, onSubmit }: TransactionDrawerProps) {
+export function TransactionDrawer({ isOpen, onClose, currentUserId, onSuccess }: TransactionDrawerProps) {
   const [amount, setAmount] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [category, setCategory] = useState('')
@@ -68,17 +69,28 @@ export function TransactionDrawer({ isOpen, onClose, onSubmit }: TransactionDraw
     setIsSubmitting(true)
     try {
       const numAmount = parseFloat(amount)
-      await onSubmit({
-        amount: isExpense ? -Math.abs(numAmount) : Math.abs(numAmount),
-        date,
-        category,
-        description: description || category,
-        visibility,
+      const res = await fetch('/api/transactions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: isExpense ? -Math.abs(numAmount) : Math.abs(numAmount),
+          date,
+          category,
+          description: description || category,
+          visibility,
+          userId: currentUserId,
+        }),
       })
+      const result = await res.json()
+      if (!result.success) {
+        setError(result.error || '저장에 실패했습니다.')
+        return
+      }
+      onSuccess()
       handleClose()
-    } catch (e) {
+    } catch (e: any) {
       console.error('거래 추가 실패:', e)
-      setError('저장에 실패했습니다. 다시 시도해주세요.')
+      setError(e?.message || String(e) || '알 수 없는 오류')
     } finally {
       setIsSubmitting(false)
     }
