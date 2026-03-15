@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getAuthUser } from '@/lib/auth'
 
 export async function GET(req: NextRequest) {
   try {
+    const authUser = await getAuthUser()
     const { searchParams } = new URL(req.url)
-    const familyId = searchParams.get('familyId')
-    const userId = searchParams.get('userId')
+    const familyId = authUser?.familyId || searchParams.get('familyId')
+    const userId = authUser?.id || searchParams.get('userId')
 
     if (!familyId) {
       return NextResponse.json(
-        { success: false, error: 'familyId가 필요합니다.' },
-        { status: 400 }
+        { success: false, error: '인증이 필요합니다.' },
+        { status: 401 }
       )
     }
 

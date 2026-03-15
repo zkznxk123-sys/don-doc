@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getAuthUser } from '@/lib/auth'
 
 export async function GET(req: NextRequest) {
   try {
+    // 세션 기반 인증 우선, 쿼리 파라미터 폴백
+    const authUser = await getAuthUser()
     const { searchParams } = new URL(req.url)
-    const familyId = searchParams.get('familyId')
-    const userId = searchParams.get('userId')
+    const familyId = authUser?.familyId || searchParams.get('familyId')
+    const userId = authUser?.id || searchParams.get('userId')
 
     if (!familyId || !userId) {
       return NextResponse.json(
-        { success: false, error: 'familyId와 userId가 필요합니다.' },
-        { status: 400 }
+        { success: false, error: '인증이 필요합니다.' },
+        { status: 401 }
       )
     }
 

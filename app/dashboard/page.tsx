@@ -97,14 +97,32 @@ const Dashboard = () => {
   const [assets, setAssets] = useState<Asset[]>([])
   const [assetsByType, setAssetsByType] = useState<AssetTypeData[]>([])
   
-  const currentUserId = 'cmmruag6e0002lyspny3dswl7' // 사용자 A (나) - TODO: 실제 인증 연동 시 교체
-  const familyId = 'cmmruag5b0000lyspag78b27b'     // 우리집 패밀리오피스
+  // 세션 기반 인증 — /api/auth/me에서 자동 조회
+  const [currentUserId, setCurrentUserId] = useState('')
+  const [familyId, setFamilyId] = useState('')
+  const [userName, setUserName] = useState('')
 
   useEffect(() => {
     async function loadData() {
       try {
-        // 거래 내역 로드 (API Route)
-        const txRes = await fetch(`/api/transactions/list?userId=${currentUserId}&familyId=${familyId}`)
+        // 1. 현재 유저 정보 로드 (세션 기반)
+        const meRes = await fetch('/api/auth/me')
+        const meJson = await meRes.json()
+        if (meJson.success && meJson.user) {
+          setCurrentUserId(meJson.user.id)
+          setFamilyId(meJson.user.familyId)
+          setUserName(meJson.user.name || '')
+          if (meJson.user.role === 'MEMBER') {
+            setViewMode('MEMBER')
+          }
+        } else {
+          // 미인증 → 로그인 페이지로 이동 (미들웨어 보완)
+          window.location.href = '/login'
+          return
+        }
+
+        // 2. 거래 내역 로드 (세션 인증 — 쿼리 파라미터 불필요)
+        const txRes = await fetch('/api/transactions/list')
         const txJson = await txRes.json()
         if (txJson.success && txJson.transactions.length > 0) {
           setTransactions(txJson.transactions.map((tx: any) => ({
@@ -120,8 +138,8 @@ const Dashboard = () => {
           })))
         }
 
-        // 계좌 잔액 합계 로드 (API Route)
-        const wRes = await fetch(`/api/wealth?familyId=${familyId}&userId=${currentUserId}`)
+        // 3. 계좌 잔액 합계 로드 (세션 인증)
+        const wRes = await fetch('/api/wealth')
         const wJson = await wRes.json()
         if (wJson.success) {
           setWealthData({
@@ -155,7 +173,7 @@ const Dashboard = () => {
       }
     }
     loadData()
-  }, [currentUserId, familyId])
+  }, [])
 
 
   // 이번 달 총 지출액 계산 (DB 데이터 기반)
@@ -671,7 +689,9 @@ const Dashboard = () => {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-4xl font-bold text-white mb-2">패밀리 오피스</h1>
-            <p className="text-zinc-400">자산 관리 및 투자 포트폴리오</p>
+            <p className="text-zinc-400">
+              {userName ? `${userName}님의 자산 관리` : '자산 관리 및 투자 포트폴리오'}
+            </p>
           </div>
         <div className="flex items-center gap-2 md:gap-4">
           <button
@@ -687,6 +707,16 @@ const Dashboard = () => {
           >
             {showPrivateData ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
             <span className="hidden sm:inline">개인 정보</span>
+          </button>
+          <button
+            onClick={async () => {
+              await fetch('/api/auth/logout', { method: 'POST' })
+              window.location.href = '/login'
+            }}
+            className="flex items-center gap-2 px-3 py-2 md:px-4 bg-zinc-900 rounded-lg border border-zinc-800 text-xs md:text-sm font-medium text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-colors"
+          >
+            <Settings className="w-4 h-4" />
+            <span className="hidden sm:inline">로그아웃</span>
           </button>
         </div>
         </div>
@@ -984,7 +1014,7 @@ const Dashboard = () => {
           familyId={familyId}
           onSuccess={async () => {
             try {
-              const res = await fetch(`/api/transactions/list?userId=${currentUserId}&familyId=${familyId}`)
+              const res = await fetch('/api/transactions/list')
               const data = await res.json()
               if (data.success && data.transactions.length > 0) {
                 setTransactions(data.transactions.map((tx: any) => ({

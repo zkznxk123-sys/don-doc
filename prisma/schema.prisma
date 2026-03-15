@@ -30,11 +30,24 @@ enum AccountType {
 }
 
 model FamilyGroup {
-  id        String    @id @default(cuid())
-  name      String    // 예: "우리집 패밀리오피스"
+  id        String        @id @default(cuid())
+  name      String        // 예: "우리집 패밀리오피스"
   users     User[]
   accounts  Account[]
-  createdAt DateTime  @default(now())
+  invites   FamilyInvite[]
+  createdAt DateTime      @default(now())
+}
+
+model FamilyInvite {
+  id        String      @id @default(cuid())
+  code      String      @unique // 8자리 초대 코드 (XXXX-XXXX)
+  familyId  String
+  family    FamilyGroup @relation(fields: [familyId], references: [id])
+  createdBy String      // CFO userId
+  usedBy    String?     // 사용한 유저 email
+  usedAt    DateTime?
+  expiresAt DateTime    // 만료 시각
+  createdAt DateTime    @default(now())
 }
 
 model User {

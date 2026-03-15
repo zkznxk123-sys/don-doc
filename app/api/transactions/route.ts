@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getAuthUser } from '@/lib/auth'
 
 export async function POST(req: NextRequest) {
   try {
+    const authUser = await getAuthUser()
     const body = await req.json()
-    const { amount, date, category, description, visibility, userId, accountId } = body
+    const { amount, date, category, description, visibility, accountId } = body
+    const userId = authUser?.id || body.userId
 
     if (!amount || !category || !userId) {
       return NextResponse.json(
