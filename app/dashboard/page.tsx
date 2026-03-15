@@ -6,7 +6,7 @@ import { formatCurrency, formatLargeNumber, cn } from '@/lib/utils'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell, Legend, BarChart, Bar, XAxis as BarXAxis, YAxis as BarYAxis } from 'recharts'
 import { SwipeableRow } from '@/components/ui/swipeable-row'
 import { MobileDrawer, QuickAction } from '@/components/ui/mobile-drawer'
-import { getFamilyTransactions, type MaskedTransaction } from '@/lib/actions/finance'
+import { getFamilyTransactions, type MaskedTransaction } from '@/lib/actions/transaction'
 
 interface Transaction {
   id: string
