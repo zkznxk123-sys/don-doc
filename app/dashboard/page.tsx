@@ -6,8 +6,9 @@ import { formatCurrency, formatLargeNumber, cn } from '@/lib/utils'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell, Legend, BarChart, Bar, XAxis as BarXAxis, YAxis as BarYAxis } from 'recharts'
 import { SwipeableRow } from '@/components/ui/swipeable-row'
 import { MobileDrawer, QuickAction } from '@/components/ui/mobile-drawer'
-import { getFamilyTransactions, getFamilyWealth, type MaskedTransaction, type FamilyWealth, type AccountSummary } from '@/lib/actions/transaction'
+import { getFamilyTransactions, getFamilyWealth, addTransaction, type MaskedTransaction, type FamilyWealth, type AccountSummary } from '@/lib/actions/transaction'
 import { motion, AnimatePresence } from 'framer-motion'
+import { TransactionDrawer, type TransactionFormData } from '@/components/ui/transaction-drawer'
 
 interface Transaction {
   id: string
@@ -80,6 +81,7 @@ const Dashboard = () => {
   const [showPrivateData, setShowPrivateData] = useState(false)
   const [viewMode, setViewMode] = useState<'CFO' | 'MEMBER'>('CFO')
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false)
+  const [isTransactionDrawerOpen, setIsTransactionDrawerOpen] = useState(false)
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS)
   const [isLoading, setIsLoading] = useState(true)
@@ -599,17 +601,18 @@ const Dashboard = () => {
           </div>
         <div className="flex items-center gap-2 md:gap-4">
           <button
+            onClick={() => setIsTransactionDrawerOpen(true)}
+            className="flex items-center gap-2 px-3 py-2 md:px-4 bg-white text-black rounded-lg text-xs md:text-sm font-semibold hover:bg-zinc-200 transition-colors active:scale-[0.97]"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">거래 추가</span>
+          </button>
+          <button
             onClick={() => setShowPrivateData(!showPrivateData)}
             className="flex items-center gap-2 px-3 py-2 md:px-4 bg-zinc-900 rounded-lg border border-zinc-800 text-xs md:text-sm font-medium hover:bg-zinc-800 transition-colors"
           >
             {showPrivateData ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
             <span className="hidden sm:inline">개인 정보</span>
-          </button>
-          <button
-            onClick={() => setIsMobileDrawerOpen(true)}
-            className="md:hidden p-2 bg-zinc-900 rounded-lg border border-zinc-800 hover:bg-zinc-800 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
           </button>
         </div>
         </div>
@@ -859,6 +862,36 @@ const Dashboard = () => {
             </div>
           )}
         </MobileDrawer>
+
+        {/* 거래 추가 드로어 */}
+        <TransactionDrawer
+          isOpen={isTransactionDrawerOpen}
+          onClose={() => setIsTransactionDrawerOpen(false)}
+          onSubmit={async (data: TransactionFormData) => {
+            // 첫 번째 공동 계좌를 기본 계좌로 사용
+            const accountId = assets.length > 0 ? assets[0].id : ''
+            await addTransaction({
+              ...data,
+              userId: currentUserId,
+              accountId,
+            })
+            // 거래 목록 새로고침
+            const txData = await getFamilyTransactions(currentUserId, familyId)
+            if (txData.length > 0) {
+              setTransactions(txData.map(tx => ({
+                id: tx.id,
+                amount: tx.amount,
+                description: tx.description,
+                category: tx.category,
+                date: tx.date.toISOString().split('T')[0],
+                visibility: tx.visibility,
+                userId: tx.userId,
+                userName: tx.userName,
+                isMasked: tx.isMasked,
+              })))
+            }
+          }}
+        />
       </div>
     </div>
   )

@@ -106,3 +106,29 @@ export async function getFamilyTransactions(
     }
   })
 }
+
+/**
+ * 새 거래를 추가하는 Server Action
+ */
+export async function addTransaction(input: {
+  amount: number
+  date: string
+  category: string
+  description: string
+  visibility: 'SHARED' | 'PRIVATE'
+  userId: string
+  accountId: string
+}) {
+  const transaction = await prisma.transaction.create({
+    data: {
+      amount: input.amount,
+      date: new Date(input.date),
+      category: input.category,
+      description: input.description,
+      visibility: input.visibility,
+      userId: input.userId,
+      accountId: input.accountId,
+    },
+  })
+  return transaction
+}
