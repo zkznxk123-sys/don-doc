@@ -1,12 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, Eye, EyeOff, Wallet, PieChart, ArrowUpRight, ArrowDownRight, AreaChartIcon, CreditCard, TrendingDown as BurnRateIcon, DollarSign, Calculator, Plus, Filter, Settings } from 'lucide-react'
+import { TrendingUp, TrendingDown, Eye, EyeOff, Wallet, PieChart, ArrowUpRight, ArrowDownRight, AreaChartIcon, CreditCard, TrendingDown as BurnRateIcon, DollarSign, Calculator, Plus, Filter, Settings, User, Users } from 'lucide-react'
 import { formatCurrency, formatLargeNumber, cn } from '@/lib/utils'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell, Legend, BarChart, Bar, XAxis as BarXAxis, YAxis as BarYAxis } from 'recharts'
 import { SwipeableRow } from '@/components/ui/swipeable-row'
 import { MobileDrawer, QuickAction } from '@/components/ui/mobile-drawer'
 import { getFamilyTransactions, getFamilyWealth, type MaskedTransaction, type FamilyWealth, type AccountSummary } from '@/lib/actions/transaction'
+import { motion, AnimatePresence } from 'framer-motion'
 
 interface Transaction {
   id: string
@@ -598,12 +599,6 @@ const Dashboard = () => {
           </div>
         <div className="flex items-center gap-2 md:gap-4">
           <button
-            onClick={() => setViewMode(viewMode === 'CFO' ? 'MEMBER' : 'CFO')}
-            className="px-3 py-2 md:px-4 bg-zinc-900 rounded-lg border border-zinc-800 text-xs md:text-sm font-medium hover:bg-zinc-800 transition-colors"
-          >
-            {viewMode === 'CFO' ? '관리자 모드' : '구성원 모드'}
-          </button>
-          <button
             onClick={() => setShowPrivateData(!showPrivateData)}
             className="flex items-center gap-2 px-3 py-2 md:px-4 bg-zinc-900 rounded-lg border border-zinc-800 text-xs md:text-sm font-medium hover:bg-zinc-800 transition-colors"
           >
@@ -619,64 +614,156 @@ const Dashboard = () => {
         </div>
         </div>
 
-        {/* 요약 카드: 총 자산 + 이번 달 지출 */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
-          <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
-            <div className="flex items-center gap-2 mb-2">
-              <Wallet className="w-4 h-4 text-emerald-500" />
-              <h3 className="text-zinc-400 text-xs font-medium">총 자산</h3>
-            </div>
-            <div className="text-xl md:text-2xl font-bold text-white">
-              {isLoading ? '...' : formatCurrency(wealthData.totalAssets)}
-            </div>
-          </div>
-          <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
-            <div className="flex items-center gap-2 mb-2">
-              <CreditCard className="w-4 h-4 text-red-400" />
-              <h3 className="text-zinc-400 text-xs font-medium">이번 달 지출</h3>
-            </div>
-            <div className="text-xl md:text-2xl font-bold text-red-400">
-              {isLoading ? '...' : formatCurrency(monthlyExpenses)}
-            </div>
-            <div className="text-xs text-zinc-500 mt-1">{transactionCount}건의 지출</div>
-          </div>
-          <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
-            <div className="flex items-center gap-2 mb-2">
-              <DollarSign className="w-4 h-4 text-green-400" />
-              <h3 className="text-zinc-400 text-xs font-medium">이번 달 수입</h3>
-            </div>
-            <div className="text-xl md:text-2xl font-bold text-green-500">
-              {isLoading ? '...' : formatCurrency(monthlyIncome)}
-            </div>
-          </div>
-          <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
-            <div className="flex items-center gap-2 mb-2">
-              <Calculator className="w-4 h-4 text-blue-400" />
-              <h3 className="text-zinc-400 text-xs font-medium">개인 자산</h3>
-            </div>
-            <div className="text-xl md:text-2xl font-bold text-blue-400">
-              {isLoading ? '...' : formatCurrency(wealthData.personalBudget)}
-            </div>
-          </div>
+        {/* 모드 전환 탭 */}
+        <div className="flex items-center bg-zinc-900 rounded-xl border border-zinc-800 p-1 mb-6 max-w-xs">
+          <button
+            onClick={() => setViewMode('MEMBER')}
+            className={cn(
+              "relative flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors z-10",
+              viewMode === 'MEMBER' ? "text-white" : "text-zinc-500 hover:text-zinc-300"
+            )}
+          >
+            <User className="w-4 h-4" />
+            개인 뷰
+            {viewMode === 'MEMBER' && (
+              <motion.div
+                layoutId="activeTab"
+                className="absolute inset-0 bg-zinc-800 rounded-lg -z-10"
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              />
+            )}
+          </button>
+          <button
+            onClick={() => setViewMode('CFO')}
+            className={cn(
+              "relative flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors z-10",
+              viewMode === 'CFO' ? "text-white" : "text-zinc-500 hover:text-zinc-300"
+            )}
+          >
+            <Users className="w-4 h-4" />
+            패밀리 뷰
+            {viewMode === 'CFO' && (
+              <motion.div
+                layoutId="activeTab"
+                className="absolute inset-0 bg-zinc-800 rounded-lg -z-10"
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              />
+            )}
+          </button>
         </div>
 
-        <NetWorthChart />
+        {/* 뷰 모드별 콘텐츠 */}
+        <AnimatePresence mode="wait">
+          {viewMode === 'MEMBER' ? (
+            <motion.div
+              key="member"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.25 }}
+            >
+              {/* 개인 뷰 요약 카드 */}
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-6">
+                <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Wallet className="w-4 h-4 text-blue-400" />
+                    <h3 className="text-zinc-400 text-xs font-medium">내 자산</h3>
+                  </div>
+                  <div className="text-xl md:text-2xl font-bold text-white">
+                    {isLoading ? '...' : formatCurrency(wealthData.personalBudget)}
+                  </div>
+                </div>
+                <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CreditCard className="w-4 h-4 text-red-400" />
+                    <h3 className="text-zinc-400 text-xs font-medium">내 지출</h3>
+                  </div>
+                  <div className="text-xl md:text-2xl font-bold text-red-400">
+                    {isLoading ? '...' : formatCurrency(
+                      transactions.filter(tx => tx.userId === currentUserId && tx.amount < 0)
+                        .reduce((s, tx) => s + Math.abs(tx.amount), 0)
+                    )}
+                  </div>
+                </div>
+                <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800 col-span-2 md:col-span-1">
+                  <div className="flex items-center gap-2 mb-2">
+                    <DollarSign className="w-4 h-4 text-green-400" />
+                    <h3 className="text-zinc-400 text-xs font-medium">내 수입</h3>
+                  </div>
+                  <div className="text-xl md:text-2xl font-bold text-green-500">
+                    {isLoading ? '...' : formatCurrency(
+                      transactions.filter(tx => tx.userId === currentUserId && tx.amount > 0)
+                        .reduce((s, tx) => s + tx.amount, 0)
+                    )}
+                  </div>
+                </div>
+              </div>
 
-        {viewMode === 'CFO' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-            <div className="lg:col-span-2">
-              <ExpenseCategoriesChart />
-            </div>
-            <CFOStatsWidget />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
-            <div className="lg:col-span-2">
               <PersonalExpenseChart />
-            </div>
-            <PersonalBudgetWidget />
-          </div>
-        )}
+              <div className="mt-6">
+                <PersonalBudgetWidget />
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="cfo"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.25 }}
+            >
+              {/* 패밀리 뷰 요약 카드 */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+                <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Wallet className="w-4 h-4 text-emerald-500" />
+                    <h3 className="text-zinc-400 text-xs font-medium">총 자산</h3>
+                  </div>
+                  <div className="text-xl md:text-2xl font-bold text-white">
+                    {isLoading ? '...' : formatCurrency(wealthData.totalAssets)}
+                  </div>
+                </div>
+                <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
+                  <div className="flex items-center gap-2 mb-2">
+                    <CreditCard className="w-4 h-4 text-red-400" />
+                    <h3 className="text-zinc-400 text-xs font-medium">이번 달 지출</h3>
+                  </div>
+                  <div className="text-xl md:text-2xl font-bold text-red-400">
+                    {isLoading ? '...' : formatCurrency(monthlyExpenses)}
+                  </div>
+                  <div className="text-xs text-zinc-500 mt-1">{transactionCount}건</div>
+                </div>
+                <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
+                  <div className="flex items-center gap-2 mb-2">
+                    <DollarSign className="w-4 h-4 text-green-400" />
+                    <h3 className="text-zinc-400 text-xs font-medium">이번 달 수입</h3>
+                  </div>
+                  <div className="text-xl md:text-2xl font-bold text-green-500">
+                    {isLoading ? '...' : formatCurrency(monthlyIncome)}
+                  </div>
+                </div>
+                <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calculator className="w-4 h-4 text-blue-400" />
+                    <h3 className="text-zinc-400 text-xs font-medium">개인 자산</h3>
+                  </div>
+                  <div className="text-xl md:text-2xl font-bold text-blue-400">
+                    {isLoading ? '...' : formatCurrency(wealthData.personalBudget)}
+                  </div>
+                </div>
+              </div>
+
+              <NetWorthChart />
+
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8 mt-6">
+                <div className="lg:col-span-2">
+                  <ExpenseCategoriesChart />
+                </div>
+                <CFOStatsWidget />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-8 mb-8">
           <div className="lg:col-span-2">
