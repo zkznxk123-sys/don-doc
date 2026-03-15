@@ -146,6 +146,17 @@ const Dashboard = () => {
   }, [currentUserId, familyId])
 
 
+  // 이번 달 총 지출액 계산 (DB 데이터 기반)
+  const monthlyExpenses = transactions
+    .filter(tx => tx.amount < 0)
+    .reduce((sum, tx) => sum + Math.abs(tx.amount), 0)
+
+  const monthlyIncome = transactions
+    .filter(tx => tx.amount > 0)
+    .reduce((sum, tx) => sum + tx.amount, 0)
+
+  const transactionCount = transactions.filter(tx => tx.amount < 0).length
+
   const netWorthHistory: NetWorthData[] = [
     { month: '1월', netWorth: 9800000000, assets: 12000000000, liabilities: 2200000000 },
     { month: '2월', netWorth: 10100000000, assets: 12200000000, liabilities: 2100000000 },
@@ -237,29 +248,51 @@ const Dashboard = () => {
     }
     
     const content = (
-      <div className="flex items-center justify-between py-3 border-b border-zinc-800 last:border-0 px-2">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+      <div className={cn(
+        "flex items-center justify-between py-3 border-b border-zinc-800 last:border-0 px-3 rounded-lg transition-colors",
+        transaction.isMasked
+          ? "bg-zinc-900/50 hover:bg-zinc-800/30"
+          : "hover:bg-zinc-800/20"
+      )}>
+        <div className="flex items-center gap-3 flex-1 min-w-0">
+          {/* 아이콘 */}
+          <div className={cn(
+            "w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0",
+            transaction.isMasked
+              ? "bg-zinc-800 border border-dashed border-zinc-600"
+              : transaction.amount > 0
+                ? "bg-green-900/40 border border-green-800"
+                : "bg-zinc-800 border border-zinc-700"
+          )}>
+            {transaction.isMasked ? (
+              <EyeOff className="w-4 h-4 text-zinc-500" />
+            ) : transaction.amount > 0 ? (
+              <ArrowUpRight className="w-4 h-4 text-green-400" />
+            ) : (
+              <ArrowDownRight className="w-4 h-4 text-red-400" />
+            )}
+          </div>
+          {/* 내용 */}
+          <div className="flex-1 min-w-0">
             <p className={cn(
               "text-sm font-medium truncate",
-              transaction.isMasked ? "text-zinc-500" : isOwnTransaction ? "text-white" : "text-zinc-200"
+              transaction.isMasked ? "text-zinc-500 italic" : "text-white"
             )}>
               {transaction.description}
             </p>
-            {transaction.isMasked && (
-              <EyeOff className="w-3 h-3 text-zinc-600 flex-shrink-0" />
-            )}
+            <p className={cn(
+              "text-xs truncate mt-0.5",
+              transaction.isMasked ? "text-zinc-600" : "text-zinc-400"
+            )}>
+              {transaction.isMasked ? '비공개' : transaction.userName} • {transaction.category} • {transaction.date}
+            </p>
           </div>
-          <p className={cn(
-            "text-xs truncate",
-            transaction.isMasked ? "text-zinc-600" : "text-zinc-400"
-          )}>
-            {transaction.isMasked ? '비공개' : transaction.userName} • {transaction.category} • {transaction.date}
-          </p>
         </div>
         <div className={cn(
-          "text-sm font-semibold ml-2 flex-shrink-0",
-          transaction.amount > 0 ? "text-green-500" : "text-red-500"
+          "text-sm font-semibold ml-3 flex-shrink-0 tabular-nums",
+          transaction.isMasked
+            ? "text-zinc-500"
+            : transaction.amount > 0 ? "text-green-500" : "text-red-400"
         )}>
           {transaction.amount > 0 ? '+' : ''}{formatCurrency(transaction.amount)}
         </div>
@@ -586,6 +619,47 @@ const Dashboard = () => {
         </div>
         </div>
 
+        {/* 요약 카드: 총 자산 + 이번 달 지출 */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+          <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
+            <div className="flex items-center gap-2 mb-2">
+              <Wallet className="w-4 h-4 text-emerald-500" />
+              <h3 className="text-zinc-400 text-xs font-medium">총 자산</h3>
+            </div>
+            <div className="text-xl md:text-2xl font-bold text-white">
+              {isLoading ? '...' : formatCurrency(wealthData.totalAssets)}
+            </div>
+          </div>
+          <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
+            <div className="flex items-center gap-2 mb-2">
+              <CreditCard className="w-4 h-4 text-red-400" />
+              <h3 className="text-zinc-400 text-xs font-medium">이번 달 지출</h3>
+            </div>
+            <div className="text-xl md:text-2xl font-bold text-red-400">
+              {isLoading ? '...' : formatCurrency(monthlyExpenses)}
+            </div>
+            <div className="text-xs text-zinc-500 mt-1">{transactionCount}건의 지출</div>
+          </div>
+          <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
+            <div className="flex items-center gap-2 mb-2">
+              <DollarSign className="w-4 h-4 text-green-400" />
+              <h3 className="text-zinc-400 text-xs font-medium">이번 달 수입</h3>
+            </div>
+            <div className="text-xl md:text-2xl font-bold text-green-500">
+              {isLoading ? '...' : formatCurrency(monthlyIncome)}
+            </div>
+          </div>
+          <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
+            <div className="flex items-center gap-2 mb-2">
+              <Calculator className="w-4 h-4 text-blue-400" />
+              <h3 className="text-zinc-400 text-xs font-medium">개인 자산</h3>
+            </div>
+            <div className="text-xl md:text-2xl font-bold text-blue-400">
+              {isLoading ? '...' : formatCurrency(wealthData.personalBudget)}
+            </div>
+          </div>
+        </div>
+
         <NetWorthChart />
 
         {viewMode === 'CFO' ? (
@@ -616,11 +690,20 @@ const Dashboard = () => {
                   선별적 투명성 적용
                 </div>
               </div>
-              <div className="space-y-0">
-                {transactions.slice(0, 8).map(transaction => (
-                  <TransactionRow key={transaction.id} transaction={transaction} />
-                ))}
-              </div>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <div className="text-zinc-500 text-sm">데이터를 불러오는 중...</div>
+                </div>
+              ) : (
+                <div className="space-y-1">
+                  {transactions
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .slice(0, 10)
+                    .map(transaction => (
+                      <TransactionRow key={transaction.id} transaction={transaction} />
+                    ))}
+                </div>
+              )}
             </div>
           </div>
 
