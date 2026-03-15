@@ -233,21 +233,29 @@ export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, on
             <div>
               <Label className="mb-2.5 block">카테고리</Label>
               <div className="grid grid-cols-3 gap-2">
-                {CATEGORIES.map((cat) => (
-                  <button
-                    key={cat.value}
-                    onClick={() => setCategory(cat.value)}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all border",
-                      category === cat.value
-                        ? "bg-white/5 border-zinc-600 text-white"
-                        : "bg-zinc-800/40 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300"
-                    )}
-                  >
-                    <span className="text-base">{cat.emoji}</span>
-                    {cat.value}
-                  </button>
-                ))}
+                {CATEGORIES.map((cat) => {
+                  const isSelected = category === cat.value
+                  return (
+                    <button
+                      key={cat.value}
+                      onClick={() => setCategory(cat.value)}
+                      className={cn(
+                        "relative flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all border",
+                        isSelected
+                          ? "bg-white text-black border-white shadow-[0_0_12px_rgba(255,255,255,0.1)]"
+                          : "bg-zinc-800/40 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300"
+                      )}
+                    >
+                      <span className="text-base">{cat.emoji}</span>
+                      {cat.value}
+                      {isSelected && (
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow">
+                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5.5L4 7.5L8 3" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </span>
+                      )}
+                    </button>
+                  )
+                })}
               </div>
             </div>
 

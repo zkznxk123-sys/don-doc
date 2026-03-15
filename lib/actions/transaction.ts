@@ -1,6 +1,28 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
+import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
+
+// ━━ Zod 스키마: 거래 입력 유효성 검사 ━━
+const CreateTransactionSchema = z.object({
+  amount: z
+    .number({ required_error: '금액을 입력해주세요.' })
+    .refine(v => v !== 0, { message: '금액은 0이 될 수 없습니다.' }),
+  date: z
+    .string({ required_error: '날짜를 입력해주세요.' })
+    .regex(/^\d{4}-\d{2}-\d{2}$/, '날짜 형식이 올바르지 않습니다. (YYYY-MM-DD)'),
+  category: z
+    .string({ required_error: '카테고리를 선택해주세요.' })
+    .min(1, '카테고리를 선택해주세요.'),
+  description: z.string().optional().default(''),
+  visibility: z.enum(['SHARED', 'PRIVATE'], {
+    required_error: '공개 범위를 선택해주세요.',
+  }),
+  accountId: z.string().optional(),
+})
+
+export type CreateTransactionInput = z.infer<typeof CreateTransactionSchema>
 
 export interface AccountSummary {
   id: string
@@ -108,7 +130,7 @@ export async function getFamilyTransactions(
 }
 
 /**
- * 새 거래를 추가하는 Server Action
+ * 새 거래를 추가하는 Server Action (레거시 — createTransaction 사용 권장)
  */
 export async function addTransaction(input: {
   amount: number
@@ -153,5 +175,71 @@ export async function addTransaction(input: {
   } catch (e) {
     console.error('[addTransaction] ERROR:', e)
     return { success: false, error: String(e) }
+  }
+}
+
+/**
+ * 새 지출/수입을 저장하는 Server Action (Zod 유효성 검사 포함)
+ *
+ * - Zod 스키마로 입력값 검증
+ * - userId로부터 familyId를 자동 조회
+ * - accountId 미지정 시 가족 내 공동 계좌 자동 할당
+ * - 저장 후 revalidatePath('/dashboard') 호출
+ */
+export async function createTransaction(
+  userId: string,
+  rawInput: CreateTransactionInput
+): Promise<{ success: boolean; id?: string; error?: string }> {
+  // 1. Zod 유효성 검사
+  const parsed = CreateTransactionSchema.safeParse(rawInput)
+  if (!parsed.success) {
+    const firstError = parsed.error.errors[0]
+    return { success: false, error: firstError?.message || '입력값이 올바르지 않습니다.' }
+  }
+  const input = parsed.data
+
+  try {
+    // 2. userId → familyId 자동 조회
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { familyId: true },
+    })
+    if (!user) {
+      return { success: false, error: '사용자를 찾을 수 없습니다.' }
+    }
+
+    // 3. accountId 자동 할당 (미지정 시)
+    let accountId = input.accountId
+    if (!accountId) {
+      const account = await prisma.account.findFirst({
+        where: { familyId: user.familyId },
+        orderBy: { isShared: 'desc' },
+      })
+      if (!account) {
+        return { success: false, error: '사용 가능한 계좌가 없습니다.' }
+      }
+      accountId = account.id
+    }
+
+    // 4. DB 저장
+    const transaction = await prisma.transaction.create({
+      data: {
+        amount: input.amount,
+        date: new Date(input.date),
+        category: input.category,
+        description: input.description || input.category,
+        visibility: input.visibility,
+        userId,
+        accountId,
+      },
+    })
+
+    // 5. 대시보드 캐시 무효화
+    revalidatePath('/dashboard')
+
+    return { success: true, id: transaction.id }
+  } catch (e) {
+    console.error('[createTransaction] ERROR:', e)
+    return { success: false, error: '거래 저장 중 오류가 발생했습니다.' }
   }
 }
