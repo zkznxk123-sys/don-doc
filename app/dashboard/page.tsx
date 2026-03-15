@@ -981,6 +981,7 @@ const Dashboard = () => {
           isOpen={isTransactionDrawerOpen}
           onClose={() => setIsTransactionDrawerOpen(false)}
           currentUserId={currentUserId}
+          familyId={familyId}
           onSuccess={async () => {
             try {
               const res = await fetch(`/api/transactions/list?userId=${currentUserId}&familyId=${familyId}`)
