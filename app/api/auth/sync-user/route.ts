@@ -7,7 +7,7 @@ import { prisma } from '@/lib/prisma'
  * Supabase auth.user → Prisma User 동기화
  * 로그인/회원가입 직후 클라이언트에서 호출
  */
-export async function POST() {
+export async function POST(req: Request) {
   try {
     const cookieStore = cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
@@ -20,68 +20,97 @@ export async function POST() {
       )
     }
 
+    // body에서 초대 코드 읽기 (선택)
+    let inviteCode: string | undefined
+    try {
+      const body = await req.json()
+      inviteCode = body?.inviteCode
+    } catch {
+      // body 없는 경우 무시
+    }
+
     // 이미 Prisma User가 있는지 확인
-    let prismaUser = await prisma.user.findFirst({
+    const existingUser = await prisma.user.findFirst({
       where: { email: authUser.email! },
       include: { family: true },
     })
 
-    if (prismaUser) {
+    if (existingUser) {
       return NextResponse.json({
         success: true,
         user: {
-          id: prismaUser.id,
-          email: prismaUser.email,
-          name: prismaUser.name,
-          role: prismaUser.role,
-          familyId: prismaUser.familyId,
-          familyName: prismaUser.family.name,
+          id: existingUser.id,
+          email: existingUser.email,
+          name: existingUser.name,
+          role: existingUser.role,
+          familyId: existingUser.familyId,
+          familyName: existingUser.family?.name ?? null,
         },
       })
     }
 
-    // 신규 사용자: 새 가족 그룹 생성 + User 생성 (CFO 역할)
+    // 신규 사용자
     const displayName = authUser.user_metadata?.name
       || authUser.email?.split('@')[0]
       || '사용자'
 
-    const family = await prisma.familyGroup.create({
-      data: {
-        name: `${displayName}의 패밀리오피스`,
-      },
-    })
+    // 초대 코드가 있으면 해당 가족에 MEMBER로 합류
+    if (inviteCode) {
+      const invite = await prisma.familyInvite.findUnique({
+        where: { code: inviteCode.toUpperCase().trim() },
+        include: { family: true },
+      })
 
-    // 기본 공동 계좌 자동 생성
-    await prisma.account.create({
-      data: {
-        name: '공동 통장',
-        type: 'CASH',
-        balance: 0,
-        isShared: true,
-        familyId: family.id,
-      },
-    })
+      if (invite && invite.expiresAt > new Date() && !invite.usedBy) {
+        const joinedUser = await prisma.user.create({
+          data: {
+            email: authUser.email!,
+            name: displayName,
+            role: 'MEMBER',
+            familyId: invite.familyId,
+          },
+        })
 
-    prismaUser = await prisma.user.create({
+        // 초대 코드 사용 처리
+        await prisma.familyInvite.update({
+          where: { id: invite.id },
+          data: { usedBy: authUser.email, usedAt: new Date() },
+        })
+
+        return NextResponse.json({
+          success: true,
+          isNewUser: true,
+          joinedFamily: true,
+          user: {
+            id: joinedUser.id,
+            email: joinedUser.email,
+            name: joinedUser.name,
+            role: joinedUser.role,
+            familyId: joinedUser.familyId,
+            familyName: invite.family.name,
+          },
+        })
+      }
+    }
+
+    // 초대 코드 없거나 유효하지 않은 경우: familyId 없이 유저만 생성 → /onboarding에서 선택
+    const newUser = await prisma.user.create({
       data: {
         email: authUser.email!,
         name: displayName,
-        role: 'CFO',
-        familyId: family.id,
       },
-      include: { family: true },
     })
 
     return NextResponse.json({
       success: true,
       isNewUser: true,
       user: {
-        id: prismaUser.id,
-        email: prismaUser.email,
-        name: prismaUser.name,
-        role: prismaUser.role,
-        familyId: prismaUser.familyId,
-        familyName: prismaUser.family.name,
+        id: newUser.id,
+        email: newUser.email,
+        name: newUser.name,
+        role: newUser.role,
+        familyId: null,
+        familyName: null,
       },
     })
   } catch (e) {

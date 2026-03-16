@@ -5,8 +5,7 @@ import { getAuthUser } from '@/lib/auth'
 function generateCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   let code = ''
-  for (let i = 0; i < 8; i++) {
-    if (i === 4) code += '-'
+  for (let i = 0; i < 6; i++) {
     code += chars[Math.floor(Math.random() * chars.length)]
   }
   return code
@@ -25,7 +24,7 @@ export async function POST() {
       )
     }
 
-    if (user.role !== 'CFO') {
+    if (user.role !== 'CFO' || !user.familyId) {
       return NextResponse.json(
         { success: false, error: 'CFO만 초대 코드를 생성할 수 있습니다.' },
         { status: 403 }
@@ -38,7 +37,7 @@ export async function POST() {
     const invite = await prisma.familyInvite.create({
       data: {
         code,
-        familyId: user.familyId,
+        familyId: user.familyId!,
         createdBy: user.id,
         expiresAt,
       },
@@ -70,6 +69,13 @@ export async function GET() {
       return NextResponse.json(
         { success: false, error: '인증이 필요합니다.' },
         { status: 401 }
+      )
+    }
+
+    if (!user.familyId) {
+      return NextResponse.json(
+        { success: false, error: '가족 그룹에 속해 있지 않습니다.' },
+        { status: 403 }
       )
     }
 

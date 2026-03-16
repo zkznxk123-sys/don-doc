@@ -29,18 +29,25 @@ enum AccountType {
   STO         // 토큰증권 (장기 확장성)
 }
 
+enum ShareLevel {
+  PUBLIC       // 내역까지 공개 — 가족 모두가 볼 수 있음
+  BALANCE_ONLY // 금액만 합산 — 이름/내역 숨김, 금액만 표시
+  PRIVATE      // 나만 보기 — 타인 리스트에서 완전 제외
+}
+
 model FamilyGroup {
   id        String        @id @default(cuid())
   name      String        // 예: "우리집 패밀리오피스"
   users     User[]
   accounts  Account[]
   invites   FamilyInvite[]
+  budgets   Budget[]
   createdAt DateTime      @default(now())
 }
 
 model FamilyInvite {
   id        String      @id @default(cuid())
-  code      String      @unique // 8자리 초대 코드 (XXXX-XXXX)
+  code      String      @unique // 6자리 초대 코드 (대문자+숫자)
   familyId  String
   family    FamilyGroup @relation(fields: [familyId], references: [id])
   createdBy String      // CFO userId
@@ -51,14 +58,15 @@ model FamilyInvite {
 }
 
 model User {
-  id            String      @id @default(cuid())
-  email         String      @unique
+  id            String       @id @default(cuid())
+  email         String       @unique
   name          String?
-  role          Role        @default(MEMBER)
-  familyId      String
-  family        FamilyGroup @relation(fields: [familyId], references: [id])
+  role          Role         @default(MEMBER)
+  familyId      String?
+  family        FamilyGroup? @relation(fields: [familyId], references: [id])
   transactions  Transaction[]
   accounts      Account[]
+  budgets       Budget[]
 }
 
 model Account {
@@ -66,7 +74,8 @@ model Account {
   name          String      // 예: "생활비 통장", "개인 비상금"
   type          AccountType @default(CASH)
   balance       Float       @default(0)
-  isShared      Boolean     @default(true) // 공동 자산 여부
+  isShared      Boolean     @default(true) // 공동 자산 여부 (shareLevel에서 파생)
+  shareLevel    ShareLevel  @default(PUBLIC) // 공유 수준
   familyId      String
   family        FamilyGroup @relation(fields: [familyId], references: [id])
   userId        String?     // 개인 계좌일 경우 소유자
@@ -85,4 +94,16 @@ model Transaction {
   user        User       @relation(fields: [userId], references: [id])
   accountId   String
   account     Account    @relation(fields: [accountId], references: [id])
+}
+
+model Budget {
+  id        String      @id @default(cuid())
+  amount    Float
+  month     String      // "YYYY-MM"
+  familyId  String
+  family    FamilyGroup @relation(fields: [familyId], references: [id])
+  userId    String?     // null = 가족 전체 예산, non-null = 특정 멤버 예산
+  user      User?       @relation(fields: [userId], references: [id])
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 }

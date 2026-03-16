@@ -11,7 +11,13 @@ export async function GET(request: NextRequest) {
   if (code) {
     const cookieStore = cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
-    await supabase.auth.exchangeCodeForSession(code)
+    const { data } = await supabase.auth.exchangeCodeForSession(code)
+
+    // 비밀번호 재설정(recovery) 플로우 감지 → 새 비밀번호 입력 페이지로
+    const type = requestUrl.searchParams.get('type')
+    if (type === 'recovery') {
+      return NextResponse.redirect(new URL('/update-password', request.url))
+    }
   }
 
   return NextResponse.redirect(new URL(redirectTo, request.url))

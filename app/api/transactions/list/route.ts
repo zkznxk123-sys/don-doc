@@ -20,24 +20,42 @@ export async function GET(req: NextRequest) {
       where: {
         user: { familyId },
       },
-      include: { user: { select: { name: true } } },
+      include: {
+        user: { select: { name: true } },
+        account: { select: { shareLevel: true } },
+      },
       orderBy: { date: 'desc' },
     })
 
-    const masked = transactions.map((tx) => {
-      const shouldMask = tx.visibility === 'PRIVATE' && tx.userId !== userId
-      return {
+    const masked = []
+    for (const tx of transactions) {
+      const isOwner = tx.userId === userId
+      const shareLevel = tx.account.shareLevel
+
+      // PRIVATE 계좌 → 타인에게 완전 제외
+      if (!isOwner && shareLevel === 'PRIVATE') continue
+
+      const shouldMask =
+        !isOwner &&
+        (shareLevel === 'BALANCE_ONLY' || tx.visibility === 'PRIVATE')
+
+      masked.push({
         id: tx.id,
         amount: tx.amount,
         date: tx.date.toISOString(),
-        description: shouldMask ? '🔒 개인 지출' : tx.description,
+        description: shouldMask
+          ? shareLevel === 'BALANCE_ONLY'
+            ? '🔒 비공개 지출'
+            : '🔒 개인 지출'
+          : tx.description,
         category: shouldMask ? '개인' : tx.category,
         visibility: tx.visibility,
         userId: tx.userId,
+        accountId: tx.accountId,
         userName: shouldMask ? null : tx.user.name,
         isMasked: shouldMask,
-      }
-    })
+      })
+    }
 
     return NextResponse.json({ success: true, transactions: masked })
   } catch (e) {

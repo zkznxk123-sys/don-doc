@@ -88,11 +88,11 @@ export interface MaskedTransaction {
 /**
  * 가족 전체의 지출 내역을 가져오는 Server Action
  *
- * 핵심 로직:
- * 1. Transaction 테이블에서 같은 가족의 모든 거래를 조회
- * 2. 작성자 ID ≠ 현재 유저 && visibility === PRIVATE → description을 '🔒 개인 지출'로 치환
- * 3. 금액(amount)은 통계를 위해 항상 그대로 노출
- * 4. 최신순(date desc) 정렬
+ * 마스킹 규칙 (본인 거래는 항상 전체 공개):
+ * - account.shareLevel === PRIVATE  → 타인에게 완전 제외
+ * - account.shareLevel === BALANCE_ONLY → 금액만 공개, 내역/카테고리/이름 마스킹
+ * - account.shareLevel === PUBLIC + tx.visibility === PRIVATE → 금액만 공개, 내역 마스킹
+ * - 그 외 → 전체 공개
  */
 export async function getFamilyTransactions(
   currentUserId: string,
@@ -105,28 +105,166 @@ export async function getFamilyTransactions(
     },
     include: {
       user: { select: { name: true } },
+      account: { select: { shareLevel: true } },
     },
     orderBy: { date: 'desc' },
     take: limit,
   })
 
-  return transactions.map((tx) => {
-    const shouldMask =
-      tx.visibility === 'PRIVATE' && tx.userId !== currentUserId
+  const result: MaskedTransaction[] = []
 
-    return {
+  for (const tx of transactions) {
+    const isOwner = tx.userId === currentUserId
+    const shareLevel = tx.account.shareLevel
+
+    // PRIVATE 계좌 → 타인에게 완전 제외
+    if (!isOwner && shareLevel === 'PRIVATE') continue
+
+    const shouldMask =
+      !isOwner &&
+      (shareLevel === 'BALANCE_ONLY' || tx.visibility === 'PRIVATE')
+
+    result.push({
       id: tx.id,
-      amount: tx.amount,          // 금액은 항상 노출
+      amount: tx.amount,
       date: tx.date,
-      description: shouldMask ? '🔒 개인 지출' : tx.description,
+      description: shouldMask
+        ? shareLevel === 'BALANCE_ONLY'
+          ? '🔒 비공개 지출'
+          : '🔒 개인 지출'
+        : tx.description,
       category: shouldMask ? '개인' : tx.category,
       visibility: tx.visibility as 'SHARED' | 'PRIVATE',
       userId: tx.userId,
       accountId: tx.accountId,
       userName: shouldMask ? null : tx.user.name,
       isMasked: shouldMask,
+    })
+  }
+
+  return result
+}
+
+/**
+ * 권한 체크 헬퍼
+ * - 본인 거래: 항상 허용
+ * - CFO: 공용(isShared) 계좌의 거래만 허용
+ */
+function canManageTransaction(
+  userId: string,
+  userRole: 'CFO' | 'MEMBER',
+  txUserId: string,
+  accountIsShared: boolean
+): boolean {
+  if (txUserId === userId) return true
+  if (userRole === 'CFO' && accountIsShared) return true
+  return false
+}
+
+/**
+ * 거래를 수정하는 Server Action
+ * - 잔액 delta 반영: account.balance += (newAmount - oldAmount)
+ * - 계좌가 변경되면 구/신 계좌 모두 반영
+ */
+export async function updateTransaction(
+  userId: string,
+  userRole: 'CFO' | 'MEMBER',
+  transactionId: string,
+  input: {
+    amount: number
+    date: string
+    category: string
+    description: string
+    visibility: 'SHARED' | 'PRIVATE'
+    accountId: string
+  }
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const tx = await prisma.transaction.findUnique({
+      where: { id: transactionId },
+      include: { account: true },
+    })
+    if (!tx) return { success: false, error: '내역을 찾을 수 없습니다.' }
+
+    if (!canManageTransaction(userId, userRole, tx.userId, tx.account.isShared)) {
+      return { success: false, error: '수정 권한이 없습니다.' }
     }
-  })
+
+    const oldAmount = tx.amount
+    const newAmount = input.amount
+    const oldAccountId = tx.accountId
+    const newAccountId = input.accountId
+
+    // 잔액 반영
+    if (oldAccountId === newAccountId) {
+      await prisma.account.update({
+        where: { id: oldAccountId },
+        data: { balance: { increment: newAmount - oldAmount } },
+      })
+    } else {
+      await prisma.account.update({
+        where: { id: oldAccountId },
+        data: { balance: { decrement: oldAmount } },
+      })
+      await prisma.account.update({
+        where: { id: newAccountId },
+        data: { balance: { increment: newAmount } },
+      })
+    }
+
+    await prisma.transaction.update({
+      where: { id: transactionId },
+      data: {
+        amount: newAmount,
+        date: new Date(input.date),
+        category: input.category,
+        description: input.description || input.category,
+        visibility: input.visibility,
+        accountId: newAccountId,
+      },
+    })
+
+    revalidatePath('/dashboard')
+    return { success: true }
+  } catch (e) {
+    console.error('[updateTransaction] ERROR:', e)
+    return { success: false, error: '수정 중 오류가 발생했습니다.' }
+  }
+}
+
+/**
+ * 거래를 삭제하는 Server Action
+ * - 잔액 복원: account.balance -= amount (지출이면 +, 수입이면 -)
+ */
+export async function deleteTransaction(
+  userId: string,
+  userRole: 'CFO' | 'MEMBER',
+  transactionId: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const tx = await prisma.transaction.findUnique({
+      where: { id: transactionId },
+      include: { account: true },
+    })
+    if (!tx) return { success: false, error: '내역을 찾을 수 없습니다.' }
+
+    if (!canManageTransaction(userId, userRole, tx.userId, tx.account.isShared)) {
+      return { success: false, error: '삭제 권한이 없습니다.' }
+    }
+
+    await prisma.account.update({
+      where: { id: tx.accountId },
+      data: { balance: { decrement: tx.amount } },
+    })
+
+    await prisma.transaction.delete({ where: { id: transactionId } })
+
+    revalidatePath('/dashboard')
+    return { success: true }
+  } catch (e) {
+    console.error('[deleteTransaction] ERROR:', e)
+    return { success: false, error: '삭제 중 오류가 발생했습니다.' }
+  }
 }
 
 /**
@@ -152,7 +290,7 @@ export async function addTransaction(input: {
       if (!user) return { success: false, error: '사용자를 찾을 수 없습니다.' }
 
       const account = await prisma.account.findFirst({
-        where: { familyId: user.familyId },
+        where: { familyId: user.familyId ?? undefined },
         orderBy: { isShared: 'desc' },
       })
       if (!account) return { success: false, error: '계좌를 찾을 수 없습니다.' }
@@ -212,7 +350,7 @@ export async function createTransaction(
     let accountId = input.accountId
     if (!accountId) {
       const account = await prisma.account.findFirst({
-        where: { familyId: user.familyId },
+        where: { familyId: user.familyId ?? undefined },
         orderBy: { isShared: 'desc' },
       })
       if (!account) {

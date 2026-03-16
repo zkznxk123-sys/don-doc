@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Minus, Plus, Globe, Lock } from 'lucide-react'
+import { Minus, Plus, Globe, Lock, Trash2 } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle,
@@ -13,12 +13,26 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel,
 } from '@/components/ui/select'
 
+export interface EditTransactionData {
+  id: string
+  amount: number
+  date: string
+  category: string
+  description: string
+  visibility: 'SHARED' | 'PRIVATE'
+  userId: string
+  accountId: string
+  isMasked: boolean
+}
+
 interface TransactionDrawerProps {
   isOpen: boolean
   onClose: () => void
   currentUserId: string
+  userRole: 'CFO' | 'MEMBER'
   familyId: string
   onSuccess: () => void
+  editTransaction?: EditTransactionData | null
 }
 
 export interface TransactionFormData {
@@ -51,34 +65,24 @@ const CATEGORIES = [
   { value: '수입', emoji: '💰' },
 ]
 
-// 키워드 → 카테고리 자동 추천 매핑
 const KEYWORD_CATEGORY_MAP: Record<string, string> = {
-  // 식비
   '스타벅스': '식비', '카페': '식비', '커피': '식비', '맥도날드': '식비', '배달': '식비',
   '치킨': '식비', '피자': '식비', '편의점': '식비', '마트': '식비', '식당': '식비',
   '점심': '식비', '저녁': '식비', '아침': '식비', '반찬': '식비', '쿠팡이츠': '식비',
   '요기요': '식비', '배민': '식비', '버거킹': '식비', '서브웨이': '식비',
-  // 교통
   '택시': '교통', '버스': '교통', '지하철': '교통', '주유': '교통', '주차': '교통',
   '카카오택시': '교통', '톨비': '교통', 'KTX': '교통', '기차': '교통', '하이패스': '교통',
-  // 쇼핑
   '쿠팡': '쇼핑', '네이버': '쇼핑', '무신사': '쇼핑', '올리브영': '쇼핑', '다이소': '쇼핑',
   '백화점': '쇼핑', '아울렛': '쇼핑', '옷': '쇼핑', '신발': '쇼핑',
-  // 주거
   '관리비': '주거', '월세': '주거', '전기': '주거', '가스': '주거', '수도': '주거',
   '인터넷': '주거', '통신비': '주거',
-  // 교육
   '학원': '교육', '강의': '교육', '책': '교육', '수업': '교육', '등록금': '교육',
   '인강': '교육', '유데미': '교육',
-  // 건강
   '병원': '건강', '약국': '건강', '헬스': '건강', '필라테스': '건강', '치과': '건강',
   '안과': '건강', '한의원': '건강', '영양제': '건강',
-  // 여가
   '영화': '여가', '넷플릭스': '여가', '게임': '여가', '콘서트': '여가', '여행': '여가',
   '호텔': '여가', '항공': '여가', '유튜브': '여가', '스포티파이': '여가',
-  // 생활
   '세탁': '생활', '이사': '생활', '청소': '생활', '미용실': '생활', '헤어': '생활',
-  // 수입
   '급여': '수입', '월급': '수입', '보너스': '수입', '용돈': '수입', '이자': '수입',
   '배당': '수입', '환급': '수입',
 }
@@ -97,7 +101,21 @@ const QUICK_AMOUNTS = [
   { label: '+10만', value: 100000 },
 ]
 
-export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, onSuccess }: TransactionDrawerProps) {
+export function TransactionDrawer({
+  isOpen,
+  onClose,
+  currentUserId,
+  userRole,
+  familyId,
+  onSuccess,
+  editTransaction,
+}: TransactionDrawerProps) {
+  const isEditMode = !!editTransaction
+
+  // 권한: 본인 거래 OR CFO(마스킹 안 된 거래)
+  const canEdit = !editTransaction?.isMasked &&
+    (editTransaction?.userId === currentUserId || userRole === 'CFO')
+
   // Form state
   const [amount, setAmount] = useState('')
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
@@ -109,11 +127,12 @@ export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, on
 
   // UI state
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [error, setError] = useState('')
   const [accounts, setAccounts] = useState<AccountOption[]>([])
   const [autoSuggestedCategory, setAutoSuggestedCategory] = useState<string | null>(null)
 
-  // 메모 입력 시 카테고리 자동 추천
   const handleDescriptionChange = (text: string) => {
     setDescription(text)
     const suggested = suggestCategory(text)
@@ -128,7 +147,7 @@ export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, on
     }
   }
 
-  // Load accounts when drawer opens
+  // 계좌 로드 + 수정 모드 시 폼 초기화
   useEffect(() => {
     if (!isOpen) return
     async function loadAccounts() {
@@ -137,8 +156,18 @@ export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, on
         const json = await res.json()
         if (json.success) {
           setAccounts(json.accounts)
-          if (json.accounts.length > 0 && !accountId) {
-            setAccountId(json.accounts[0].id)
+          if (editTransaction) {
+            // 수정 모드: 기존 데이터로 폼 채우기
+            setAmount(String(Math.abs(editTransaction.amount)))
+            setIsExpense(editTransaction.amount < 0)
+            setDate(editTransaction.date)
+            setCategory(editTransaction.category)
+            setDescription(editTransaction.description)
+            setIsShared(editTransaction.visibility === 'SHARED')
+            setAccountId(editTransaction.accountId)
+          } else {
+            // 신규 모드: 첫 번째 계좌 기본 선택
+            if (json.accounts.length > 0) setAccountId(json.accounts[0].id)
           }
         }
       } catch {
@@ -146,7 +175,9 @@ export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, on
       }
     }
     loadAccounts()
-  }, [isOpen, familyId, currentUserId])
+    setShowDeleteConfirm(false)
+    setError('')
+  }, [isOpen, familyId, currentUserId, editTransaction])
 
   const resetForm = useCallback(() => {
     setAmount('')
@@ -158,6 +189,7 @@ export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, on
     setAccountId(accounts.length > 0 ? accounts[0].id : '')
     setError('')
     setAutoSuggestedCategory(null)
+    setShowDeleteConfirm(false)
   }, [accounts])
 
   const handleOpenChange = (open: boolean) => {
@@ -180,41 +212,82 @@ export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, on
     setError('')
     setIsSubmitting(true)
     try {
-      const numAmount = parseFloat(amount)
-      const res = await fetch('/api/transactions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          amount: isExpense ? -Math.abs(numAmount) : Math.abs(numAmount),
-          date,
-          category,
-          description: description || category,
-          visibility: isShared ? 'SHARED' : 'PRIVATE',
-          userId: currentUserId,
-          accountId,
-        }),
-      })
-      const result = await res.json()
-      if (!result.success) {
-        setError(result.error || '저장에 실패했습니다.')
-        return
+      const numAmount = isExpense ? -Math.abs(Number(amount)) : Math.abs(Number(amount))
+
+      if (isEditMode && editTransaction) {
+        // 수정 모드
+        const res = await fetch(`/api/transactions/${editTransaction.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: numAmount,
+            date,
+            category,
+            description: description || category,
+            visibility: isShared ? 'SHARED' : 'PRIVATE',
+            accountId,
+          }),
+        })
+        const result = await res.json()
+        if (!result.success) {
+          setError(result.error || '수정에 실패했습니다.')
+          return
+        }
+      } else {
+        // 신규 모드
+        const res = await fetch('/api/transactions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: numAmount,
+            date,
+            category,
+            description: description || category,
+            visibility: isShared ? 'SHARED' : 'PRIVATE',
+            userId: currentUserId,
+            accountId,
+          }),
+        })
+        const result = await res.json()
+        if (!result.success) {
+          setError(result.error || '저장에 실패했습니다.')
+          return
+        }
       }
+
       onSuccess()
       resetForm()
       onClose()
     } catch (e: any) {
-      console.error('거래 추가 실패:', e)
       setError(e?.message || String(e) || '알 수 없는 오류')
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  // Format display amount with commas as user types
-  const displayAmount = amount
-    ? Number(amount).toLocaleString('ko-KR')
-    : ''
+  const handleDelete = async () => {
+    if (!editTransaction) return
+    setIsDeleting(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/transactions/${editTransaction.id}`, { method: 'DELETE' })
+      const result = await res.json()
+      if (!result.success) {
+        setError(result.error || '삭제에 실패했습니다.')
+        setShowDeleteConfirm(false)
+        return
+      }
+      onSuccess()
+      resetForm()
+      onClose()
+    } catch (e: any) {
+      setError(e?.message || String(e) || '알 수 없는 오류')
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
+  const displayAmount = amount ? Number(amount).toLocaleString('ko-KR') : ''
   const selectedAccount = accounts.find(a => a.id === accountId)
 
   return (
@@ -223,13 +296,16 @@ export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, on
         <div className="overflow-y-auto px-6 pb-8">
           {/* Header */}
           <DrawerHeader className="px-0 pt-4 pb-2">
-            <DrawerTitle className="text-xl">새 거래</DrawerTitle>
-            <DrawerDescription>지출 또는 수입을 기록합니다</DrawerDescription>
+            <DrawerTitle className="text-xl">
+              {isEditMode ? '내역 수정' : '새 거래'}
+            </DrawerTitle>
+            <DrawerDescription>
+              {isEditMode ? '내역을 수정하거나 삭제합니다' : '지출 또는 수입을 기록합니다'}
+            </DrawerDescription>
           </DrawerHeader>
 
           {/* ━━ Amount Hero ━━ */}
           <div className="py-6">
-            {/* Expense / Income toggle pills */}
             <div className="flex items-center justify-center gap-2 mb-5">
               <button
                 onClick={() => setIsExpense(true)}
@@ -257,7 +333,6 @@ export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, on
               </button>
             </div>
 
-            {/* Big amount input — Maybe.finance style */}
             <div className="flex items-baseline justify-center gap-1">
               <span className={cn(
                 "text-3xl font-light",
@@ -276,8 +351,7 @@ export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, on
                 placeholder="0"
                 autoFocus
                 className={cn(
-                  "bg-transparent text-center font-bold placeholder-zinc-700 outline-none tabular-nums tracking-tight",
-                  amount ? "text-5xl" : "text-5xl",
+                  "bg-transparent text-center font-bold placeholder-zinc-700 outline-none tabular-nums tracking-tight text-5xl",
                   isExpense ? "text-white" : "text-emerald-400"
                 )}
                 style={{ width: `${Math.max(displayAmount.length, 1) * 1.8 + 1.5}rem` }}
@@ -289,7 +363,6 @@ export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, on
               </p>
             )}
 
-            {/* Quick amount buttons */}
             <div className="flex items-center justify-center gap-2 mt-4">
               {QUICK_AMOUNTS.map((q) => (
                 <button
@@ -313,7 +386,7 @@ export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, on
 
           {/* ━━ Form Fields ━━ */}
           <div className="space-y-4">
-            {/* Category — grid chips */}
+            {/* Category */}
             <div>
               <Label className="mb-2.5 block">카테고리</Label>
               <div className="grid grid-cols-3 gap-2">
@@ -343,7 +416,7 @@ export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, on
               </div>
             </div>
 
-            {/* Account selector */}
+            {/* Account */}
             <div>
               <Label className="mb-2.5 block">계좌</Label>
               <Select value={accountId} onValueChange={setAccountId}>
@@ -358,9 +431,7 @@ export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, on
                         <span className="flex items-center gap-2">
                           <span>{acc.isShared ? '👨‍👩‍👧' : '👤'}</span>
                           <span>{acc.name}</span>
-                          <span className="text-zinc-500 text-xs ml-1">
-                            {acc.typeLabel}
-                          </span>
+                          <span className="text-zinc-500 text-xs ml-1">{acc.typeLabel}</span>
                         </span>
                       </SelectItem>
                     ))}
@@ -385,7 +456,7 @@ export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, on
               />
             </div>
 
-            {/* Description — with auto category suggest */}
+            {/* Description */}
             <div>
               <Label className="mb-2.5 block">메모 <span className="text-zinc-600">(선택)</span></Label>
               <input
@@ -403,7 +474,7 @@ export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, on
               )}
             </div>
 
-            {/* ━━ Visibility Toggle — Core Widget ━━ */}
+            {/* Visibility Toggle */}
             <div className={cn(
               "flex items-center justify-between rounded-xl p-4 border transition-colors",
               isShared
@@ -426,13 +497,9 @@ export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, on
                   </p>
                 </div>
               </div>
-              <Switch
-                checked={isShared}
-                onCheckedChange={setIsShared}
-              />
+              <Switch checked={isShared} onCheckedChange={setIsShared} />
             </div>
 
-            {/* ━━ Privacy Notice ━━ */}
             {!isShared && (
               <div className="flex items-start gap-2.5 rounded-xl px-4 py-3 bg-amber-500/5 border border-amber-500/15">
                 <Lock className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
@@ -466,12 +533,54 @@ export function TransactionDrawer({ isOpen, onClose, currentUserId, familyId, on
               {isSubmitting ? (
                 <span className="flex items-center justify-center gap-2">
                   <span className="w-4 h-4 border-2 border-zinc-600 border-t-transparent rounded-full animate-spin" />
-                  저장 중...
+                  {isEditMode ? '수정 중...' : '저장 중...'}
                 </span>
               ) : (
-                `${isExpense ? '지출' : '수입'} 기록하기`
+                isEditMode ? '수정 완료' : `${isExpense ? '지출' : '수입'} 기록하기`
               )}
             </button>
+
+            {/* 삭제 버튼 — 수정 모드 + 권한 있을 때만 */}
+            {isEditMode && canEdit && (
+              <>
+                {showDeleteConfirm ? (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={handleDelete}
+                      disabled={isDeleting}
+                      className="flex-1 py-3.5 rounded-xl text-sm font-semibold bg-red-500 text-white hover:bg-red-600 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                    >
+                      {isDeleting ? (
+                        <>
+                          <span className="w-4 h-4 border-2 border-red-300 border-t-transparent rounded-full animate-spin" />
+                          삭제 중...
+                        </>
+                      ) : (
+                        <>
+                          <Trash2 className="w-4 h-4" />
+                          정말 삭제하기
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setShowDeleteConfirm(false)}
+                      className="flex-1 py-3.5 rounded-xl text-sm font-medium text-zinc-400 border border-zinc-800 hover:border-zinc-600 hover:text-zinc-200 transition-all"
+                    >
+                      취소
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowDeleteConfirm(true)}
+                    className="w-full py-3.5 rounded-xl text-sm font-medium text-red-400 border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 hover:border-red-500/40 transition-all flex items-center justify-center gap-2"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    삭제하기
+                  </button>
+                )}
+              </>
+            )}
+
             <DrawerClose asChild>
               <button className="w-full py-3 rounded-xl text-sm font-medium text-zinc-500 hover:text-zinc-300 transition-colors">
                 취소

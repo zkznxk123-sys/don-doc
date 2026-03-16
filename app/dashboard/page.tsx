@@ -1,15 +1,19 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, Eye, EyeOff, Wallet, PieChart, ArrowUpRight, ArrowDownRight, AreaChartIcon, CreditCard, TrendingDown as BurnRateIcon, DollarSign, Calculator, Plus, Filter, Settings, User, Users } from 'lucide-react'
+import { TrendingUp, TrendingDown, Eye, EyeOff, Wallet, PieChart, ArrowUpRight, ArrowDownRight, AreaChartIcon, CreditCard, TrendingDown as BurnRateIcon, DollarSign, Calculator, Filter, Plus, Settings, User, Users } from 'lucide-react'
+import { Header } from '@/components/layout/Header'
 import { formatCurrency, formatLargeNumber, cn } from '@/lib/utils'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell, Legend, BarChart, Bar, XAxis as BarXAxis, YAxis as BarYAxis } from 'recharts'
 import { SwipeableRow } from '@/components/ui/swipeable-row'
 import { MobileDrawer, QuickAction } from '@/components/ui/mobile-drawer'
 // server actions no longer used directly — using API routes instead
 import { motion, AnimatePresence } from 'framer-motion'
-import { TransactionDrawer, type TransactionFormData } from '@/components/ui/transaction-drawer'
+import { TransactionDrawer, type TransactionFormData, type EditTransactionData } from '@/components/ui/transaction-drawer'
 import { AssetDonutChart, type AssetTypeData } from '@/components/ui/asset-donut-chart'
+import { AccountDrawer, type AccountInitialData } from '@/components/ui/account-drawer'
+import { AssetList } from '@/components/ui/asset-list'
+import Link from 'next/link'
 
 interface Transaction {
   id: string
@@ -79,11 +83,12 @@ const MOCK_TRANSACTIONS: Transaction[] = [
 ]
 
 const Dashboard = () => {
-  const [showPrivateData, setShowPrivateData] = useState(false)
   const [viewMode, setViewMode] = useState<'CFO' | 'MEMBER'>('CFO')
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false)
   const [isTransactionDrawerOpen, setIsTransactionDrawerOpen] = useState(false)
-  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null)
+  const [isAccountDrawerOpen, setIsAccountDrawerOpen] = useState(false)
+  const [selectedAccount, setSelectedAccount] = useState<AccountInitialData | undefined>(undefined)
+  const [selectedTransaction, setSelectedTransaction] = useState<EditTransactionData | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS)
   const [isLoading, setIsLoading] = useState(true)
   const [wealthData, setWealthData] = useState<WealthData>({
@@ -95,12 +100,15 @@ const Dashboard = () => {
     monthlyChangePercent: 0,
   })
   const [assets, setAssets] = useState<Asset[]>([])
+  const [accountList, setAccountList] = useState<AccountInitialData[]>([])
   const [assetsByType, setAssetsByType] = useState<AssetTypeData[]>([])
   
   // 세션 기반 인증 — /api/auth/me에서 자동 조회
   const [currentUserId, setCurrentUserId] = useState('')
   const [familyId, setFamilyId] = useState('')
+  const [familyName, setFamilyName] = useState('')
   const [userName, setUserName] = useState('')
+  const [userRole, setUserRole] = useState<'CFO' | 'MEMBER'>('MEMBER')
 
   useEffect(() => {
     async function loadData() {
@@ -109,9 +117,16 @@ const Dashboard = () => {
         const meRes = await fetch('/api/auth/me')
         const meJson = await meRes.json()
         if (meJson.success && meJson.user) {
+          // familyId 없는 유저 → 온보딩으로 리다이렉트
+          if (!meJson.user.familyId) {
+            window.location.href = '/onboarding'
+            return
+          }
           setCurrentUserId(meJson.user.id)
           setFamilyId(meJson.user.familyId)
+          setFamilyName(meJson.user.familyName || '')
           setUserName(meJson.user.name || '')
+          setUserRole(meJson.user.role || 'MEMBER')
           if (meJson.user.role === 'MEMBER') {
             setViewMode('MEMBER')
           }
@@ -121,7 +136,16 @@ const Dashboard = () => {
           return
         }
 
-        // 2. 거래 내역 로드 (세션 인증 — 쿼리 파라미터 불필요)
+        // 2. 예산 로드 (내 예산 확인용)
+        const currentMonth = new Date().toISOString().slice(0, 7)
+        const budgetRes = await fetch(`/api/budget?month=${currentMonth}`)
+        const budgetJson = await budgetRes.json()
+        if (budgetJson.success) {
+          const myMember = budgetJson.members?.find((m: any) => m.id === meJson.user.id)
+          if (myMember?.budget) setMyBudgetDB(myMember.budget)
+        }
+
+        // 3. 거래 내역 로드 (세션 인증 — 쿼리 파라미터 불필요)
         const txRes = await fetch('/api/transactions/list')
         const txJson = await txRes.json()
         if (txJson.success && txJson.transactions.length > 0) {
@@ -160,6 +184,15 @@ const Dashboard = () => {
               change: 0,
               changePercent: 0,
             })))
+            setAccountList(wJson.accounts.map((acc: any) => ({
+              id: acc.id,
+              name: acc.name,
+              type: acc.type,
+              balance: acc.balance,
+              isShared: acc.isShared,
+              shareLevel: acc.shareLevel ?? 'PUBLIC',
+              isMasked: acc.isMasked ?? false,
+            })))
           }
 
           if (wJson.assetsByType) {
@@ -175,6 +208,47 @@ const Dashboard = () => {
     loadData()
   }, [])
 
+  const reloadWealth = async () => {
+    try {
+      const wRes = await fetch('/api/wealth')
+      const wJson = await wRes.json()
+      if (wJson.success) {
+        setWealthData({
+          totalAssets: wJson.totalAssets,
+          personalBudget: wJson.personalAssets,
+          totalLiabilities: 0,
+          netWorth: wJson.totalAssets,
+          monthlyChange: 0,
+          monthlyChangePercent: 0,
+        })
+        const accs = wJson.accounts ?? []
+        setAssets(accs.map((acc: any) => ({
+          id: acc.id,
+          name: acc.name,
+          value: acc.balance,
+          allocation: wJson.totalAssets > 0
+            ? Math.round((acc.balance / wJson.totalAssets) * 10000) / 100
+            : 0,
+          change: 0,
+          changePercent: 0,
+        })))
+        setAccountList(accs.map((acc: any) => ({
+          id: acc.id,
+          name: acc.name,
+          type: acc.type,
+          balance: acc.balance,
+          isShared: acc.isShared,
+          shareLevel: acc.shareLevel ?? 'PUBLIC',
+          isMasked: acc.isMasked ?? false,
+        })))
+        if (wJson.assetsByType) setAssetsByType(wJson.assetsByType)
+      }
+    } catch {
+      // silent
+    }
+  }
+
+  const hasAssets = !isLoading && assets.length > 0
 
   // 이번 달 총 지출액 계산 (DB 데이터 기반)
   const monthlyExpenses = transactions
@@ -222,7 +296,15 @@ const Dashboard = () => {
   const myMaxExpense = transactions
     .filter(tx => tx.userId === currentUserId && tx.amount < 0)
     .reduce((max, tx) => Math.max(max, Math.abs(tx.amount)), 0)
-  const myBudget = wealthData.personalBudget || myIncome || 1
+  const [myBudgetDB, setMyBudgetDB] = useState(0) // CFO가 설정한 DB 예산
+  const [customBudget, setCustomBudget] = useState<number | null>(null)
+  const [isBudgetEditing, setIsBudgetEditing] = useState(false)
+  const [budgetInput, setBudgetInput] = useState('')
+  useEffect(() => {
+    const saved = localStorage.getItem('don-doc:budget')
+    if (saved) setCustomBudget(Number(saved))
+  }, [])
+  const myBudget = myBudgetDB || customBudget || wealthData.personalBudget || myIncome || 1
   const myBurnRate = myTxCount > 0 ? Math.round(myExpenses / Math.max(myTxCount, 1)) : 0
   const mySavingsRate = myIncome > 0 ? Math.round(((myIncome - myExpenses) / myIncome) * 100) : 0
 
@@ -297,23 +379,38 @@ const Dashboard = () => {
 
   const TransactionRow = ({ transaction }: { transaction: Transaction }) => {
     const isOwnTransaction = transaction.userId === currentUserId
-    
+    const canEdit = !transaction.isMasked &&
+      (isOwnTransaction || userRole === 'CFO')
+
     const handleVisibilityToggle = () => {
       console.log('Toggle visibility for:', transaction.id)
     }
-    
+
     const handleEdit = () => {
-      setSelectedTransaction(transaction)
-      setIsMobileDrawerOpen(true)
+      if (!canEdit) return
+      setSelectedTransaction({
+        id: transaction.id,
+        amount: transaction.amount,
+        date: transaction.date,
+        category: transaction.category,
+        description: transaction.description,
+        visibility: transaction.visibility,
+        userId: transaction.userId,
+        accountId: (transaction as any).accountId ?? '',
+        isMasked: transaction.isMasked,
+      })
+      setIsTransactionDrawerOpen(true)
     }
     
     const content = (
       <div className={cn(
-        "flex items-center justify-between py-3 border-b border-zinc-800 last:border-0 px-3 rounded-lg transition-colors",
+        "group flex items-center justify-between py-3 border-b border-zinc-800 last:border-0 px-3 rounded-lg transition-colors cursor-pointer",
         transaction.isMasked
           ? "bg-zinc-900/50 hover:bg-zinc-800/30"
           : "hover:bg-zinc-800/20"
-      )}>
+      )}
+      onClick={canEdit ? handleEdit : undefined}
+      >
         <div className="flex items-center gap-3 flex-1 min-w-0">
           {/* 아이콘 */}
           <div className={cn(
@@ -348,13 +445,27 @@ const Dashboard = () => {
             </p>
           </div>
         </div>
-        <div className={cn(
-          "text-sm font-semibold ml-3 flex-shrink-0 tabular-nums",
-          transaction.isMasked
-            ? "text-zinc-500"
-            : transaction.amount > 0 ? "text-green-500" : "text-red-400"
-        )}>
-          {transaction.amount > 0 ? '+' : ''}{formatCurrency(transaction.amount)}
+        <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+          <span className={cn(
+            "text-sm font-semibold tabular-nums",
+            transaction.isMasked
+              ? "text-zinc-500"
+              : transaction.amount > 0 ? "text-green-500" : "text-red-400"
+          )}>
+            {transaction.amount > 0 ? '+' : ''}{formatCurrency(transaction.amount)}
+          </span>
+          {canEdit && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleEdit() }}
+              className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-zinc-600 hover:text-zinc-300 hover:bg-zinc-700 transition-all"
+              title="수정"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
+          )}
         </div>
       </div>
     )
@@ -544,6 +655,113 @@ const Dashboard = () => {
     )
   }
 
+  const BudgetSummaryCard = () => {
+    const [budgetData, setBudgetData] = useState<{
+      familyBudget: number
+      familySpent: number
+      members: { id: string; name: string; budget: number; spent: number }[]
+    } | null>(null)
+
+    useEffect(() => {
+      const month = new Date().toISOString().slice(0, 7)
+      fetch(`/api/budget?month=${month}`)
+        .then(r => r.json())
+        .then(d => { if (d.success) setBudgetData(d) })
+        .catch(() => {})
+    }, [])
+
+    const budget = budgetData?.familyBudget ?? 0
+    const spent = budgetData?.familySpent ?? 0
+    const spentPct = budget > 0 ? Math.min((spent / budget) * 100, 100) : 0
+    const unallocated = Math.max(budget - (budgetData?.members ?? []).reduce((s, m) => s + m.budget, 0), 0)
+
+    return (
+      <div className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800 mb-6">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Calculator className="w-5 h-5" />
+            이번 달 예산 현황
+          </h2>
+          <Link
+            href="/dashboard/budget"
+            className="text-xs text-zinc-500 hover:text-white px-3 py-1.5 rounded-lg border border-zinc-800 hover:border-zinc-600 transition-colors"
+          >
+            예산 관리 →
+          </Link>
+        </div>
+
+        {budget > 0 ? (
+          <>
+            <div className="grid grid-cols-3 gap-3 mb-5">
+              <div className="bg-zinc-800 rounded-xl p-4">
+                <div className="text-xs text-zinc-500 mb-1">전체 예산</div>
+                <div className="text-lg font-bold text-white">{formatLargeNumber(budget)}</div>
+              </div>
+              <div className="bg-zinc-800 rounded-xl p-4">
+                <div className="text-xs text-zinc-500 mb-1">사용</div>
+                <div className={cn('text-lg font-bold', spentPct > 80 ? 'text-red-400' : 'text-white')}>
+                  {formatLargeNumber(spent)}
+                </div>
+              </div>
+              <div className="bg-zinc-800 rounded-xl p-4">
+                <div className="text-xs text-zinc-500 mb-1">미배정</div>
+                <div className="text-lg font-bold text-zinc-400">{formatLargeNumber(unallocated)}</div>
+              </div>
+            </div>
+
+            {/* 전체 소진율 */}
+            <div className="mb-4">
+              <div className="flex justify-between text-xs text-zinc-500 mb-1.5">
+                <span>예산 소진율</span>
+                <span>{Math.round(spentPct)}%</span>
+              </div>
+              <div className="w-full bg-zinc-800 rounded-full h-2">
+                <div
+                  className={cn('h-2 rounded-full transition-all', spentPct > 80 ? 'bg-red-500' : 'bg-emerald-500')}
+                  style={{ width: `${spentPct}%` }}
+                />
+              </div>
+            </div>
+
+            {/* 멤버별 미니 요약 */}
+            {(budgetData?.members ?? []).filter(m => m.budget > 0).length > 0 && (
+              <div className="space-y-2">
+                {(budgetData?.members ?? [])
+                  .filter(m => m.budget > 0)
+                  .map((m, i) => {
+                    const pct = Math.min((m.spent / m.budget) * 100, 100)
+                    const COLORS = ['bg-blue-500', 'bg-violet-500', 'bg-amber-500', 'bg-pink-500', 'bg-teal-500']
+                    return (
+                      <div key={m.id} className="flex items-center gap-3">
+                        <span className="text-xs text-zinc-400 w-16 truncate flex-shrink-0">{m.name}</span>
+                        <div className="flex-1 bg-zinc-800 rounded-full h-1.5">
+                          <div
+                            className={cn('h-1.5 rounded-full transition-all', pct > 80 ? 'bg-red-500' : COLORS[i % COLORS.length])}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                        <span className="text-xs text-zinc-500 w-8 text-right flex-shrink-0">{Math.round(pct)}%</span>
+                      </div>
+                    )
+                  })}
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="flex items-center justify-between py-2">
+            <p className="text-sm text-zinc-500">이번 달 예산이 설정되지 않았습니다.</p>
+            <Link
+              href="/dashboard/budget"
+              className="text-sm font-medium text-white px-4 py-2 bg-zinc-800 rounded-xl hover:bg-zinc-700 transition-colors"
+            >
+              예산 설정하기
+            </Link>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   const ExpenseCategoriesChart = () => (
     <div className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800">
       <div className="flex items-center justify-between mb-6">
@@ -593,6 +811,40 @@ const Dashboard = () => {
           <DollarSign className="w-5 h-5" />
           내 예산 현황
         </h2>
+        {myBudgetDB > 0 ? (
+          <span className="text-xs text-amber-500 bg-amber-900/30 px-2 py-1 rounded-full">CFO 설정</span>
+        ) : userRole === 'CFO' && (
+          isBudgetEditing ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                inputMode="numeric"
+                value={budgetInput}
+                onChange={(e) => setBudgetInput(e.target.value.replace(/[^0-9]/g, ''))}
+                placeholder="예산 입력"
+                className="w-28 h-8 bg-zinc-800 border border-zinc-700 rounded-lg px-2 text-xs text-white outline-none focus:border-zinc-500"
+                autoFocus
+              />
+              <button
+                onClick={() => {
+                  const val = Number(budgetInput)
+                  if (val > 0) { setCustomBudget(val); localStorage.setItem('don-doc:budget', String(val)) }
+                  setIsBudgetEditing(false)
+                }}
+                className="text-xs px-2 py-1 bg-white text-black rounded-lg font-semibold"
+              >저장</button>
+              <button onClick={() => setIsBudgetEditing(false)} className="text-xs text-zinc-500 hover:text-white">✕</button>
+            </div>
+          ) : (
+            <button
+              onClick={() => { setBudgetInput(String(customBudget || '')); setIsBudgetEditing(true) }}
+              className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-white transition-colors px-2 py-1 rounded-lg border border-zinc-800 hover:border-zinc-600"
+            >
+              <Calculator className="w-3 h-3" />
+              예산 설정
+            </button>
+          )
+        )}
       </div>
       {/* 예산 프로그레스 바 */}
       <div className="mb-6">
@@ -686,40 +938,20 @@ const Dashboard = () => {
   return (
     <div className="min-h-screen bg-black text-white p-6">
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-4xl font-bold text-white mb-2">패밀리 오피스</h1>
-            <p className="text-zinc-400">
-              {userName ? `${userName}님의 자산 관리` : '자산 관리 및 투자 포트폴리오'}
-            </p>
-          </div>
-        <div className="flex items-center gap-2 md:gap-4">
-          <button
-            onClick={() => setIsTransactionDrawerOpen(true)}
-            className="flex items-center gap-2 px-3 py-2 md:px-4 bg-white text-black rounded-lg text-xs md:text-sm font-semibold hover:bg-zinc-200 transition-colors active:scale-[0.97]"
-          >
-            <Plus className="w-4 h-4" />
-            <span className="hidden sm:inline">거래 추가</span>
-          </button>
-          <button
-            onClick={() => setShowPrivateData(!showPrivateData)}
-            className="flex items-center gap-2 px-3 py-2 md:px-4 bg-zinc-900 rounded-lg border border-zinc-800 text-xs md:text-sm font-medium hover:bg-zinc-800 transition-colors"
-          >
-            {showPrivateData ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-            <span className="hidden sm:inline">개인 정보</span>
-          </button>
-          <button
-            onClick={async () => {
-              await fetch('/api/auth/logout', { method: 'POST' })
-              window.location.href = '/login'
-            }}
-            className="flex items-center gap-2 px-3 py-2 md:px-4 bg-zinc-900 rounded-lg border border-zinc-800 text-xs md:text-sm font-medium text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-colors"
-          >
-            <Settings className="w-4 h-4" />
-            <span className="hidden sm:inline">로그아웃</span>
-          </button>
-        </div>
-        </div>
+        <Header
+          familyName={familyName}
+          userName={userName}
+          userRole={userRole}
+
+          onAddTransaction={() => {
+            setSelectedTransaction(null)
+            setIsTransactionDrawerOpen(true)
+          }}
+          onLogout={async () => {
+            await fetch('/api/auth/logout', { method: 'POST' })
+            window.location.href = '/login'
+          }}
+        />
 
         {/* 모드 전환 탭 */}
         <div className="flex items-center bg-zinc-900 rounded-xl border border-zinc-800 p-1 mb-6 max-w-xs">
@@ -759,16 +991,51 @@ const Dashboard = () => {
           </button>
         </div>
 
-        {/* 🔧 개발용 뷰 모드 표시 */}
-        <div className="mb-4 flex items-center gap-2">
-          <span className="text-xs px-2 py-1 rounded-md bg-amber-500/10 text-amber-400 border border-amber-500/20 font-mono">
-            DEV: {viewMode === 'CFO' ? '👑 CFO 모드' : '👤 Member 모드'}
-          </span>
-          <span className="text-xs text-zinc-600">위 탭으로 전환 가능</span>
-        </div>
 
-        {/* 뷰 모드별 콘텐츠 */}
-        <AnimatePresence mode="wait">
+        {/* 자산 없을 때 Empty State */}
+        {!isLoading && !hasAssets && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="flex flex-col items-center justify-center py-24 text-center"
+          >
+            {/* 아이콘 일러스트 */}
+            <div className="relative mb-8">
+              <div className="w-24 h-24 rounded-3xl bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+                <Wallet className="w-10 h-10 text-zinc-600" />
+              </div>
+              <div className="absolute -top-2 -right-2 w-8 h-8 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+                <TrendingUp className="w-4 h-4 text-zinc-600" />
+              </div>
+              <div className="absolute -bottom-2 -left-2 w-8 h-8 rounded-xl bg-zinc-900 border border-zinc-800 flex items-center justify-center">
+                <PieChart className="w-4 h-4 text-zinc-600" />
+              </div>
+            </div>
+
+            <h2 className="text-xl font-semibold text-white mb-2">
+              아직 연결된 자산이 없습니다
+            </h2>
+            <p className="text-sm text-zinc-500 max-w-xs mb-8 leading-relaxed">
+              자산 계좌를 추가하면 순자산과 포트폴리오를<br />한눈에 볼 수 있습니다.
+            </p>
+
+            <button
+              onClick={() => setIsAccountDrawerOpen(true)}
+              className="flex items-center gap-2.5 px-6 py-3.5 bg-white text-black rounded-xl text-sm font-semibold hover:bg-zinc-200 active:scale-[0.97] transition-all"
+            >
+              <span className="text-base">+</span>
+              첫 자산 추가하기
+            </button>
+
+            <p className="mt-6 text-xs text-zinc-700">
+              현금, 주식, 가상자산, 부동산을 모두 관리할 수 있습니다
+            </p>
+          </motion.div>
+        )}
+
+        {/* 뷰 모드별 콘텐츠 — 자산이 있을 때만 렌더링 */}
+        {hasAssets && <AnimatePresence mode="wait">
           {viewMode === 'MEMBER' ? (
             <motion.div
               key="member"
@@ -822,7 +1089,9 @@ const Dashboard = () => {
                     <Wallet className="w-4 h-4 md:w-5 md:h-5" />
                     내 거래 내역
                   </h2>
-                  <div className="text-xs md:text-sm text-zinc-400">최근 10건</div>
+                  <div className="text-xs md:text-sm text-zinc-400">
+                    {transactions.filter(tx => tx.userId === currentUserId).length}건
+                  </div>
                 </div>
                 {isLoading ? (
                   <div className="flex items-center justify-center py-12">
@@ -893,6 +1162,23 @@ const Dashboard = () => {
                 </div>
               </div>
 
+              {/* ── CFO: 자산 목록 ── */}
+              <div className="mb-6">
+                <AssetList
+                  accounts={accountList}
+                  totalAssets={wealthData.totalAssets}
+                  onEdit={(account) => {
+                    if (account.isMasked) return
+                    setSelectedAccount(account)
+                    setIsAccountDrawerOpen(true)
+                  }}
+                  onAdd={() => {
+                    setSelectedAccount(undefined)
+                    setIsAccountDrawerOpen(true)
+                  }}
+                />
+              </div>
+
               {/* ── CFO: 자산 배분 도넛 + 현금 흐름 ── */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <AssetDonutChart data={assetsByType} totalAssets={wealthData.totalAssets} />
@@ -912,21 +1198,40 @@ const Dashboard = () => {
                 <CFOStatsWidget />
               </div>
 
-              {/* ── CFO: 가족 거래 내역 + 투자 성과 ── */}
+              {/* ── CFO: 예산 관리 요약 ── */}
+              <BudgetSummaryCard />
+
+              {/* ── CFO: 가족 거래 피드 + 투자 성과 ── */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                 <div className="lg:col-span-2">
                   <div className="bg-zinc-900 rounded-2xl p-4 md:p-6 border border-zinc-800">
                     <div className="flex items-center justify-between mb-4 md:mb-6">
                       <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
-                        <Wallet className="w-4 h-4 md:w-5 md:h-5" />
-                        가족 거래 내역
+                        <Users className="w-4 h-4 md:w-5 md:h-5" />
+                        가족 지출 피드
                       </h2>
-                      <div className="text-xs md:text-sm text-zinc-400">선별적 투명성 적용</div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-zinc-600 bg-zinc-800 px-2 py-0.5 rounded-full">선별적 공유</span>
+                        <div className="text-xs text-zinc-500">{transactions.length}건</div>
+                      </div>
+                    </div>
+                    {/* 공유 레벨 범례 */}
+                    <div className="flex items-center gap-4 mb-4 pb-3 border-b border-zinc-800">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span className="text-xs text-zinc-500">전체 공개</span>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-zinc-500" />
+                        <span className="text-xs text-zinc-500">금액만 공개</span>
+                      </div>
                     </div>
                     {isLoading ? (
                       <div className="flex items-center justify-center py-12">
                         <div className="text-zinc-500 text-sm">데이터를 불러오는 중...</div>
                       </div>
+                    ) : transactions.length === 0 ? (
+                      <div className="text-center py-12 text-zinc-500 text-sm">거래 내역이 없습니다</div>
                     ) : (
                       <div className="space-y-1">
                         {transactions
@@ -959,9 +1264,10 @@ const Dashboard = () => {
               </div>
             </motion.div>
           )}
-        </AnimatePresence>
+        </AnimatePresence>}
 
         {/* 모바일 전용 퀵액션 드로어 */}
+
         <MobileDrawer
           isOpen={isMobileDrawerOpen}
           onClose={() => setIsMobileDrawerOpen(false)}
@@ -1006,18 +1312,26 @@ const Dashboard = () => {
           )}
         </MobileDrawer>
 
-        {/* 거래 추가 드로어 */}
+        {/* 거래 추가 / 수정 드로어 */}
         <TransactionDrawer
           isOpen={isTransactionDrawerOpen}
-          onClose={() => setIsTransactionDrawerOpen(false)}
+          onClose={() => {
+            setIsTransactionDrawerOpen(false)
+            setSelectedTransaction(null)
+          }}
           currentUserId={currentUserId}
+          userRole={userRole}
           familyId={familyId}
+          editTransaction={selectedTransaction}
           onSuccess={async () => {
             try {
-              const res = await fetch('/api/transactions/list')
-              const data = await res.json()
-              if (data.success && data.transactions.length > 0) {
-                setTransactions(data.transactions.map((tx: any) => ({
+              const [txRes, wRes] = await Promise.all([
+                fetch('/api/transactions/list'),
+                fetch('/api/wealth'),
+              ])
+              const txData = await txRes.json()
+              if (txData.success) {
+                setTransactions(txData.transactions.map((tx: any) => ({
                   id: tx.id,
                   amount: tx.amount,
                   description: tx.description,
@@ -1027,12 +1341,43 @@ const Dashboard = () => {
                   userId: tx.userId,
                   userName: tx.userName,
                   isMasked: tx.isMasked,
+                  accountId: tx.accountId,
                 })))
               }
+              const wData = await wRes.json()
+              if (wData.success) {
+                setWealthData({
+                  totalAssets: wData.totalAssets,
+                  personalBudget: wData.personalAssets,
+                  totalLiabilities: 0,
+                  netWorth: wData.totalAssets,
+                  monthlyChange: 0,
+                  monthlyChangePercent: 0,
+                })
+                const accs = wData.accounts ?? []
+                setAccountList(accs.map((acc: any) => ({
+                  id: acc.id, name: acc.name, type: acc.type,
+                  balance: acc.balance, isShared: acc.isShared,
+                  shareLevel: acc.shareLevel ?? 'PUBLIC',
+                  isMasked: acc.isMasked ?? false,
+                })))
+                if (wData.assetsByType) setAssetsByType(wData.assetsByType)
+              }
             } catch (e) {
-              console.error('거래 목록 새로고침 실패:', e)
+              console.error('데이터 새로고침 실패:', e)
             }
           }}
+        />
+
+        {/* 계좌 추가 / 수정 드로어 */}
+        <AccountDrawer
+          isOpen={isAccountDrawerOpen}
+          onClose={() => {
+            setIsAccountDrawerOpen(false)
+            setSelectedAccount(undefined)
+          }}
+          onSuccess={reloadWealth}
+          initialData={selectedAccount}
         />
       </div>
     </div>

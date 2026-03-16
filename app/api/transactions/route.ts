@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
         )
       }
       const account = await prisma.account.findFirst({
-        where: { familyId: user.familyId },
+        where: { familyId: user.familyId ?? undefined },
         orderBy: { isShared: 'desc' },
       })
       if (!account) {
@@ -42,17 +42,23 @@ export async function POST(req: NextRequest) {
       resolvedAccountId = account.id
     }
 
-    const transaction = await prisma.transaction.create({
-      data: {
-        amount,
-        date: new Date(date),
-        category,
-        description: description || category,
-        visibility: visibility || 'SHARED',
-        userId,
-        accountId: resolvedAccountId,
-      },
-    })
+    const [transaction] = await prisma.$transaction([
+      prisma.transaction.create({
+        data: {
+          amount,
+          date: new Date(date),
+          category,
+          description: description || category,
+          visibility: visibility || 'SHARED',
+          userId,
+          accountId: resolvedAccountId,
+        },
+      }),
+      prisma.account.update({
+        where: { id: resolvedAccountId },
+        data: { balance: { increment: amount } },
+      }),
+    ])
 
     return NextResponse.json({ success: true, id: transaction.id })
   } catch (e) {

@@ -6,6 +6,7 @@ async function main() {
   // 기존 데이터 정리
   await prisma.transaction.deleteMany()
   await prisma.account.deleteMany()
+  await prisma.familyInvite.deleteMany()
   await prisma.user.deleteMany()
   await prisma.familyGroup.deleteMany()
 
@@ -13,14 +14,14 @@ async function main() {
 
   // 1. 가족 그룹
   const family = await prisma.familyGroup.create({
-    data: { name: '우리집 패밀리오피스' },
+    data: { name: '우리집 돈독' },
   })
 
   // 2. 사용자 A (나) & 사용자 B (가족)
   const userA = await prisma.user.create({
     data: {
-      email: 'me@family.com',
-      name: '나',
+      email: 'zkznxk123@gmail.com',
+      name: '한상빈',
       role: Role.CFO,
       familyId: family.id,
     },

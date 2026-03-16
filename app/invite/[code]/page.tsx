@@ -113,18 +113,18 @@ export default function InvitePage() {
 
             {!isLoggedIn ? (
               <>
-                <p className="text-sm text-zinc-500 mb-4">합류하려면 먼저 로그인해주세요.</p>
+                <p className="text-sm text-zinc-500 mb-4">계정을 만들고 가족에 합류하세요</p>
                 <Link
-                  href={`/login?redirectTo=/invite/${code}`}
+                  href={`/signup?inviteCode=${code}`}
                   className="block w-full h-12 rounded-xl bg-white text-black text-sm font-semibold hover:bg-zinc-200 transition-all flex items-center justify-center"
                 >
-                  로그인하고 합류하기
+                  새 계정 만들고 합류하기
                 </Link>
                 <Link
-                  href={`/signup`}
+                  href={`/login?redirectTo=/invite/${code}`}
                   className="block w-full h-12 rounded-xl border border-zinc-800 text-sm font-medium text-zinc-400 hover:text-white hover:border-zinc-600 transition-all flex items-center justify-center mt-3"
                 >
-                  새 계정 만들기
+                  이미 계정이 있나요? 로그인
                 </Link>
               </>
             ) : (
@@ -153,7 +153,7 @@ export default function InvitePage() {
       </div>
 
       <p className="mt-10 text-xs text-zinc-700">
-        가족의 재정을 함께, 안전하게.
+        가족의 사생활은 존중하면서, 자산은 투명하게.
       </p>
     </div>
   )
