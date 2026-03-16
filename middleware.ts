@@ -10,7 +10,13 @@ export async function middleware(request: NextRequest) {
   })
 
   const supabase = createMiddlewareClient({ req: request, res: response })
-  const { data: { session } } = await supabase.auth.getSession()
+  let session = null
+  try {
+    const { data } = await supabase.auth.getSession()
+    session = data.session
+  } catch {
+    // 만료된 토큰 등 세션 오류 → 비로그인 상태로 처리
+  }
 
   const { pathname } = request.nextUrl
 

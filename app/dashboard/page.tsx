@@ -13,6 +13,8 @@ import { TransactionDrawer, type TransactionFormData, type EditTransactionData }
 import { AssetDonutChart, type AssetTypeData } from '@/components/ui/asset-donut-chart'
 import { AccountDrawer, type AccountInitialData } from '@/components/ui/account-drawer'
 import { AssetList } from '@/components/ui/asset-list'
+import { ExcelUploadDrawer } from '@/components/ui/excel-upload-drawer'
+import { TransactionFeed, type FeedTransaction } from '@/components/dashboard/TransactionFeed'
 import Link from 'next/link'
 
 interface Transaction {
@@ -87,6 +89,7 @@ const Dashboard = () => {
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false)
   const [isTransactionDrawerOpen, setIsTransactionDrawerOpen] = useState(false)
   const [isAccountDrawerOpen, setIsAccountDrawerOpen] = useState(false)
+  const [isExcelDrawerOpen, setIsExcelDrawerOpen] = useState(false)
   const [selectedAccount, setSelectedAccount] = useState<AccountInitialData | undefined>(undefined)
   const [selectedTransaction, setSelectedTransaction] = useState<EditTransactionData | null>(null)
   const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS)
@@ -947,6 +950,7 @@ const Dashboard = () => {
             setSelectedTransaction(null)
             setIsTransactionDrawerOpen(true)
           }}
+          onExcelUpload={() => setIsExcelDrawerOpen(true)}
           onLogout={async () => {
             await fetch('/api/auth/logout', { method: 'POST' })
             window.location.href = '/login'
@@ -1211,7 +1215,6 @@ const Dashboard = () => {
                         가족 지출 피드
                       </h2>
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-zinc-600 bg-zinc-800 px-2 py-0.5 rounded-full">선별적 공유</span>
                         <div className="text-xs text-zinc-500">{transactions.length}건</div>
                       </div>
                     </div>
@@ -1378,6 +1381,31 @@ const Dashboard = () => {
           }}
           onSuccess={reloadWealth}
           initialData={selectedAccount}
+        />
+
+        {/* 엑셀 일괄 등록 드로어 */}
+        <ExcelUploadDrawer
+          isOpen={isExcelDrawerOpen}
+          onClose={() => setIsExcelDrawerOpen(false)}
+          userId={currentUserId}
+          familyId={familyId}
+          onSuccess={async () => {
+            const [txRes, wRes] = await Promise.all([
+              fetch('/api/transactions/list'),
+              fetch('/api/wealth'),
+            ])
+            const txData = await txRes.json()
+            if (txData.success) {
+              setTransactions(txData.transactions.map((tx: any) => ({
+                id: tx.id, amount: tx.amount, description: tx.description,
+                category: tx.category, date: tx.date.split('T')[0],
+                visibility: tx.visibility, userId: tx.userId,
+                accountId: tx.accountId, userName: tx.userName, isMasked: tx.isMasked,
+              })))
+            }
+            const wData = await wRes.json()
+            if (wData.success) reloadWealth()
+          }}
         />
       </div>
     </div>

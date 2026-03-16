@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
-import { Plus, LogOut, UserPlus, Copy, Check, Loader2, Users, Calculator } from 'lucide-react'
+import { Plus, LogOut, UserPlus, Copy, Check, Loader2, Users, Calculator, FileSpreadsheet } from 'lucide-react'
 import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import { getLatestInviteCode } from '@/lib/actions/family'
@@ -12,6 +12,7 @@ interface HeaderProps {
   userName: string
   userRole: 'CFO' | 'MEMBER'
   onAddTransaction: () => void
+  onExcelUpload?: () => void
   onLogout: () => void
 }
 
@@ -20,6 +21,7 @@ export function Header({
   userName,
   userRole,
   onAddTransaction,
+  onExcelUpload,
   onLogout,
 }: HeaderProps) {
   const [popoverOpen, setPopoverOpen] = useState(false)
@@ -107,6 +109,16 @@ export function Header({
           <Plus className="w-4 h-4" />
           <span className="hidden sm:inline">거래 추가</span>
         </button>
+
+        {onExcelUpload && (
+          <button
+            onClick={onExcelUpload}
+            className="flex items-center gap-2 px-3 py-2 md:px-4 bg-zinc-900 rounded-lg border border-zinc-800 text-xs md:text-sm font-medium text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span className="hidden sm:inline">엑셀 업로드</span>
+          </button>
+        )}
 
 {/* CFO 전용: 초대 코드 팝오버 */}
         {userRole === 'CFO' && (

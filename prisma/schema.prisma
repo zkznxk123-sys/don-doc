@@ -16,6 +16,11 @@ enum Role {
   MEMBER // 구성원: 개인 지출 및 공동 지출 기여
 }
 
+enum CategoryType {
+  EXPENSE // 지출 카테고리
+  INCOME  // 수입 카테고리
+}
+
 enum Visibility {
   SHARED  // 가족 모두에게 상세 내역 공개
   PRIVATE // 본인 외에는 '합계'만 노출 (상세 내역 마스킹)
@@ -36,13 +41,25 @@ enum ShareLevel {
 }
 
 model FamilyGroup {
-  id        String        @id @default(cuid())
-  name      String        // 예: "우리집 패밀리오피스"
-  users     User[]
-  accounts  Account[]
-  invites   FamilyInvite[]
-  budgets   Budget[]
-  createdAt DateTime      @default(now())
+  id         String        @id @default(cuid())
+  name       String        // 예: "우리집 패밀리오피스"
+  users      User[]
+  accounts   Account[]
+  invites    FamilyInvite[]
+  budgets    Budget[]
+  categories Category[]
+  createdAt  DateTime      @default(now())
+}
+
+model Category {
+  id           String        @id @default(cuid())
+  name         String
+  icon         String
+  type         CategoryType
+  familyId     String?       // null = 시스템 기본값, non-null = 가족 커스텀
+  family       FamilyGroup?  @relation(fields: [familyId], references: [id])
+  transactions Transaction[]
+  createdAt    DateTime      @default(now())
 }
 
 model FamilyInvite {
@@ -88,7 +105,9 @@ model Transaction {
   amount      Float
   date        DateTime   @default(now())
   description String     // 이 필드가 마스킹 대상
-  category    String     // 식비, 주거, 취미 등
+  category    String     // 카테고리 이름 (표시용, 하위호환)
+  categoryId  String?    // Category 모델 FK (선택)
+  categoryRef Category?  @relation(fields: [categoryId], references: [id])
   visibility  Visibility @default(SHARED)
   userId      String
   user        User       @relation(fields: [userId], references: [id])

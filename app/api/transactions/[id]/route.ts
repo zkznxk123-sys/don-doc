@@ -24,6 +24,7 @@ export async function PATCH(
         description: body.description,
         visibility: body.visibility,
         accountId: body.accountId,
+        categoryId: body.categoryId ?? null,
       }
     )
 

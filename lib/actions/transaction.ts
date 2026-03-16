@@ -130,7 +130,7 @@ export async function getFamilyTransactions(
       date: tx.date,
       description: shouldMask
         ? shareLevel === 'BALANCE_ONLY'
-          ? '🔒 비공개 지출'
+          ? '🔒 비공개 내역'
           : '🔒 개인 지출'
         : tx.description,
       category: shouldMask ? '개인' : tx.category,
@@ -177,6 +177,7 @@ export async function updateTransaction(
     description: string
     visibility: 'SHARED' | 'PRIVATE'
     accountId: string
+    categoryId?: string | null
   }
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -221,6 +222,7 @@ export async function updateTransaction(
         description: input.description || input.category,
         visibility: input.visibility,
         accountId: newAccountId,
+        ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
       },
     })
 
@@ -264,6 +266,58 @@ export async function deleteTransaction(
   } catch (e) {
     console.error('[deleteTransaction] ERROR:', e)
     return { success: false, error: '삭제 중 오류가 발생했습니다.' }
+  }
+}
+
+// ━━ 일괄 등록 입력 타입 ━━
+export interface BulkTransactionRow {
+  amount: number
+  date: string          // YYYY-MM-DD
+  description: string
+  category: string
+  visibility: 'SHARED' | 'PRIVATE'
+}
+
+/**
+ * 엑셀/CSV에서 파싱한 내역을 일괄 저장하는 Server Action
+ * - Prisma createMany로 단일 쿼리 저장
+ * - account.balance를 총 delta만큼 한 번에 업데이트
+ */
+export async function createManyTransactions(
+  userId: string,
+  accountId: string,
+  rows: BulkTransactionRow[]
+): Promise<{ success: boolean; count?: number; error?: string }> {
+  if (rows.length === 0) return { success: false, error: '등록할 내역이 없습니다.' }
+
+  try {
+    const account = await prisma.account.findUnique({ where: { id: accountId } })
+    if (!account) return { success: false, error: '계좌를 찾을 수 없습니다.' }
+
+    await prisma.transaction.createMany({
+      data: rows.map(row => ({
+        amount: row.amount,
+        date: new Date(row.date),
+        description: row.description || row.category,
+        category: row.category,
+        visibility: row.visibility,
+        userId,
+        accountId,
+      })),
+    })
+
+    // 잔액 일괄 반영 (총 delta 한 번에)
+    const totalDelta = rows.reduce((sum, r) => sum + r.amount, 0)
+    await prisma.account.update({
+      where: { id: accountId },
+      data: { balance: { increment: totalDelta } },
+    })
+
+    revalidatePath('/dashboard')
+    return { success: true, count: rows.length }
+  } catch (e) {
+    console.error('[createManyTransactions] ERROR:', e)
+    return { success: false, error: '저장 중 오류가 발생했습니다.' }
   }
 }
 

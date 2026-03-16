@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   try {
     const authUser = await getAuthUser()
     const body = await req.json()
-    const { amount, date, category, description, visibility, accountId } = body
+    const { amount, date, category, description, visibility, accountId, categoryId } = body
     const userId = authUser?.id || body.userId
 
     if (!amount || !category || !userId) {
@@ -52,6 +52,7 @@ export async function POST(req: NextRequest) {
           visibility: visibility || 'SHARED',
           userId,
           accountId: resolvedAccountId,
+          ...(categoryId ? { categoryId } : {}),
         },
       }),
       prisma.account.update({

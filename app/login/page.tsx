@@ -43,6 +43,10 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true)
     try {
+      // 서버+클라이언트 세션 모두 초기화 (만료 토큰 제거)
+      await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
+      await supabase.auth.signOut().catch(() => {})
+
       const { error: authError } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
