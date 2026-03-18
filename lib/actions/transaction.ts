@@ -275,46 +275,140 @@ export interface BulkTransactionRow {
   date: string          // YYYY-MM-DD
   description: string
   category: string
+  categoryId?: string   // Category 모델 FK (AI 매핑 결과)
   visibility: 'SHARED' | 'PRIVATE'
+  accountName?: string  // 결제수단/계좌명 (자동 매칭용)
+}
+
+export interface MonthStat {
+  month: string   // "YYYY년 MM월"
+  count: number
+  income: number
+  expense: number
+}
+
+/**
+ * 계좌명으로 Account 조회 → 없으면 자동 생성
+ * - 부분 일치 (contains, insensitive)
+ * - 없으면 familyId 하위에 신규 Account 생성 (type: CASH)
+ */
+async function findOrCreateAccount(
+  name: string,
+  familyId: string,
+  type: 'CASH' | 'INVESTMENT' | 'REAL_ESTATE' = 'CASH'
+): Promise<string> {
+  const existing = await prisma.account.findFirst({
+    where: { familyId, name: { contains: name, mode: 'insensitive' } },
+    select: { id: true },
+  })
+  if (existing) return existing.id
+
+  const created = await prisma.account.create({
+    data: {
+      name,
+      type,
+      balance: 0,
+      isShared: true,
+      shareLevel: 'PUBLIC',
+      familyId,
+    },
+  })
+  return created.id
 }
 
 /**
  * 엑셀/CSV에서 파싱한 내역을 일괄 저장하는 Server Action
- * - Prisma createMany로 단일 쿼리 저장
- * - account.balance를 총 delta만큼 한 번에 업데이트
+ * - row.accountName으로 계좌 자동 매칭/생성
+ * - accountBalances 제공 시 계좌 잔액 강제 동기화
+ * - 월별 통계(MonthStat[]) 반환
  */
 export async function createManyTransactions(
   userId: string,
-  accountId: string,
-  rows: BulkTransactionRow[]
-): Promise<{ success: boolean; count?: number; error?: string }> {
+  familyId: string,
+  rows: BulkTransactionRow[],
+  options?: {
+    accountBalances?: { name: string; balance: number; type?: 'CASH' | 'INVESTMENT' | 'REAL_ESTATE' }[]
+  }
+): Promise<{
+  success: boolean
+  count?: number
+  monthStats?: MonthStat[]
+  syncedAccountCount?: number
+  error?: string
+}> {
   if (rows.length === 0) return { success: false, error: '등록할 내역이 없습니다.' }
 
   try {
-    const account = await prisma.account.findUnique({ where: { id: accountId } })
-    if (!account) return { success: false, error: '계좌를 찾을 수 없습니다.' }
+    // ── 1. 계좌명 → accountId 매핑 (고유 이름별 find/create) ──
+    const accountNameMap = new Map<string, string>() // name → id
+    const uniqueNames = Array.from(new Set(rows.map(r => r.accountName?.trim() || '기본 계좌')))
 
+    for (const name of uniqueNames) {
+      const id = await findOrCreateAccount(name, familyId)
+      accountNameMap.set(name, id)
+    }
+
+    // ── 2. Transaction 일괄 저장 ──
     await prisma.transaction.createMany({
-      data: rows.map(row => ({
-        amount: row.amount,
-        date: new Date(row.date),
-        description: row.description || row.category,
-        category: row.category,
-        visibility: row.visibility,
-        userId,
-        accountId,
-      })),
+      data: rows.map(row => {
+        const name = row.accountName?.trim() || '기본 계좌'
+        const accountId = accountNameMap.get(name)!
+        return {
+          amount: row.amount,
+          date: new Date(row.date),
+          description: row.description || row.category,
+          category: row.category,
+          categoryId: row.categoryId ?? null,
+          visibility: row.visibility,
+          userId,
+          accountId,
+        }
+      }),
     })
 
-    // 잔액 일괄 반영 (총 delta 한 번에)
-    const totalDelta = rows.reduce((sum, r) => sum + r.amount, 0)
-    await prisma.account.update({
-      where: { id: accountId },
-      data: { balance: { increment: totalDelta } },
-    })
+    // ── 3. 잔액 delta 반영 (accountBalances 없을 때) ──
+    if (!options?.accountBalances) {
+      // 계좌별 delta 집계
+      const deltaMap = new Map<string, number>()
+      for (const row of rows) {
+        const name = row.accountName?.trim() || '기본 계좌'
+        const id = accountNameMap.get(name)!
+        deltaMap.set(id, (deltaMap.get(id) ?? 0) + row.amount)
+      }
+      for (const [id, delta] of Array.from(deltaMap.entries())) {
+        await prisma.account.update({ where: { id }, data: { balance: { increment: delta } } })
+      }
+    }
+
+    // ── 4. 계좌 잔액 강제 동기화 (뱅샐현황 데이터) ──
+    let syncedAccountCount = 0
+    if (options?.accountBalances && options.accountBalances.length > 0) {
+      for (const ab of options.accountBalances) {
+        const id = await findOrCreateAccount(ab.name, familyId, ab.type ?? 'CASH')
+        await prisma.account.update({ where: { id }, data: { balance: ab.balance } })
+        syncedAccountCount++
+      }
+    }
+
+    // ── 5. 월별 통계 집계 ──
+    const monthMap = new Map<string, MonthStat>()
+    for (const row of rows) {
+      const [y, m] = row.date.split('-')
+      const key = `${y}-${m}`
+      const label = `${y}년 ${m}월`
+      if (!monthMap.has(key)) monthMap.set(key, { month: label, count: 0, income: 0, expense: 0 })
+      const stat = monthMap.get(key)!
+      stat.count++
+      if (row.amount > 0) stat.income += row.amount
+      else stat.expense += Math.abs(row.amount)
+    }
+    const monthStats = Array.from(monthMap.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([, v]) => v)
 
     revalidatePath('/dashboard')
-    return { success: true, count: rows.length }
+    revalidatePath('/dashboard/transactions')
+    return { success: true, count: rows.length, monthStats, syncedAccountCount }
   } catch (e) {
     console.error('[createManyTransactions] ERROR:', e)
     return { success: false, error: '저장 중 오류가 발생했습니다.' }

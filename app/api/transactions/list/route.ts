@@ -1,35 +1,83 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
-import { getFamilyTransactions } from '@/lib/actions/transaction'
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const authUser = await getAuthUser()
+    const { searchParams } = new URL(req.url)
+    const userId = authUser?.id || searchParams.get('userId')
+    const familyId = authUser?.familyId || searchParams.get('familyId')
+    const month = searchParams.get('month') // "YYYY-MM"
 
-    if (!authUser?.id || !authUser?.familyId) {
-      return NextResponse.json(
-        { success: false, error: '인증이 필요합니다.' },
-        { status: 401 }
-      )
+    if (!userId || !familyId) {
+      return NextResponse.json({ success: false, error: '인증이 필요합니다.' }, { status: 401 })
     }
 
-    const transactions = await getFamilyTransactions(
-      authUser.id,
-      authUser.familyId
-    )
+    // 월 필터 범위 계산
+    let dateFilter: { gte?: Date; lt?: Date } | undefined
+    if (month && /^\d{4}-\d{2}$/.test(month)) {
+      const [y, m] = month.split('-').map(Number)
+      const start = new Date(y, m - 1, 1)
+      const end = new Date(y, m, 1)
+      dateFilter = { gte: start, lt: end }
+    }
+
+    const transactions = await prisma.transaction.findMany({
+      where: {
+        user: { familyId },
+        ...(dateFilter ? { date: dateFilter } : {}),
+      },
+      include: {
+        user: { select: { name: true } },
+        account: { select: { shareLevel: true } },
+      },
+      orderBy: { date: 'desc' },
+    })
+
+    let totalIncome = 0
+    let totalExpense = 0
+
+    const masked = transactions.map((tx) => {
+      const isOwner = tx.userId === userId
+      const shareLevel = tx.account.shareLevel
+
+      // PRIVATE 계좌 → 타인에게 완전 제외 (null 반환 후 filter)
+      if (!isOwner && shareLevel === 'PRIVATE') return null
+
+      const shouldMask =
+        !isOwner && (shareLevel === 'BALANCE_ONLY' || tx.visibility === 'PRIVATE')
+
+      // 요약 집계 (마스킹 여부 무관하게 금액은 포함)
+      if (tx.amount > 0) totalIncome += tx.amount
+      else totalExpense += Math.abs(tx.amount)
+
+      return {
+        id: tx.id,
+        amount: tx.amount,
+        date: tx.date.toISOString(),
+        description: shouldMask
+          ? shareLevel === 'BALANCE_ONLY' ? '🔒 비공개 내역' : '🔒 개인 지출'
+          : tx.description,
+        category: shouldMask ? '개인' : tx.category,
+        visibility: tx.visibility,
+        userId: tx.userId,
+        userName: shouldMask ? null : tx.user.name,
+        isMasked: shouldMask,
+      }
+    }).filter(Boolean)
 
     return NextResponse.json({
       success: true,
-      transactions: transactions.map(tx => ({
-        ...tx,
-        date: tx.date.toISOString(),
-      })),
+      transactions: masked,
+      summary: {
+        income: totalIncome,
+        expense: totalExpense,
+        savings: totalIncome - totalExpense,
+      },
     })
   } catch (e) {
     console.error('[GET /api/transactions/list] ERROR:', e)
-    return NextResponse.json(
-      { success: false, error: String(e) },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: String(e) }, { status: 500 })
   }
 }

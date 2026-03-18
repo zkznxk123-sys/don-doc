@@ -12,6 +12,40 @@ export interface CategoryItem {
   familyId: string | null
 }
 
+/** AI 매퍼/엑셀 업로드용 경량 타입 */
+export type CategoryOption = {
+  id: string
+  name: string
+  icon: string
+  type: 'EXPENSE' | 'INCOME'
+  isCustom: boolean
+}
+
+/**
+ * 현재 로그인 유저의 familyId 기준으로 카테고리 반환 (auth 내장)
+ * 시스템 기본(familyId: null) + 가족 커스텀(familyId: user.familyId)
+ */
+export async function getFamilyCategories(): Promise<CategoryOption[]> {
+  const user = await getAuthUser()
+  if (!user?.familyId) return []
+
+  const cats = await prisma.category.findMany({
+    where: {
+      OR: [{ familyId: null }, { familyId: user.familyId }],
+    },
+    select: { id: true, name: true, icon: true, type: true, familyId: true },
+    orderBy: [{ familyId: 'asc' }, { name: 'asc' }],
+  })
+
+  return cats.map(c => ({
+    id: c.id,
+    name: c.name,
+    icon: c.icon,
+    type: c.type as 'EXPENSE' | 'INCOME',
+    isCustom: c.familyId !== null,
+  }))
+}
+
 /**
  * 시스템 기본 카테고리 + 가족 커스텀 카테고리를 합쳐서 반환
  * 시스템 카테고리 먼저, 그 다음 가족 커스텀 순서

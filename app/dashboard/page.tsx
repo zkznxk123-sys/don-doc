@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, Eye, EyeOff, Wallet, PieChart, ArrowUpRight, ArrowDownRight, AreaChartIcon, CreditCard, TrendingDown as BurnRateIcon, DollarSign, Calculator, Filter, Plus, Settings, User, Users } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
+import { TrendingUp, TrendingDown, Eye, EyeOff, Wallet, PieChart, ArrowUpRight, ArrowDownRight, AreaChartIcon, CreditCard, TrendingDown as BurnRateIcon, DollarSign, Calculator, Filter, Plus, Settings, User, Users, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Header } from '@/components/layout/Header'
 import { formatCurrency, formatLargeNumber, cn } from '@/lib/utils'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell, Legend, BarChart, Bar, XAxis as BarXAxis, YAxis as BarYAxis } from 'recharts'
@@ -15,6 +16,8 @@ import { AccountDrawer, type AccountInitialData } from '@/components/ui/account-
 import { AssetList } from '@/components/ui/asset-list'
 import { ExcelUploadDrawer } from '@/components/ui/excel-upload-drawer'
 import { TransactionFeed, type FeedTransaction } from '@/components/dashboard/TransactionFeed'
+import { AiInsights } from '@/components/ui/ai-insights'
+import { Progress } from '@/components/ui/progress'
 import Link from 'next/link'
 
 interface Transaction {
@@ -84,7 +87,67 @@ const MOCK_TRANSACTIONS: Transaction[] = [
   { id: '10', amount: 5000000, description: '월급', category: '수입', date: '2024-03-01', visibility: 'SHARED', userId: 'dad', userName: '아빠', isMasked: false },
 ]
 
+// ━━ MonthPicker 컴포넌트 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function MonthPicker({ value, onChange }: { value: string; onChange: (m: string) => void }) {
+  const [y, m] = value.split('-').map(Number)
+  const now = new Date()
+  const isCurrentMonth = y === now.getFullYear() && m === now.getMonth() + 1
+
+  const prev = () => {
+    const d = new Date(y, m - 2, 1)
+    onChange(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+  }
+  const next = () => {
+    if (isCurrentMonth) return
+    const d = new Date(y, m, 1)
+    onChange(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
+  }
+
+  return (
+    <div className="flex items-center gap-3 mb-6">
+      <button
+        onClick={prev}
+        className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors"
+      >
+        <ChevronLeft className="w-4 h-4" />
+      </button>
+      <div className="flex items-center gap-2">
+        <span className="text-base font-bold text-white tabular-nums">
+          {y}년 {String(m).padStart(2, '0')}월
+        </span>
+        {isCurrentMonth && (
+          <span className="text-[10px] text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded-full border border-zinc-800">
+            이번 달
+          </span>
+        )}
+      </div>
+      <button
+        onClick={next}
+        disabled={isCurrentMonth}
+        className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+      >
+        <ChevronRight className="w-4 h-4" />
+      </button>
+    </div>
+  )
+}
+
+// ━━ Dashboard ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 const Dashboard = () => {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const nowMonth = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`
+  const selectedMonth = searchParams.get('month') ?? nowMonth
+
+  const setSelectedMonth = useCallback((m: string) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (m === nowMonth) params.delete('month')
+    else params.set('month', m)
+    router.replace(`/dashboard?${params.toString()}`)
+  }, [searchParams, router, nowMonth])
+
   const [viewMode, setViewMode] = useState<'CFO' | 'MEMBER'>('CFO')
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false)
   const [isTransactionDrawerOpen, setIsTransactionDrawerOpen] = useState(false)
@@ -105,6 +168,14 @@ const Dashboard = () => {
   const [assets, setAssets] = useState<Asset[]>([])
   const [accountList, setAccountList] = useState<AccountInitialData[]>([])
   const [assetsByType, setAssetsByType] = useState<AssetTypeData[]>([])
+  const [insights, setInsights] = useState<{
+    assetChange: number
+    assetChangePercent: number
+    avgMonthlyExpense: number
+    expenseVsAvgPercent: number
+    savingsRateVsAvgPercent: number
+    historicalMonthCount: number
+  } | null>(null)
   
   // 세션 기반 인증 — /api/auth/me에서 자동 조회
   const [currentUserId, setCurrentUserId] = useState('')
@@ -113,59 +184,25 @@ const Dashboard = () => {
   const [userName, setUserName] = useState('')
   const [userRole, setUserRole] = useState<'CFO' | 'MEMBER'>('MEMBER')
 
+  // ── 1. 인증 + 자산(월 무관) 로드 — 최초 1회 ──
   useEffect(() => {
-    async function loadData() {
+    async function loadAuth() {
       try {
-        // 1. 현재 유저 정보 로드 (세션 기반)
         const meRes = await fetch('/api/auth/me')
         const meJson = await meRes.json()
         if (meJson.success && meJson.user) {
-          // familyId 없는 유저 → 온보딩으로 리다이렉트
-          if (!meJson.user.familyId) {
-            window.location.href = '/onboarding'
-            return
-          }
+          if (!meJson.user.familyId) { window.location.href = '/onboarding'; return }
           setCurrentUserId(meJson.user.id)
           setFamilyId(meJson.user.familyId)
           setFamilyName(meJson.user.familyName || '')
           setUserName(meJson.user.name || '')
           setUserRole(meJson.user.role || 'MEMBER')
-          if (meJson.user.role === 'MEMBER') {
-            setViewMode('MEMBER')
-          }
+          if (meJson.user.role === 'MEMBER') setViewMode('MEMBER')
         } else {
-          // 미인증 → 로그인 페이지로 이동 (미들웨어 보완)
-          window.location.href = '/login'
-          return
+          window.location.href = '/login'; return
         }
 
-        // 2. 예산 로드 (내 예산 확인용)
-        const currentMonth = new Date().toISOString().slice(0, 7)
-        const budgetRes = await fetch(`/api/budget?month=${currentMonth}`)
-        const budgetJson = await budgetRes.json()
-        if (budgetJson.success) {
-          const myMember = budgetJson.members?.find((m: any) => m.id === meJson.user.id)
-          if (myMember?.budget) setMyBudgetDB(myMember.budget)
-        }
-
-        // 3. 거래 내역 로드 (세션 인증 — 쿼리 파라미터 불필요)
-        const txRes = await fetch('/api/transactions/list')
-        const txJson = await txRes.json()
-        if (txJson.success && txJson.transactions.length > 0) {
-          setTransactions(txJson.transactions.map((tx: any) => ({
-            id: tx.id,
-            amount: tx.amount,
-            description: tx.description,
-            category: tx.category,
-            date: tx.date.split('T')[0],
-            visibility: tx.visibility,
-            userId: tx.userId,
-            userName: tx.userName,
-            isMasked: tx.isMasked,
-          })))
-        }
-
-        // 3. 계좌 잔액 합계 로드 (세션 인증)
+        // 자산 잔액 (월 무관 — 항상 현재 DB 값)
         const wRes = await fetch('/api/wealth')
         const wJson = await wRes.json()
         if (wJson.success) {
@@ -177,30 +214,18 @@ const Dashboard = () => {
             monthlyChange: 0,
             monthlyChangePercent: 0,
           })
-
           if (wJson.accounts.length > 0) {
             setAssets(wJson.accounts.map((acc: any) => ({
-              id: acc.id,
-              name: acc.name,
-              value: acc.balance,
+              id: acc.id, name: acc.name, value: acc.balance,
               allocation: Math.round((acc.balance / wJson.totalAssets) * 10000) / 100,
-              change: 0,
-              changePercent: 0,
+              change: 0, changePercent: 0,
             })))
             setAccountList(wJson.accounts.map((acc: any) => ({
-              id: acc.id,
-              name: acc.name,
-              type: acc.type,
-              balance: acc.balance,
-              isShared: acc.isShared,
-              shareLevel: acc.shareLevel ?? 'PUBLIC',
-              isMasked: acc.isMasked ?? false,
+              id: acc.id, name: acc.name, type: acc.type, balance: acc.balance,
+              isShared: acc.isShared, shareLevel: acc.shareLevel ?? 'PUBLIC', isMasked: acc.isMasked ?? false,
             })))
           }
-
-          if (wJson.assetsByType) {
-            setAssetsByType(wJson.assetsByType)
-          }
+          if (wJson.assetsByType) setAssetsByType(wJson.assetsByType)
         }
       } catch {
         console.log('DB 미연결 — 목업 데이터 사용')
@@ -208,8 +233,48 @@ const Dashboard = () => {
         setIsLoading(false)
       }
     }
-    loadData()
+    loadAuth()
   }, [])
+
+  // ── 2. 월별 데이터 로드 — selectedMonth 변경 시 재실행 ──
+  useEffect(() => {
+    async function loadMonthData() {
+      try {
+        // 거래 내역 (선택된 월 필터)
+        const txRes = await fetch(`/api/transactions/list?month=${selectedMonth}`)
+        const txJson = await txRes.json()
+        if (txJson.success) {
+          setTransactions(txJson.transactions.length > 0
+            ? txJson.transactions.map((tx: any) => ({
+                id: tx.id, amount: tx.amount, description: tx.description,
+                category: tx.category, date: tx.date.split('T')[0],
+                visibility: tx.visibility, userId: tx.userId,
+                userName: tx.userName, isMasked: tx.isMasked,
+              }))
+            : []
+          )
+        }
+
+        // 내 예산 (선택된 월)
+        const budgetRes = await fetch(`/api/budget?month=${selectedMonth}`)
+        const budgetJson = await budgetRes.json()
+        if (budgetJson.success) {
+          // currentUserId는 비동기로 설정되므로 meJson.user.id 대신 state를 씀
+          // loadAuth와 race condition 방지: budgetJson.members는 있어도 id 매칭이 필요
+          const myMember = budgetJson.members?.find((m: any) => m.budget > 0)
+          if (myMember?.budget) setMyBudgetDB(myMember.budget)
+        }
+
+        // 금융 인사이트 (연평균 비교)
+        const insRes = await fetch(`/api/stats/insights?month=${selectedMonth}`)
+        const insJson = await insRes.json()
+        if (insJson.success) setInsights(insJson)
+      } catch {
+        // silent — mock data stays
+      }
+    }
+    loadMonthData()
+  }, [selectedMonth])
 
   const reloadWealth = async () => {
     try {
@@ -618,6 +683,9 @@ const Dashboard = () => {
 
   const CFOStatsWidget = () => {
     const familySavingsRate = monthlyIncome > 0 ? Math.round(((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100) : 0
+    const hasInsight = insights && insights.historicalMonthCount >= 2
+    const expDiff = insights?.expenseVsAvgPercent ?? 0
+    const savDiff = insights?.savingsRateVsAvgPercent ?? 0
     return (
       <div className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800">
         <div className="flex items-center justify-between mb-6">
@@ -637,17 +705,46 @@ const Dashboard = () => {
           </div>
         </div>
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-zinc-400">이번 달 지출</span>
-            <span className="text-sm font-medium text-red-400">{formatCurrency(monthlyExpenses)}</span>
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-zinc-400">이번 달 지출</span>
+              <span className={cn(
+                'text-sm font-medium',
+                hasInsight && expDiff > 10 ? 'text-orange-400' : 'text-red-400'
+              )}>{formatCurrency(monthlyExpenses)}</span>
+            </div>
+            {hasInsight && (
+              <p className={cn(
+                'text-xs mt-0.5 text-right',
+                expDiff > 0 ? 'text-orange-500' : 'text-emerald-500'
+              )}>
+                {expDiff > 0
+                  ? `연평균 대비 ${Math.abs(expDiff).toFixed(0)}% 더 지출`
+                  : `연평균 대비 ${Math.abs(expDiff).toFixed(0)}% 절감`}
+              </p>
+            )}
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-zinc-400">이번 달 수입</span>
-            <span className="text-sm font-medium text-green-500">{formatCurrency(monthlyIncome)}</span>
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-zinc-400">이번 달 수입</span>
+              <span className="text-sm font-medium text-green-500">{formatCurrency(monthlyIncome)}</span>
+            </div>
           </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-zinc-400">저축률</span>
-            <span className={cn("text-sm font-medium", familySavingsRate >= 0 ? "text-green-500" : "text-red-500")}>{familySavingsRate}%</span>
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-zinc-400">저축률</span>
+              <span className={cn("text-sm font-medium", familySavingsRate >= 0 ? "text-green-500" : "text-red-500")}>{familySavingsRate}%</span>
+            </div>
+            {hasInsight && (
+              <p className={cn(
+                'text-xs mt-0.5 text-right',
+                savDiff >= 0 ? 'text-emerald-500' : 'text-orange-500'
+              )}>
+                {savDiff >= 0
+                  ? `연평균 저축률보다 ${Math.abs(savDiff).toFixed(0)}%p 높음`
+                  : `연평균 저축률보다 ${Math.abs(savDiff).toFixed(0)}%p 낮음`}
+              </p>
+            )}
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-zinc-400">거래 건수</span>
@@ -666,12 +763,11 @@ const Dashboard = () => {
     } | null>(null)
 
     useEffect(() => {
-      const month = new Date().toISOString().slice(0, 7)
-      fetch(`/api/budget?month=${month}`)
+      fetch(`/api/budget?month=${selectedMonth}`)
         .then(r => r.json())
         .then(d => { if (d.success) setBudgetData(d) })
         .catch(() => {})
-    }, [])
+    }, [selectedMonth])
 
     const budget = budgetData?.familyBudget ?? 0
     const spent = budgetData?.familySpent ?? 0
@@ -683,7 +779,7 @@ const Dashboard = () => {
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Calculator className="w-5 h-5" />
-            이번 달 예산 현황
+            {selectedMonth === nowMonth ? '이번 달' : selectedMonth.replace('-', '년 ') + '월'} 예산 현황
           </h2>
           <Link
             href="/dashboard/budget"
@@ -807,136 +903,78 @@ const Dashboard = () => {
     </div>
   )
 
-  const PersonalBudgetWidget = () => (
-    <div className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <DollarSign className="w-5 h-5" />
-          내 예산 현황
-        </h2>
-        {myBudgetDB > 0 ? (
-          <span className="text-xs text-amber-500 bg-amber-900/30 px-2 py-1 rounded-full">CFO 설정</span>
-        ) : userRole === 'CFO' && (
-          isBudgetEditing ? (
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                inputMode="numeric"
-                value={budgetInput}
-                onChange={(e) => setBudgetInput(e.target.value.replace(/[^0-9]/g, ''))}
-                placeholder="예산 입력"
-                className="w-28 h-8 bg-zinc-800 border border-zinc-700 rounded-lg px-2 text-xs text-white outline-none focus:border-zinc-500"
-                autoFocus
-              />
-              <button
-                onClick={() => {
-                  const val = Number(budgetInput)
-                  if (val > 0) { setCustomBudget(val); localStorage.setItem('don-doc:budget', String(val)) }
-                  setIsBudgetEditing(false)
-                }}
-                className="text-xs px-2 py-1 bg-white text-black rounded-lg font-semibold"
-              >저장</button>
-              <button onClick={() => setIsBudgetEditing(false)} className="text-xs text-zinc-500 hover:text-white">✕</button>
+  // ── Member: 남은 예산 카드 ──
+  const MemberBudgetCard = () => {
+    const remaining = Math.max(myBudget - myExpenses, 0)
+    const pct = myBudget > 0 ? Math.min((myExpenses / myBudget) * 100, 100) : 0
+    const isOver = myExpenses >= myBudget
+    const isWarning = pct >= 80
+
+    const monthLabel = selectedMonth === nowMonth
+      ? '이번 달'
+      : selectedMonth.replace('-', '년 ') + '월'
+
+    return (
+      <div className={cn(
+        'rounded-2xl p-6 border mb-6',
+        isOver
+          ? 'bg-red-950/20 border-red-900/50'
+          : isWarning
+          ? 'bg-amber-950/10 border-amber-900/40'
+          : 'bg-zinc-900 border-zinc-800'
+      )}>
+        {/* 헤더 */}
+        <div className="flex items-start justify-between mb-1">
+          <p className="text-xs font-medium text-zinc-500 uppercase tracking-wide">{monthLabel} 남은 예산</p>
+          {myBudgetDB > 0
+            ? <span className="text-[10px] text-amber-500 bg-amber-900/30 px-2 py-0.5 rounded-full">CFO 설정</span>
+            : myBudget > 0
+            ? <span className="text-[10px] text-zinc-600 bg-zinc-800 px-2 py-0.5 rounded-full">직접 설정</span>
+            : null}
+        </div>
+
+        {/* 남은 금액 — 핵심 숫자 */}
+        {myBudget > 0 ? (
+          <>
+            <p className={cn(
+              'text-4xl font-bold tabular-nums tracking-tight mt-2 mb-1',
+              isOver ? 'text-red-400' : isWarning ? 'text-amber-400' : 'text-white'
+            )}>
+              {isOver ? '-' : ''}{formatCurrency(remaining)}
+            </p>
+            <p className="text-xs text-zinc-500 mb-5">
+              {formatCurrency(myExpenses)} 사용 / {formatCurrency(myBudget)} 예산
+            </p>
+
+            {/* Progress Bar */}
+            <Progress
+              value={pct}
+              className="h-3 mb-3"
+              indicatorClassName={cn(
+                isOver || isWarning ? 'bg-red-500' : 'bg-emerald-500'
+              )}
+            />
+            <div className="flex items-center justify-between">
+              <span className={cn(
+                'text-xs font-medium',
+                isOver ? 'text-red-400' : isWarning ? 'text-amber-400' : 'text-zinc-400'
+              )}>
+                {Math.round(pct)}% 사용{isOver ? ' — 예산 초과' : isWarning ? ' — 주의' : ''}
+              </span>
+              <span className="text-xs text-zinc-500">{myTxCount}건</span>
             </div>
-          ) : (
-            <button
-              onClick={() => { setBudgetInput(String(customBudget || '')); setIsBudgetEditing(true) }}
-              className="flex items-center gap-1.5 text-xs text-zinc-500 hover:text-white transition-colors px-2 py-1 rounded-lg border border-zinc-800 hover:border-zinc-600"
-            >
-              <Calculator className="w-3 h-3" />
-              예산 설정
-            </button>
-          )
+          </>
+        ) : (
+          /* 예산 미설정 */
+          <div className="mt-4">
+            <p className="text-3xl font-bold text-white tabular-nums mb-1">{formatCurrency(myExpenses)}</p>
+            <p className="text-xs text-zinc-500 mb-5">{monthLabel} 지출 · {myTxCount}건</p>
+            <p className="text-xs text-zinc-600">예산이 설정되지 않았습니다</p>
+          </div>
         )}
       </div>
-      {/* 예산 프로그레스 바 */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm text-zinc-400">사용한 예산</span>
-          <span className="text-sm font-medium text-white">
-            {formatCurrency(myExpenses)} / {formatCurrency(myBudget)}
-          </span>
-        </div>
-        <div className="w-full bg-zinc-800 rounded-full h-3 mb-2">
-          <div 
-            className={cn(
-              "h-3 rounded-full transition-all duration-300",
-              (myExpenses / myBudget) > 0.8 ? "bg-gradient-to-r from-red-500 to-red-600" : "bg-gradient-to-r from-blue-500 to-blue-600"
-            )}
-            style={{ width: `${Math.min((myExpenses / myBudget) * 100, 100)}%` }}
-          />
-        </div>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-zinc-500">{Math.round((myExpenses / myBudget) * 100)}% 사용</span>
-          <span className="text-xs text-zinc-500">{formatCurrency(Math.max(myBudget - myExpenses, 0))} 남음</span>
-        </div>
-      </div>
-      {/* 핵심 지표 */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-zinc-800 rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <BurnRateIcon className="w-4 h-4 text-orange-500" />
-            <span className="text-sm text-zinc-400">건당 평균</span>
-          </div>
-          <div className="text-xl font-bold text-white">{formatCurrency(myBurnRate)}</div>
-          <div className="text-xs text-zinc-500">/건</div>
-        </div>
-        <div className="bg-zinc-800 rounded-xl p-4">
-          <div className="text-sm text-zinc-400 mb-2">저축률</div>
-          <div className={cn("text-xl font-bold", mySavingsRate >= 0 ? "text-green-500" : "text-red-500")}>{mySavingsRate}%</div>
-          <div className="text-xs text-zinc-500">수입 대비</div>
-        </div>
-      </div>
-    </div>
-  )
-
-  const PersonalExpenseChart = () => (
-    <div className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <TrendingDown className="w-5 h-5" />
-          내 지출 분석
-        </h2>
-        <div className="text-sm text-zinc-400">{myTxCount}건</div>
-      </div>
-      {/* 핵심 수치 */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
-        <div className="bg-zinc-800 rounded-xl p-3 text-center">
-          <div className="text-lg font-bold text-red-400 tabular-nums">{formatCurrency(myExpenses)}</div>
-          <div className="text-xs text-zinc-500 mt-1">총 지출</div>
-        </div>
-        <div className="bg-zinc-800 rounded-xl p-3 text-center">
-          <div className="text-lg font-bold text-white tabular-nums">{formatCurrency(myMaxExpense)}</div>
-          <div className="text-xs text-zinc-500 mt-1">최대 지출</div>
-        </div>
-        <div className="bg-zinc-800 rounded-xl p-3 text-center">
-          <div className="text-lg font-bold text-green-500 tabular-nums">{formatCurrency(myIncome)}</div>
-          <div className="text-xs text-zinc-500 mt-1">수입</div>
-        </div>
-      </div>
-      {/* 카테고리별 지출 바 */}
-      {myCategoryData.length > 0 ? (
-        <div className="space-y-3">
-          {myCategoryData.map((cat, i) => (
-            <div key={cat.category}>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm text-zinc-300">{cat.category}</span>
-                <span className="text-sm font-medium text-white tabular-nums">{formatCurrency(cat.amount)}</span>
-              </div>
-              <div className="w-full bg-zinc-800 rounded-full h-2">
-                <div
-                  className="h-2 rounded-full transition-all"
-                  style={{ width: `${cat.percentage}%`, backgroundColor: CATEGORY_COLORS[i % CATEGORY_COLORS.length] }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="text-center py-8 text-zinc-500 text-sm">지출 내역이 없습니다</div>
-      )}
-    </div>
-  )
+    )
+  }
 
   return (
     <div className="min-h-screen bg-black text-white p-6">
@@ -996,6 +1034,9 @@ const Dashboard = () => {
         </div>
 
 
+        {/* ── 월 선택기 ── */}
+        <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
+
         {/* 자산 없을 때 Empty State */}
         {!isLoading && !hasAssets && (
           <motion.div
@@ -1048,70 +1089,31 @@ const Dashboard = () => {
               exit={{ opacity: 0, y: -12 }}
               transition={{ duration: 0.25 }}
             >
-              {/* ── Member: 개인 요약 카드 ── */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 md:gap-4 mb-6">
-                <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Wallet className="w-4 h-4 text-blue-400" />
-                    <h3 className="text-zinc-400 text-xs font-medium">내 가용 자산</h3>
-                  </div>
-                  <div className="text-xl md:text-2xl font-bold text-white">
-                    {isLoading ? '...' : formatCurrency(wealthData.personalBudget)}
-                  </div>
-                </div>
-                <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CreditCard className="w-4 h-4 text-red-400" />
-                    <h3 className="text-zinc-400 text-xs font-medium">이번 달 내 지출</h3>
-                  </div>
-                  <div className="text-xl md:text-2xl font-bold text-red-400">
-                    {isLoading ? '...' : formatCurrency(myExpenses)}
-                  </div>
-                  <div className="text-xs text-zinc-500 mt-1">{myTxCount}건</div>
-                </div>
-                <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800 col-span-2 md:col-span-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <DollarSign className="w-4 h-4 text-green-400" />
-                    <h3 className="text-zinc-400 text-xs font-medium">이번 달 내 수입</h3>
-                  </div>
-                  <div className="text-xl md:text-2xl font-bold text-green-500">
-                    {isLoading ? '...' : formatCurrency(myIncome)}
-                  </div>
-                </div>
-              </div>
-
-              {/* ── Member: 예산 + 지출 분석 ── */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <PersonalBudgetWidget />
-                <PersonalExpenseChart />
-              </div>
+              {/* ── Member: 남은 예산 메인 카드 ── */}
+              <MemberBudgetCard />
 
               {/* ── Member: 내 거래 내역 ── */}
               <div className="bg-zinc-900 rounded-2xl p-4 md:p-6 border border-zinc-800">
-                <div className="flex items-center justify-between mb-4 md:mb-6">
-                  <h2 className="text-lg md:text-xl font-bold text-white flex items-center gap-2">
-                    <Wallet className="w-4 h-4 md:w-5 md:h-5" />
-                    내 거래 내역
-                  </h2>
-                  <div className="text-xs md:text-sm text-zinc-400">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-base font-bold text-white">최근 거래 내역</h2>
+                  <div className="text-xs text-zinc-500">
                     {transactions.filter(tx => tx.userId === currentUserId).length}건
                   </div>
                 </div>
                 {isLoading ? (
                   <div className="flex items-center justify-center py-12">
-                    <div className="text-zinc-500 text-sm">데이터를 불러오는 중...</div>
+                    <div className="text-zinc-500 text-sm">불러오는 중...</div>
                   </div>
                 ) : (
                   <div className="space-y-1">
                     {transactions
                       .filter(tx => tx.userId === currentUserId)
                       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                      .slice(0, 10)
                       .map(transaction => (
                         <TransactionRow key={transaction.id} transaction={transaction} />
                       ))}
                     {transactions.filter(tx => tx.userId === currentUserId).length === 0 && (
-                      <div className="text-center py-8 text-zinc-500 text-sm">거래 내역이 없습니다</div>
+                      <div className="text-center py-12 text-zinc-500 text-sm">거래 내역이 없습니다</div>
                     )}
                   </div>
                 )}
@@ -1126,45 +1128,116 @@ const Dashboard = () => {
               transition={{ duration: 0.25 }}
             >
               {/* ── CFO: 패밀리 요약 카드 ── */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
-                <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Wallet className="w-4 h-4 text-emerald-500" />
-                    <h3 className="text-zinc-400 text-xs font-medium">가족 총자산</h3>
+              {(() => {
+                const monthLabel = selectedMonth === nowMonth ? '이번 달' : selectedMonth.replace('-', '년 ') + '월'
+                const hasInsight = insights && insights.historicalMonthCount >= 2
+                const expDiff = insights?.expenseVsAvgPercent ?? 0
+                const savDiff = insights?.savingsRateVsAvgPercent ?? 0
+                return (
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
+                    {/* 자산 통합 카드 — col-span-2 */}
+                    <div className="col-span-2 bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Wallet className="w-4 h-4 text-emerald-500" />
+                          <h3 className="text-zinc-400 text-xs font-medium">가족 총자산</h3>
+                        </div>
+                        {insights && (
+                          <div className={cn(
+                            'flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium',
+                            insights.assetChange >= 0
+                              ? 'text-emerald-400 bg-emerald-950/60 border border-emerald-900/50'
+                              : 'text-red-400 bg-red-950/60 border border-red-900/50'
+                          )}>
+                            {insights.assetChange >= 0
+                              ? <TrendingUp className="w-3 h-3" />
+                              : <TrendingDown className="w-3 h-3" />}
+                            {insights.assetChange >= 0 ? '▲' : '▼'} {Math.abs(insights.assetChangePercent).toFixed(1)}%
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-xl md:text-2xl font-bold text-white">
+                        {isLoading ? '...' : formatCurrency(wealthData.totalAssets)}
+                      </div>
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-zinc-800">
+                        <div>
+                          <div className="text-xs text-zinc-500 mb-0.5">내 자산</div>
+                          <div className="text-sm font-semibold text-blue-400">
+                            {isLoading ? '...' : formatCurrency(wealthData.personalBudget)}
+                          </div>
+                        </div>
+                        {insights && insights.assetChange !== 0 && (
+                          <div className="text-right">
+                            <div className="text-xs text-zinc-500 mb-0.5">이달 변동</div>
+                            <div className={cn(
+                              'text-sm font-semibold',
+                              insights.assetChange >= 0 ? 'text-emerald-400' : 'text-red-400'
+                            )}>
+                              {insights.assetChange >= 0 ? '+' : ''}{formatLargeNumber(insights.assetChange)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 지출 카드 */}
+                    <div className={cn(
+                      'bg-zinc-900 rounded-2xl p-4 md:p-5 border transition-colors',
+                      hasInsight && expDiff > 10
+                        ? 'border-orange-900/50 bg-orange-950/10'
+                        : 'border-zinc-800'
+                    )}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <CreditCard className={cn('w-4 h-4', hasInsight && expDiff > 10 ? 'text-orange-400' : 'text-red-400')} />
+                        <h3 className="text-zinc-400 text-xs font-medium">{monthLabel} 지출</h3>
+                      </div>
+                      <div className={cn(
+                        'text-xl md:text-2xl font-bold',
+                        hasInsight && expDiff > 10 ? 'text-orange-400' : 'text-red-400'
+                      )}>
+                        {isLoading ? '...' : formatCurrency(monthlyExpenses)}
+                      </div>
+                      <div className="text-xs text-zinc-500 mt-1">{transactionCount}건</div>
+                      {hasInsight && (
+                        <p className={cn(
+                          'text-xs mt-2 leading-snug',
+                          expDiff > 0 ? 'text-orange-400' : 'text-emerald-400'
+                        )}>
+                          {expDiff > 0
+                            ? `연평균 대비 ${Math.abs(expDiff).toFixed(0)}% 더 쓰고 있어요`
+                            : `연평균 대비 ${Math.abs(expDiff).toFixed(0)}% 적게 쓰고 있어요`}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* 수입 / 저축률 카드 */}
+                    <div className={cn(
+                      'bg-zinc-900 rounded-2xl p-4 md:p-5 border transition-colors',
+                      hasInsight && savDiff >= 5
+                        ? 'border-emerald-900/50 bg-emerald-950/10'
+                        : 'border-zinc-800'
+                    )}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <DollarSign className="w-4 h-4 text-green-400" />
+                        <h3 className="text-zinc-400 text-xs font-medium">{monthLabel} 수입</h3>
+                      </div>
+                      <div className="text-xl md:text-2xl font-bold text-green-500">
+                        {isLoading ? '...' : formatCurrency(monthlyIncome)}
+                      </div>
+                      {hasInsight && (
+                        <p className={cn(
+                          'text-xs mt-2 leading-snug',
+                          savDiff >= 0 ? 'text-emerald-400' : 'text-orange-400'
+                        )}>
+                          {savDiff >= 0
+                            ? `연평균 대비 저축률이 ${Math.abs(savDiff).toFixed(0)}%p 높습니다`
+                            : `연평균 대비 저축률이 ${Math.abs(savDiff).toFixed(0)}%p 낮아요`}
+                        </p>
+                      )}
+                    </div>
                   </div>
-                  <div className="text-xl md:text-2xl font-bold text-white">
-                    {isLoading ? '...' : formatCurrency(wealthData.totalAssets)}
-                  </div>
-                </div>
-                <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
-                  <div className="flex items-center gap-2 mb-2">
-                    <CreditCard className="w-4 h-4 text-red-400" />
-                    <h3 className="text-zinc-400 text-xs font-medium">이번 달 지출</h3>
-                  </div>
-                  <div className="text-xl md:text-2xl font-bold text-red-400">
-                    {isLoading ? '...' : formatCurrency(monthlyExpenses)}
-                  </div>
-                  <div className="text-xs text-zinc-500 mt-1">{transactionCount}건</div>
-                </div>
-                <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
-                  <div className="flex items-center gap-2 mb-2">
-                    <DollarSign className="w-4 h-4 text-green-400" />
-                    <h3 className="text-zinc-400 text-xs font-medium">이번 달 수입</h3>
-                  </div>
-                  <div className="text-xl md:text-2xl font-bold text-green-500">
-                    {isLoading ? '...' : formatCurrency(monthlyIncome)}
-                  </div>
-                </div>
-                <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Calculator className="w-4 h-4 text-blue-400" />
-                    <h3 className="text-zinc-400 text-xs font-medium">내 자산</h3>
-                  </div>
-                  <div className="text-xl md:text-2xl font-bold text-blue-400">
-                    {isLoading ? '...' : formatCurrency(wealthData.personalBudget)}
-                  </div>
-                </div>
-              </div>
+                )
+              })()}
 
               {/* ── CFO: 자산 목록 ── */}
               <div className="mb-6">
@@ -1204,6 +1277,9 @@ const Dashboard = () => {
 
               {/* ── CFO: 예산 관리 요약 ── */}
               <BudgetSummaryCard />
+
+              {/* ── AI 인사이트 ── */}
+              {familyId && <AiInsights familyId={familyId} />}
 
               {/* ── CFO: 가족 거래 피드 + 투자 성과 ── */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">

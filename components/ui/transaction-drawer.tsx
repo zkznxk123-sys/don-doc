@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Minus, Plus, Globe, Lock, Trash2 } from 'lucide-react'
+import { Minus, Plus, Globe, Lock, Trash2, Sparkles, Loader2 } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle,
@@ -132,6 +132,31 @@ export function TransactionDrawer({
   const [error, setError] = useState('')
   const [accounts, setAccounts] = useState<AccountOption[]>([])
   const [autoSuggestedCategory, setAutoSuggestedCategory] = useState<string | null>(null)
+  const [isAiCategorizing, setIsAiCategorizing] = useState(false)
+
+  const handleAiCategorize = async () => {
+    if (!description.trim() && !amount) return
+    setIsAiCategorizing(true)
+    try {
+      const res = await fetch('/api/ai/categorize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description,
+          amount: amount ? (isExpense ? -Number(amount) : Number(amount)) : undefined,
+        }),
+      })
+      const data = await res.json()
+      if (data.category) {
+        setCategory(data.category)
+        setAutoSuggestedCategory(data.category)
+      }
+    } catch {
+      // llm-mux 미실행 시 무시
+    } finally {
+      setIsAiCategorizing(false)
+    }
+  }
 
   const handleDescriptionChange = (text: string) => {
     setDescription(text)
@@ -388,7 +413,24 @@ export function TransactionDrawer({
           <div className="space-y-4">
             {/* Category */}
             <div>
-              <Label className="mb-2.5 block">카테고리</Label>
+              <div className="flex items-center justify-between mb-2.5">
+                <Label>카테고리</Label>
+                <button
+                  type="button"
+                  onClick={handleAiCategorize}
+                  disabled={isAiCategorizing || (!description.trim() && !amount)}
+                  className={cn(
+                    'flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all',
+                    isAiCategorizing || (!description.trim() && !amount)
+                      ? 'text-zinc-600 cursor-not-allowed'
+                      : 'text-violet-400 hover:text-violet-300 hover:bg-violet-500/10 active:scale-95'
+                  )}
+                >
+                  {isAiCategorizing
+                    ? <><Loader2 className="w-3 h-3 animate-spin" />분류 중...</>
+                    : <><Sparkles className="w-3 h-3" />AI 분류</>}
+                </button>
+              </div>
               <div className="grid grid-cols-3 gap-2">
                 {CATEGORIES.map((cat) => {
                   const isSelected = category === cat.value

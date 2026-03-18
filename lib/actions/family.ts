@@ -149,6 +149,45 @@ export async function updateFamilyName(name: string): Promise<{ error?: string }
   return {}
 }
 
+/**
+ * 가족 데이터 초기화 Server Action
+ * - CFO 권한 + 본인 familyId 일치 여부 검증
+ * - Transaction 전체 삭제, Budget 전체 삭제, Account 잔액 0으로 초기화
+ */
+export async function resetFamilyData(
+  familyId: string
+): Promise<{ success: boolean; error?: string }> {
+  const user = await getAuthUser()
+  if (!user) return { success: false, error: '인증이 필요합니다.' }
+  if (user.role !== 'CFO') return { success: false, error: 'CFO 권한이 필요합니다.' }
+  if (user.familyId !== familyId) return { success: false, error: '권한이 없습니다.' }
+
+  try {
+    await prisma.$transaction([
+      // 해당 가족의 모든 Transaction 삭제 (Account → Transaction FK 때문에 먼저)
+      prisma.transaction.deleteMany({
+        where: { account: { familyId } },
+      }),
+      // 해당 가족의 모든 Budget 삭제
+      prisma.budget.deleteMany({
+        where: { familyId },
+      }),
+      // 해당 가족의 모든 Account 잔액 0으로 초기화
+      prisma.account.updateMany({
+        where: { familyId },
+        data: { balance: 0 },
+      }),
+    ])
+
+    const { revalidatePath } = await import('next/cache')
+    revalidatePath('/dashboard')
+    return { success: true }
+  } catch (e) {
+    console.error('[resetFamilyData] ERROR:', e)
+    return { success: false, error: '초기화 중 오류가 발생했습니다.' }
+  }
+}
+
 export async function joinFamily(inviteCode: string): Promise<{ error?: string }> {
   const user = await getAuthUser()
   if (!user) return { error: '인증이 필요합니다.' }
