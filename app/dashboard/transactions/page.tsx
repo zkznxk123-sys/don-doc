@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, PiggyBank, ArrowLeft } from 'lucide-react'
-import Link from 'next/link'
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, PiggyBank } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 
@@ -67,18 +66,12 @@ export default function TransactionsPage() {
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="max-w-3xl mx-auto px-4 py-8">
+    <div className="max-w-3xl mx-auto">
 
         {/* 헤더 */}
-        <div className="flex items-center gap-3 mb-8">
-          <Link href="/dashboard" className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
-          <div>
-            <h1 className="text-xl font-bold text-white">전체 내역</h1>
-            <p className="text-xs text-zinc-500 mt-0.5">수입·지출 전체 조회</p>
-          </div>
+        <div className="mb-8">
+          <h1 className="text-xl font-bold text-white">전체 내역</h1>
+          <p className="text-xs text-zinc-500 mt-0.5">수입·지출 전체 조회</p>
         </div>
 
         {/* 월 컨트롤러 */}
@@ -178,10 +171,9 @@ export default function TransactionsPage() {
           )}
         </div>
 
-        {!loading && transactions.length > 0 && (
-          <p className="text-center text-xs text-zinc-600 mt-4">총 {transactions.length}건</p>
-        )}
-      </div>
+      {!loading && transactions.length > 0 && (
+        <p className="text-center text-xs text-zinc-600 mt-4">총 {transactions.length}건</p>
+      )}
     </div>
   )
 }

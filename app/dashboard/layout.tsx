@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { getAuthUser } from '@/lib/auth'
+import { DashboardShell } from '@/components/layout/DashboardShell'
 
 export default async function DashboardLayout({
   children,
@@ -8,13 +9,12 @@ export default async function DashboardLayout({
 }) {
   const user = await getAuthUser()
 
-  if (!user) {
-    redirect('/login')
-  }
+  if (!user) redirect('/login')
+  if (!user.familyId) redirect('/onboarding')
 
-  if (!user.familyId) {
-    redirect('/onboarding')
-  }
-
-  return <>{children}</>
+  return (
+    <DashboardShell user={user}>
+      {children}
+    </DashboardShell>
+  )
 }

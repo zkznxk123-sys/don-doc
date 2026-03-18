@@ -3,21 +3,17 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { TrendingUp, TrendingDown, Eye, EyeOff, Wallet, PieChart, ArrowUpRight, ArrowDownRight, AreaChartIcon, CreditCard, TrendingDown as BurnRateIcon, DollarSign, Calculator, Filter, Plus, Settings, User, Users, ChevronLeft, ChevronRight, PiggyBank } from 'lucide-react'
-import { Header } from '@/components/layout/Header'
 import { formatCurrency, formatLargeNumber, cn } from '@/lib/utils'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell, Legend, BarChart, Bar, XAxis as BarXAxis, YAxis as BarYAxis } from 'recharts'
 import { SwipeableRow } from '@/components/ui/swipeable-row'
-import { MobileDrawer, QuickAction } from '@/components/ui/mobile-drawer'
-// server actions no longer used directly — using API routes instead
 import { motion, AnimatePresence } from 'framer-motion'
-import { TransactionDrawer, type TransactionFormData, type EditTransactionData } from '@/components/ui/transaction-drawer'
+import { type EditTransactionData } from '@/components/ui/transaction-drawer'
 import { AssetDonutChart, type AssetTypeData } from '@/components/ui/asset-donut-chart'
 import { AccountDrawer, type AccountInitialData } from '@/components/ui/account-drawer'
 import { AssetList } from '@/components/ui/asset-list'
-import { ExcelUploadDrawer } from '@/components/ui/excel-upload-drawer'
-import { TransactionFeed, type FeedTransaction } from '@/components/dashboard/TransactionFeed'
 import { AiInsights } from '@/components/ui/ai-insights'
 import { Progress } from '@/components/ui/progress'
+import { useDashboardActions } from '@/components/layout/DashboardShell'
 import Link from 'next/link'
 
 interface Transaction {
@@ -149,12 +145,9 @@ const Dashboard = () => {
   }, [searchParams, router, nowMonth])
 
   const [viewMode, setViewMode] = useState<'CFO' | 'MEMBER'>('CFO')
-  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false)
-  const [isTransactionDrawerOpen, setIsTransactionDrawerOpen] = useState(false)
   const [isAccountDrawerOpen, setIsAccountDrawerOpen] = useState(false)
-  const [isExcelDrawerOpen, setIsExcelDrawerOpen] = useState(false)
   const [selectedAccount, setSelectedAccount] = useState<AccountInitialData | undefined>(undefined)
-  const [selectedTransaction, setSelectedTransaction] = useState<EditTransactionData | null>(null)
+  const { openTransactionDrawer, openExcelDrawer, refreshKey } = useDashboardActions()
   const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS)
   const [isLoading, setIsLoading] = useState(true)
   const [wealthData, setWealthData] = useState<WealthData>({
@@ -274,7 +267,7 @@ const Dashboard = () => {
       }
     }
     loadMonthData()
-  }, [selectedMonth])
+  }, [selectedMonth, refreshKey])
 
   const reloadWealth = async () => {
     try {
@@ -315,6 +308,8 @@ const Dashboard = () => {
       // silent
     }
   }
+
+  useEffect(() => { if (refreshKey > 0) reloadWealth() }, [refreshKey])
 
   const hasAssets = !isLoading && assets.length > 0
 
@@ -456,7 +451,7 @@ const Dashboard = () => {
 
     const handleEdit = () => {
       if (!canEdit) return
-      setSelectedTransaction({
+      openTransactionDrawer({
         id: transaction.id,
         amount: transaction.amount,
         date: transaction.date,
@@ -467,7 +462,6 @@ const Dashboard = () => {
         accountId: (transaction as any).accountId ?? '',
         isMasked: transaction.isMasked,
       })
-      setIsTransactionDrawerOpen(true)
     }
     
     const content = (
@@ -977,25 +971,8 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white p-6">
-      <div className="max-w-7xl mx-auto">
-        <Header
-          familyName={familyName}
-          userName={userName}
-          userRole={userRole}
-
-          onAddTransaction={() => {
-            setSelectedTransaction(null)
-            setIsTransactionDrawerOpen(true)
-          }}
-          onExcelUpload={() => setIsExcelDrawerOpen(true)}
-          onLogout={async () => {
-            await fetch('/api/auth/logout', { method: 'POST' })
-            window.location.href = '/login'
-          }}
-        />
-
-        {/* 모드 전환 탭 */}
+    <div className="max-w-5xl mx-auto">
+      {/* 모드 전환 탭 */}
         <div className="flex items-center bg-zinc-900 rounded-xl border border-zinc-800 p-1 mb-6 max-w-xs">
           <button
             onClick={() => setViewMode('MEMBER')}
@@ -1400,145 +1377,16 @@ const Dashboard = () => {
           )}
         </AnimatePresence>}
 
-        {/* 모바일 전용 퀵액션 드로어 */}
-
-        <MobileDrawer
-          isOpen={isMobileDrawerOpen}
-          onClose={() => setIsMobileDrawerOpen(false)}
-          title="빠른 실행"
-          position="bottom"
-        >
-          <div className="grid grid-cols-4 gap-4">
-            <QuickAction
-              icon={<Plus className="w-6 h-6" />}
-              label="지출 추가"
-              onClick={() => console.log('Add expense')}
-              color="blue"
-            />
-            <QuickAction
-              icon={<Eye className="w-6 h-6" />}
-              label="공유 전환"
-              onClick={() => console.log('Toggle visibility')}
-              color="green"
-            />
-            <QuickAction
-              icon={<Filter className="w-6 h-6" />}
-              label="필터"
-              onClick={() => console.log('Filter')}
-              color="yellow"
-            />
-            <QuickAction
-              icon={<Settings className="w-6 h-6" />}
-              label="설정"
-              onClick={() => console.log('Settings')}
-              color="red"
-            />
-          </div>
-          
-          {selectedTransaction && (
-            <div className="mt-6 p-4 bg-zinc-800 rounded-xl">
-              <h4 className="text-sm font-medium text-white mb-2">선택된 거래</h4>
-              <p className="text-xs text-zinc-400">{selectedTransaction.description}</p>
-              <p className="text-sm font-medium text-white mt-1">
-                {formatCurrency(selectedTransaction.amount)}
-              </p>
-            </div>
-          )}
-        </MobileDrawer>
-
-        {/* 거래 추가 / 수정 드로어 */}
-        <TransactionDrawer
-          isOpen={isTransactionDrawerOpen}
-          onClose={() => {
-            setIsTransactionDrawerOpen(false)
-            setSelectedTransaction(null)
-          }}
-          currentUserId={currentUserId}
-          userRole={userRole}
-          familyId={familyId}
-          editTransaction={selectedTransaction}
-          onSuccess={async () => {
-            try {
-              const [txRes, wRes] = await Promise.all([
-                fetch('/api/transactions/list'),
-                fetch('/api/wealth'),
-              ])
-              const txData = await txRes.json()
-              if (txData.success) {
-                setTransactions(txData.transactions.map((tx: any) => ({
-                  id: tx.id,
-                  amount: tx.amount,
-                  description: tx.description,
-                  category: tx.category,
-                  date: tx.date.split('T')[0],
-                  visibility: tx.visibility,
-                  userId: tx.userId,
-                  userName: tx.userName,
-                  isMasked: tx.isMasked,
-                  accountId: tx.accountId,
-                })))
-              }
-              const wData = await wRes.json()
-              if (wData.success) {
-                setWealthData({
-                  totalAssets: wData.totalAssets,
-                  personalBudget: wData.personalAssets,
-                  totalLiabilities: 0,
-                  netWorth: wData.totalAssets,
-                  monthlyChange: 0,
-                  monthlyChangePercent: 0,
-                })
-                const accs = wData.accounts ?? []
-                setAccountList(accs.map((acc: any) => ({
-                  id: acc.id, name: acc.name, type: acc.type,
-                  balance: acc.balance, isShared: acc.isShared,
-                  shareLevel: acc.shareLevel ?? 'PUBLIC',
-                  isMasked: acc.isMasked ?? false,
-                })))
-                if (wData.assetsByType) setAssetsByType(wData.assetsByType)
-              }
-            } catch (e) {
-              console.error('데이터 새로고침 실패:', e)
-            }
-          }}
-        />
-
-        {/* 계좌 추가 / 수정 드로어 */}
-        <AccountDrawer
-          isOpen={isAccountDrawerOpen}
-          onClose={() => {
-            setIsAccountDrawerOpen(false)
-            setSelectedAccount(undefined)
-          }}
-          onSuccess={reloadWealth}
-          initialData={selectedAccount}
-        />
-
-        {/* 엑셀 일괄 등록 드로어 */}
-        <ExcelUploadDrawer
-          isOpen={isExcelDrawerOpen}
-          onClose={() => setIsExcelDrawerOpen(false)}
-          userId={currentUserId}
-          familyId={familyId}
-          onSuccess={async () => {
-            const [txRes, wRes] = await Promise.all([
-              fetch('/api/transactions/list'),
-              fetch('/api/wealth'),
-            ])
-            const txData = await txRes.json()
-            if (txData.success) {
-              setTransactions(txData.transactions.map((tx: any) => ({
-                id: tx.id, amount: tx.amount, description: tx.description,
-                category: tx.category, date: tx.date.split('T')[0],
-                visibility: tx.visibility, userId: tx.userId,
-                accountId: tx.accountId, userName: tx.userName, isMasked: tx.isMasked,
-              })))
-            }
-            const wData = await wRes.json()
-            if (wData.success) reloadWealth()
-          }}
-        />
-      </div>
+      {/* 계좌 추가 / 수정 드로어 */}
+      <AccountDrawer
+        isOpen={isAccountDrawerOpen}
+        onClose={() => {
+          setIsAccountDrawerOpen(false)
+          setSelectedAccount(undefined)
+        }}
+        onSuccess={reloadWealth}
+        initialData={selectedAccount}
+      />
     </div>
   )
 }
