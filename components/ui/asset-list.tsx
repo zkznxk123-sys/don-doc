@@ -1,9 +1,11 @@
 'use client'
 
+import { useState } from 'react'
 import { Banknote, TrendingUp, Bitcoin, Building2, Layers, Users, User, Eye, EyeOff, ChevronRight, Plus, Lock } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
 import type { AccountInitialData } from '@/components/ui/account-drawer'
 import type { ShareLevel } from '@/lib/actions/accounts'
+import { Switch } from '@/components/ui/switch'
 
 const TYPE_META: Record<string, { label: string; Icon: React.ElementType; color: string; bg: string }> = {
   CASH:        { label: '현금 · 예적금', Icon: Banknote,   color: 'text-blue-400',    bg: 'bg-blue-400/10' },
@@ -21,14 +23,26 @@ interface AssetListProps {
 }
 
 export function AssetList({ accounts, totalAssets, onEdit, onAdd }: AssetListProps) {
+  const [excludeZero, setExcludeZero] = useState(true)
+
   if (accounts.length === 0) return null
+
+  const visibleAccounts = excludeZero ? accounts.filter(a => a.balance !== 0) : accounts
 
   return (
     <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
         <h3 className="text-sm font-semibold text-white">등록된 자산</h3>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-zinc-500">{accounts.length}개 계좌</span>
+          <label className="flex items-center gap-1.5 cursor-pointer select-none">
+            <span className="text-xs text-zinc-500">0원 자산 제외</span>
+            <Switch
+              checked={excludeZero}
+              onCheckedChange={setExcludeZero}
+              className="scale-75 origin-right"
+            />
+          </label>
+          <span className="text-xs text-zinc-600">{visibleAccounts.length}개</span>
           <button
             onClick={onAdd}
             className="flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition-colors"
@@ -40,7 +54,7 @@ export function AssetList({ accounts, totalAssets, onEdit, onAdd }: AssetListPro
       </div>
 
       <div className="divide-y divide-zinc-800/60">
-        {accounts.map((account) => {
+        {visibleAccounts.map((account) => {
           const meta = TYPE_META[account.type] ?? TYPE_META['CASH']
           const MetaIcon = meta.Icon
           const allocation = totalAssets > 0

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { TrendingUp, TrendingDown, Eye, EyeOff, Wallet, PieChart, ArrowUpRight, ArrowDownRight, AreaChartIcon, CreditCard, TrendingDown as BurnRateIcon, DollarSign, Calculator, Filter, Plus, Settings, User, Users, ChevronLeft, ChevronRight } from 'lucide-react'
+import { TrendingUp, TrendingDown, Eye, EyeOff, Wallet, PieChart, ArrowUpRight, ArrowDownRight, AreaChartIcon, CreditCard, TrendingDown as BurnRateIcon, DollarSign, Calculator, Filter, Plus, Settings, User, Users, ChevronLeft, ChevronRight, PiggyBank } from 'lucide-react'
 import { Header } from '@/components/layout/Header'
 import { formatCurrency, formatLargeNumber, cn } from '@/lib/utils'
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart as RePieChart, Pie, Cell, Legend, BarChart, Bar, XAxis as BarXAxis, YAxis as BarYAxis } from 'recharts'
@@ -1133,10 +1133,18 @@ const Dashboard = () => {
                 const hasInsight = insights && insights.historicalMonthCount >= 2
                 const expDiff = insights?.expenseVsAvgPercent ?? 0
                 const savDiff = insights?.savingsRateVsAvgPercent ?? 0
+                const familySavingsRate = monthlyIncome > 0
+                  ? Math.round(((monthlyIncome - monthlyExpenses) / monthlyIncome) * 100)
+                  : 0
+                const SAVINGS_GOAL = 30
+                const savingsToGoalPct = Math.min((familySavingsRate / SAVINGS_GOAL) * 100, 100)
+                const isSavingsGood = familySavingsRate >= SAVINGS_GOAL
+
                 return (
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4 mb-6">
-                    {/* 자산 통합 카드 — col-span-2 */}
-                    <div className="col-span-2 bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-6">
+
+                    {/* ── Card 1: 가족 총자산 ── */}
+                    <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-2">
                           <Wallet className="w-4 h-4 text-emerald-500" />
@@ -1180,61 +1188,108 @@ const Dashboard = () => {
                       </div>
                     </div>
 
-                    {/* 지출 카드 */}
+                    {/* ── Card 2: 수입/지출 현금흐름 요약 ── */}
+                    <div className="bg-zinc-900 rounded-2xl p-4 md:p-5 border border-zinc-800">
+                      <div className="flex items-center gap-2 mb-3">
+                        <ArrowUpRight className="w-4 h-4 text-zinc-400" />
+                        <h3 className="text-zinc-400 text-xs font-medium">{monthLabel} 현금흐름</h3>
+                      </div>
+                      {/* 수입 행 */}
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-xs text-zinc-500">수입</span>
+                        <span className="text-sm font-bold text-green-400 tabular-nums">
+                          {isLoading ? '...' : formatCurrency(monthlyIncome)}
+                        </span>
+                      </div>
+                      {/* 지출 행 */}
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-xs text-zinc-500">지출</span>
+                        <div className="text-right">
+                          <span className={cn(
+                            'text-sm font-bold tabular-nums',
+                            hasInsight && expDiff > 10 ? 'text-orange-400' : 'text-red-400'
+                          )}>
+                            {isLoading ? '...' : formatCurrency(monthlyExpenses)}
+                          </span>
+                          <span className="text-[10px] text-zinc-600 ml-1">({transactionCount}건)</span>
+                        </div>
+                      </div>
+                      {/* 구분선 */}
+                      <div className="border-t border-zinc-800 pt-3 space-y-1.5">
+                        {hasInsight && (
+                          <>
+                            <p className={cn(
+                              'text-xs leading-snug',
+                              expDiff > 0 ? 'text-orange-400' : 'text-emerald-400'
+                            )}>
+                              {expDiff > 0
+                                ? `연평균 대비 ${Math.abs(expDiff).toFixed(0)}% 더 쓰고 있어요`
+                                : `연평균 대비 ${Math.abs(expDiff).toFixed(0)}% 적게 쓰고 있어요`}
+                            </p>
+                            <p className="text-[10px] text-zinc-600">
+                              (기준: 최근 {insights.historicalMonthCount}개월 평균 지출 {formatCurrency(insights.avgMonthlyExpense)})
+                            </p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* ── Card 3: 이달의 저축률 ── */}
                     <div className={cn(
-                      'bg-zinc-900 rounded-2xl p-4 md:p-5 border transition-colors',
-                      hasInsight && expDiff > 10
-                        ? 'border-orange-900/50 bg-orange-950/10'
-                        : 'border-zinc-800'
+                      'rounded-2xl p-4 md:p-5 border transition-colors',
+                      isSavingsGood
+                        ? 'bg-emerald-950/10 border-emerald-900/50'
+                        : familySavingsRate < 10
+                        ? 'bg-red-950/10 border-red-900/40'
+                        : 'bg-zinc-900 border-zinc-800'
                     )}>
                       <div className="flex items-center gap-2 mb-2">
-                        <CreditCard className={cn('w-4 h-4', hasInsight && expDiff > 10 ? 'text-orange-400' : 'text-red-400')} />
-                        <h3 className="text-zinc-400 text-xs font-medium">{monthLabel} 지출</h3>
+                        <PiggyBank className="w-4 h-4 text-emerald-400" />
+                        <h3 className="text-zinc-400 text-xs font-medium">이달의 저축률</h3>
                       </div>
+                      {/* 핵심 숫자 */}
                       <div className={cn(
-                        'text-xl md:text-2xl font-bold',
-                        hasInsight && expDiff > 10 ? 'text-orange-400' : 'text-red-400'
+                        'text-3xl font-bold tabular-nums mb-1',
+                        isSavingsGood ? 'text-emerald-400' : familySavingsRate < 10 ? 'text-red-400' : 'text-white'
                       )}>
-                        {isLoading ? '...' : formatCurrency(monthlyExpenses)}
+                        {monthlyIncome > 0 ? `${familySavingsRate}%` : '—'}
                       </div>
-                      <div className="text-xs text-zinc-500 mt-1">{transactionCount}건</div>
+                      <div className="text-xs text-zinc-500 mb-3">
+                        목표 저축률 {SAVINGS_GOAL}% 기준
+                      </div>
+                      {/* 미니 Progress Bar */}
+                      {monthlyIncome > 0 && (
+                        <div className="space-y-1.5 mb-3">
+                          <div className="w-full bg-zinc-800 rounded-full h-2 overflow-hidden">
+                            <div
+                              className={cn(
+                                'h-2 rounded-full transition-all duration-500',
+                                isSavingsGood ? 'bg-emerald-500' : familySavingsRate < 10 ? 'bg-red-500' : 'bg-amber-400'
+                              )}
+                              style={{ width: `${savingsToGoalPct}%` }}
+                            />
+                          </div>
+                          <div className="flex justify-between text-[10px] text-zinc-600">
+                            <span>0%</span>
+                            <span className={isSavingsGood ? 'text-emerald-600' : 'text-zinc-500'}>
+                              목표 {SAVINGS_GOAL}%
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      {/* 인사이트 */}
                       {hasInsight && (
                         <p className={cn(
-                          'text-xs mt-2 leading-snug',
-                          expDiff > 0 ? 'text-orange-400' : 'text-emerald-400'
+                          'text-xs leading-snug',
+                          savDiff >= 0 ? 'text-emerald-400' : 'text-orange-400'
                         )}>
-                          {expDiff > 0
-                            ? `연평균 대비 ${Math.abs(expDiff).toFixed(0)}% 더 쓰고 있어요`
-                            : `연평균 대비 ${Math.abs(expDiff).toFixed(0)}% 적게 쓰고 있어요`}
+                          {savDiff >= 0
+                            ? `연평균보다 ${Math.abs(savDiff).toFixed(0)}%p 높아요`
+                            : `연평균보다 ${Math.abs(savDiff).toFixed(0)}%p 낮아요`}
                         </p>
                       )}
                     </div>
 
-                    {/* 수입 / 저축률 카드 */}
-                    <div className={cn(
-                      'bg-zinc-900 rounded-2xl p-4 md:p-5 border transition-colors',
-                      hasInsight && savDiff >= 5
-                        ? 'border-emerald-900/50 bg-emerald-950/10'
-                        : 'border-zinc-800'
-                    )}>
-                      <div className="flex items-center gap-2 mb-2">
-                        <DollarSign className="w-4 h-4 text-green-400" />
-                        <h3 className="text-zinc-400 text-xs font-medium">{monthLabel} 수입</h3>
-                      </div>
-                      <div className="text-xl md:text-2xl font-bold text-green-500">
-                        {isLoading ? '...' : formatCurrency(monthlyIncome)}
-                      </div>
-                      {hasInsight && (
-                        <p className={cn(
-                          'text-xs mt-2 leading-snug',
-                          savDiff >= 0 ? 'text-emerald-400' : 'text-orange-400'
-                        )}>
-                          {savDiff >= 0
-                            ? `연평균 대비 저축률이 ${Math.abs(savDiff).toFixed(0)}%p 높습니다`
-                            : `연평균 대비 저축률이 ${Math.abs(savDiff).toFixed(0)}%p 낮아요`}
-                        </p>
-                      )}
-                    </div>
                   </div>
                 )
               })()}
