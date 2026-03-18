@@ -47,15 +47,15 @@ export default function LoginPage() {
       await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {})
       await supabase.auth.signOut().catch(() => {})
 
-      const { error: authError } = await supabase.auth.signInWithPassword({
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
         email: data.email,
         password: data.password,
       })
 
       if (authError) {
-        if (authError.message.includes('Invalid login')) {
+        if (authError.message.includes('Invalid login') || authError.message.includes('invalid_credentials')) {
           toast.error('이메일 또는 비밀번호가 올바르지 않습니다.')
-        } else if (authError.message.includes('Email not confirmed')) {
+        } else if (authError.message.includes('Email not confirmed') || authError.message.includes('email_not_confirmed')) {
           toast.error('이메일 인증이 완료되지 않았습니다.', {
             description: '받은 메일함을 확인해주세요.',
           })
@@ -66,6 +66,14 @@ export default function LoginPage() {
         } else {
           toast.error('로그인에 실패했습니다.', { description: authError.message })
         }
+        return
+      }
+
+      // 세션이 없으면 이메일 인증이 필요한 경우
+      if (!authData.session) {
+        toast.error('이메일 인증이 필요합니다.', {
+          description: '가입 시 받은 이메일에서 인증 링크를 클릭해주세요.',
+        })
         return
       }
 

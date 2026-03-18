@@ -11,7 +11,8 @@ export async function POST(req: Request) {
   try {
     const cookieStore = cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
-    const { data: { user: authUser } } = await supabase.auth.getUser()
+    const { data: { session } } = await supabase.auth.getSession()
+    const authUser = session?.user
 
     if (!authUser) {
       return NextResponse.json(

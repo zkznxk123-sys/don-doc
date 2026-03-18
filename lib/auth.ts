@@ -20,7 +20,8 @@ export async function getAuthUser(): Promise<AuthUser | null> {
   try {
     const cookieStore = cookies()
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
-    const { data: { user: authUser } } = await supabase.auth.getUser()
+    const { data: { session } } = await supabase.auth.getSession()
+    const authUser = session?.user
 
     if (!authUser?.email) return null
 
