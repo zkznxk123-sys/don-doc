@@ -84,7 +84,6 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
             <Link
               key={item.href}
               href={item.href}
-              onClick={onClose} // 모바일에서 클릭 시 닫기
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors group',
                 active
@@ -103,7 +102,6 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
         {user.role === 'CFO' && (
           <Link
             href="/dashboard/family"
-            onClick={onClose}
             className={cn(
               'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
               pathname.startsWith('/dashboard/family')

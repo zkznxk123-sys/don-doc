@@ -9,12 +9,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: '인증이 필요합니다.' }, { status: 401 })
     }
 
-    const familyId = authUser.familyId
+    const { searchParams } = new URL(req.url)
+    const familyId = authUser.familyId || searchParams.get('familyId')
     if (!familyId) {
       return NextResponse.json({ success: false, error: '가족 그룹이 없습니다.' }, { status: 400 })
     }
 
-    const { searchParams } = new URL(req.url)
     const month = searchParams.get('month') || new Date().toISOString().slice(0, 7)
 
     const monthStart = new Date(`${month}-01T00:00:00.000Z`)
@@ -32,6 +32,7 @@ export async function GET(req: NextRequest) {
           user: { familyId },
           date: { gte: monthStart, lt: monthEnd },
           amount: { lt: 0 },
+          isExcluded: false,
         },
         select: { userId: true, amount: true },
       }),

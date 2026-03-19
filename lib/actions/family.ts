@@ -99,33 +99,38 @@ export interface FamilyInfo {
 }
 
 export async function getFamilyInfo(): Promise<{ data?: FamilyInfo; error?: string }> {
-  const user = await getAuthUser()
-  if (!user) return { error: '인증이 필요합니다.' }
-  if (!user.familyId) return { error: '가족 그룹이 없습니다.' }
+  try {
+    const user = await getAuthUser()
+    if (!user) return { error: '인증이 필요합니다.' }
+    if (!user.familyId) return { error: '가족 그룹이 없습니다.' }
 
-  const family = await prisma.familyGroup.findUnique({
-    where: { id: user.familyId },
-    include: { users: true },
-  })
-  if (!family) return { error: '가족 그룹을 찾을 수 없습니다.' }
+    const family = await prisma.familyGroup.findUnique({
+      where: { id: user.familyId },
+      include: { users: true },
+    })
+    if (!family) return { error: '가족 그룹을 찾을 수 없습니다.' }
 
-  const invite = await prisma.familyInvite.findFirst({
-    where: { familyId: user.familyId, expiresAt: { gt: new Date() }, usedBy: null },
-    orderBy: { createdAt: 'desc' },
-  })
+    const invite = await prisma.familyInvite.findFirst({
+      where: { familyId: user.familyId, expiresAt: { gt: new Date() }, usedBy: null },
+      orderBy: { createdAt: 'desc' },
+    })
 
-  return {
-    data: {
-      id: family.id,
-      name: family.name,
-      members: family.users.map((u) => ({
-        id: u.id,
-        name: u.name,
-        email: u.email,
-        role: u.role as 'CFO' | 'MEMBER',
-      })),
-      inviteCode: invite?.code ?? null,
-    },
+    return {
+      data: {
+        id: family.id,
+        name: family.name,
+        members: family.users.map((u) => ({
+          id: u.id,
+          name: u.name,
+          email: u.email,
+          role: u.role as 'CFO' | 'MEMBER',
+        })),
+        inviteCode: invite?.code ?? null,
+      },
+    }
+  } catch (e) {
+    console.error('[getFamilyInfo] ERROR:', e)
+    return { error: '데이터를 불러오는 중 오류가 발생했습니다.' }
   }
 }
 

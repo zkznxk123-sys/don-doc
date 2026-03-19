@@ -4,7 +4,9 @@ import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
 
-export type AccountType = 'CASH' | 'INVESTMENT' | 'CRYPTO' | 'REAL_ESTATE'
+export type AccountType = 'CASH' | 'INVESTMENT' | 'CRYPTO' | 'REAL_ESTATE' | 'STO' | 'DEBT' | 'CREDIT_CARD'
+
+const LIABILITY_TYPES: AccountType[] = ['DEBT', 'CREDIT_CARD']
 export type ShareLevel = 'PUBLIC' | 'BALANCE_ONLY' | 'PRIVATE'
 
 export interface CreateAccountInput {
@@ -24,7 +26,8 @@ export async function createAccount(
   const name = input.name.trim()
   if (!name) return { success: false, error: '계좌 이름을 입력해주세요.' }
   if (name.length > 30) return { success: false, error: '30자 이하로 입력해주세요.' }
-  if (input.balance < 0) return { success: false, error: '잔액은 0 이상이어야 합니다.' }
+  if (!LIABILITY_TYPES.includes(input.type) && input.balance < 0)
+    return { success: false, error: '잔액은 0 이상이어야 합니다.' }
 
   const isShared = input.shareLevel !== 'PRIVATE'
 
@@ -58,7 +61,7 @@ export async function updateAccount(
 
   const name = input.name?.trim()
   if (name !== undefined && !name) return { success: false, error: '계좌 이름을 입력해주세요.' }
-  if (input.balance !== undefined && input.balance < 0)
+  if (input.balance !== undefined && input.type && !LIABILITY_TYPES.includes(input.type) && input.balance < 0)
     return { success: false, error: '잔액은 0 이상이어야 합니다.' }
 
   const shareLevel = input.shareLevel

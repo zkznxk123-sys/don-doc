@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { ArrowLeft, Users, Wallet, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Users, Wallet, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, Target, TrendingUp, TrendingDown, PiggyBank } from 'lucide-react'
+import { toast } from 'sonner'
 import Link from 'next/link'
 import { Progress } from '@/components/ui/progress'
 import { formatCurrency, cn } from '@/lib/utils'
+import { useDashboardActions } from '@/components/layout/DashboardShell'
 
 interface Member {
   id: string
@@ -21,7 +22,12 @@ interface BudgetPageData {
   members: Member[]
 }
 
-// "YYYY-MM" 형식 헬퍼
+interface GoalData {
+  targetIncome: number
+  targetExpense: number
+  targetSavingsRate: number
+}
+
 function getMonthString(offset = 0) {
   const d = new Date()
   d.setMonth(d.getMonth() + offset)
@@ -34,67 +40,143 @@ function formatMonthLabel(month: string) {
 }
 
 export default function BudgetPage() {
-  const router = useRouter()
+  const { shellUser } = useDashboardActions()
   const [monthOffset, setMonthOffset] = useState(0)
   const month = getMonthString(monthOffset)
 
   const [data, setData] = useState<BudgetPageData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [isCFO, setIsCFO] = useState(false)
+  const isCFO = shellUser?.role === 'CFO'
 
-  // 편집 상태 — 화면에 보이는 입력값
+  // 예산 입력 (지출 한도 배분)
   const [familyInput, setFamilyInput] = useState('')
   const [memberInputs, setMemberInputs] = useState<Record<string, string>>({})
+
+  // 재무 목표 입력
+  const [goalInput, setGoalInput] = useState({ targetIncome: '', targetExpense: '', targetSavingsRate: '' })
+  const [goalData, setGoalData] = useState<GoalData | null>(null)
 
   const [isSaving, setIsSaving] = useState(false)
   const [saveStatus, setSaveStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [saveError, setSaveError] = useState('')
 
   const loadData = useCallback(async () => {
+    if (!shellUser) return
     setIsLoading(true)
     setSaveStatus('idle')
     try {
-      const [meRes, budgetRes] = await Promise.all([
-        fetch('/api/auth/me'),
-        fetch(`/api/budget?month=${month}`),
+      const budgetParams = new URLSearchParams({ month })
+      if (shellUser.familyId) budgetParams.set('familyId', shellUser.familyId)
+
+      const [budgetRes, goalRes, familyRes] = await Promise.all([
+        fetch(`/api/budget?${budgetParams.toString()}`),
+        fetch(`/api/cashflow/goals?month=${month}`),
+        fetch('/api/family/info'),
       ])
-      const meJson = await meRes.json()
       const budgetJson = await budgetRes.json()
+      const goalJson = await goalRes.json()
+      const familyJson = await familyRes.json()
 
-      if (!meJson.success || !meJson.user?.familyId) {
-        router.push('/login')
-        return
-      }
-
-      setIsCFO(meJson.user.role === 'CFO')
+      // 가족 구성원은 /api/family/info 에서 확정적으로 로드
+      const familyMembers: { id: string; name: string | null; email: string; role: 'CFO' | 'MEMBER' }[] =
+        familyJson.success ? (familyJson.family?.members ?? []) : []
 
       if (budgetJson.success) {
+        const budgetByUser: Record<string, number> = {}
+        const spentByUser: Record<string, number> = {}
+        for (const m of (budgetJson.members ?? [])) {
+          budgetByUser[m.id] = m.budget ?? 0
+          spentByUser[m.id] = m.spent ?? 0
+        }
+
+        const members: Member[] = familyMembers.map(m => ({
+          id: m.id,
+          name: m.name || m.email,
+          role: m.role,
+          budget: budgetByUser[m.id] ?? 0,
+          spent: spentByUser[m.id] ?? 0,
+        }))
+
         const d: BudgetPageData = {
-          familyBudget: budgetJson.familyBudget,
-          familySpent: budgetJson.familySpent,
-          members: budgetJson.members,
+          familyBudget: budgetJson.familyBudget ?? 0,
+          familySpent: budgetJson.familySpent ?? 0,
+          members,
         }
         setData(d)
-        // 입력 초기화
         setFamilyInput(d.familyBudget > 0 ? String(d.familyBudget) : '')
         const inputs: Record<string, string> = {}
         for (const m of d.members) {
           inputs[m.id] = m.budget > 0 ? String(m.budget) : ''
         }
         setMemberInputs(inputs)
+      } else if (familyJson.success) {
+        // 예산 API 실패해도 구성원 목록은 표시
+        const members: Member[] = familyMembers.map(m => ({
+          id: m.id,
+          name: m.name || m.email,
+          role: m.role,
+          budget: 0,
+          spent: 0,
+        }))
+        setData({ familyBudget: 0, familySpent: 0, members })
+      }
+
+      if (goalJson.success && goalJson.goal) {
+        const g: GoalData = goalJson.goal
+        setGoalData(g)
+        setGoalInput({
+          targetIncome: g.targetIncome > 0 ? String(g.targetIncome) : '',
+          targetExpense: g.targetExpense > 0 ? String(g.targetExpense) : '',
+          targetSavingsRate: g.targetSavingsRate > 0 ? String(g.targetSavingsRate) : '',
+        })
       }
     } catch (e) {
       console.error('예산 페이지 로드 오류:', e)
     } finally {
       setIsLoading(false)
     }
-  }, [month, router])
+  }, [month, shellUser])
 
-  useEffect(() => {
-    loadData()
-  }, [loadData])
+  useEffect(() => { loadData() }, [loadData])
 
-  // 실시간 계산값
+  // ── 양방향 바인딩 핸들러 ──
+  // 수입 변경 → 저축률 자동 계산
+  const handleIncomeChange = (val: string) => {
+    const income = Number(val.replace(/[^0-9]/g, '')) || 0
+    const expense = Number(goalInput.targetExpense.replace(/[^0-9]/g, '')) || 0
+    const rate = income > 0 ? Math.round(((income - expense) / income) * 100) : 0
+    setGoalInput(prev => ({
+      ...prev,
+      targetIncome: val.replace(/[^0-9]/g, ''),
+      targetSavingsRate: income > 0 ? String(rate) : prev.targetSavingsRate,
+    }))
+  }
+
+  // 지출 변경 → 저축률 자동 계산
+  const handleExpenseChange = (val: string) => {
+    const income = Number(goalInput.targetIncome.replace(/[^0-9]/g, '')) || 0
+    const expense = Number(val.replace(/[^0-9]/g, '')) || 0
+    const rate = income > 0 ? Math.round(((income - expense) / income) * 100) : 0
+    setGoalInput(prev => ({
+      ...prev,
+      targetExpense: val.replace(/[^0-9]/g, ''),
+      targetSavingsRate: income > 0 ? String(rate) : prev.targetSavingsRate,
+    }))
+  }
+
+  // 저축률 변경 → 목표 지출 역산
+  const handleRateChange = (val: string) => {
+    const income = Number(goalInput.targetIncome.replace(/[^0-9]/g, '')) || 0
+    const rate = Math.min(Math.max(Number(val.replace(/[^0-9]/g, '')) || 0, 0), 100)
+    const expense = income > 0 ? Math.round(income * (1 - rate / 100)) : 0
+    setGoalInput(prev => ({
+      ...prev,
+      targetSavingsRate: val.replace(/[^0-9]/g, ''),
+      targetExpense: income > 0 ? String(expense) : prev.targetExpense,
+    }))
+  }
+
+  // 예산 계산
   const parsedFamilyBudget = Number(familyInput.replace(/[^0-9]/g, '')) || 0
   const parsedMemberBudgets = Object.fromEntries(
     Object.entries(memberInputs).map(([id, v]) => [id, Number(v.replace(/[^0-9]/g, '')) || 0])
@@ -103,37 +185,74 @@ export default function BudgetPage() {
   const unallocated = Math.max(parsedFamilyBudget - totalAllocated, 0)
   const overAllocated = totalAllocated > parsedFamilyBudget && parsedFamilyBudget > 0
 
+  // 목표 계산
+  const parsedIncome = Number(goalInput.targetIncome) || 0
+  const parsedExpenseGoal = Number(goalInput.targetExpense) || 0
+  const parsedRate = Number(goalInput.targetSavingsRate) || 0
+  const savingsAmount = parsedIncome - parsedExpenseGoal
+
   const handleSave = async () => {
     if (isSaving) return
+    if (overAllocated) {
+      toast.error(`구성원 배분 합계(${formatCurrency(totalAllocated)})가 가족 지출 한도(${formatCurrency(parsedFamilyBudget)})를 초과했습니다.`)
+      return
+    }
     setSaveStatus('idle')
     setIsSaving(true)
     try {
+      const requests: Promise<Response>[] = []
+
+      // 재무 목표 저장
+      if (parsedIncome > 0 || parsedExpenseGoal > 0 || parsedRate > 0) {
+        requests.push(fetch('/api/cashflow/goals', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            month,
+            targetIncome: parsedIncome,
+            targetExpense: parsedExpenseGoal,
+            targetSavingsRate: parsedRate,
+          }),
+        }))
+      }
+
       // 가족 전체 예산 저장
       if (parsedFamilyBudget > 0) {
-        await fetch('/api/budget', {
+        requests.push(fetch('/api/budget', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ month, amount: parsedFamilyBudget }),
-        })
+        }))
       }
 
       // 구성원별 예산 저장
-      const memberSaves = (data?.members ?? [])
-        .map(m => ({ userId: m.id, amount: parsedMemberBudgets[m.id] ?? 0 }))
-        .filter(m => m.amount > 0)
-        .map(m =>
-          fetch('/api/budget', {
+      for (const m of (data?.members ?? [])) {
+        const amount = parsedMemberBudgets[m.id] ?? 0
+        if (amount > 0) {
+          requests.push(fetch('/api/budget', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ month, amount: m.amount, targetUserId: m.userId }),
-          })
-        )
-      await Promise.all(memberSaves)
+            body: JSON.stringify({ month, amount, targetUserId: m.id }),
+          }))
+        }
+      }
 
+      const responses = await Promise.all(requests)
+      const results = await Promise.all(responses.map(r => r.json()))
+      const failed = results.find(r => !r.success)
+      if (failed) {
+        toast.error(failed.error || '저장에 실패했습니다.')
+        setSaveStatus('error')
+        setSaveError(failed.error || '저장 실패')
+        return
+      }
+
+      toast.success('저장되었습니다.')
       setSaveStatus('success')
       await loadData()
       setTimeout(() => setSaveStatus('idle'), 3000)
     } catch (e) {
+      toast.error('오류가 발생했습니다. 다시 시도해주세요.')
       setSaveStatus('error')
       setSaveError(String(e))
     } finally {
@@ -143,306 +262,394 @@ export default function BudgetPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-black text-white p-6">
-        <div className="max-w-2xl mx-auto">
-          <div className="h-8 bg-zinc-800 rounded w-48 mb-8 animate-pulse" />
-          <div className="space-y-4">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="h-24 bg-zinc-900 rounded-2xl animate-pulse" />
-            ))}
-          </div>
+      <div className="max-w-2xl mx-auto">
+        <div className="h-8 bg-zinc-800 rounded w-48 mb-8 animate-pulse" />
+        <div className="space-y-4">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-24 bg-zinc-900 rounded-2xl animate-pulse" />
+          ))}
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="max-w-2xl mx-auto p-6">
-        {/* 헤더 */}
-        <div className="flex items-center gap-3 mb-8">
-          <Link
-            href="/dashboard"
-            className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
+    <div className="max-w-2xl mx-auto">
+      {/* 헤더 */}
+      <div className="flex items-center gap-3 mb-8">
+        <Link
+          href="/dashboard"
+          className="p-2 rounded-xl text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Link>
+        <div>
+          <h1 className="text-xl font-bold text-white">가족 예산 관리</h1>
+          <p className="text-xs text-zinc-500">재무 목표를 설정하고 예산을 배분하세요</p>
+        </div>
+      </div>
+
+      {/* 월 네비게이션 */}
+      <div className="flex items-center justify-between bg-zinc-900 rounded-2xl p-4 border border-zinc-800 mb-6">
+        <button
+          onClick={() => setMonthOffset(o => o - 1)}
+          className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+        <span className="text-base font-semibold text-white">{formatMonthLabel(month)}</span>
+        <button
+          onClick={() => setMonthOffset(o => Math.min(o + 1, 0))}
+          disabled={monthOffset >= 0}
+          className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors disabled:opacity-30"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* ── 재무 목표 설정 ── */}
+      <div className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800 mb-4">
+        <div className="flex items-center gap-2 mb-5">
+          <Target className="w-5 h-5 text-emerald-500" />
+          <h2 className="text-base font-semibold text-white">이번 달 재무 목표</h2>
+        </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          {/* 예상 수입 */}
           <div>
-            <h1 className="text-xl font-bold text-white">가족 예산 관리</h1>
-            <p className="text-xs text-zinc-500">가족 구성원의 월 예산을 배분하세요</p>
-          </div>
-        </div>
-
-        {/* 월 네비게이션 */}
-        <div className="flex items-center justify-between bg-zinc-900 rounded-2xl p-4 border border-zinc-800 mb-6">
-          <button
-            onClick={() => setMonthOffset(o => o - 1)}
-            className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-          </button>
-          <span className="text-base font-semibold text-white">{formatMonthLabel(month)}</span>
-          <button
-            onClick={() => setMonthOffset(o => Math.min(o + 1, 0))}
-            disabled={monthOffset >= 0}
-            className="p-2 rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors disabled:opacity-30"
-          >
-            <ChevronRight className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* 전체 예산 카드 */}
-        <div className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800 mb-4">
-          <div className="flex items-center gap-2 mb-4">
-            <Wallet className="w-5 h-5 text-emerald-500" />
-            <h2 className="text-base font-semibold text-white">우리 집 전체 예산</h2>
-          </div>
-
-          {isCFO ? (
-            <input
-              type="text"
-              inputMode="numeric"
-              value={familyInput}
-              onChange={e => setFamilyInput(e.target.value)}
-              placeholder="예: 3000000"
-              className="w-full h-12 bg-zinc-800 border border-zinc-700 rounded-xl px-4 text-lg font-bold text-white placeholder-zinc-600 outline-none focus:border-zinc-500 transition-colors"
-            />
-          ) : (
-            <div className="h-12 flex items-center px-4 bg-zinc-800 rounded-xl text-lg font-bold text-white">
-              {parsedFamilyBudget > 0 ? formatCurrency(parsedFamilyBudget) : '—'}
-            </div>
-          )}
-
-          {parsedFamilyBudget > 0 && (
-            <div className="mt-4">
-              <div className="flex justify-between text-xs text-zinc-500 mb-2">
-                <span>이번 달 실제 지출</span>
-                <span className={cn(data && data.familySpent > parsedFamilyBudget ? 'text-red-400' : 'text-zinc-400')}>
-                  {formatCurrency(data?.familySpent ?? 0)} / {formatCurrency(parsedFamilyBudget)}
-                </span>
+            <label className="text-[11px] text-zinc-500 font-medium mb-1.5 block flex items-center gap-1">
+              <TrendingUp className="w-3 h-3" /> 예상 수입
+            </label>
+            {isCFO ? (
+              <div className="relative">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={goalInput.targetIncome}
+                  onChange={e => handleIncomeChange(e.target.value)}
+                  placeholder="0"
+                  className="w-full h-11 bg-zinc-800 border border-zinc-700 rounded-xl px-3 text-sm font-bold text-emerald-400 placeholder-zinc-600 outline-none focus:border-emerald-700 transition-colors tabular-nums"
+                />
               </div>
-              <Progress
-                value={parsedFamilyBudget > 0 ? Math.min(((data?.familySpent ?? 0) / parsedFamilyBudget) * 100, 100) : 0}
-                className={cn('[&>div]:transition-all', data && data.familySpent / parsedFamilyBudget > 0.8 ? '[&>div]:bg-red-500' : '[&>div]:bg-emerald-500')}
+            ) : (
+              <div className="h-11 flex items-center px-3 bg-zinc-800 rounded-xl text-sm font-bold text-emerald-400">
+                {goalData?.targetIncome ? formatCurrency(goalData.targetIncome) : '—'}
+              </div>
+            )}
+          </div>
+
+          {/* 목표 지출 */}
+          <div>
+            <label className="text-[11px] text-zinc-500 font-medium mb-1.5 block flex items-center gap-1">
+              <TrendingDown className="w-3 h-3" /> 목표 지출
+            </label>
+            {isCFO ? (
+              <input
+                type="text"
+                inputMode="numeric"
+                value={goalInput.targetExpense}
+                onChange={e => handleExpenseChange(e.target.value)}
+                placeholder="0"
+                className="w-full h-11 bg-zinc-800 border border-zinc-700 rounded-xl px-3 text-sm font-bold text-red-400 placeholder-zinc-600 outline-none focus:border-red-900 transition-colors tabular-nums"
               />
-            </div>
-          )}
+            ) : (
+              <div className="h-11 flex items-center px-3 bg-zinc-800 rounded-xl text-sm font-bold text-red-400">
+                {goalData?.targetExpense ? formatCurrency(goalData.targetExpense) : '—'}
+              </div>
+            )}
+          </div>
+
+          {/* 목표 저축률 */}
+          <div>
+            <label className="text-[11px] text-zinc-500 font-medium mb-1.5 block flex items-center gap-1">
+              <PiggyBank className="w-3 h-3" /> 목표 저축률
+              {isCFO && parsedIncome > 0 && parsedExpenseGoal > 0 && (
+                <span className="text-[9px] text-zinc-600 ml-1">자동 계산</span>
+              )}
+            </label>
+            {isCFO ? (
+              <div className="relative">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={goalInput.targetSavingsRate}
+                  onChange={e => handleRateChange(e.target.value)}
+                  placeholder="0"
+                  className="w-full h-11 bg-zinc-800 border border-zinc-700 rounded-xl px-3 pr-7 text-sm font-bold text-blue-400 placeholder-zinc-600 outline-none focus:border-blue-900 transition-colors tabular-nums"
+                />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-500">%</span>
+              </div>
+            ) : (
+              <div className="h-11 flex items-center px-3 bg-zinc-800 rounded-xl text-sm font-bold text-blue-400">
+                {goalData?.targetSavingsRate ? `${goalData.targetSavingsRate}%` : '—'}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* 미배정 예산 요약 */}
-        {parsedFamilyBudget > 0 && (
-          <div className={cn(
-            'rounded-2xl p-4 border mb-6 flex items-center justify-between',
-            overAllocated
-              ? 'bg-red-900/20 border-red-800'
-              : 'bg-zinc-900 border-zinc-800'
-          )}>
-            <div className="flex items-center gap-2">
-              {overAllocated
-                ? <AlertCircle className="w-4 h-4 text-red-400" />
-                : <CheckCircle2 className="w-4 h-4 text-zinc-500" />
-              }
-              <span className="text-sm text-zinc-400">
-                {overAllocated ? '초과 배정' : '미배정 예산'}
-              </span>
-            </div>
+        {/* 예상 저축액 요약 */}
+        {parsedIncome > 0 && (
+          <div className="mt-4 pt-4 border-t border-zinc-800 flex items-center justify-between">
+            <span className="text-xs text-zinc-500">예상 저축액</span>
             <div className="text-right">
-              <span className={cn('text-lg font-bold', overAllocated ? 'text-red-400' : 'text-white')}>
-                {overAllocated
-                  ? `+${formatCurrency(totalAllocated - parsedFamilyBudget)}`
-                  : formatCurrency(unallocated)
-                }
+              <span className={cn(
+                'text-sm font-bold tabular-nums',
+                savingsAmount >= 0 ? 'text-emerald-400' : 'text-red-400'
+              )}>
+                {savingsAmount >= 0 ? '+' : ''}{formatCurrency(savingsAmount)}
               </span>
-              {parsedFamilyBudget > 0 && (
-                <div className="text-xs text-zinc-500">
-                  총 {formatCurrency(totalAllocated)} 배정 ({Math.round((totalAllocated / parsedFamilyBudget) * 100)}%)
-                </div>
+              {parsedRate > 0 && (
+                <span className="text-xs text-zinc-600 ml-2">({parsedRate}%)</span>
               )}
             </div>
           </div>
         )}
+      </div>
 
-        {/* 구성원별 예산 */}
-        <div className="bg-zinc-900 rounded-2xl border border-zinc-800 mb-6 overflow-hidden">
-          <div className="flex items-center gap-2 px-6 py-4 border-b border-zinc-800">
-            <Users className="w-4 h-4 text-zinc-400" />
-            <h2 className="text-base font-semibold text-white">구성원별 예산 배분</h2>
+      {/* ── 가족 전체 지출 한도 ── */}
+      <div className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800 mb-4">
+        <div className="flex items-center gap-2 mb-4">
+          <Wallet className="w-5 h-5 text-emerald-500" />
+          <h2 className="text-base font-semibold text-white">가족 지출 한도</h2>
+          <span className="text-[10px] text-zinc-600 bg-zinc-800 px-2 py-0.5 rounded-full ml-auto">구성원 배분 기준</span>
+        </div>
+
+        {isCFO ? (
+          <input
+            type="text"
+            inputMode="numeric"
+            value={familyInput}
+            onChange={e => setFamilyInput(e.target.value)}
+            placeholder="예: 3000000"
+            className="w-full h-12 bg-zinc-800 border border-zinc-700 rounded-xl px-4 text-lg font-bold text-white placeholder-zinc-600 outline-none focus:border-zinc-500 transition-colors"
+          />
+        ) : (
+          <div className="h-12 flex items-center px-4 bg-zinc-800 rounded-xl text-lg font-bold text-white">
+            {parsedFamilyBudget > 0 ? formatCurrency(parsedFamilyBudget) : '—'}
           </div>
+        )}
 
-          <div className="divide-y divide-zinc-800">
-            {(data?.members ?? []).map((member, idx) => {
-              const memberBudget = parsedMemberBudgets[member.id] ?? 0
-              const allocationPct = parsedFamilyBudget > 0
-                ? Math.min((memberBudget / parsedFamilyBudget) * 100, 100)
-                : 0
-              const spentPct = memberBudget > 0
-                ? Math.min((member.spent / memberBudget) * 100, 100)
-                : 0
+        {parsedFamilyBudget > 0 && (
+          <div className="mt-4">
+            <div className="flex justify-between text-xs text-zinc-500 mb-2">
+              <span>이번 달 실제 지출</span>
+              <span className={cn(data && data.familySpent > parsedFamilyBudget ? 'text-red-400' : 'text-zinc-400')}>
+                {formatCurrency(data?.familySpent ?? 0)} / {formatCurrency(parsedFamilyBudget)}
+              </span>
+            </div>
+            <Progress
+              value={parsedFamilyBudget > 0 ? Math.min(((data?.familySpent ?? 0) / parsedFamilyBudget) * 100, 100) : 0}
+              className={cn('[&>div]:transition-all', data && data.familySpent / parsedFamilyBudget > 0.8 ? '[&>div]:bg-red-500' : '[&>div]:bg-emerald-500')}
+            />
+          </div>
+        )}
+      </div>
 
-              const MEMBER_COLORS = [
-                '[&>div]:bg-blue-500',
-                '[&>div]:bg-violet-500',
-                '[&>div]:bg-amber-500',
-                '[&>div]:bg-pink-500',
-                '[&>div]:bg-teal-500',
-              ]
-              const colorClass = MEMBER_COLORS[idx % MEMBER_COLORS.length]
+      {/* 미배정 예산 요약 */}
+      {parsedFamilyBudget > 0 && (
+        <div className={cn(
+          'rounded-2xl p-4 border mb-6 flex items-center justify-between',
+          overAllocated
+            ? 'bg-red-900/20 border-red-800'
+            : 'bg-zinc-900 border-zinc-800'
+        )}>
+          <div className="flex items-center gap-2">
+            {overAllocated
+              ? <AlertCircle className="w-4 h-4 text-red-400" />
+              : <CheckCircle2 className="w-4 h-4 text-zinc-500" />
+            }
+            <span className="text-sm text-zinc-400">
+              {overAllocated ? '초과 배정' : '미배정 예산'}
+            </span>
+          </div>
+          <div className="text-right">
+            <span className={cn('text-lg font-bold', overAllocated ? 'text-red-400' : 'text-white')}>
+              {overAllocated
+                ? `+${formatCurrency(totalAllocated - parsedFamilyBudget)}`
+                : formatCurrency(unallocated)
+              }
+            </span>
+            {parsedFamilyBudget > 0 && (
+              <div className="text-xs text-zinc-500">
+                총 {formatCurrency(totalAllocated)} 배정 ({Math.round((totalAllocated / parsedFamilyBudget) * 100)}%)
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
-              return (
-                <div key={member.id} className="px-6 py-5">
-                  {/* 이름 + 역할 + 입력 */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-zinc-700 flex items-center justify-center text-sm font-bold text-zinc-300 flex-shrink-0">
-                        {member.name[0]?.toUpperCase() ?? '?'}
+      {/* 구성원별 예산 */}
+      <div className="bg-zinc-900 rounded-2xl border border-zinc-800 mb-6 overflow-hidden">
+        <div className="flex items-center gap-2 px-6 py-4 border-b border-zinc-800">
+          <Users className="w-4 h-4 text-zinc-400" />
+          <h2 className="text-base font-semibold text-white">구성원별 예산 배분</h2>
+        </div>
+
+        <div className="divide-y divide-zinc-800">
+          {(data?.members ?? []).map((member, idx) => {
+            const memberBudget = parsedMemberBudgets[member.id] ?? 0
+            const allocationPct = parsedFamilyBudget > 0
+              ? Math.min((memberBudget / parsedFamilyBudget) * 100, 100)
+              : 0
+            const spentPct = memberBudget > 0
+              ? Math.min((member.spent / memberBudget) * 100, 100)
+              : 0
+
+            const MEMBER_COLORS = [
+              '[&>div]:bg-blue-500',
+              '[&>div]:bg-violet-500',
+              '[&>div]:bg-amber-500',
+              '[&>div]:bg-pink-500',
+              '[&>div]:bg-teal-500',
+            ]
+            const colorClass = MEMBER_COLORS[idx % MEMBER_COLORS.length]
+
+            return (
+              <div key={member.id} className="px-6 py-5">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-zinc-700 flex items-center justify-center text-sm font-bold text-zinc-300 flex-shrink-0">
+                      {member.name[0]?.toUpperCase() ?? '?'}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium text-white">{member.name}</span>
+                        {member.role === 'CFO' && (
+                          <span className="text-xs text-amber-500 bg-amber-900/30 px-1.5 py-0.5 rounded-md">CFO</span>
+                        )}
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-white">{member.name}</span>
-                          {member.role === 'CFO' && (
-                            <span className="text-xs text-amber-500 bg-amber-900/30 px-1.5 py-0.5 rounded-md">CFO</span>
-                          )}
-                        </div>
-                        <div className="text-xs text-zinc-500">
-                          지출 {formatCurrency(member.spent)}
-                          {memberBudget > 0 && (
-                            <span className={cn('ml-1', member.spent > memberBudget ? 'text-red-400' : 'text-zinc-500')}>
-                              {' '}/ {formatCurrency(memberBudget)}
-                            </span>
-                          )}
-                        </div>
+                      <div className="text-xs text-zinc-500">
+                        지출 {formatCurrency(member.spent)}
+                        {memberBudget > 0 && (
+                          <span className={cn('ml-1', member.spent > memberBudget ? 'text-red-400' : 'text-zinc-500')}>
+                            {' '}/ {formatCurrency(memberBudget)}
+                          </span>
+                        )}
                       </div>
                     </div>
-
-                    {isCFO ? (
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        value={memberInputs[member.id] ?? ''}
-                        onChange={e => setMemberInputs(prev => ({ ...prev, [member.id]: e.target.value }))}
-                        placeholder="한도 미설정"
-                        className="w-32 h-9 bg-zinc-800 border border-zinc-700 rounded-xl px-3 text-sm font-semibold text-white placeholder-zinc-600 outline-none focus:border-zinc-500 transition-colors text-right"
-                      />
-                    ) : (
-                      <span className="text-sm font-semibold text-white">
-                        {memberBudget > 0 ? formatCurrency(memberBudget) : '—'}
-                      </span>
-                    )}
                   </div>
 
-                  {/* 배분율 바 (전체 예산 기준) */}
-                  {parsedFamilyBudget > 0 && (
-                    <div className="mb-2">
-                      <div className="flex justify-between text-xs text-zinc-600 mb-1">
-                        <span>전체 예산 중 배분율</span>
-                        <span>{Math.round(allocationPct)}%</span>
-                      </div>
-                      <Progress value={allocationPct} className={colorClass} />
-                    </div>
+                  {isCFO ? (
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      value={memberInputs[member.id] ?? ''}
+                      onChange={e => setMemberInputs(prev => ({ ...prev, [member.id]: e.target.value }))}
+                      placeholder="한도 미설정"
+                      className="w-32 h-9 bg-zinc-800 border border-zinc-700 rounded-xl px-3 text-sm font-semibold text-white placeholder-zinc-600 outline-none focus:border-zinc-500 transition-colors text-right"
+                    />
+                  ) : (
+                    <span className="text-sm font-semibold text-white">
+                      {memberBudget > 0 ? formatCurrency(memberBudget) : '—'}
+                    </span>
                   )}
+                </div>
 
-                  {/* 지출 현황 바 (개인 예산 기준) */}
-                  {memberBudget > 0 && (
-                    <div>
-                      <div className="flex justify-between text-xs text-zinc-600 mb-1">
-                        <span>개인 예산 소진율</span>
-                        <span className={cn(spentPct > 80 ? 'text-red-400' : '')}>{Math.round(spentPct)}%</span>
-                      </div>
-                      <Progress
-                        value={spentPct}
-                        className={cn(spentPct > 80 ? '[&>div]:bg-red-500' : spentPct > 60 ? '[&>div]:bg-amber-500' : '[&>div]:bg-emerald-500')}
-                      />
+                {parsedFamilyBudget > 0 && (
+                  <div className="mb-2">
+                    <div className="flex justify-between text-xs text-zinc-600 mb-1">
+                      <span>전체 예산 중 배분율</span>
+                      <span>{Math.round(allocationPct)}%</span>
                     </div>
-                  )}
+                    <Progress value={allocationPct} className={colorClass} />
+                  </div>
+                )}
+
+                {memberBudget > 0 && (
+                  <div>
+                    <div className="flex justify-between text-xs text-zinc-600 mb-1">
+                      <span>개인 예산 소진율</span>
+                      <span className={cn(spentPct > 80 ? 'text-red-400' : '')}>{Math.round(spentPct)}%</span>
+                    </div>
+                    <Progress
+                      value={spentPct}
+                      className={cn(spentPct > 80 ? '[&>div]:bg-red-500' : spentPct > 60 ? '[&>div]:bg-amber-500' : '[&>div]:bg-emerald-500')}
+                    />
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* 전체 배분 시각화 */}
+      {parsedFamilyBudget > 0 && (data?.members ?? []).some(m => (parsedMemberBudgets[m.id] ?? 0) > 0) && (
+        <div className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800 mb-6">
+          <h3 className="text-sm font-semibold text-zinc-400 mb-4">예산 배분 현황</h3>
+          <div className="flex rounded-full overflow-hidden h-4 mb-4 bg-zinc-800">
+            {(data?.members ?? []).map((member, idx) => {
+              const memberBudget = parsedMemberBudgets[member.id] ?? 0
+              const pct = parsedFamilyBudget > 0 ? (memberBudget / parsedFamilyBudget) * 100 : 0
+              if (pct <= 0) return null
+              const BG = ['bg-blue-500', 'bg-violet-500', 'bg-amber-500', 'bg-pink-500', 'bg-teal-500']
+              return (
+                <div
+                  key={member.id}
+                  className={cn('h-full transition-all', BG[idx % BG.length])}
+                  style={{ width: `${Math.min(pct, 100)}%` }}
+                  title={`${member.name}: ${formatCurrency(memberBudget)}`}
+                />
+              )
+            })}
+            {unallocated > 0 && !overAllocated && (
+              <div
+                className="h-full bg-zinc-700"
+                style={{ width: `${(unallocated / parsedFamilyBudget) * 100}%` }}
+              />
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {(data?.members ?? []).map((member, idx) => {
+              const memberBudget = parsedMemberBudgets[member.id] ?? 0
+              if (memberBudget <= 0) return null
+              const BG = ['bg-blue-500', 'bg-violet-500', 'bg-amber-500', 'bg-pink-500', 'bg-teal-500']
+              const pct = parsedFamilyBudget > 0 ? Math.round((memberBudget / parsedFamilyBudget) * 100) : 0
+              return (
+                <div key={member.id} className="flex items-center gap-2">
+                  <div className={cn('w-3 h-3 rounded-sm flex-shrink-0', BG[idx % BG.length])} />
+                  <span className="text-xs text-zinc-400 truncate">{member.name}</span>
+                  <span className="text-xs text-zinc-500 ml-auto">{pct}%</span>
                 </div>
               )
             })}
+            {unallocated > 0 && !overAllocated && (
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-sm bg-zinc-700 flex-shrink-0" />
+                <span className="text-xs text-zinc-500">미배정</span>
+                <span className="text-xs text-zinc-600 ml-auto">
+                  {Math.round((unallocated / parsedFamilyBudget) * 100)}%
+                </span>
+              </div>
+            )}
           </div>
         </div>
+      )}
 
-        {/* 전체 배분 시각화 */}
-        {parsedFamilyBudget > 0 && (data?.members ?? []).some(m => (parsedMemberBudgets[m.id] ?? 0) > 0) && (
-          <div className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800 mb-6">
-            <h3 className="text-sm font-semibold text-zinc-400 mb-4">예산 배분 현황</h3>
+      {/* 저장 상태 메시지 */}
+      {saveStatus === 'success' && (
+        <div className="flex items-center gap-2 text-emerald-400 text-sm mb-4 px-1">
+          <CheckCircle2 className="w-4 h-4" />
+          저장되었습니다.
+        </div>
+      )}
+      {saveStatus === 'error' && (
+        <div className="flex items-center gap-2 text-red-400 text-sm mb-4 px-1">
+          <AlertCircle className="w-4 h-4" />
+          {saveError}
+        </div>
+      )}
 
-            {/* 스택 바 */}
-            <div className="flex rounded-full overflow-hidden h-4 mb-4 bg-zinc-800">
-              {(data?.members ?? []).map((member, idx) => {
-                const memberBudget = parsedMemberBudgets[member.id] ?? 0
-                const pct = parsedFamilyBudget > 0 ? (memberBudget / parsedFamilyBudget) * 100 : 0
-                if (pct <= 0) return null
-                const BG = ['bg-blue-500', 'bg-violet-500', 'bg-amber-500', 'bg-pink-500', 'bg-teal-500']
-                return (
-                  <div
-                    key={member.id}
-                    className={cn('h-full transition-all', BG[idx % BG.length])}
-                    style={{ width: `${Math.min(pct, 100)}%` }}
-                    title={`${member.name}: ${formatCurrency(memberBudget)}`}
-                  />
-                )
-              })}
-              {/* 미배정 영역 */}
-              {unallocated > 0 && !overAllocated && (
-                <div
-                  className="h-full bg-zinc-700"
-                  style={{ width: `${(unallocated / parsedFamilyBudget) * 100}%` }}
-                />
-              )}
-            </div>
-
-            {/* 범례 */}
-            <div className="grid grid-cols-2 gap-2">
-              {(data?.members ?? []).map((member, idx) => {
-                const memberBudget = parsedMemberBudgets[member.id] ?? 0
-                if (memberBudget <= 0) return null
-                const BG = ['bg-blue-500', 'bg-violet-500', 'bg-amber-500', 'bg-pink-500', 'bg-teal-500']
-                const pct = parsedFamilyBudget > 0 ? Math.round((memberBudget / parsedFamilyBudget) * 100) : 0
-                return (
-                  <div key={member.id} className="flex items-center gap-2">
-                    <div className={cn('w-3 h-3 rounded-sm flex-shrink-0', BG[idx % BG.length])} />
-                    <span className="text-xs text-zinc-400 truncate">{member.name}</span>
-                    <span className="text-xs text-zinc-500 ml-auto">{pct}%</span>
-                  </div>
-                )
-              })}
-              {unallocated > 0 && !overAllocated && (
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-sm bg-zinc-700 flex-shrink-0" />
-                  <span className="text-xs text-zinc-500">미배정</span>
-                  <span className="text-xs text-zinc-600 ml-auto">
-                    {Math.round((unallocated / parsedFamilyBudget) * 100)}%
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* 저장 상태 메시지 */}
-        {saveStatus === 'success' && (
-          <div className="flex items-center gap-2 text-emerald-400 text-sm mb-4 px-1">
-            <CheckCircle2 className="w-4 h-4" />
-            저장되었습니다.
-          </div>
-        )}
-        {saveStatus === 'error' && (
-          <div className="flex items-center gap-2 text-red-400 text-sm mb-4 px-1">
-            <AlertCircle className="w-4 h-4" />
-            {saveError}
-          </div>
-        )}
-
-        {/* 저장 버튼 (CFO만) */}
-        {isCFO && (
-          <button
-            onClick={handleSave}
-            disabled={isSaving || parsedFamilyBudget <= 0}
-            className="w-full h-14 bg-white text-black rounded-2xl text-base font-bold hover:bg-zinc-200 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {isSaving ? '저장 중...' : '예산 저장'}
-          </button>
-        )}
-      </div>
+      {/* 저장 버튼 (CFO만) */}
+      {isCFO && (
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="w-full h-14 bg-white text-black rounded-2xl text-base font-bold hover:bg-zinc-200 active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {isSaving ? '저장 중...' : '목표 및 예산 저장'}
+        </button>
+      )}
     </div>
   )
 }

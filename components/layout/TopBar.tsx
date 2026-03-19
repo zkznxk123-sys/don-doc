@@ -17,7 +17,7 @@ interface TopBarProps {
 
 export function TopBar({ onToggleSidebar }: TopBarProps) {
   const pathname = usePathname()
-  const { openTransactionDrawer, openExcelDrawer } = useDashboardActions()
+  const { openTransactionDrawer, openExcelDrawer, pageActions } = useDashboardActions()
 
   const title =
     EXTRA_TITLES[pathname] ??
@@ -40,22 +40,26 @@ export function TopBar({ onToggleSidebar }: TopBarProps) {
         <h1 className="text-sm font-semibold text-white truncate">{title}</h1>
       </div>
 
-      {/* 우측: 액션 버튼 */}
+      {/* 우측: 페이지 액션 또는 기본 버튼 */}
       <div className="flex items-center gap-2 flex-shrink-0">
-        <button
-          onClick={() => openExcelDrawer()}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-medium text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors"
-        >
-          <FileSpreadsheet className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">엑셀 업로드</span>
-        </button>
-        <button
-          onClick={() => openTransactionDrawer()}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors active:scale-[0.97]"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">거래 추가</span>
-        </button>
+        {pageActions ?? (
+          <>
+            <button
+              onClick={() => openExcelDrawer()}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-medium text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors"
+            >
+              <FileSpreadsheet className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">엑셀 업로드</span>
+            </button>
+            <button
+              onClick={() => openTransactionDrawer()}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors active:scale-[0.97]"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">거래 추가</span>
+            </button>
+          </>
+        )}
       </div>
     </header>
   )

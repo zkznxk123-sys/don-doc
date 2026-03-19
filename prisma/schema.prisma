@@ -32,6 +32,8 @@ enum AccountType {
   CRYPTO      // 가상자산
   REAL_ESTATE // 부동산
   STO         // 토큰증권 (장기 확장성)
+  DEBT        // 대출 (부채)
+  CREDIT_CARD // 신용카드 (부채)
 }
 
 enum ShareLevel {
@@ -41,14 +43,15 @@ enum ShareLevel {
 }
 
 model FamilyGroup {
-  id         String        @id @default(cuid())
-  name       String        // 예: "우리집 패밀리오피스"
-  users      User[]
-  accounts   Account[]
-  invites    FamilyInvite[]
-  budgets    Budget[]
-  categories Category[]
-  createdAt  DateTime      @default(now())
+  id           String        @id @default(cuid())
+  name         String        // 예: "우리집 패밀리오피스"
+  users        User[]
+  accounts     Account[]
+  invites      FamilyInvite[]
+  budgets      Budget[]
+  categories   Category[]
+  monthlyGoals MonthlyGoal[]
+  createdAt    DateTime      @default(now())
 }
 
 model Category {
@@ -109,6 +112,7 @@ model Transaction {
   categoryId  String?    // Category 모델 FK (선택)
   categoryRef Category?  @relation(fields: [categoryId], references: [id])
   visibility  Visibility @default(SHARED)
+  isExcluded  Boolean    @default(false) // 통계 제외 여부
   userId      String
   user        User       @relation(fields: [userId], references: [id])
   accountId   String
@@ -125,4 +129,18 @@ model Budget {
   user      User?       @relation(fields: [userId], references: [id])
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
+}
+
+model MonthlyGoal {
+  id                String      @id @default(cuid())
+  month             String      // "YYYY-MM"
+  targetIncome      Float       @default(0)
+  targetExpense     Float       @default(0)
+  targetSavingsRate Float       @default(0)  // 퍼센트 (예: 30.0 = 30%)
+  familyId          String
+  family            FamilyGroup @relation(fields: [familyId], references: [id])
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@unique([familyId, month])
 }

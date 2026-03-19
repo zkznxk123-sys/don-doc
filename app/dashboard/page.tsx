@@ -147,7 +147,7 @@ const Dashboard = () => {
   const [viewMode, setViewMode] = useState<'CFO' | 'MEMBER'>('CFO')
   const [isAccountDrawerOpen, setIsAccountDrawerOpen] = useState(false)
   const [selectedAccount, setSelectedAccount] = useState<AccountInitialData | undefined>(undefined)
-  const { openTransactionDrawer, openExcelDrawer, refreshKey } = useDashboardActions()
+  const { openTransactionDrawer, openExcelDrawer, refreshKey, shellUser } = useDashboardActions()
   const [transactions, setTransactions] = useState<Transaction[]>(MOCK_TRANSACTIONS)
   const [isLoading, setIsLoading] = useState(true)
   const [wealthData, setWealthData] = useState<WealthData>({
@@ -177,25 +177,19 @@ const Dashboard = () => {
   const [userName, setUserName] = useState('')
   const [userRole, setUserRole] = useState<'CFO' | 'MEMBER'>('MEMBER')
 
-  // ── 1. 인증 + 자산(월 무관) 로드 — 최초 1회 ──
+  // ── 1. 인증(레이아웃에서 주입) + 자산(월 무관) 로드 ──
   useEffect(() => {
-    async function loadAuth() {
-      try {
-        const meRes = await fetch('/api/auth/me')
-        const meJson = await meRes.json()
-        if (meJson.success && meJson.user) {
-          if (!meJson.user.familyId) { window.location.href = '/onboarding'; return }
-          setCurrentUserId(meJson.user.id)
-          setFamilyId(meJson.user.familyId)
-          setFamilyName(meJson.user.familyName || '')
-          setUserName(meJson.user.name || '')
-          setUserRole(meJson.user.role || 'MEMBER')
-          if (meJson.user.role === 'MEMBER') setViewMode('MEMBER')
-        } else {
-          window.location.href = '/login'; return
-        }
+    if (!shellUser) return
+    if (!shellUser.familyId) { window.location.href = '/onboarding'; return }
+    setCurrentUserId(shellUser.id)
+    setFamilyId(shellUser.familyId)
+    setFamilyName(shellUser.familyName || '')
+    setUserName(shellUser.name || '')
+    setUserRole(shellUser.role)
+    if (shellUser.role === 'MEMBER') setViewMode('MEMBER')
 
-        // 자산 잔액 (월 무관 — 항상 현재 DB 값)
+    async function loadWealth() {
+      try {
         const wRes = await fetch('/api/wealth')
         const wJson = await wRes.json()
         if (wJson.success) {
@@ -221,13 +215,13 @@ const Dashboard = () => {
           if (wJson.assetsByType) setAssetsByType(wJson.assetsByType)
         }
       } catch {
-        console.log('DB 미연결 — 목업 데이터 사용')
+        console.log('자산 로드 실패')
       } finally {
         setIsLoading(false)
       }
     }
-    loadAuth()
-  }, [])
+    loadWealth()
+  }, [shellUser])
 
   // ── 2. 월별 데이터 로드 — selectedMonth 변경 시 재실행 ──
   useEffect(() => {

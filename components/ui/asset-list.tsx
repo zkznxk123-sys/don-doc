@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Banknote, TrendingUp, Bitcoin, Building2, Layers, Users, User, Eye, EyeOff, ChevronRight, Plus, Lock } from 'lucide-react'
+import { Banknote, TrendingUp, Bitcoin, Building2, Layers, Users, User, Eye, EyeOff, ChevronRight, Plus, Lock, CreditCard, HandCoins } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
 import type { AccountInitialData } from '@/components/ui/account-drawer'
 import type { ShareLevel } from '@/lib/actions/accounts'
@@ -13,11 +13,20 @@ const TYPE_META: Record<string, { label: string; Icon: React.ElementType; color:
   CRYPTO:      { label: '가상자산',       Icon: Bitcoin,    color: 'text-amber-400',   bg: 'bg-amber-400/10' },
   REAL_ESTATE: { label: '부동산',         Icon: Building2,  color: 'text-purple-400',  bg: 'bg-purple-400/10' },
   STO:         { label: '토큰증권',       Icon: Layers,     color: 'text-pink-400',    bg: 'bg-pink-400/10' },
+  DEBT:        { label: '대출',           Icon: HandCoins,  color: 'text-red-400',     bg: 'bg-red-400/10' },
+  CREDIT_CARD: { label: '신용카드',       Icon: CreditCard, color: 'text-rose-400',    bg: 'bg-rose-400/10' },
 }
 
 interface AssetListProps {
   accounts: AccountInitialData[]
   totalAssets: number
+  onEdit: (account: AccountInitialData) => void
+  onAdd: () => void
+}
+
+interface LiabilityListProps {
+  liabilities: AccountInitialData[]
+  totalLiabilities: number
   onEdit: (account: AccountInitialData) => void
   onAdd: () => void
 }
@@ -129,6 +138,88 @@ export function AssetList({ accounts, totalAssets, onEdit, onAdd }: AssetListPro
       <div className="flex items-center justify-between px-5 py-3 bg-zinc-950/50 border-t border-zinc-800">
         <span className="text-xs text-zinc-500">총 자산</span>
         <span className="text-sm font-bold text-white tabular-nums">{formatCurrency(totalAssets)}</span>
+      </div>
+    </div>
+  )
+}
+
+export function LiabilityList({ liabilities, totalLiabilities, onEdit, onAdd }: LiabilityListProps) {
+  if (liabilities.length === 0) {
+    return (
+      <div className="bg-zinc-900 rounded-2xl border border-zinc-800">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
+          <h3 className="text-sm font-semibold text-white">부채</h3>
+          <button
+            onClick={onAdd}
+            className="flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            추가
+          </button>
+        </div>
+        <div className="px-5 py-8 text-center text-zinc-600 text-sm">
+          등록된 부채가 없습니다
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="bg-zinc-900 rounded-2xl border border-red-950/50 overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
+        <h3 className="text-sm font-semibold text-white">부채</h3>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-zinc-600">{liabilities.length}개</span>
+          <button
+            onClick={onAdd}
+            className="flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            추가
+          </button>
+        </div>
+      </div>
+
+      <div className="divide-y divide-zinc-800/60">
+        {liabilities.map((account) => {
+          const meta = TYPE_META[account.type] ?? TYPE_META['DEBT']
+          const MetaIcon = meta.Icon
+
+          return (
+            <button
+              key={account.id}
+              onClick={() => onEdit(account)}
+              className="w-full flex items-center gap-4 px-5 py-4 hover:bg-zinc-800/50 transition-colors text-left group"
+            >
+              <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0', meta.bg)}>
+                <MetaIcon className={cn('w-4 h-4', meta.color)} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <p className="text-sm font-medium text-white truncate">{account.name}</p>
+                  {account.shareLevel === 'PUBLIC'
+                    ? <Users className="w-3 h-3 text-zinc-600 flex-shrink-0" />
+                    : account.shareLevel === 'BALANCE_ONLY'
+                    ? <Eye className="w-3 h-3 text-zinc-600 flex-shrink-0" />
+                    : <User className="w-3 h-3 text-zinc-600 flex-shrink-0" />
+                  }
+                </div>
+                <p className="text-xs text-zinc-500 mt-0.5">{meta.label}</p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className="text-sm font-semibold text-red-400 tabular-nums">
+                  -{formatCurrency(account.balance)}
+                </span>
+                <ChevronRight className="w-4 h-4 text-zinc-700 group-hover:text-zinc-500 transition-colors" />
+              </div>
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="flex items-center justify-between px-5 py-3 bg-zinc-950/50 border-t border-zinc-800">
+        <span className="text-xs text-zinc-500">총 부채</span>
+        <span className="text-sm font-bold text-red-400 tabular-nums">-{formatCurrency(totalLiabilities)}</span>
       </div>
     </div>
   )

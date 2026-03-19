@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, createContext, useContext, useCallback } from 'react'
+import { useState, useMemo, createContext, useContext, useCallback } from 'react'
 import { AppSidebar } from './AppSidebar'
 import { TopBar } from './TopBar'
 import { TransactionDrawer, type EditTransactionData } from '@/components/ui/transaction-drawer'
@@ -19,12 +19,18 @@ interface DashboardActionsContextType {
   openTransactionDrawer: (editData?: EditTransactionData | null) => void
   openExcelDrawer: () => void
   refreshKey: number
+  shellUser: ShellUser | null
+  pageActions: React.ReactNode | null
+  setPageActions: (node: React.ReactNode | null) => void
 }
 
 export const DashboardActionsContext = createContext<DashboardActionsContextType>({
   openTransactionDrawer: () => {},
   openExcelDrawer: () => {},
   refreshKey: 0,
+  shellUser: null,
+  pageActions: null,
+  setPageActions: () => {},
 })
 
 export function useDashboardActions() {
@@ -43,6 +49,8 @@ export function DashboardShell({
   const [isTransactionOpen, setIsTransactionOpen] = useState(false)
   const [isExcelOpen, setIsExcelOpen] = useState(false)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [pageActions, setPageActionsState] = useState<React.ReactNode | null>(null)
+  const setPageActions = useCallback((node: React.ReactNode | null) => setPageActionsState(node), [])
 
   const openTransactionDrawer = useCallback((editData?: EditTransactionData | null) => {
     setEditTransaction(editData ?? null)
@@ -55,9 +63,14 @@ export function DashboardShell({
     setRefreshKey(k => k + 1)
   }, [])
 
+  const contextValue = useMemo(
+    () => ({ openTransactionDrawer, openExcelDrawer, refreshKey, shellUser: user, pageActions, setPageActions }),
+    [openTransactionDrawer, openExcelDrawer, refreshKey, user, pageActions, setPageActions]
+  )
+
   return (
-    <DashboardActionsContext.Provider value={{ openTransactionDrawer, openExcelDrawer, refreshKey }}>
-      <div className="flex h-screen bg-black overflow-hidden">
+    <DashboardActionsContext.Provider value={contextValue}>
+      <div className="flex h-screen bg-black isolate">
         {/* 모바일 오버레이 */}
         {sidebarOpen && (
           <div
@@ -76,7 +89,7 @@ export function DashboardShell({
           }}
         />
 
-        <div className="flex flex-col flex-1 overflow-hidden min-w-0">
+        <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
           <TopBar
             sidebarOpen={sidebarOpen}
             onToggleSidebar={() => setSidebarOpen(prev => !prev)}

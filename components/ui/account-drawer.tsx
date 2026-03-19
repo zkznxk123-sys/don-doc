@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Banknote, TrendingUp, Bitcoin, Building2, Users, Eye, EyeOff, Loader2, Trash2 } from 'lucide-react'
+import { Banknote, TrendingUp, Bitcoin, Building2, Users, Eye, EyeOff, Loader2, Trash2, CreditCard, HandCoins } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer'
 import { Label } from '@/components/ui/label'
@@ -25,11 +25,13 @@ interface AccountDrawerProps {
   initialData?: AccountInitialData
 }
 
-const ACCOUNT_TYPES: { value: AccountType; label: string; desc: string; Icon: React.ElementType; color: string }[] = [
+const ACCOUNT_TYPES: { value: AccountType; label: string; desc: string; Icon: React.ElementType; color: string; isLiability?: boolean }[] = [
   { value: 'CASH',        label: '현금 · 예적금', desc: '생활비, 비상금, 저축',   Icon: Banknote,   color: 'text-blue-400' },
   { value: 'INVESTMENT',  label: '주식 · 펀드',   desc: '국내외 주식, 펀드, ETF', Icon: TrendingUp, color: 'text-emerald-400' },
   { value: 'CRYPTO',      label: '가상자산',       desc: '비트코인, 이더리움 등',  Icon: Bitcoin,    color: 'text-amber-400' },
   { value: 'REAL_ESTATE', label: '부동산',         desc: '아파트, 토지, 상가',     Icon: Building2,  color: 'text-purple-400' },
+  { value: 'DEBT',        label: '대출',           desc: '주택담보대출, 신용대출 등', Icon: HandCoins,  color: 'text-red-400', isLiability: true },
+  { value: 'CREDIT_CARD', label: '신용카드',       desc: '카드 사용액, 미결제 금액', Icon: CreditCard, color: 'text-rose-400', isLiability: true },
 ]
 
 const SHARE_LEVELS: { value: ShareLevel; label: string; desc: string; icon: React.ElementType; color: string; bg: string }[] = [
@@ -140,6 +142,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
     return num ? Number(num).toLocaleString() : ''
   }
 
+  const isLiabilityType = type === 'DEBT' || type === 'CREDIT_CARD'
   const isValid = name.trim().length > 0
 
   return (
@@ -147,14 +150,14 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
       <DrawerContent className="bg-zinc-950 border-zinc-800 max-h-[90vh]">
         <DrawerHeader className="px-6 pt-6 pb-2">
           <DrawerTitle className="text-white text-lg font-semibold">
-            {isEditMode ? '자산 수정' : '자산 계좌 추가'}
+            {isEditMode ? (isLiabilityType ? '부채 수정' : '자산 수정') : '계좌 추가'}
           </DrawerTitle>
         </DrawerHeader>
 
         <div className="px-6 py-4 space-y-6 overflow-y-auto">
-          {/* 자산 유형 */}
+          {/* 계좌 종류 */}
           <div>
-            <Label className="text-zinc-400 text-xs mb-3 block">자산 유형</Label>
+            <Label className="text-zinc-400 text-xs mb-3 block">계좌 종류</Label>
             <div className="grid grid-cols-2 gap-2">
               {ACCOUNT_TYPES.map((t) => {
                 const TypeIcon = t.Icon
@@ -200,9 +203,11 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
             />
           </div>
 
-          {/* 현재 잔액 */}
+          {/* 잔액 / 부채 금액 */}
           <div>
-            <Label className="text-zinc-400 text-xs mb-2 block">현재 잔액 (원)</Label>
+            <Label className="text-zinc-400 text-xs mb-2 block">
+              {isLiabilityType ? '부채 금액 (원)' : '현재 잔액 (원)'}
+            </Label>
             <div className="relative">
               <input
                 type="text"

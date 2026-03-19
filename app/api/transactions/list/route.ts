@@ -48,9 +48,11 @@ export async function GET(req: NextRequest) {
       const shouldMask =
         !isOwner && (shareLevel === 'BALANCE_ONLY' || tx.visibility === 'PRIVATE')
 
-      // 요약 집계 (마스킹 여부 무관하게 금액은 포함)
-      if (tx.amount > 0) totalIncome += tx.amount
-      else totalExpense += Math.abs(tx.amount)
+      // 요약 집계 (마스킹 여부 무관하게 금액 포함, 단 isExcluded 제외)
+      if (!tx.isExcluded) {
+        if (tx.amount > 0) totalIncome += tx.amount
+        else totalExpense += Math.abs(tx.amount)
+      }
 
       return {
         id: tx.id,
@@ -61,9 +63,11 @@ export async function GET(req: NextRequest) {
           : tx.description,
         category: shouldMask ? '개인' : tx.category,
         visibility: tx.visibility,
+        isExcluded: tx.isExcluded,
         userId: tx.userId,
         userName: shouldMask ? null : tx.user.name,
         isMasked: shouldMask,
+        accountId: tx.accountId,
       }
     }).filter(Boolean)
 

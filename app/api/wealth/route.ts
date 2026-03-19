@@ -8,7 +8,11 @@ const TYPE_LABELS: Record<string, string> = {
   CRYPTO: '가상자산',
   REAL_ESTATE: '부동산',
   STO: '토큰증권',
+  DEBT: '대출',
+  CREDIT_CARD: '신용카드',
 }
+
+const LIABILITY_TYPES = new Set(['DEBT', 'CREDIT_CARD'])
 
 export async function GET(req: NextRequest) {
   try {
@@ -51,14 +55,20 @@ export async function GET(req: NextRequest) {
       return [{ id: acc.id, name: acc.name, balance: acc.balance, type: acc.type, isShared: acc.isShared, shareLevel: acc.shareLevel, isMasked: false }]
     })
 
-    const totalAssets = accountSummary.reduce((sum, acc) => sum + acc.balance, 0)
-    const personalAssets = accountSummary
-      .filter((acc) => !acc.isMasked)
+    // 자산 / 부채 분리 (부채는 양수로 저장)
+    const assetAccounts = accountSummary.filter(acc => !LIABILITY_TYPES.has(acc.type))
+    const liabilityAccounts = accountSummary.filter(acc => LIABILITY_TYPES.has(acc.type))
+
+    const totalAssets = assetAccounts.reduce((sum, acc) => sum + acc.balance, 0)
+    const totalLiabilities = liabilityAccounts.reduce((sum, acc) => sum + acc.balance, 0)
+    const totalNetWorth = totalAssets - totalLiabilities
+    const personalAssets = assetAccounts
+      .filter(acc => !acc.isMasked)
       .reduce((sum, acc) => sum + acc.balance, 0)
 
-    // 자산 유형별 그룹핑
-    const typeMap: Record<string, { label: string; balance: number; accounts: typeof accountSummary }> = {}
-    for (const acc of accountSummary) {
+    // 자산 유형별 그룹핑 (부채 제외)
+    const typeMap: Record<string, { label: string; balance: number; accounts: typeof assetAccounts }> = {}
+    for (const acc of assetAccounts) {
       if (!typeMap[acc.type]) {
         typeMap[acc.type] = { label: TYPE_LABELS[acc.type] || acc.type, balance: 0, accounts: [] }
       }
@@ -75,7 +85,17 @@ export async function GET(req: NextRequest) {
       }))
       .sort((a, b) => b.balance - a.balance)
 
-    return NextResponse.json({ success: true, totalAssets, personalAssets, accounts: accountSummary, assetsByType, role })
+    return NextResponse.json({
+      success: true,
+      totalAssets,
+      totalLiabilities,
+      totalNetWorth,
+      personalAssets,
+      accounts: assetAccounts,
+      liabilities: liabilityAccounts,
+      assetsByType,
+      role,
+    })
   } catch (e) {
     console.error('[GET /api/wealth] ERROR:', e)
     return NextResponse.json({ success: false, error: String(e) }, { status: 500 })

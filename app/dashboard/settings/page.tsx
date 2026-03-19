@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Trash2, AlertTriangle, ShieldAlert } from 'lucide-react'
+import { Trash2, AlertTriangle, ShieldAlert, ArrowLeft } from 'lucide-react'
+import Link from 'next/link'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,8 +43,16 @@ function SettingsClient() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto">
-      <h1 className="text-2xl font-bold mb-8">설정</h1>
+    <div className="min-h-screen bg-black text-white px-4 py-8 max-w-2xl mx-auto">
+      <div className="flex items-center gap-3 mb-8">
+        <Link
+          href="/dashboard"
+          className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+        </Link>
+        <h1 className="text-2xl font-bold">설정</h1>
+      </div>
 
       {/* Danger Zone */}
       <section className="rounded-2xl border border-red-900/50 bg-red-950/10 p-6">

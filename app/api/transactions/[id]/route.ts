@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth'
 import { updateTransaction, deleteTransaction } from '@/lib/actions/transaction'
+import { prisma } from '@/lib/prisma'
 
 export async function PATCH(
   req: NextRequest,
@@ -13,6 +14,22 @@ export async function PATCH(
     }
 
     const body = await req.json()
+
+    // Lightweight patch: only isExcluded and/or category (no balance adjustment)
+    if (body.amount === undefined) {
+      const tx = await prisma.transaction.findUnique({ where: { id: params.id } })
+      if (!tx) return NextResponse.json({ success: false, error: '내역을 찾을 수 없습니다.' }, { status: 404 })
+      if (tx.userId !== authUser.id && authUser.role !== 'CFO') {
+        return NextResponse.json({ success: false, error: '권한이 없습니다.' }, { status: 403 })
+      }
+      const data: { isExcluded?: boolean; category?: string } = {}
+      if (body.isExcluded !== undefined) data.isExcluded = body.isExcluded
+      if (body.category !== undefined) data.category = body.category
+      const updated = await prisma.transaction.update({ where: { id: params.id }, data })
+      return NextResponse.json({ success: true, transaction: updated })
+    }
+
+    // Full update (amount present — recalculates account balance)
     const result = await updateTransaction(
       authUser.id,
       authUser.role as 'CFO' | 'MEMBER',

@@ -1,14 +1,14 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
-import { Users, Copy, Check, Pencil, X, Crown, ArrowLeft, Loader2, RefreshCw } from 'lucide-react'
+import { Users, Copy, Check, Pencil, X, Crown, Loader2, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import { getFamilyInfo, updateFamilyName, getLatestInviteCode, type FamilyInfo } from '@/lib/actions/family'
+
+interface FamilyMember { id: string; name: string | null; email: string; role: string }
+interface FamilyInfo { id: string; name: string; members: FamilyMember[]; inviteCode: string | null }
 
 export default function FamilyPage() {
-  const router = useRouter()
   const [family, setFamily] = useState<FamilyInfo | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
@@ -27,19 +27,20 @@ export default function FamilyPage() {
 
   useEffect(() => {
     async function load() {
-      const res = await fetch('/api/auth/me')
-      const me = await res.json()
+      const meRes = await fetch('/api/auth/me')
+      const me = await meRes.json()
       if (me?.user) {
         setCurrentUserId(me.user.id)
         setCurrentUserRole(me.user.role)
       }
 
-      const result = await getFamilyInfo()
-      if (result.error) {
-        toast.error(result.error)
-      } else if (result.data) {
-        setFamily(result.data)
-        setInviteCode(result.data.inviteCode)
+      const familyRes = await fetch('/api/family/info')
+      const data = await familyRes.json()
+      if (!data.success) {
+        toast.error(data.error ?? '데이터를 불러오지 못했습니다.')
+      } else {
+        setFamily(data.family)
+        setInviteCode(data.family.inviteCode)
       }
       setIsLoading(false)
     }
@@ -67,9 +68,14 @@ export default function FamilyPage() {
       return
     }
     setIsSaving(true)
-    const result = await updateFamilyName(editName)
-    if (result.error) {
-      toast.error(result.error)
+    const res = await fetch('/api/family/info', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: editName }),
+    })
+    const data = await res.json()
+    if (!data.success) {
+      toast.error(data.error ?? '수정에 실패했습니다.')
     } else {
       setFamily((prev) => prev ? { ...prev, name: editName.trim() } : prev)
       toast.success('가족 이름이 업데이트되었습니다.')
@@ -80,11 +86,12 @@ export default function FamilyPage() {
 
   const handleRefreshCode = async () => {
     setInviteLoading(true)
-    const result = await getLatestInviteCode()
-    if (result.error) {
-      toast.error(result.error)
+    const res = await fetch('/api/family/info')
+    const data = await res.json()
+    if (!data.success) {
+      toast.error(data.error ?? '코드를 불러오지 못했습니다.')
     } else {
-      setInviteCode(result.code)
+      setInviteCode(data.family.inviteCode)
     }
     setInviteLoading(false)
   }
@@ -93,10 +100,11 @@ export default function FamilyPage() {
     let code = inviteCode
     if (!code) {
       setInviteLoading(true)
-      const result = await getLatestInviteCode()
+      const res = await fetch('/api/family/info')
+      const data = await res.json()
       setInviteLoading(false)
-      if (result.error || !result.code) { toast.error('초대 코드를 불러오지 못했습니다.'); return }
-      code = result.code
+      if (!data.success || !data.family?.inviteCode) { toast.error('초대 코드를 불러오지 못했습니다.'); return }
+      code = data.family.inviteCode
       setInviteCode(code)
     }
     const origin = window.location.origin
@@ -120,7 +128,7 @@ export default function FamilyPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
+      <div className="flex items-center justify-center py-32">
         <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
       </div>
     )
@@ -132,17 +140,7 @@ export default function FamilyPage() {
   const members = family.members.filter((m) => m.role === 'MEMBER')
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        {/* 상단 네비 */}
-        <button
-          onClick={() => router.push('/dashboard')}
-          className="flex items-center gap-2 text-sm text-zinc-500 hover:text-white transition-colors mb-8"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          대시보드로
-        </button>
-
+    <div className="max-w-2xl mx-auto">
         <h1 className="text-2xl font-bold text-white mb-6">가족 관리</h1>
 
         {/* 가족 정보 카드 */}
@@ -257,7 +255,6 @@ export default function FamilyPage() {
               />
             ))}
           </div>
-        </div>
       </div>
     </div>
   )

@@ -415,6 +415,94 @@ export async function createManyTransactions(
   }
 }
 
+export interface BulkUpdateItem {
+  id: string
+  category?: string
+  isExcluded?: boolean
+  /** amount 변경 시 연결 계좌 잔액 delta 자동 보정 */
+  amount?: number
+}
+
+/**
+ * 여러 거래를 한 번에 수정하는 Server Action (Batch Edit)
+ * - category, isExcluded만 변경 → 잔액 보정 없음
+ * - amount 포함 시 → 구 금액과의 차액만큼 계좌 잔액 보정 (prisma.$transaction)
+ */
+export async function bulkUpdateTransactions(
+  userId: string,
+  userRole: 'CFO' | 'MEMBER',
+  updates: BulkUpdateItem[]
+): Promise<{ success: boolean; error?: string }> {
+  if (updates.length === 0) return { success: true }
+
+  try {
+    // amount 변경 포함 여부 확인
+    const amountUpdates = updates.filter(u => u.amount !== undefined)
+
+    if (amountUpdates.length > 0) {
+      // amount 변경이 있으면 트랜잭션으로 잔액 delta 보정
+      const txRecords = await prisma.transaction.findMany({
+        where: { id: { in: amountUpdates.map(u => u.id) } },
+        select: { id: true, amount: true, accountId: true, userId: true, account: { select: { isShared: true } } },
+      })
+      const txMap = new Map(txRecords.map(t => [t.id, t]))
+
+      await prisma.$transaction(async (db) => {
+        for (const u of updates) {
+          const data: Record<string, unknown> = {}
+          if (u.category !== undefined) data.category = u.category
+          if (u.isExcluded !== undefined) data.isExcluded = u.isExcluded
+
+          if (u.amount !== undefined) {
+            const record = txMap.get(u.id)
+            if (!record) continue
+            if (!canManageTransaction(userId, userRole, record.userId, record.account.isShared)) continue
+            const delta = u.amount - record.amount
+            data.amount = u.amount
+            await db.account.update({
+              where: { id: record.accountId },
+              data: { balance: { increment: delta } },
+            })
+          }
+
+          if (Object.keys(data).length > 0) {
+            await db.transaction.update({ where: { id: u.id }, data })
+          }
+        }
+      })
+    } else {
+      // category/isExcluded만 변경 — 권한 체크 후 단순 업데이트
+      const ids = updates.map(u => u.id)
+      const txRecords = await prisma.transaction.findMany({
+        where: { id: { in: ids } },
+        select: { id: true, userId: true, account: { select: { isShared: true } } },
+      })
+      const txMap = new Map(txRecords.map(t => [t.id, t]))
+
+      await prisma.$transaction(
+        updates
+          .filter(u => {
+            const record = txMap.get(u.id)
+            return record && canManageTransaction(userId, userRole, record.userId, record.account.isShared)
+          })
+          .map(u => {
+            const data: Record<string, unknown> = {}
+            if (u.category !== undefined) data.category = u.category
+            if (u.isExcluded !== undefined) data.isExcluded = u.isExcluded
+            return prisma.transaction.update({ where: { id: u.id }, data })
+          })
+      )
+    }
+
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/cashflow')
+    return { success: true }
+  } catch (e) {
+    console.error('[bulkUpdateTransactions] ERROR:', e)
+    return { success: false, error: '일괄 저장 중 오류가 발생했습니다.' }
+  }
+}
+
 /**
  * 새 거래를 추가하는 Server Action (레거시 — createTransaction 사용 권장)
  */
