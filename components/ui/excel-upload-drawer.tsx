@@ -24,6 +24,7 @@ import {
   tryParseBanksalad, type BanksaladRow, type AccountBalance,
 } from '@/utils/excel-parser'
 import type { MappingResult } from '@/app/api/ai/map-categories/route'
+import { InputGuide } from '@/components/dashboard/InputGuide'
 
 // ━━ 내부 타입 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -122,10 +123,25 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
   const [visibility, setVisibility] = useState<'SHARED' | 'PRIVATE'>('SHARED')
   const [isLoading, setIsLoading] = useState(false)
 
-  // ── 카테고리 로드 ──
+  // 가족 구성원 이름 (이체 필터링용)
+  const [familyMemberNames, setFamilyMemberNames] = useState<string[]>([])
+
+  // ── 카테고리 + 가족 정보 로드 ──
   useEffect(() => {
     if (!isOpen) return
     getFamilyCategories().then(setCategories).catch(() => {})
+    fetch('/api/family/info')
+      .then(r => r.json())
+      .then(d => {
+        if (d.success && d.family?.members) {
+          setFamilyMemberNames(
+            (d.family.members as { name?: string; email?: string }[])
+              .map(m => m.name || m.email || '')
+              .filter(Boolean)
+          )
+        }
+      })
+      .catch(() => {})
   }, [isOpen])
 
   // ── AI 카테고리 매핑 ──
@@ -193,7 +209,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         const wb = XLSX.read(data, { type: 'array', cellDates: false })
 
         // 뱅크샐러드 전용 파서 우선 시도
-        const banksaladResult = tryParseBanksalad(wb)
+        const banksaladResult = tryParseBanksalad(wb, familyMemberNames)
         if (banksaladResult) {
           const parsed: ParsedRow[] = banksaladResult.rows.map((r: BanksaladRow) => ({
             date: r.date, description: r.description, amount: r.amount,
@@ -236,7 +252,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
       }
     }
     reader.readAsArrayBuffer(file)
-  }, [runAiMapping])
+  }, [runAiMapping, familyMemberNames])
 
   const handleColChange = useCallback((field: keyof ColMap, header: string) => {
     setColMap(prev => {
@@ -289,26 +305,39 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         accountBalances.length > 0 ? { accountBalances } : undefined
       )
       if (result.success) {
-        // 요약 피드백
+        const total = validRows.length
+        const saved = result.count ?? 0
+        const skipped = result.skippedCount ?? 0
         const syncPart = result.syncedAccountCount
           ? `${result.syncedAccountCount}개 계좌 잔액 동기화`
           : null
-        const stats = result.monthStats ?? []
-        if (stats.length === 1) {
-          const s = stats[0]
-          toast.success(
-            syncPart ? `${syncPart}, ${s.count}건 등록 완료` : `${s.month} 내역 ${s.count}건 등록 완료`,
-            { description: `수입 ${new Intl.NumberFormat('ko-KR').format(s.income)}원 · 지출 ${new Intl.NumberFormat('ko-KR').format(s.expense)}원` }
-          )
-        } else if (stats.length > 1) {
-          const firstMonth = stats[0].month
-          const lastMonth = stats[stats.length - 1].month
-          toast.success(
-            syncPart ? `${syncPart}, ${result.count}건 등록 완료` : `${result.count}건 등록 완료`,
-            { description: `${firstMonth} ~ ${lastMonth} · ${stats.length}개월치 데이터` }
-          )
+
+        // 중복 스킵 메시지 구성
+        const dupDesc = skipped > 0
+          ? `총 ${total}건 중 ${skipped}건은 이미 존재하여 무시됨`
+          : null
+
+        if (saved === 0) {
+          toast.info('모든 내역이 이미 등록되어 있습니다.', {
+            description: dupDesc ?? undefined,
+          })
         } else {
-          toast.success(syncPart ? `${syncPart}, ${result.count}건 등록 완료` : `${result.count}건 등록 완료`)
+          const stats = result.monthStats ?? []
+          let title = ''
+          if (syncPart) title += `${syncPart}, `
+          title += `${saved}건 등록 완료`
+
+          let description = dupDesc ?? ''
+          if (stats.length === 1) {
+            const s = stats[0]
+            const statStr = `수입 ${new Intl.NumberFormat('ko-KR').format(s.income)}원 · 지출 ${new Intl.NumberFormat('ko-KR').format(s.expense)}원`
+            description = dupDesc ? `${dupDesc} · ${statStr}` : statStr
+          } else if (stats.length > 1) {
+            const range = `${stats[0].month} ~ ${stats[stats.length - 1].month}`
+            description = dupDesc ? `${dupDesc} · ${range}` : range
+          }
+
+          toast.success(title, { description: description || undefined })
         }
         handleClose(); onSuccess()
       } else {
@@ -341,6 +370,8 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
 
           {/* ── 업로드 존 ── */}
           {!hasFile ? (
+            <>
+            <InputGuide />
             <div
               onDragOver={e => { e.preventDefault(); setIsDragging(true) }}
               onDragLeave={() => setIsDragging(false)}
@@ -360,6 +391,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
               </div>
               <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) processFile(f) }} />
             </div>
+            </>
           ) : (
             <>
               {/* ── 파일 정보 ── */}

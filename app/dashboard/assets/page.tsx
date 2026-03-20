@@ -1,13 +1,41 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { AssetList, LiabilityList } from '@/components/ui/asset-list'
 import { AssetDonutChart, type AssetTypeData } from '@/components/ui/asset-donut-chart'
+import { NetWorthChart } from '@/components/ui/networth-chart'
+import { SnapshotAlertBanner } from '@/components/ui/snapshot-alert-banner'
+import { RealEstateCard } from '@/components/ui/real-estate-card'
 import { AccountDrawer, type AccountInitialData } from '@/components/ui/account-drawer'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog'
 import { formatCurrency, formatLargeNumber } from '@/lib/utils'
 import { useDashboardActions } from '@/components/layout/DashboardShell'
-import { TrendingUp, TrendingDown, Wallet } from 'lucide-react'
+import {
+  getNetWorthHistory,
+  checkMissingSnapshot,
+  createSnapshotFromCurrentBalances,
+  type NetWorthSnapshotData,
+} from '@/lib/actions/networth'
+import { TrendingUp, TrendingDown, Wallet, Building2, Landmark, CreditCard, Camera } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+const REAL_ESTATE_TYPES = new Set(['REAL_ESTATE'])
+const FINANCIAL_TYPES = new Set(['CASH', 'INVESTMENT', 'CRYPTO', 'STO'])
+
+function getCurrentYearMonth(): string {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+}
 
 export default function AssetsPage() {
   const { refreshKey } = useDashboardActions()
@@ -17,41 +45,70 @@ export default function AssetsPage() {
   const [totalAssets, setTotalAssets] = useState(0)
   const [totalLiabilities, setTotalLiabilities] = useState(0)
   const [totalNetWorth, setTotalNetWorth] = useState(0)
+  const [totalNetEquity, setTotalNetEquity] = useState(0)
   const [loading, setLoading] = useState(true)
   const [selectedAccount, setSelectedAccount] = useState<AccountInitialData | undefined>()
   const [isAccountDrawerOpen, setIsAccountDrawerOpen] = useState(false)
+  const [netWorthHistory, setNetWorthHistory] = useState<NetWorthSnapshotData[]>([])
 
-  const loadData = async () => {
-    try {
-      const res = await fetch('/api/wealth')
-      const data = await res.json()
-      if (data.success) {
-        setTotalAssets(data.totalAssets)
-        setTotalLiabilities(data.totalLiabilities ?? 0)
-        setTotalNetWorth(data.totalNetWorth ?? data.totalAssets)
+  // 스냅샷 알림 배너
+  const [missingYearMonth, setMissingYearMonth] = useState<string | null>(null)
+  const [bannerDismissed, setBannerDismissed] = useState(false)
 
-        const mapAccount = (a: any): AccountInitialData => ({
-          id: a.id,
-          name: a.name,
-          type: a.type,
-          balance: a.balance,
-          isShared: a.isShared,
-          shareLevel: a.shareLevel ?? 'PUBLIC',
-          isMasked: a.isMasked ?? false,
-        })
+  // 수동 저장 다이얼로그
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [manualSaving, setManualSaving] = useState(false)
 
-        setAccounts((data.accounts ?? []).map(mapAccount))
-        setLiabilities((data.liabilities ?? []).map(mapAccount))
-        if (data.assetsByType) setAssetsByType(data.assetsByType)
-      }
-    } finally {
-      setLoading(false)
+  const loadAccounts = async () => {
+    const res = await fetch('/api/wealth')
+    const data = await res.json()
+    if (data.success) {
+      setTotalAssets(data.totalAssets)
+      setTotalLiabilities(data.totalLiabilities ?? 0)
+      setTotalNetWorth(data.totalNetWorth ?? data.totalAssets)
+      setTotalNetEquity(data.totalNetEquity ?? data.totalAssets)
+
+      const mapAccount = (a: any): AccountInitialData => ({
+        id: a.id,
+        name: a.name,
+        type: a.type,
+        balance: a.balance,
+        isShared: a.isShared,
+        shareLevel: a.shareLevel ?? 'PUBLIC',
+        isMasked: a.isMasked ?? false,
+        netEquity: a.netEquity,
+        linkedDebts: a.linkedDebts ?? [],
+      })
+
+      setAccounts((data.accounts ?? []).map(mapAccount))
+      setLiabilities((data.liabilities ?? []).map(mapAccount))
+      if (data.assetsByType) setAssetsByType(data.assetsByType)
     }
   }
 
-  useEffect(() => { loadData() }, [refreshKey])
+  const loadNetWorthHistory = useCallback(async () => {
+    const history = await getNetWorthHistory()
+    setNetWorthHistory(history)
+  }, [])
 
-  const openAdd = (defaultType?: string) => {
+  const checkSnapshot = useCallback(async () => {
+    const result = await checkMissingSnapshot()
+    setMissingYearMonth(result.missing ? result.yearMonth : null)
+    setBannerDismissed(false)
+  }, [])
+
+  const loadData = useCallback(async () => {
+    setLoading(true)
+    try {
+      await Promise.all([loadAccounts(), loadNetWorthHistory(), checkSnapshot()])
+    } finally {
+      setLoading(false)
+    }
+  }, [loadNetWorthHistory, checkSnapshot])
+
+  useEffect(() => { loadData() }, [refreshKey, loadData])
+
+  const openAdd = () => {
     setSelectedAccount(undefined)
     setIsAccountDrawerOpen(true)
   }
@@ -62,22 +119,66 @@ export default function AssetsPage() {
     setIsAccountDrawerOpen(true)
   }
 
+  // 배너에서 저장 완료 → 배너 숨김 + 차트 갱신
+  const handleBannerSaved = async () => {
+    setMissingYearMonth(null)
+    await loadNetWorthHistory()
+  }
+
+  // 수동 저장 확인 → 이번 달 스냅샷 저장
+  const handleManualSave = async () => {
+    setManualSaving(true)
+    await createSnapshotFromCurrentBalances(getCurrentYearMonth())
+    setManualSaving(false)
+    setConfirmOpen(false)
+    await loadNetWorthHistory()
+  }
+
+  // 탭별 필터링
+  const realEstateAccounts = accounts.filter(a => REAL_ESTATE_TYPES.has(a.type))
+  const financialAccounts = accounts.filter(a => FINANCIAL_TYPES.has(a.type))
+  const realEstateTotalAssets = realEstateAccounts.reduce((s, a) => s + a.balance, 0)
+  const financialTotalAssets = financialAccounts.reduce((s, a) => s + a.balance, 0)
+
+  const showBanner = !!missingYearMonth && !bannerDismissed
+
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-5">
+      {/* 스냅샷 누락 배너 */}
+      {showBanner && (
+        <SnapshotAlertBanner
+          yearMonth={missingYearMonth!}
+          onSaved={handleBannerSaved}
+          onDismiss={() => setBannerDismissed(true)}
+        />
+      )}
+
       {/* 순자산 헤더 카드 */}
       <div className="bg-zinc-900 rounded-2xl p-5 border border-zinc-800">
-        <div className="flex items-center gap-2 mb-2">
-          <Wallet className="w-4 h-4 text-emerald-500" />
-          <span className="text-xs text-zinc-500 font-medium">가족 순자산</span>
-        </div>
-        <p className={cn(
-          'text-3xl font-bold tabular-nums',
-          totalNetWorth >= 0 ? 'text-white' : 'text-red-400'
-        )}>
-          {loading ? '...' : formatCurrency(totalNetWorth)}
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Wallet className="w-4 h-4 text-emerald-500" />
+              <span className="text-xs text-zinc-500 font-medium">가족 순자산</span>
+            </div>
+            <p className={cn(
+              'text-3xl font-bold tabular-nums',
+              totalNetWorth >= 0 ? 'text-white' : 'text-red-400'
+            )}>
+              {loading ? '...' : formatCurrency(totalNetWorth)}
+            </p>
+          </div>
 
-        {/* 총 자산 / 총 부채 서브 행 */}
+          {/* 📸 현재 자산 기록하기 */}
+          <button
+            onClick={() => setConfirmOpen(true)}
+            className="flex-shrink-0 flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-zinc-600 px-3 py-2 rounded-xl transition-colors mt-0.5"
+          >
+            <Camera className="w-3.5 h-3.5" />
+            현재 자산 기록
+          </button>
+        </div>
+
         <div className="flex items-center gap-4 mt-3 pt-3 border-t border-zinc-800">
           <div className="flex items-center gap-1.5">
             <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
@@ -101,25 +202,110 @@ export default function AssetsPage() {
         </div>
       </div>
 
-      {/* 자산 배분 도넛 + 자산 목록 */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <AssetDonutChart data={assetsByType} totalAssets={totalAssets} />
+      {/* Tabs */}
+      <Tabs defaultValue="summary">
+        <TabsList className="w-full grid grid-cols-4">
+          <TabsTrigger value="summary">요약</TabsTrigger>
+          <TabsTrigger value="realestate">
+            <Building2 className="w-3.5 h-3.5 mr-1 opacity-70" />
+            부동산
+          </TabsTrigger>
+          <TabsTrigger value="financial">
+            <Landmark className="w-3.5 h-3.5 mr-1 opacity-70" />
+            금융자산
+          </TabsTrigger>
+          <TabsTrigger value="debt">
+            <CreditCard className="w-3.5 h-3.5 mr-1 opacity-70" />
+            부채
+          </TabsTrigger>
+        </TabsList>
 
-        <AssetList
-          accounts={accounts}
-          totalAssets={totalAssets}
-          onEdit={openEdit}
-          onAdd={() => openAdd()}
-        />
-      </div>
+        {/* 요약 탭 */}
+        <TabsContent value="summary" className="space-y-5">
+          <NetWorthChart
+            data={netWorthHistory}
+            onDataSaved={loadNetWorthHistory}
+          />
 
-      {/* 부채 섹션 */}
-      <LiabilityList
-        liabilities={liabilities}
-        totalLiabilities={totalLiabilities}
-        onEdit={openEdit}
-        onAdd={() => openAdd('DEBT')}
-      />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <AssetDonutChart data={assetsByType} totalAssets={totalNetWorth} />
+            <AssetList
+              accounts={accounts}
+              totalAssets={totalAssets}
+              onEdit={openEdit}
+              onAdd={openAdd}
+            />
+          </div>
+
+          <LiabilityList
+            liabilities={liabilities}
+            totalLiabilities={totalLiabilities}
+            onEdit={openEdit}
+            onAdd={openAdd}
+          />
+        </TabsContent>
+
+        {/* 부동산 탭 */}
+        <TabsContent value="realestate" className="space-y-4">
+          {realEstateAccounts.length === 0 ? (
+            <EmptyTab
+              icon={<Building2 className="w-6 h-6 text-zinc-600" />}
+              message="등록된 부동산 자산이 없습니다"
+              onAdd={openAdd}
+            />
+          ) : (
+            <>
+              {/* 총계 요약 바 */}
+              <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl">
+                <span className="text-xs text-zinc-500">부동산 {realEstateAccounts.length}건</span>
+                <span className="text-sm font-bold text-white tabular-nums">{formatCurrency(realEstateTotalAssets)}</span>
+              </div>
+              {realEstateAccounts.map(account => (
+                <RealEstateCard
+                  key={account.id}
+                  account={account}
+                  onEdit={openEdit}
+                />
+              ))}
+              {/* 추가 버튼 */}
+              <button
+                onClick={openAdd}
+                className="w-full py-3 border border-dashed border-zinc-800 rounded-2xl text-xs text-zinc-600 hover:text-zinc-400 hover:border-zinc-700 transition-colors"
+              >
+                + 부동산 추가
+              </button>
+            </>
+          )}
+        </TabsContent>
+
+        {/* 금융자산 탭 */}
+        <TabsContent value="financial" className="space-y-5">
+          {financialAccounts.length === 0 ? (
+            <EmptyTab
+              icon={<Landmark className="w-6 h-6 text-zinc-600" />}
+              message="등록된 금융자산이 없습니다"
+              onAdd={openAdd}
+            />
+          ) : (
+            <AssetList
+              accounts={financialAccounts}
+              totalAssets={financialTotalAssets}
+              onEdit={openEdit}
+              onAdd={openAdd}
+            />
+          )}
+        </TabsContent>
+
+        {/* 부채 탭 */}
+        <TabsContent value="debt" className="space-y-5">
+          <LiabilityList
+            liabilities={liabilities}
+            totalLiabilities={totalLiabilities}
+            onEdit={openEdit}
+            onAdd={openAdd}
+          />
+        </TabsContent>
+      </Tabs>
 
       {/* 계좌 추가/수정 드로어 */}
       <AccountDrawer
@@ -131,6 +317,62 @@ export default function AssetsPage() {
         onSuccess={loadData}
         initialData={selectedAccount}
       />
+
+      {/* 수동 스냅샷 저장 확인 다이얼로그 */}
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>이번 달 자산 기록</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-zinc-400">
+                <p>
+                  현재 등록된 자산·부채 잔액을 기준으로{' '}
+                  <strong className="text-white">{getCurrentYearMonth().replace('-', '년 ')}월</strong>{' '}
+                  순자산 스냅샷을 저장합니다.
+                </p>
+                <p className="text-amber-400/80">
+                  이미 이번 달에 기록된 스냅샷이 있다면, 현재 잔액으로 덮어씁니다. 계속하시겠습니까?
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={manualSaving}>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleManualSave}
+              disabled={manualSaving}
+              className="bg-blue-600 hover:bg-blue-500 text-white"
+            >
+              {manualSaving ? '저장 중...' : '저장'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  )
+}
+
+function EmptyTab({
+  icon,
+  message,
+  onAdd,
+}: {
+  icon: React.ReactNode
+  message: string
+  onAdd: () => void
+}) {
+  return (
+    <div className="bg-zinc-900 rounded-2xl border border-zinc-800 px-5 py-12 flex flex-col items-center text-center gap-3">
+      <div className="w-12 h-12 rounded-2xl bg-zinc-800 flex items-center justify-center">
+        {icon}
+      </div>
+      <p className="text-sm text-zinc-500">{message}</p>
+      <button
+        onClick={onAdd}
+        className="text-xs text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 px-4 py-2 rounded-lg transition-colors"
+      >
+        + 자산 추가
+      </button>
     </div>
   )
 }

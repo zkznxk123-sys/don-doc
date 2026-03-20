@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import {
   ChevronLeft, ChevronRight, TrendingUp, TrendingDown,
   PiggyBank, EyeOff, Pencil, Check, X, Save, Loader2,
@@ -13,6 +14,9 @@ import { bulkUpdateTransactions } from '@/lib/actions/transaction'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
+import { InputGuide } from '@/components/dashboard/InputGuide'
+
+type TypeFilter = 'INCOME' | 'EXPENSE'
 
 interface Transaction {
   id: string
@@ -36,7 +40,7 @@ interface MonthlyGoal {
   targetSavingsRate: number
 }
 
-type DraftItem = { category: string; isExcluded: boolean }
+type DraftItem = { category: string; isExcluded: boolean; amount: number; description: string }
 
 const EXPENSE_CATEGORIES = [
   '식비', '카페/간식', '쇼핑', '교통', '주거/관리비', '의료/건강',
@@ -50,6 +54,11 @@ function toMonthParam(y: number, m: number) {
 
 export default function CashflowPage() {
   const now = new Date()
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const typeFilter = (searchParams.get('type') as TypeFilter | null)
+
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth() + 1)
   const [transactions, setTransactions] = useState<Transaction[]>([])
@@ -62,6 +71,17 @@ export default function CashflowPage() {
   const [saving, setSaving] = useState(false)
 
   const { refreshKey, openTransactionDrawer, shellUser, setPageActions, openExcelDrawer } = useDashboardActions()
+
+  const toggleFilter = useCallback((type: TypeFilter) => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (params.get('type') === type) {
+      params.delete('type')
+    } else {
+      params.set('type', type)
+    }
+    const qs = params.toString()
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+  }, [router, pathname, searchParams])
 
   const [goal, setGoal] = useState<MonthlyGoal | null>(null)
 
@@ -119,9 +139,10 @@ export default function CashflowPage() {
     for (const tx of transactions) {
       const d = drafts[tx.id]
       const excluded = d ? d.isExcluded : tx.isExcluded
+      const amount = d ? d.amount : tx.amount
       if (excluded || tx.isMasked) continue
-      if (tx.amount > 0) income += tx.amount
-      else expense += Math.abs(tx.amount)
+      if (amount > 0) income += amount
+      else expense += Math.abs(amount)
     }
     return { income, expense, savings: income - expense }
   }, [summary, drafts, transactions, draftCount])
@@ -130,15 +151,32 @@ export default function CashflowPage() {
     ? Math.round((effectiveSummary.savings / effectiveSummary.income) * 100)
     : null
 
+  // 타입 필터 적용
+  const visibleTransactions = useMemo(() => {
+    if (!typeFilter) return transactions
+    if (typeFilter === 'INCOME') return transactions.filter(tx => tx.amount > 0)
+    return transactions.filter(tx => tx.amount < 0)
+  }, [transactions, typeFilter])
+
   const canEdit = (tx: Transaction) =>
     !tx.isMasked && (tx.userId === shellUser?.id || shellUser?.role === 'CFO')
 
   const setDraft = useCallback((id: string, patch: Partial<DraftItem>, original: Transaction) => {
     setDrafts(prev => {
-      const current = prev[id] ?? { category: original.category, isExcluded: original.isExcluded }
+      const current = prev[id] ?? {
+        category: original.category,
+        isExcluded: original.isExcluded,
+        amount: original.amount,
+        description: original.description,
+      }
       const next = { ...current, ...patch }
       // 원본과 같으면 draft에서 제거
-      if (next.category === original.category && next.isExcluded === original.isExcluded) {
+      if (
+        next.category === original.category &&
+        next.isExcluded === original.isExcluded &&
+        next.amount === original.amount &&
+        next.description === original.description
+      ) {
         const { [id]: _, ...rest } = prev
         return rest
       }
@@ -158,21 +196,34 @@ export default function CashflowPage() {
     if (!shellUser) return
     setSaving(true)
     try {
-      const updates = Object.entries(drafts).map(([id, d]) => ({ id, ...d }))
+      const updates = Object.entries(drafts).flatMap(([id, d]) => {
+        const orig = transactions.find(t => t.id === id)
+        if (!orig) return []
+        return [{
+          id,
+          category: d.category,
+          isExcluded: d.isExcluded,
+          ...(d.description !== orig.description ? { description: d.description } : {}),
+          ...(d.amount !== orig.amount ? { amount: d.amount } : {}),
+        }]
+      })
+      if (updates.length === 0) { setIsEditing(false); return }
+
       const result = await bulkUpdateTransactions(shellUser.id, shellUser.role, updates)
       if (result.success) {
-        // 로컬 상태 반영
-        setTransactions(prev => prev.map(tx =>
-          drafts[tx.id] ? { ...tx, ...drafts[tx.id] } : tx
-        ))
+        setTransactions(prev => prev.map(tx => {
+          const d = drafts[tx.id]
+          return d ? { ...tx, category: d.category, isExcluded: d.isExcluded, amount: d.amount, description: d.description } : tx
+        }))
         setDrafts({})
         setIsEditing(false)
         toast.success(`${updates.length}건 저장 완료`)
-        // summary 갱신
         fetchData(year, month)
       } else {
         toast.error(result.error || '저장 실패')
       }
+    } catch (e) {
+      toast.error('저장 중 오류가 발생했습니다: ' + String(e))
     } finally {
       setSaving(false)
     }
@@ -278,8 +329,22 @@ export default function CashflowPage() {
       {/* 요약 카드 */}
       {effectiveSummary && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
-          <SummaryCard icon={<TrendingUp className="w-3.5 h-3.5 text-emerald-400" />} label="수입" value={formatCurrency(effectiveSummary.income)} valueClass="text-emerald-400" />
-          <SummaryCard icon={<TrendingDown className="w-3.5 h-3.5 text-red-400" />} label="지출" value={formatCurrency(effectiveSummary.expense)} valueClass="text-red-400" />
+          <SummaryCard
+            icon={<TrendingUp className="w-3.5 h-3.5 text-emerald-400" />}
+            label="수입" value={formatCurrency(effectiveSummary.income)}
+            valueClass="text-emerald-400"
+            isActive={typeFilter === 'INCOME'}
+            activeClass="bg-emerald-950/30 border-emerald-500/50"
+            onClick={() => toggleFilter('INCOME')}
+          />
+          <SummaryCard
+            icon={<TrendingDown className="w-3.5 h-3.5 text-red-400" />}
+            label="지출" value={formatCurrency(effectiveSummary.expense)}
+            valueClass="text-red-400"
+            isActive={typeFilter === 'EXPENSE'}
+            activeClass="bg-red-950/30 border-red-500/50"
+            onClick={() => toggleFilter('EXPENSE')}
+          />
           <SummaryCard icon={<PiggyBank className="w-3.5 h-3.5 text-blue-400" />} label="저축" value={formatCurrency(effectiveSummary.savings)} valueClass={effectiveSummary.savings >= 0 ? 'text-blue-400' : 'text-amber-400'} />
           <div className={cn('rounded-2xl p-4 border', effectiveSavingsRate !== null && effectiveSavingsRate >= 30 ? 'bg-emerald-950/20 border-emerald-900/40' : 'bg-zinc-900 border-zinc-800')}>
             <p className="text-xs text-zinc-500 font-medium mb-2">저축률</p>
@@ -297,14 +362,35 @@ export default function CashflowPage() {
         <div className={cn(
           'px-4 py-2.5 border-b border-zinc-800 text-[10px] font-semibold uppercase tracking-wide rounded-t-2xl',
           isEditing
-            ? 'grid grid-cols-[72px_1fr_96px_120px_96px] bg-emerald-950/20 text-emerald-700'
+            ? 'bg-emerald-950/20 text-emerald-700 flex items-center gap-2'
             : 'grid grid-cols-[72px_1fr_96px_80px_36px] bg-zinc-900 text-zinc-500',
         )}>
-          <span>날짜</span>
-          <span>내용</span>
-          <span>금액</span>
-          <span>카테고리</span>
-          {isEditing ? <span>통계 제외</span> : <span />}
+          {isEditing ? (
+            <span>편집 모드 — 내용 · 금액 · 카테고리 · 통계 제외 수정 가능</span>
+          ) : (
+            <>
+              <span>날짜</span>
+              <span className="flex items-center gap-2">
+                내용
+                {typeFilter && (
+                  <span className={cn(
+                    'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-semibold normal-case tracking-normal',
+                    typeFilter === 'INCOME'
+                      ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                      : 'bg-red-500/15 text-red-400 border border-red-500/30',
+                  )}>
+                    {typeFilter === 'INCOME' ? '수입만 보기' : '지출만 보기'}
+                    <button onClick={() => toggleFilter(typeFilter)} className="hover:opacity-70 transition-opacity">
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  </span>
+                )}
+              </span>
+              <span>금액</span>
+              <span>카테고리</span>
+              <span />
+            </>
+          )}
         </div>
 
         {loading ? (
@@ -312,15 +398,24 @@ export default function CashflowPage() {
             <div className="inline-block w-5 h-5 border-2 border-zinc-700 border-t-zinc-400 rounded-full animate-spin" />
           </div>
         ) : transactions.length === 0 ? (
-          <div className="py-20 text-center text-zinc-600 text-sm">
-            {year}년 {String(month).padStart(2, '0')}월에 등록된 내역이 없습니다
+          <div className="py-10 px-4 text-center space-y-6">
+            <p className="text-zinc-600 text-sm">
+              {year}년 {String(month).padStart(2, '0')}월에 등록된 내역이 없습니다
+            </p>
+            <InputGuide />
+          </div>
+        ) : visibleTransactions.length === 0 ? (
+          <div className="py-16 text-center text-zinc-600 text-sm">
+            {typeFilter === 'INCOME' ? '수입' : '지출'} 내역이 없습니다
           </div>
         ) : (
           <div className="divide-y divide-zinc-800/60">
-            {transactions.map(tx => {
+            {visibleTransactions.map(tx => {
               const draft = drafts[tx.id]
               const effectiveCategory = draft?.category ?? tx.category
               const effectiveExcluded = draft?.isExcluded ?? tx.isExcluded
+              const effectiveAmount = draft?.amount ?? tx.amount
+              const effectiveDescription = draft?.description ?? tx.description
               const isDirty = !!draft
 
               return (
@@ -331,6 +426,8 @@ export default function CashflowPage() {
                   isDirty={isDirty}
                   effectiveCategory={effectiveCategory}
                   effectiveExcluded={effectiveExcluded}
+                  effectiveAmount={effectiveAmount}
+                  effectiveDescription={effectiveDescription}
                   canEdit={canEdit(tx)}
                   onEdit={() => openTransactionDrawer({
                     id: tx.id,
@@ -352,7 +449,12 @@ export default function CashflowPage() {
       </div>
 
       {!loading && transactions.length > 0 && (
-        <p className="text-center text-xs text-zinc-600 mt-4">총 {transactions.length}건</p>
+        <p className="text-center text-xs text-zinc-600 mt-4">
+          {typeFilter
+            ? `${visibleTransactions.length}건 표시 중 (전체 ${transactions.length}건)`
+            : `총 ${transactions.length}건`
+          }
+        </p>
       )}
     </div>
   )
@@ -360,9 +462,29 @@ export default function CashflowPage() {
 
 /* ── 서브 컴포넌트 ── */
 
-function SummaryCard({ icon, label, value, valueClass }: { icon: React.ReactNode; label: string; value: string; valueClass: string }) {
+function SummaryCard({
+  icon, label, value, valueClass, onClick, isActive, activeClass,
+}: {
+  icon: React.ReactNode
+  label: string
+  value: string
+  valueClass: string
+  onClick?: () => void
+  isActive?: boolean
+  activeClass?: string
+}) {
   return (
-    <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-4">
+    <div
+      onClick={onClick}
+      className={cn(
+        'rounded-2xl p-4 border transition-all',
+        onClick ? 'cursor-pointer select-none' : '',
+        isActive && activeClass
+          ? activeClass
+          : 'bg-zinc-900 border-zinc-800',
+        onClick && !isActive ? 'hover:border-zinc-600' : '',
+      )}
+    >
       <div className="flex items-center gap-1.5 mb-2">
         {icon}
         <span className="text-xs text-zinc-500 font-medium">{label}</span>
@@ -420,7 +542,7 @@ function InsightCard({ label, icon, actual, target, type, suffix, isRate = false
 }
 
 function TransactionRow({
-  tx, isEditing, isDirty, effectiveCategory, effectiveExcluded,
+  tx, isEditing, isDirty, effectiveCategory, effectiveExcluded, effectiveAmount, effectiveDescription,
   canEdit, onEdit, onDraftChange,
 }: {
   tx: Transaction
@@ -428,6 +550,8 @@ function TransactionRow({
   isDirty: boolean
   effectiveCategory: string
   effectiveExcluded: boolean
+  effectiveAmount: number
+  effectiveDescription: string
   canEdit: boolean
   onEdit: () => void
   onDraftChange: (patch: Partial<DraftItem>) => void
@@ -435,34 +559,53 @@ function TransactionRow({
   const date = new Date(tx.date)
   const dateStr = `${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
   const categories = tx.amount > 0 ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
+  const sign = tx.amount >= 0 ? 1 : -1
+
+  const handleAmountChange = (val: string) => {
+    const num = Number(val.replace(/[^0-9]/g, '')) || 0
+    onDraftChange({ amount: num === 0 ? 0 : sign * num })
+  }
 
   if (isEditing && canEdit) {
     return (
       <div className={cn(
-        'px-4 py-2.5 transition-colors',
+        'px-4 py-2 transition-colors',
         isDirty
           ? 'bg-emerald-950/15 border-l-2 border-emerald-600/70'
           : 'border-l-2 border-transparent',
         effectiveExcluded && 'opacity-50',
       )}>
-        <div className="grid grid-cols-[72px_1fr_96px_120px_96px] items-center gap-1">
-          {/* 날짜 */}
+        {/* 1행: 날짜 + 내용 input + 금액 input */}
+        <div className="grid grid-cols-[56px_1fr_100px] items-center gap-2 mb-1.5">
           <div>
             <p className="text-xs text-zinc-500 tabular-nums">{dateStr}</p>
-            {tx.userName && <p className="text-[10px] text-zinc-600 mt-0.5 truncate">{tx.userName}</p>}
+            {tx.userName && <p className="text-[10px] text-zinc-600 truncate">{tx.userName}</p>}
           </div>
-          {/* 내용 */}
-          <div className="flex items-center gap-1.5 min-w-0 pr-1">
-            {tx.isMasked && <EyeOff className="w-3 h-3 text-zinc-600 flex-shrink-0" />}
-            <p className="text-sm text-white truncate">{tx.description}</p>
+          {/* 내용 input */}
+          <input
+            type="text"
+            value={effectiveDescription}
+            onChange={e => onDraftChange({ description: e.target.value })}
+            className="h-7 bg-zinc-800 border border-zinc-700 rounded-lg px-2 text-xs text-white outline-none focus:border-zinc-500 transition-colors min-w-0"
+          />
+          {/* 금액 input */}
+          <div className="relative">
+            <input
+              type="text"
+              inputMode="numeric"
+              value={Math.abs(effectiveAmount) === 0 ? '' : Math.abs(effectiveAmount).toLocaleString()}
+              onChange={e => handleAmountChange(e.target.value)}
+              className={cn(
+                'h-7 w-full bg-zinc-800 border border-zinc-700 rounded-lg pl-2 pr-1 text-xs text-right outline-none focus:border-zinc-500 transition-colors tabular-nums',
+                tx.amount > 0 ? 'text-emerald-400' : 'text-white'
+              )}
+            />
           </div>
-          {/* 금액 */}
-          <p className={cn('text-sm tabular-nums text-right font-medium', tx.amount > 0 ? 'text-emerald-400' : 'text-white')}>
-            {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)}
-          </p>
-          {/* 카테고리 select — Portal 렌더링으로 클리핑 방지 */}
+        </div>
+        {/* 2행: 카테고리 + 통계 제외 */}
+        <div className="grid grid-cols-[1fr_auto] items-center gap-2 pl-[72px]">
           <Select value={effectiveCategory} onValueChange={v => onDraftChange({ category: v })}>
-            <SelectTrigger className="h-7 px-2 text-xs rounded-lg bg-zinc-800 border-zinc-700 focus:ring-0 focus:ring-offset-0 min-w-0">
+            <SelectTrigger className="h-7 px-2 text-xs rounded-lg bg-zinc-800 border-zinc-700 focus:ring-0 focus:ring-offset-0">
               <SelectValue />
             </SelectTrigger>
             <SelectContent position="popper" sideOffset={4} className="z-[9999]">
@@ -472,26 +615,23 @@ function TransactionRow({
               {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
-          {/* 통계 제외 토글 */}
-          <div className="flex justify-center">
-            <button
-              onClick={() => onDraftChange({ isExcluded: !effectiveExcluded })}
-              className={cn(
-                'flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs font-medium border transition-colors',
-                effectiveExcluded
-                  ? 'bg-zinc-700 border-zinc-600 text-zinc-300'
-                  : 'bg-zinc-800/50 border-zinc-700/50 text-zinc-500 hover:text-zinc-300'
-              )}
-            >
-              <span className={cn(
-                'w-3.5 h-3.5 rounded-sm border flex items-center justify-center flex-shrink-0',
-                effectiveExcluded ? 'bg-zinc-400 border-zinc-400' : 'border-zinc-600'
-              )}>
-                {effectiveExcluded && <Check className="w-2.5 h-2.5 text-black" />}
-              </span>
-              제외
-            </button>
-          </div>
+          <button
+            onClick={() => onDraftChange({ isExcluded: !effectiveExcluded })}
+            className={cn(
+              'flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs font-medium border transition-colors flex-shrink-0',
+              effectiveExcluded
+                ? 'bg-zinc-700 border-zinc-600 text-zinc-300'
+                : 'bg-zinc-800/50 border-zinc-700/50 text-zinc-500 hover:text-zinc-300'
+            )}
+          >
+            <span className={cn(
+              'w-3.5 h-3.5 rounded-sm border flex items-center justify-center flex-shrink-0',
+              effectiveExcluded ? 'bg-zinc-400 border-zinc-400' : 'border-zinc-600'
+            )}>
+              {effectiveExcluded && <Check className="w-2.5 h-2.5 text-black" />}
+            </span>
+            제외
+          </button>
         </div>
       </div>
     )

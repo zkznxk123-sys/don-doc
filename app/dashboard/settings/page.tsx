@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Trash2, AlertTriangle, ShieldAlert, ArrowLeft } from 'lucide-react'
+import { Trash2, AlertTriangle, ShieldAlert, ArrowLeft, Tag, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import {
   AlertDialog,
@@ -53,6 +53,26 @@ function SettingsClient() {
         </Link>
         <h1 className="text-2xl font-bold">설정</h1>
       </div>
+
+      {/* 카테고리 관리 */}
+      <section className="rounded-2xl border border-zinc-800 bg-zinc-900/30 p-5 mb-4">
+        <h2 className="text-sm font-semibold text-zinc-300 mb-3">데이터 관리</h2>
+        <Link
+          href="/dashboard/settings/categories"
+          className="flex items-center justify-between p-3 rounded-xl hover:bg-zinc-800/60 transition-colors group"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center">
+              <Tag className="w-4 h-4 text-zinc-400" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-white">카테고리 관리</p>
+              <p className="text-xs text-zinc-500 mt-0.5">수입/지출 카테고리 및 자산 유형 표시 이름 설정</p>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+        </Link>
+      </section>
 
       {/* Danger Zone */}
       <section className="rounded-2xl border border-red-900/50 bg-red-950/10 p-6">

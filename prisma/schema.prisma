@@ -42,16 +42,25 @@ enum ShareLevel {
   PRIVATE      // 나만 보기 — 타인 리스트에서 완전 제외
 }
 
+enum RepaymentType {
+  EQUAL_PRINCIPAL_INTEREST // 원리금균등
+  EQUAL_PRINCIPAL          // 원금균등
+  BULLET                   // 만기일시
+  INTEREST_ONLY            // 이자만납부
+}
+
 model FamilyGroup {
-  id           String        @id @default(cuid())
-  name         String        // 예: "우리집 패밀리오피스"
-  users        User[]
-  accounts     Account[]
-  invites      FamilyInvite[]
-  budgets      Budget[]
-  categories   Category[]
-  monthlyGoals MonthlyGoal[]
-  createdAt    DateTime      @default(now())
+  id                String             @id @default(cuid())
+  name              String             // 예: "우리집 패밀리오피스"
+  users             User[]
+  accounts          Account[]
+  invites           FamilyInvite[]
+  budgets           Budget[]
+  categories        Category[]
+  monthlyGoals      MonthlyGoal[]
+  accountTypeLabels  AccountTypeLabel[]
+  netWorthSnapshots  NetWorthSnapshot[]
+  createdAt          DateTime           @default(now())
 }
 
 model Category {
@@ -90,33 +99,80 @@ model User {
 }
 
 model Account {
-  id            String      @id @default(cuid())
-  name          String      // 예: "생활비 통장", "개인 비상금"
-  type          AccountType @default(CASH)
-  balance       Float       @default(0)
-  isShared      Boolean     @default(true) // 공동 자산 여부 (shareLevel에서 파생)
-  shareLevel    ShareLevel  @default(PUBLIC) // 공유 수준
-  familyId      String
-  family        FamilyGroup @relation(fields: [familyId], references: [id])
-  userId        String?     // 개인 계좌일 경우 소유자
-  user          User?       @relation(fields: [userId], references: [id])
-  transactions  Transaction[]
+  id              String      @id @default(cuid())
+  name            String      // 예: "생활비 통장", "개인 비상금"
+  type            AccountType @default(CASH)
+  balance         Float       @default(0)
+  isShared        Boolean     @default(true)   // 공동 자산 여부 (shareLevel에서 파생)
+  shareLevel      ShareLevel  @default(PUBLIC) // 공유 수준
+  familyId        String
+  family          FamilyGroup @relation(fields: [familyId], references: [id])
+  userId          String?     // 개인 계좌일 경우 소유자
+  user            User?       @relation(fields: [userId], references: [id])
+  transactions    Transaction[]
+
+  // 부채가 종속된 자산 (self-relation) — 예: 주택담보대출 → 아파트
+  linkedAssetId   String?
+  linkedAsset     Account?    @relation("DebtToAsset", fields: [linkedAssetId], references: [id])
+  linkedDebts     Account[]   @relation("DebtToAsset")
+
+  // 유형별 상세 정보 (1:1)
+  realEstateDetail    RealEstateDetail?
+  financialAssetDetail FinancialAssetDetail?
+  debtDetail          DebtDetail?
 }
 
 model Transaction {
-  id          String     @id @default(cuid())
-  amount      Float
-  date        DateTime   @default(now())
-  description String     // 이 필드가 마스킹 대상
-  category    String     // 카테고리 이름 (표시용, 하위호환)
-  categoryId  String?    // Category 모델 FK (선택)
-  categoryRef Category?  @relation(fields: [categoryId], references: [id])
-  visibility  Visibility @default(SHARED)
-  isExcluded  Boolean    @default(false) // 통계 제외 여부
-  userId      String
-  user        User       @relation(fields: [userId], references: [id])
-  accountId   String
-  account     Account    @relation(fields: [accountId], references: [id])
+  id           String     @id @default(cuid())
+  amount       Float
+  date         DateTime   @default(now())
+  description  String     // 이 필드가 마스킹 대상
+  category     String     // 카테고리 이름 (표시용, 하위호환)
+  categoryId   String?    // Category 모델 FK (선택)
+  categoryRef  Category?  @relation(fields: [categoryId], references: [id])
+  visibility   Visibility @default(SHARED)
+  isExcluded   Boolean    @default(false) // 통계 제외 여부
+  originalHash String?    @unique        // 엑셀 원본 Row 식별자 SHA-256 (userId|date|amount|desc|accountName)
+  userId       String
+  user         User       @relation(fields: [userId], references: [id])
+  accountId    String
+  account      Account    @relation(fields: [accountId], references: [id])
+}
+
+model RealEstateDetail {
+  id            String   @id @default(cuid())
+  accountId     String   @unique
+  account       Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  propertyType  String?  // 아파트, 빌라, 오피스텔, 토지 등
+  purchasePrice Float?   // 매수 원금 (취득가)
+  purchaseDate  DateTime? // 매수일
+  currentPrice  Float?   // 현재 시세 (사용자 수기 입력)
+  targetPrice   Float?   // 목표 매도가
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model FinancialAssetDetail {
+  id             String    @id @default(cuid())
+  accountId      String    @unique
+  account        Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  interestRate   Float?    // 수익률 또는 이율 (% 단위, 예: 4.5)
+  maturityDate   DateTime? // 만기일
+  monthlyPayment Float?    // 월 납입액 (적금 등)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model DebtDetail {
+  id             String         @id @default(cuid())
+  accountId      String         @unique
+  account        Account        @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  interestRate   Float?         // 대출 금리 (% 단위, 예: 3.8)
+  maturityDate   DateTime?      // 대출 만기일
+  repaymentType  RepaymentType? // 상환 방식
+  monthlyPayment Float?         // 월 상환액
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 }
 
 model Budget {
@@ -129,6 +185,30 @@ model Budget {
   user      User?       @relation(fields: [userId], references: [id])
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
+}
+
+model AccountTypeLabel {
+  id       String      @id @default(cuid())
+  type     AccountType
+  label    String
+  familyId String
+  family   FamilyGroup @relation(fields: [familyId], references: [id])
+
+  @@unique([type, familyId])
+}
+
+model NetWorthSnapshot {
+  id               String      @id @default(cuid())
+  familyId         String
+  family           FamilyGroup @relation(fields: [familyId], references: [id])
+  yearMonth        String      // "YYYY-MM"
+  totalAssets      Float       @default(0)
+  totalLiabilities Float       @default(0)
+  netWorth         Float       @default(0)
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@unique([familyId, yearMonth])
 }
 
 model MonthlyGoal {

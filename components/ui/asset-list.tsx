@@ -1,8 +1,12 @@
 'use client'
 
 import { useState } from 'react'
-import { Banknote, TrendingUp, Bitcoin, Building2, Layers, Users, User, Eye, EyeOff, ChevronRight, Plus, Lock, CreditCard, HandCoins } from 'lucide-react'
-import { cn, formatCurrency } from '@/lib/utils'
+import {
+  Banknote, TrendingUp, Bitcoin, Building2, Layers,
+  Users, User, Eye, EyeOff, ChevronRight, Plus, Lock,
+  CreditCard, HandCoins, CornerDownRight,
+} from 'lucide-react'
+import { cn, formatCurrency, formatLargeNumber } from '@/lib/utils'
 import type { AccountInitialData } from '@/components/ui/account-drawer'
 import type { ShareLevel } from '@/lib/actions/accounts'
 import { Switch } from '@/components/ui/switch'
@@ -31,20 +35,163 @@ interface LiabilityListProps {
   onAdd: () => void
 }
 
+// ─── 카테고리별 그룹핑 ────────────────────────────────────────────────────────
+
+interface CategoryGroup {
+  type: string
+  label: string
+  accounts: AccountInitialData[]
+  total: number
+}
+
+function buildGroups(accounts: AccountInitialData[]): CategoryGroup[] {
+  const groups: CategoryGroup[] = []
+  let current: CategoryGroup | null = null
+
+  for (const acc of accounts) {
+    if (!current || current.type !== acc.type) {
+      current = {
+        type: acc.type,
+        label: TYPE_META[acc.type]?.label ?? acc.type,
+        accounts: [],
+        total: 0,
+      }
+      groups.push(current)
+    }
+    current.accounts.push(acc)
+    current.total += acc.balance
+  }
+
+  return groups
+}
+
+// ─── 카테고리 구분 헤더 ───────────────────────────────────────────────────────
+
+function CategoryHeader({ label, total }: { label: string; total: number }) {
+  return (
+    <div className="flex items-center gap-3 px-5 py-2 bg-zinc-950/60 border-b border-zinc-800/50 sticky top-0 z-10">
+      <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wide whitespace-nowrap">
+        {label}
+      </span>
+      <div className="flex-1 h-px bg-zinc-800/70" />
+      <span className="text-[11px] text-zinc-600 tabular-nums whitespace-nowrap">
+        {formatLargeNumber(total)}
+      </span>
+    </div>
+  )
+}
+
+// ─── 개별 자산 행 ─────────────────────────────────────────────────────────────
+
+function AssetRow({
+  account,
+  totalAssets,
+  onEdit,
+}: {
+  account: AccountInitialData
+  totalAssets: number
+  onEdit: (a: AccountInitialData) => void
+}) {
+  const meta = TYPE_META[account.type] ?? TYPE_META['CASH']
+  const MetaIcon = meta.Icon
+  const allocation = totalAssets > 0 ? Math.round((account.balance / totalAssets) * 100) : 0
+  const hasLinkedDebts = (account.linkedDebts?.length ?? 0) > 0
+  const netEquity = account.netEquity
+
+  if (account.isMasked) {
+    return (
+      <div className="w-full flex items-center gap-4 px-5 py-3.5 text-left opacity-60">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-zinc-800">
+          <Lock className="w-4 h-4 text-zinc-500" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium text-zinc-500">🔒 개인 자산</p>
+          <p className="text-xs text-zinc-600 mt-0.5">{meta.label} · {allocation}%</p>
+        </div>
+        <span className="text-sm font-semibold text-zinc-400 tabular-nums flex-shrink-0">
+          {formatCurrency(account.balance)}
+        </span>
+      </div>
+    )
+  }
+
+  return (
+    <button
+      onClick={() => onEdit(account)}
+      className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-zinc-800/50 transition-colors text-left group"
+    >
+      <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0', meta.bg)}>
+        <MetaIcon className={cn('w-4 h-4', meta.color)} />
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5">
+          <p className="text-sm font-medium text-white truncate">{account.name}</p>
+          {account.shareLevel === 'PUBLIC'
+            ? <Users className="w-3 h-3 text-zinc-600 flex-shrink-0" />
+            : account.shareLevel === 'BALANCE_ONLY'
+            ? <Eye className="w-3 h-3 text-zinc-600 flex-shrink-0" />
+            : <User className="w-3 h-3 text-zinc-600 flex-shrink-0" />
+          }
+        </div>
+        <div className="flex items-center gap-2 mt-0.5">
+          <p className="text-xs text-zinc-500">{meta.label} · {allocation}%</p>
+          {hasLinkedDebts && netEquity != null && (
+            <p className="text-xs text-zinc-600 tabular-nums">
+              순자본 {netEquity >= 0
+                ? formatLargeNumber(netEquity)
+                : `-${formatLargeNumber(Math.abs(netEquity))}`}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <span className="text-sm font-semibold text-white tabular-nums">
+          {formatCurrency(account.balance)}
+        </span>
+        <ChevronRight className="w-4 h-4 text-zinc-700 group-hover:text-zinc-500 transition-colors" />
+      </div>
+    </button>
+  )
+}
+
+// ─── 연결 부채 인라인 행 ──────────────────────────────────────────────────────
+
+function LinkedDebtRow({ debt }: { debt: { id: string; name: string; balance: number } }) {
+  return (
+    <div className="flex items-center gap-2 pl-[52px] pr-5 py-2 border-t border-zinc-800/40 bg-zinc-950/30">
+      <CornerDownRight className="w-3 h-3 text-zinc-700 flex-shrink-0" />
+      <span className="text-xs text-zinc-500 flex-1 truncate">{debt.name}</span>
+      <span className="text-xs font-medium text-red-400/80 tabular-nums flex-shrink-0">
+        -{formatCurrency(debt.balance)}
+      </span>
+    </div>
+  )
+}
+
+// ─── AssetList ────────────────────────────────────────────────────────────────
+
 export function AssetList({ accounts, totalAssets, onEdit, onAdd }: AssetListProps) {
   const [excludeZero, setExcludeZero] = useState(true)
 
   if (accounts.length === 0) return null
 
-  const visibleAccounts = excludeZero ? accounts.filter(a => a.balance !== 0) : accounts
+  const visibleAccounts = excludeZero
+    ? accounts.filter(a => Math.abs(a.balance) > 100000)
+    : accounts
+
+  const groups = buildGroups(visibleAccounts)
+  const multiGroup = groups.length > 1
 
   return (
     <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
+      {/* 헤더 */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
         <h3 className="text-sm font-semibold text-white">등록된 자산</h3>
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-1.5 cursor-pointer select-none">
-            <span className="text-xs text-zinc-500">0원 자산 제외</span>
+            <span className="text-xs text-zinc-500">10만원 이하 제외</span>
             <Switch
               checked={excludeZero}
               onCheckedChange={setExcludeZero}
@@ -62,76 +209,32 @@ export function AssetList({ accounts, totalAssets, onEdit, onAdd }: AssetListPro
         </div>
       </div>
 
-      <div className="divide-y divide-zinc-800/60">
-        {visibleAccounts.map((account) => {
-          const meta = TYPE_META[account.type] ?? TYPE_META['CASH']
-          const MetaIcon = meta.Icon
-          const allocation = totalAssets > 0
-            ? Math.round((account.balance / totalAssets) * 100)
-            : 0
+      {/* 그룹별 렌더링 */}
+      <div>
+        {groups.map((group, gi) => (
+          <div key={group.type}>
+            {/* 카테고리 헤더 — 그룹이 2개 이상일 때만 표시 */}
+            {multiGroup && (
+              <CategoryHeader label={group.label} total={group.total} />
+            )}
 
-          if (account.isMasked) {
-            return (
-              <div
-                key={account.id}
-                className="w-full flex items-center gap-4 px-5 py-4 text-left opacity-60"
-              >
-                {/* 잠금 아이콘 */}
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-zinc-800">
-                  <Lock className="w-4 h-4 text-zinc-500" />
+            <div className={cn('divide-y divide-zinc-800/60', gi > 0 && !multiGroup && 'border-t border-zinc-800/60')}>
+              {group.accounts.map((account) => (
+                <div key={account.id}>
+                  <AssetRow
+                    account={account}
+                    totalAssets={totalAssets}
+                    onEdit={onEdit}
+                  />
+                  {/* 연결된 부채 인라인 */}
+                  {account.linkedDebts?.map(debt => (
+                    <LinkedDebtRow key={debt.id} debt={debt} />
+                  ))}
                 </div>
-
-                {/* 이름 + 유형 */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-sm font-medium text-zinc-500">🔒 개인 자산</p>
-                  </div>
-                  <p className="text-xs text-zinc-600 mt-0.5">{meta.label} · {allocation}%</p>
-                </div>
-
-                {/* 잔액 (금액만 노출) */}
-                <span className="text-sm font-semibold text-zinc-400 tabular-nums flex-shrink-0">
-                  {formatCurrency(account.balance)}
-                </span>
-              </div>
-            )
-          }
-
-          return (
-            <button
-              key={account.id}
-              onClick={() => onEdit(account)}
-              className="w-full flex items-center gap-4 px-5 py-4 hover:bg-zinc-800/50 transition-colors text-left group"
-            >
-              {/* 유형 아이콘 */}
-              <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0', meta.bg)}>
-                <MetaIcon className={cn('w-4 h-4', meta.color)} />
-              </div>
-
-              {/* 이름 + 유형 */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <p className="text-sm font-medium text-white truncate">{account.name}</p>
-                  {account.shareLevel === 'PUBLIC'
-                    ? <Users className="w-3 h-3 text-zinc-600 flex-shrink-0" />
-                    : account.shareLevel === 'BALANCE_ONLY'
-                    ? <Eye className="w-3 h-3 text-zinc-600 flex-shrink-0" />
-                    : <User className="w-3 h-3 text-zinc-600 flex-shrink-0" />
-                  }
-                </div>
-                <p className="text-xs text-zinc-500 mt-0.5">{meta.label} · {allocation}%</p>
-              </div>
-
-              {/* 잔액 + 화살표 */}
-              <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="text-sm font-semibold text-white tabular-nums">
-                  {formatCurrency(account.balance)}
-                </span>
-                <ChevronRight className="w-4 h-4 text-zinc-700 group-hover:text-zinc-500 transition-colors" />
-              </div>
-            </button>
-          )
-        })}
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* 합계 */}
@@ -142,6 +245,8 @@ export function AssetList({ accounts, totalAssets, onEdit, onAdd }: AssetListPro
     </div>
   )
 }
+
+// ─── LiabilityList ────────────────────────────────────────────────────────────
 
 export function LiabilityList({ liabilities, totalLiabilities, onEdit, onAdd }: LiabilityListProps) {
   if (liabilities.length === 0) {
@@ -184,12 +289,11 @@ export function LiabilityList({ liabilities, totalLiabilities, onEdit, onAdd }: 
         {liabilities.map((account) => {
           const meta = TYPE_META[account.type] ?? TYPE_META['DEBT']
           const MetaIcon = meta.Icon
-
           return (
             <button
               key={account.id}
               onClick={() => onEdit(account)}
-              className="w-full flex items-center gap-4 px-5 py-4 hover:bg-zinc-800/50 transition-colors text-left group"
+              className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-zinc-800/50 transition-colors text-left group"
             >
               <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0', meta.bg)}>
                 <MetaIcon className={cn('w-4 h-4', meta.color)} />

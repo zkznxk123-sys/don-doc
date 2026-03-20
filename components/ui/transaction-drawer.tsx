@@ -9,9 +9,7 @@ import {
 } from '@/components/ui/drawer'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel,
-} from '@/components/ui/select'
+import { getFamilyCategories, type CategoryOption } from '@/lib/actions/categories'
 
 export interface EditTransactionData {
   id: string
@@ -41,29 +39,7 @@ export interface TransactionFormData {
   category: string
   description: string
   visibility: 'SHARED' | 'PRIVATE'
-  accountId?: string
 }
-
-interface AccountOption {
-  id: string
-  name: string
-  type: string
-  typeLabel: string
-  balance: number
-  isShared: boolean
-}
-
-const CATEGORIES = [
-  { value: '식비', emoji: '🍽️' },
-  { value: '교육', emoji: '📚' },
-  { value: '주거', emoji: '🏠' },
-  { value: '교통', emoji: '🚗' },
-  { value: '쇼핑', emoji: '🛍️' },
-  { value: '건강', emoji: '💊' },
-  { value: '여가', emoji: '🎮' },
-  { value: '생활', emoji: '🧹' },
-  { value: '수입', emoji: '💰' },
-]
 
 const KEYWORD_CATEGORY_MAP: Record<string, string> = {
   '스타벅스': '식비', '카페': '식비', '커피': '식비', '맥도날드': '식비', '배달': '식비',
@@ -122,7 +98,6 @@ export function TransactionDrawer({
   const [category, setCategory] = useState('')
   const [description, setDescription] = useState('')
   const [isShared, setIsShared] = useState(true)
-  const [accountId, setAccountId] = useState('')
   const [isExpense, setIsExpense] = useState(true)
 
   // UI state
@@ -130,7 +105,7 @@ export function TransactionDrawer({
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [error, setError] = useState('')
-  const [accounts, setAccounts] = useState<AccountOption[]>([])
+  const [allCategories, setAllCategories] = useState<CategoryOption[]>([])
   const [autoSuggestedCategory, setAutoSuggestedCategory] = useState<string | null>(null)
   const [isAiCategorizing, setIsAiCategorizing] = useState(false)
 
@@ -161,48 +136,47 @@ export function TransactionDrawer({
   const handleDescriptionChange = (text: string) => {
     setDescription(text)
     const suggested = suggestCategory(text)
-    if (suggested && !category) {
-      setCategory(suggested)
-      setAutoSuggestedCategory(suggested)
-    } else if (suggested && category === autoSuggestedCategory) {
-      setCategory(suggested)
-      setAutoSuggestedCategory(suggested)
+    if (suggested) {
+      // 현재 타입(지출/수입)의 카테고리인지 확인
+      const currentType = isExpense ? 'EXPENSE' : 'INCOME'
+      const matchesType = allCategories.some(c => c.name === suggested && c.type === currentType)
+      if (matchesType && (!category || category === autoSuggestedCategory)) {
+        setCategory(suggested)
+        setAutoSuggestedCategory(suggested)
+      } else if (!matchesType) {
+        setAutoSuggestedCategory(null)
+      }
     } else {
       setAutoSuggestedCategory(null)
     }
   }
 
-  // 계좌 로드 + 수정 모드 시 폼 초기화
+  // isExpense 전환 시, 현재 선택된 카테고리가 새 타입에 없으면 초기화
+  useEffect(() => {
+    if (!category || allCategories.length === 0) return
+    const currentType = isExpense ? 'EXPENSE' : 'INCOME'
+    const match = allCategories.find(c => c.name === category && c.type === currentType)
+    if (!match) {
+      setCategory('')
+      setAutoSuggestedCategory(null)
+    }
+  }, [isExpense]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 카테고리 로드 + 수정 모드 시 폼 초기화
   useEffect(() => {
     if (!isOpen) return
-    async function loadAccounts() {
-      try {
-        const res = await fetch(`/api/accounts?familyId=${familyId}&userId=${currentUserId}`)
-        const json = await res.json()
-        if (json.success) {
-          setAccounts(json.accounts)
-          if (editTransaction) {
-            // 수정 모드: 기존 데이터로 폼 채우기
-            setAmount(String(Math.abs(editTransaction.amount)))
-            setIsExpense(editTransaction.amount < 0)
-            setDate(editTransaction.date)
-            setCategory(editTransaction.category)
-            setDescription(editTransaction.description)
-            setIsShared(editTransaction.visibility === 'SHARED')
-            setAccountId(editTransaction.accountId)
-          } else {
-            // 신규 모드: 첫 번째 계좌 기본 선택
-            if (json.accounts.length > 0) setAccountId(json.accounts[0].id)
-          }
-        }
-      } catch {
-        console.error('계좌 목록 로드 실패')
-      }
+    getFamilyCategories().then(setAllCategories).catch(() => {})
+    if (editTransaction) {
+      setAmount(String(Math.abs(editTransaction.amount)))
+      setIsExpense(editTransaction.amount < 0)
+      setDate(editTransaction.date)
+      setCategory(editTransaction.category)
+      setDescription(editTransaction.description)
+      setIsShared(editTransaction.visibility === 'SHARED')
     }
-    loadAccounts()
     setShowDeleteConfirm(false)
     setError('')
-  }, [isOpen, familyId, currentUserId, editTransaction])
+  }, [isOpen, editTransaction])
 
   const resetForm = useCallback(() => {
     setAmount('')
@@ -211,11 +185,10 @@ export function TransactionDrawer({
     setDescription('')
     setIsShared(true)
     setIsExpense(true)
-    setAccountId(accounts.length > 0 ? accounts[0].id : '')
     setError('')
     setAutoSuggestedCategory(null)
     setShowDeleteConfirm(false)
-  }, [accounts])
+  }, [])
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
@@ -229,10 +202,6 @@ export function TransactionDrawer({
       setError('금액과 카테고리를 입력해주세요.')
       return
     }
-    if (!accountId) {
-      setError('계좌를 선택해주세요.')
-      return
-    }
 
     setError('')
     setIsSubmitting(true)
@@ -240,7 +209,7 @@ export function TransactionDrawer({
       const numAmount = isExpense ? -Math.abs(Number(amount)) : Math.abs(Number(amount))
 
       if (isEditMode && editTransaction) {
-        // 수정 모드
+        // 수정 모드 — accountId는 서버에서 기존 값 유지
         const res = await fetch(`/api/transactions/${editTransaction.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
@@ -250,7 +219,6 @@ export function TransactionDrawer({
             category,
             description: description || category,
             visibility: isShared ? 'SHARED' : 'PRIVATE',
-            accountId,
           }),
         })
         const result = await res.json()
@@ -259,7 +227,7 @@ export function TransactionDrawer({
           return
         }
       } else {
-        // 신규 모드
+        // 신규 모드 — 계좌는 서버에서 자동 할당
         const res = await fetch('/api/transactions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -269,8 +237,6 @@ export function TransactionDrawer({
             category,
             description: description || category,
             visibility: isShared ? 'SHARED' : 'PRIVATE',
-            userId: currentUserId,
-            accountId,
           }),
         })
         const result = await res.json()
@@ -313,7 +279,6 @@ export function TransactionDrawer({
   }
 
   const displayAmount = amount ? Number(amount).toLocaleString('ko-KR') : ''
-  const selectedAccount = accounts.find(a => a.id === accountId)
 
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
@@ -398,14 +363,6 @@ export function TransactionDrawer({
                   {q.label}
                 </button>
               ))}
-              {selectedAccount && (
-                <button
-                  onClick={() => setAmount(String(Math.abs(selectedAccount.balance)))}
-                  className="px-4 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-xs font-medium text-blue-400 hover:bg-zinc-700 hover:text-blue-300 transition-colors active:scale-95"
-                >
-                  전액
-                </button>
-              )}
             </div>
           </div>
 
@@ -431,60 +388,37 @@ export function TransactionDrawer({
                     : <><Sparkles className="w-3 h-3" />AI 분류</>}
                 </button>
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                {CATEGORIES.map((cat) => {
-                  const isSelected = category === cat.value
-                  return (
-                    <button
-                      key={cat.value}
-                      onClick={() => setCategory(cat.value)}
-                      className={cn(
-                        "relative flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all border",
-                        isSelected
-                          ? "bg-white text-black border-white shadow-[0_0_12px_rgba(255,255,255,0.1)]"
-                          : "bg-zinc-800/40 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300"
-                      )}
-                    >
-                      <span className="text-base">{cat.emoji}</span>
-                      {cat.value}
-                      {isSelected && (
-                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow">
-                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5.5L4 7.5L8 3" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        </span>
-                      )}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-
-            {/* Account */}
-            <div>
-              <Label className="mb-2.5 block">계좌</Label>
-              <Select value={accountId} onValueChange={setAccountId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="계좌를 선택하세요" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectLabel>사용 가능한 계좌</SelectLabel>
-                    {accounts.map((acc) => (
-                      <SelectItem key={acc.id} value={acc.id}>
-                        <span className="flex items-center gap-2">
-                          <span>{acc.isShared ? '👨‍👩‍👧' : '👤'}</span>
-                          <span>{acc.name}</span>
-                          <span className="text-zinc-500 text-xs ml-1">{acc.typeLabel}</span>
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-              {selectedAccount && (
-                <p className="text-xs text-zinc-600 mt-1.5 pl-1">
-                  잔액: {formatCurrency(selectedAccount.balance)}
-                </p>
-              )}
+              {(() => {
+                const currentType = isExpense ? 'EXPENSE' : 'INCOME'
+                const displayCategories = allCategories.filter(c => c.type === currentType)
+                return (
+                  <div className="grid grid-cols-3 gap-2">
+                    {displayCategories.map((cat) => {
+                      const isSelected = category === cat.name
+                      return (
+                        <button
+                          key={cat.id}
+                          onClick={() => setCategory(cat.name)}
+                          className={cn(
+                            "relative flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all border",
+                            isSelected
+                              ? "bg-white text-black border-white shadow-[0_0_12px_rgba(255,255,255,0.1)]"
+                              : "bg-zinc-800/40 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300"
+                          )}
+                        >
+                          <span className="text-base">{cat.icon}</span>
+                          {cat.name}
+                          {isSelected && (
+                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow">
+                              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5.5L4 7.5L8 3" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            </span>
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )
+              })()}
             </div>
 
             {/* Date */}
@@ -564,10 +498,10 @@ export function TransactionDrawer({
           <DrawerFooter className="px-0 pt-6">
             <button
               onClick={handleSubmit}
-              disabled={!amount || !category || !accountId || isSubmitting}
+              disabled={!amount || !category || isSubmitting}
               className={cn(
                 "w-full py-4 rounded-xl text-sm font-semibold transition-all",
-                amount && category && accountId && !isSubmitting
+                amount && category && !isSubmitting
                   ? "bg-white text-black hover:bg-zinc-200 active:scale-[0.98]"
                   : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
               )}

@@ -2,71 +2,71 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
 
+/**
+ * 수기 내역용 "현금" 가상 계좌를 찾거나 생성한다.
+ * - 잔액(balance)은 절대 건드리지 않음
+ * - 가족당 하나만 존재 (upsert 패턴)
+ */
+async function getOrCreateCashAccount(familyId: string): Promise<string> {
+  const existing = await prisma.account.findFirst({
+    where: { familyId, name: '현금' },
+    select: { id: true },
+  })
+  if (existing) return existing.id
+
+  const created = await prisma.account.create({
+    data: {
+      name: '현금',
+      type: 'CASH',
+      balance: 0,
+      isShared: true,
+      shareLevel: 'PUBLIC',
+      familyId,
+    },
+  })
+  return created.id
+}
+
 export async function POST(req: NextRequest) {
   try {
     const authUser = await getAuthUser()
-    const body = await req.json()
-    const { amount, date, category, description, visibility, accountId, categoryId } = body
-    const userId = authUser?.id || body.userId
+    if (!authUser) {
+      return NextResponse.json({ success: false, error: '인증이 필요합니다.' }, { status: 401 })
+    }
 
-    if (!amount || !category || !userId) {
+    const body = await req.json()
+    const { amount, date, category, description, visibility, categoryId } = body
+
+    if (!amount || !category) {
       return NextResponse.json(
         { success: false, error: '필수 필드가 누락되었습니다.' },
         { status: 400 }
       )
     }
 
-    // accountId가 명시적으로 전달되면 사용, 아니면 자동 탐색
-    let resolvedAccountId = accountId
-    if (!resolvedAccountId) {
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { familyId: true },
-      })
-      if (!user) {
-        return NextResponse.json(
-          { success: false, error: '사용자를 찾을 수 없습니다.' },
-          { status: 404 }
-        )
-      }
-      const account = await prisma.account.findFirst({
-        where: { familyId: user.familyId ?? undefined },
-        orderBy: { isShared: 'desc' },
-      })
-      if (!account) {
-        return NextResponse.json(
-          { success: false, error: '계좌를 찾을 수 없습니다.' },
-          { status: 404 }
-        )
-      }
-      resolvedAccountId = account.id
+    if (!authUser.familyId) {
+      return NextResponse.json({ success: false, error: '가족 그룹이 없습니다.' }, { status: 403 })
     }
 
-    const [transaction] = await prisma.$transaction([
-      prisma.transaction.create({
-        data: {
-          amount,
-          date: new Date(date),
-          category,
-          description: description || category,
-          visibility: visibility || 'SHARED',
-          userId,
-          accountId: resolvedAccountId,
-          ...(categoryId ? { categoryId } : {}),
-        },
-      }),
-      prisma.account.update({
-        where: { id: resolvedAccountId },
-        data: { balance: { increment: amount } },
-      }),
-    ])
+    // 계좌는 "현금" 가상 계좌로 자동 할당 — 잔액 업데이트 없음
+    const accountId = await getOrCreateCashAccount(authUser.familyId)
+
+    const transaction = await prisma.transaction.create({
+      data: {
+        amount,
+        date: new Date(date),
+        category,
+        description: description || category,
+        visibility: visibility || 'SHARED',
+        userId: authUser.id,
+        accountId,
+        ...(categoryId ? { categoryId } : {}),
+      },
+    })
 
     return NextResponse.json({ success: true, id: transaction.id })
   } catch (e) {
     console.error('[POST /api/transactions] ERROR:', e)
-    return NextResponse.json(
-      { success: false, error: String(e) },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: String(e) }, { status: 500 })
   }
 }

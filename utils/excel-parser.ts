@@ -50,8 +50,8 @@ const BANKSALAD_SHEET_KEYWORDS = ['가계부', '내역']
 /** 뱅크샐러드 헤더 판별 시그니처 (이 중 4개 이상 존재하면 매칭) */
 const BANKSALAD_HEADER_SIGNATURE = ['날짜', '시간', '타입', '내용', '금액', '대분류', '결제수단']
 
-/** skip할 타입 값 */
-const SKIP_TYPES = new Set(['이체'])
+/** 항상 skip할 소분류 */
+const SKIP_MINOR = new Set(['내계좌이체'])
 
 /** 뱅크샐러드 대분류 → 앱 카테고리 매핑 */
 const CATEGORY_MAP: Record<string, string> = {
@@ -173,7 +173,8 @@ export function detectBanksaladSheet(wb: XLSX.WorkBook): {
  */
 export function parseBanksaladSheet(
   ws: XLSX.WorkSheet,
-  headerRowIndex: number
+  headerRowIndex: number,
+  familyNames: string[] = []
 ): Omit<ParseBanksaladResult, 'sheetName' | 'accountBalances'> {
   const allRows = XLSX.utils.sheet_to_json<unknown[]>(ws, {
     header: 1,
@@ -206,11 +207,20 @@ export function parseBanksaladSheet(
 
   for (const raw of dataRows) {
     const 타입 = String(IDX.type >= 0 ? raw[IDX.type] : '').trim()
+    const 소분류 = String(IDX.minor >= 0 ? raw[IDX.minor] : '').trim()
+    const content = String(IDX.content >= 0 ? raw[IDX.content] : '').trim()
 
-    // 이체 skip
-    if (SKIP_TYPES.has(타입)) {
-      skippedCount++
-      continue
+    // 이체 필터링:
+    // - 소분류가 "내계좌이체"이면 항상 제외
+    // - 내용에 가족 이름이 포함된 이체(가족 간 송금)도 제외
+    // - 그 외 이체(외부 송금 등)는 포함
+    if (타입 === '이체') {
+      const isInternal = SKIP_MINOR.has(소분류)
+      const hasFamilyName = familyNames.some(n => n.length >= 2 && content.includes(n))
+      if (isInternal || hasFamilyName) {
+        skippedCount++
+        continue
+      }
     }
 
     const dateStr = excelSerialToDate(IDX.date >= 0 ? raw[IDX.date] : '')
@@ -220,7 +230,6 @@ export function parseBanksaladSheet(
     const amount = parseAmount(IDX.amount >= 0 ? raw[IDX.amount] : 0)
 
     const 대분류 = String(IDX.major >= 0 ? raw[IDX.major] : '').trim()
-    const 소분류 = String(IDX.minor >= 0 ? raw[IDX.minor] : '').trim()
     const banksaladCategory = [대분류, 소분류].filter(Boolean).join(' > ')
 
     rows.push({
@@ -312,11 +321,11 @@ export function parseBanksaladSummary(wb: XLSX.WorkBook): AccountBalance[] {
 }
 
 /** XLSX WorkBook에서 뱅크샐러드 파일 여부 판단 + 파싱 원스텝 */
-export function tryParseBanksalad(wb: XLSX.WorkBook): ParseBanksaladResult | null {
+export function tryParseBanksalad(wb: XLSX.WorkBook, familyNames: string[] = []): ParseBanksaladResult | null {
   const { ws, sheetName, headerRowIndex } = detectBanksaladSheet(wb)
   if (!ws || headerRowIndex < 0) return null
 
-  const result = parseBanksaladSheet(ws, headerRowIndex)
+  const result = parseBanksaladSheet(ws, headerRowIndex, familyNames)
   const accountBalances = parseBanksaladSummary(wb)
   return { ...result, sheetName, accountBalances }
 }

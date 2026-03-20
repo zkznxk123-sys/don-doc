@@ -3,6 +3,8 @@
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
+import { generateTransactionHash } from '@/lib/utils/transaction-hash'
+import { generateOriginalHash } from '@/lib/utils/original-hash'
 
 // ━━ Zod 스키마: 거래 입력 유효성 검사 ━━
 const CreateTransactionSchema = z.object({
@@ -191,37 +193,17 @@ export async function updateTransaction(
       return { success: false, error: '수정 권한이 없습니다.' }
     }
 
-    const oldAmount = tx.amount
-    const newAmount = input.amount
-    const oldAccountId = tx.accountId
-    const newAccountId = input.accountId
-
-    // 잔액 반영
-    if (oldAccountId === newAccountId) {
-      await prisma.account.update({
-        where: { id: oldAccountId },
-        data: { balance: { increment: newAmount - oldAmount } },
-      })
-    } else {
-      await prisma.account.update({
-        where: { id: oldAccountId },
-        data: { balance: { decrement: oldAmount } },
-      })
-      await prisma.account.update({
-        where: { id: newAccountId },
-        data: { balance: { increment: newAmount } },
-      })
-    }
-
+    // originalHash는 엑셀 원본 식별자이므로 수정 불가 — 절대 이 data에 포함시키지 말 것
+    // 잔액(balance)은 뱅샐현황 엑셀 업로드 및 자산 페이지 직접 수정에서만 관리
     await prisma.transaction.update({
       where: { id: transactionId },
       data: {
-        amount: newAmount,
+        amount: input.amount,
         date: new Date(input.date),
         category: input.category,
         description: input.description || input.category,
         visibility: input.visibility,
-        accountId: newAccountId,
+        accountId: input.accountId,
         ...(input.categoryId !== undefined ? { categoryId: input.categoryId } : {}),
       },
     })
@@ -254,11 +236,7 @@ export async function deleteTransaction(
       return { success: false, error: '삭제 권한이 없습니다.' }
     }
 
-    await prisma.account.update({
-      where: { id: tx.accountId },
-      data: { balance: { decrement: tx.amount } },
-    })
-
+    // 잔액은 건드리지 않음 — 뱅샐현황 업로드 및 자산 페이지 직접 수정에서만 관리
     await prisma.transaction.delete({ where: { id: transactionId } })
 
     revalidatePath('/dashboard')
@@ -332,6 +310,7 @@ export async function createManyTransactions(
 ): Promise<{
   success: boolean
   count?: number
+  skippedCount?: number
   monthStats?: MonthStat[]
   syncedAccountCount?: number
   error?: string
@@ -348,11 +327,65 @@ export async function createManyTransactions(
       accountNameMap.set(name, id)
     }
 
-    // ── 2. Transaction 일괄 저장 ──
+    // ── 2. originalHash 생성 (업로드 배치 내 중복도 제거) ──
+    type RowWithHash = BulkTransactionRow & { _accountName: string; _originalHash: string }
+    const seenInBatch = new Set<string>()
+    const rowsWithHash: RowWithHash[] = []
+    for (const r of rows) {
+      const acctName = r.accountName?.trim() || '기본 계좌'
+      const hash = generateOriginalHash(userId, r.date, r.amount, r.description || r.category, acctName)
+      if (seenInBatch.has(hash)) continue
+      seenInBatch.add(hash)
+      rowsWithHash.push({ ...r, _accountName: acctName, _originalHash: hash })
+    }
+
+    // ── 3. originalHash 기반 중복 제거 (DB 조회, 빠른 경로) ──
+    const incomingHashes = rowsWithHash.map(r => r._originalHash)
+    const existingByHash = await prisma.transaction.findMany({
+      where: { originalHash: { in: incomingHashes } },
+      select: { originalHash: true },
+    })
+    const existingHashSet = new Set(existingByHash.map(t => t.originalHash!))
+    const notHashDuped = rowsWithHash.filter(r => !existingHashSet.has(r._originalHash))
+
+    // ── 4. 레거시 행 대비 날짜범위 dedup (originalHash 없는 기존 내역 보호) ──
+    let newRows: RowWithHash[] = notHashDuped
+    if (notHashDuped.length > 0) {
+      const sortedDates = notHashDuped.map(r => r.date).sort()
+      const minDate = new Date(sortedDates[0] + 'T00:00:00.000Z')
+      const maxDate = new Date(sortedDates[sortedDates.length - 1] + 'T23:59:59.999Z')
+      const allAccountIds = Array.from(accountNameMap.values())
+
+      const legacyTxs = await prisma.transaction.findMany({
+        where: {
+          originalHash: null, // originalHash가 없는 레거시 행만 확인
+          accountId: { in: allAccountIds },
+          date: { gte: minDate, lte: maxDate },
+        },
+        select: { date: true, amount: true, description: true, accountId: true },
+      })
+      const legacyHashes = new Set(
+        legacyTxs.map(tx =>
+          generateTransactionHash(tx.date.toISOString().slice(0, 10), tx.amount, tx.description, tx.accountId)
+        )
+      )
+
+      newRows = notHashDuped.filter(r => {
+        const accountId = accountNameMap.get(r._accountName)!
+        return !legacyHashes.has(generateTransactionHash(r.date, r.amount, r.description || r.category, accountId))
+      })
+    }
+
+    const skippedCount = rows.length - newRows.length
+
+    if (newRows.length === 0) {
+      return { success: true, count: 0, skippedCount, monthStats: [], syncedAccountCount: 0 }
+    }
+
+    // ── 5. Transaction 일괄 저장 (originalHash 포함) ──
     await prisma.transaction.createMany({
-      data: rows.map(row => {
-        const name = row.accountName?.trim() || '기본 계좌'
-        const accountId = accountNameMap.get(name)!
+      data: newRows.map(row => {
+        const accountId = accountNameMap.get(row._accountName)!
         return {
           amount: row.amount,
           date: new Date(row.date),
@@ -362,25 +395,13 @@ export async function createManyTransactions(
           visibility: row.visibility,
           userId,
           accountId,
+          originalHash: row._originalHash,
         }
       }),
     })
 
-    // ── 3. 잔액 delta 반영 (accountBalances 없을 때) ──
-    if (!options?.accountBalances) {
-      // 계좌별 delta 집계
-      const deltaMap = new Map<string, number>()
-      for (const row of rows) {
-        const name = row.accountName?.trim() || '기본 계좌'
-        const id = accountNameMap.get(name)!
-        deltaMap.set(id, (deltaMap.get(id) ?? 0) + row.amount)
-      }
-      for (const [id, delta] of Array.from(deltaMap.entries())) {
-        await prisma.account.update({ where: { id }, data: { balance: { increment: delta } } })
-      }
-    }
-
-    // ── 4. 계좌 잔액 강제 동기화 (뱅샐현황 데이터) ──
+    // ── 6. 계좌 잔액 강제 동기화 (뱅샐현황 데이터만 반영) ──
+    // delta 방식 자동 잔액 업데이트 제거 — 잔액은 뱅샐현황 업로드와 자산 페이지에서만 관리
     let syncedAccountCount = 0
     if (options?.accountBalances && options.accountBalances.length > 0) {
       for (const ab of options.accountBalances) {
@@ -390,9 +411,9 @@ export async function createManyTransactions(
       }
     }
 
-    // ── 5. 월별 통계 집계 ──
+    // ── 8. 월별 통계 집계 ──
     const monthMap = new Map<string, MonthStat>()
-    for (const row of rows) {
+    for (const row of newRows) {
       const [y, m] = row.date.split('-')
       const key = `${y}-${m}`
       const label = `${y}년 ${m}월`
@@ -408,7 +429,7 @@ export async function createManyTransactions(
 
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/transactions')
-    return { success: true, count: rows.length, monthStats, syncedAccountCount }
+    return { success: true, count: newRows.length, skippedCount, monthStats, syncedAccountCount }
   } catch (e) {
     console.error('[createManyTransactions] ERROR:', e)
     return { success: false, error: '저장 중 오류가 발생했습니다.' }
@@ -419,6 +440,7 @@ export interface BulkUpdateItem {
   id: string
   category?: string
   isExcluded?: boolean
+  description?: string
   /** amount 변경 시 연결 계좌 잔액 delta 자동 보정 */
   amount?: number
 }
@@ -436,63 +458,29 @@ export async function bulkUpdateTransactions(
   if (updates.length === 0) return { success: true }
 
   try {
-    // amount 변경 포함 여부 확인
-    const amountUpdates = updates.filter(u => u.amount !== undefined)
+    // 잔액은 건드리지 않음 — originalHash도 절대 포함 금지
+    const ids = updates.map(u => u.id)
+    const txRecords = await prisma.transaction.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, userId: true, account: { select: { isShared: true } } },
+    })
+    const txMap = new Map(txRecords.map(t => [t.id, t]))
 
-    if (amountUpdates.length > 0) {
-      // amount 변경이 있으면 트랜잭션으로 잔액 delta 보정
-      const txRecords = await prisma.transaction.findMany({
-        where: { id: { in: amountUpdates.map(u => u.id) } },
-        select: { id: true, amount: true, accountId: true, userId: true, account: { select: { isShared: true } } },
-      })
-      const txMap = new Map(txRecords.map(t => [t.id, t]))
-
-      await prisma.$transaction(async (db) => {
-        for (const u of updates) {
+    await prisma.$transaction(
+      updates
+        .filter(u => {
+          const record = txMap.get(u.id)
+          return record && canManageTransaction(userId, userRole, record.userId, record.account.isShared)
+        })
+        .map(u => {
           const data: Record<string, unknown> = {}
-          if (u.category !== undefined) data.category = u.category
+          if (u.category   !== undefined) data.category   = u.category
           if (u.isExcluded !== undefined) data.isExcluded = u.isExcluded
-
-          if (u.amount !== undefined) {
-            const record = txMap.get(u.id)
-            if (!record) continue
-            if (!canManageTransaction(userId, userRole, record.userId, record.account.isShared)) continue
-            const delta = u.amount - record.amount
-            data.amount = u.amount
-            await db.account.update({
-              where: { id: record.accountId },
-              data: { balance: { increment: delta } },
-            })
-          }
-
-          if (Object.keys(data).length > 0) {
-            await db.transaction.update({ where: { id: u.id }, data })
-          }
-        }
-      })
-    } else {
-      // category/isExcluded만 변경 — 권한 체크 후 단순 업데이트
-      const ids = updates.map(u => u.id)
-      const txRecords = await prisma.transaction.findMany({
-        where: { id: { in: ids } },
-        select: { id: true, userId: true, account: { select: { isShared: true } } },
-      })
-      const txMap = new Map(txRecords.map(t => [t.id, t]))
-
-      await prisma.$transaction(
-        updates
-          .filter(u => {
-            const record = txMap.get(u.id)
-            return record && canManageTransaction(userId, userRole, record.userId, record.account.isShared)
-          })
-          .map(u => {
-            const data: Record<string, unknown> = {}
-            if (u.category !== undefined) data.category = u.category
-            if (u.isExcluded !== undefined) data.isExcluded = u.isExcluded
-            return prisma.transaction.update({ where: { id: u.id }, data })
-          })
-      )
-    }
+          if (u.description !== undefined) data.description = u.description
+          if (u.amount     !== undefined) data.amount     = u.amount
+          return prisma.transaction.update({ where: { id: u.id }, data })
+        })
+    )
 
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/cashflow')
