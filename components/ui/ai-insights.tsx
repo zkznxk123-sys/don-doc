@@ -57,10 +57,10 @@ export function AiInsights({ familyId }: AiInsightsProps) {
   }
 
   return (
-    <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden mb-6">
+    <div className="bg-card rounded-2xl border border-border overflow-hidden mb-6">
       {/* 헤더 */}
       <div
-        className="flex items-center justify-between px-4 py-3.5 cursor-pointer hover:bg-zinc-800/40 transition-colors"
+        className="flex items-center justify-between px-4 py-3.5 cursor-pointer hover:bg-muted/40 transition-colors"
         onClick={() => setIsExpanded(v => !v)}
       >
         <div className="flex items-center gap-2.5">
@@ -68,8 +68,8 @@ export function AiInsights({ familyId }: AiInsightsProps) {
             <Sparkles className="w-3.5 h-3.5 text-violet-400" />
           </div>
           <div>
-            <span className="text-sm font-semibold text-white">AI 가계 인사이트</span>
-            <span className="ml-2 text-[10px] text-zinc-600">
+            <span className="text-sm font-semibold text-foreground">AI 가계 인사이트</span>
+            <span className="ml-2 text-[10px] text-muted-foreground/60">
               {llmStatus === 'online'
                 ? <span className="text-emerald-500">● llm-mux 연결됨</span>
                 : llmStatus === 'offline'
@@ -82,12 +82,12 @@ export function AiInsights({ familyId }: AiInsightsProps) {
           {insights && !isLoading && (
             <button
               onClick={e => { e.stopPropagation(); fetchInsights() }}
-              className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-700 transition-colors"
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" />
             </button>
           )}
-          {isExpanded ? <ChevronUp className="w-4 h-4 text-zinc-500" /> : <ChevronDown className="w-4 h-4 text-zinc-500" />}
+          {isExpanded ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
         </div>
       </div>
 
@@ -97,17 +97,17 @@ export function AiInsights({ familyId }: AiInsightsProps) {
           {/* 요약 배지 */}
           {summary && (
             <div className="grid grid-cols-3 gap-2 mb-4">
-              <div className="bg-zinc-800/60 rounded-xl px-3 py-2.5 text-center">
-                <p className="text-[10px] text-zinc-500 mb-0.5">{summary.month} 지출</p>
+              <div className="bg-muted/60 rounded-xl px-3 py-2.5 text-center">
+                <p className="text-[10px] text-muted-foreground mb-0.5">{summary.month} 지출</p>
                 <p className="text-sm font-bold text-red-400">{formatCurrency(-summary.totalExpense)}</p>
               </div>
-              <div className="bg-zinc-800/60 rounded-xl px-3 py-2.5 text-center">
-                <p className="text-[10px] text-zinc-500 mb-0.5">수입</p>
+              <div className="bg-muted/60 rounded-xl px-3 py-2.5 text-center">
+                <p className="text-[10px] text-muted-foreground mb-0.5">수입</p>
                 <p className="text-sm font-bold text-emerald-400">+{formatCurrency(summary.totalIncome)}</p>
               </div>
-              <div className="bg-zinc-800/60 rounded-xl px-3 py-2.5 text-center">
-                <p className="text-[10px] text-zinc-500 mb-0.5">최다 지출</p>
-                <p className="text-sm font-bold text-white">{summary.topCategory ?? '—'}</p>
+              <div className="bg-muted/60 rounded-xl px-3 py-2.5 text-center">
+                <p className="text-[10px] text-muted-foreground mb-0.5">최다 지출</p>
+                <p className="text-sm font-bold text-foreground">{summary.topCategory ?? '—'}</p>
               </div>
             </div>
           )}
@@ -118,14 +118,14 @@ export function AiInsights({ familyId }: AiInsightsProps) {
               {insights.split('\n').filter(Boolean).map((line, i) => (
                 <p key={i} className={cn(
                   'text-sm leading-relaxed',
-                  line.match(/^\d\./) ? 'text-white font-medium mt-2' : 'text-zinc-400'
+                  line.match(/^\d\./) ? 'text-foreground font-medium mt-2' : 'text-muted-foreground'
                 )}>
                   {line}
                 </p>
               ))}
             </div>
           ) : isLoading ? (
-            <div className="flex items-center justify-center gap-2 py-8 text-zinc-500">
+            <div className="flex items-center justify-center gap-2 py-8 text-muted-foreground">
               <Loader2 className="w-4 h-4 animate-spin" />
               <span className="text-sm">AI가 이번 달 소비를 분석하고 있어요...</span>
             </div>
@@ -137,17 +137,17 @@ export function AiInsights({ familyId }: AiInsightsProps) {
                   <p className="text-xs text-red-400">{error}</p>
                   {llmMuxDown && (
                     <div className="mt-2 space-y-1">
-                      <p className="text-[11px] text-zinc-500 font-mono">$ llm-mux login codex</p>
-                      <p className="text-[11px] text-zinc-500 font-mono">$ llm-mux login copilot</p>
-                      <p className="text-[11px] text-zinc-500 font-mono">$ llm-mux login antigravity</p>
-                      <p className="text-[11px] text-zinc-500 font-mono">$ llm-mux serve</p>
+                      <p className="text-[11px] text-muted-foreground font-mono">$ llm-mux login codex</p>
+                      <p className="text-[11px] text-muted-foreground font-mono">$ llm-mux login copilot</p>
+                      <p className="text-[11px] text-muted-foreground font-mono">$ llm-mux login antigravity</p>
+                      <p className="text-[11px] text-muted-foreground font-mono">$ llm-mux serve</p>
                     </div>
                   )}
                 </div>
               </div>
               <button
                 onClick={fetchInsights}
-                className="w-full py-2.5 rounded-xl text-sm font-medium text-zinc-400 border border-zinc-800 hover:border-zinc-600 hover:text-white transition-all flex items-center justify-center gap-2"
+                className="w-full py-2.5 rounded-xl text-sm font-medium text-muted-foreground border border-border hover:border-ring hover:text-foreground transition-all flex items-center justify-center gap-2"
               >
                 <RefreshCw className="w-3.5 h-3.5" />
                 다시 시도
@@ -160,7 +160,7 @@ export function AiInsights({ familyId }: AiInsightsProps) {
               className={cn(
                 'w-full py-3.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2',
                 llmStatus === 'offline'
-                  ? 'bg-zinc-800/50 text-zinc-600 cursor-not-allowed'
+                  ? 'bg-muted/50 text-muted-foreground/60 cursor-not-allowed'
                   : 'bg-gradient-to-r from-violet-500/20 to-blue-500/20 border border-violet-500/20 text-violet-300 hover:from-violet-500/30 hover:to-blue-500/30 active:scale-[0.98]'
               )}
             >

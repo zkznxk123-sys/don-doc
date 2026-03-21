@@ -13,12 +13,12 @@ interface MobileDrawerProps {
   position?: 'bottom' | 'right'
 }
 
-export function MobileDrawer({ 
-  isOpen, 
-  onClose, 
-  title, 
-  children, 
-  position = 'bottom' 
+export function MobileDrawer({
+  isOpen,
+  onClose,
+  title,
+  children,
+  position = 'bottom'
 }: MobileDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null)
 
@@ -51,11 +51,11 @@ export function MobileDrawer({
   if (!isOpen) return null
 
   const drawerClasses = cn(
-    "fixed bg-zinc-900 border border-zinc-800 z-50 transition-transform duration-300 ease-out",
-    position === 'bottom' 
+    "fixed bg-card border border-border z-50 transition-transform duration-300 ease-out",
+    position === 'bottom'
       ? "bottom-0 left-0 right-0 rounded-t-2xl max-h-[80vh] overflow-y-auto"
       : "right-0 top-0 bottom-0 w-80 rounded-l-2xl overflow-y-auto",
-    isOpen 
+    isOpen
       ? position === 'bottom' ? "translate-y-0" : "translate-x-0"
       : position === 'bottom' ? "translate-y-full" : "translate-x-full"
   )
@@ -69,18 +69,18 @@ export function MobileDrawer({
     <>
       <div className={overlayClasses} />
       <div ref={drawerRef} className={drawerClasses}>
-        <div className="sticky top-0 bg-zinc-900 border-b border-zinc-800 p-4 z-10">
+        <div className="sticky top-0 bg-card border-b border-border p-4 z-10">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-white">{title}</h3>
+            <h3 className="text-lg font-semibold text-foreground">{title}</h3>
             <button
               onClick={onClose}
-              className="p-2 text-zinc-400 hover:text-white transition-colors rounded-lg hover:bg-zinc-800"
+              className="p-2 text-muted-foreground hover:text-foreground transition-colors rounded-lg hover:bg-muted"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
           {position === 'bottom' && (
-            <div className="w-12 h-1 bg-zinc-700 rounded-full mx-auto mt-3" />
+            <div className="w-12 h-1 bg-accent rounded-full mx-auto mt-3" />
           )}
         </div>
         <div className="p-4">

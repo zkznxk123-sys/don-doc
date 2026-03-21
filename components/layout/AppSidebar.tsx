@@ -45,12 +45,12 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
 
   return (
     <aside className={cn(
-      'fixed lg:static inset-y-0 left-0 z-50 flex flex-col bg-zinc-950 border-r border-zinc-800/60 transition-all duration-200 flex-shrink-0 overflow-hidden',
+      'fixed lg:static inset-y-0 left-0 z-50 flex flex-col bg-background border-r border-border/60 transition-all duration-200 flex-shrink-0 overflow-hidden',
       open ? 'w-60' : 'w-0 lg:w-[60px]',
     )}>
       {/* 브랜드 */}
       <div className={cn(
-        'flex items-center gap-3 px-4 h-14 border-b border-zinc-800/60 flex-shrink-0',
+        'flex items-center gap-3 px-4 h-14 border-b border-border/60 flex-shrink-0',
         !open && 'lg:justify-center lg:px-0',
       )}>
         <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
@@ -58,9 +58,9 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
         </div>
         {open && (
           <div className="min-w-0">
-            <p className="text-sm font-bold text-white truncate">돈독</p>
+            <p className="text-sm font-bold text-foreground truncate">돈독</p>
             {user.familyName && (
-              <p className="text-[10px] text-zinc-500 truncate">{user.familyName}</p>
+              <p className="text-[10px] text-muted-foreground truncate">{user.familyName}</p>
             )}
           </div>
         )}
@@ -68,7 +68,7 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
         {open && (
           <button
             onClick={onClose}
-            className="ml-auto p-1 text-zinc-600 hover:text-white lg:hidden flex-shrink-0"
+            className="ml-auto p-1 text-muted-foreground/60 hover:text-foreground lg:hidden flex-shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
@@ -87,8 +87,8 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors group',
                 active
-                  ? 'bg-zinc-800 text-white'
-                  : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900',
+                  ? 'bg-muted text-foreground'
+                  : 'text-muted-foreground hover:text-foreground/80 hover:bg-muted',
                 !open && 'lg:justify-center lg:px-0',
               )}
             >
@@ -105,8 +105,8 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
             className={cn(
               'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
               pathname.startsWith('/dashboard/family')
-                ? 'bg-zinc-800 text-white'
-                : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900',
+                ? 'bg-muted text-foreground'
+                : 'text-muted-foreground hover:text-foreground/80 hover:bg-muted',
               !open && 'lg:justify-center lg:px-0',
             )}
           >
@@ -121,19 +121,19 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
 
       {/* 유저 프로필 + 로그아웃 */}
       <div className={cn(
-        'border-t border-zinc-800/60 p-3 flex-shrink-0',
+        'border-t border-border/60 p-3 flex-shrink-0',
         !open && 'lg:flex lg:justify-center',
       )}>
         {open ? (
           <div className="flex items-center gap-3">
             <UserAvatar name={user.name} />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white truncate">{user.name ?? user.email}</p>
-              <p className="text-[10px] text-zinc-500 truncate">{user.role === 'CFO' ? 'CFO' : '멤버'}</p>
+              <p className="text-sm font-medium text-foreground truncate">{user.name ?? user.email}</p>
+              <p className="text-[10px] text-muted-foreground truncate">{user.role === 'CFO' ? 'CFO' : '멤버'}</p>
             </div>
             <button
               onClick={onLogout}
-              className="p-1.5 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-950/30 transition-colors flex-shrink-0"
+              className="p-1.5 rounded-lg text-muted-foreground/60 hover:text-red-400 hover:bg-red-950/30 transition-colors flex-shrink-0"
               title="로그아웃"
             >
               <LogOut className="w-4 h-4" />
@@ -142,7 +142,7 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
         ) : (
           <button
             onClick={onLogout}
-            className="p-2 rounded-xl text-zinc-600 hover:text-red-400 hover:bg-red-950/30 transition-colors"
+            className="p-2 rounded-xl text-muted-foreground/60 hover:text-red-400 hover:bg-red-950/30 transition-colors"
             title="로그아웃"
           >
             <LogOut className="w-4 h-4" />
@@ -215,21 +215,21 @@ function InviteCodeButton() {
           'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
           open
             ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-900/40'
-            : 'text-zinc-500 hover:text-emerald-400 hover:bg-zinc-900'
+            : 'text-muted-foreground hover:text-emerald-400 hover:bg-muted'
         )}
       >
         <UserPlus className="w-4 h-4 flex-shrink-0" />
         <span>초대 코드</span>
       </button>
       {open && (
-        <div className="absolute left-0 bottom-full mb-2 w-56 bg-zinc-900 border border-zinc-800 rounded-2xl p-3 shadow-xl z-50">
-          <p className="text-[10px] text-zinc-500 mb-2">가족 초대 코드 (7일 유효)</p>
+        <div className="absolute left-0 bottom-full mb-2 w-56 bg-card border border-border rounded-2xl p-3 shadow-xl z-50">
+          <p className="text-[10px] text-muted-foreground mb-2">가족 초대 코드 (7일 유효)</p>
           {loading ? (
-            <div className="flex justify-center py-3"><Loader2 className="w-4 h-4 animate-spin text-zinc-500" /></div>
+            <div className="flex justify-center py-3"><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" /></div>
           ) : code ? (
             <>
-              <div className="flex items-center justify-center py-2 bg-black rounded-xl border border-zinc-800 mb-2">
-                <span className="text-xl font-mono font-bold tracking-[0.3em] text-white">{code}</span>
+              <div className="flex items-center justify-center py-2 bg-background rounded-xl border border-border mb-2">
+                <span className="text-xl font-mono font-bold tracking-[0.3em] text-foreground">{code}</span>
               </div>
               <button
                 onClick={handleCopy}
@@ -237,7 +237,7 @@ function InviteCodeButton() {
                   'w-full h-9 rounded-xl border text-xs font-medium transition-all flex items-center justify-center gap-1.5',
                   copied
                     ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                    : 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white'
+                    : 'bg-muted border-border text-foreground/70 hover:text-foreground'
                 )}
               >
                 {copied ? <><Check className="w-3.5 h-3.5" />복사됨!</> : <><Copy className="w-3.5 h-3.5" />코드 복사</>}

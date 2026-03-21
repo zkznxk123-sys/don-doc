@@ -39,10 +39,10 @@ const renderActiveShape = (props: any) => {
 
   return (
     <g>
-      <text x={cx} y={cy - 12} textAnchor="middle" fill="#e5e7eb" fontSize={13} fontWeight={600}>
+      <text x={cx} y={cy - 12} textAnchor="middle" fill="hsl(var(--foreground))" fontSize={13} fontWeight={600}>
         {payload.label}
       </text>
-      <text x={cx} y={cy + 8} textAnchor="middle" fill="#a1a1aa" fontSize={11}>
+      <text x={cx} y={cy + 8} textAnchor="middle" fill="hsl(var(--muted-foreground))" fontSize={11}>
         {(percent * 100).toFixed(1)}%
       </text>
       <text x={cx} y={cy + 26} textAnchor="middle" fill={fill} fontSize={14} fontWeight={700}>
@@ -71,12 +71,12 @@ export function AssetDonutChart({ data, totalAssets }: AssetDonutChartProps) {
   const debtCount  = data.filter(d =>  d.isLiability).length
 
   return (
-    <div className="bg-zinc-900 rounded-2xl p-5 md:p-6 border border-zinc-800 overflow-hidden">
+    <div className="bg-card rounded-2xl p-5 md:p-6 border border-border overflow-hidden">
       <div className="mb-1">
-        <h2 className="text-lg md:text-xl font-bold text-white">자산 배분</h2>
+        <h2 className="text-lg md:text-xl font-bold text-foreground">자산 배분</h2>
       </div>
-      <p className="text-xs text-zinc-500 mb-5">
-        순자산 기준 <span className="text-white font-semibold">{formatCurrency(totalAssets)}</span>
+      <p className="text-xs text-muted-foreground mb-5">
+        순자산 기준 <span className="text-foreground font-semibold">{formatCurrency(totalAssets)}</span>
       </p>
 
       <div className="flex flex-col items-center gap-5">
@@ -111,11 +111,11 @@ export function AssetDonutChart({ data, totalAssets }: AssetDonutChartProps) {
           </ResponsiveContainer>
           {activeIndex === null && (
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-              <span className="text-xs text-zinc-500">총 순자산</span>
-              <span className={cn('text-lg font-bold', totalAssets >= 0 ? 'text-white' : 'text-red-400')}>
+              <span className="text-xs text-muted-foreground">총 순자산</span>
+              <span className={cn('text-lg font-bold', totalAssets >= 0 ? 'text-foreground' : 'text-red-400')}>
                 {totalAssets < 0 ? '-' : ''}{formatLargeNumber(Math.abs(totalAssets))}
               </span>
-              <span className="text-[10px] text-zinc-600">
+              <span className="text-[10px] text-muted-foreground/60">
                 {assetCount}개 자산{debtCount > 0 ? ` · ${debtCount}개 부채` : ''}
               </span>
             </div>
@@ -134,8 +134,8 @@ export function AssetDonutChart({ data, totalAssets }: AssetDonutChartProps) {
                 <button
                   className={cn(
                     "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left",
-                    "hover:bg-zinc-800/60",
-                    activeIndex === idx && "bg-zinc-800/80 ring-1 ring-zinc-700",
+                    "hover:bg-muted/60",
+                    activeIndex === idx && "bg-muted/80 ring-1 ring-border",
                   )}
                   onMouseEnter={() => setActiveIndex(idx)}
                   onMouseLeave={() => setActiveIndex(null)}
@@ -149,15 +149,15 @@ export function AssetDonutChart({ data, totalAssets }: AssetDonutChartProps) {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-1">
-                      <span className="text-sm font-medium text-zinc-200 truncate">{item.label}</span>
+                      <span className="text-sm font-medium text-foreground/80 truncate">{item.label}</span>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-xs text-zinc-500 tabular-nums">{item.percentage}%</span>
-                        <span className="text-sm font-semibold text-white tabular-nums">
+                        <span className="text-xs text-muted-foreground tabular-nums">{item.percentage}%</span>
+                        <span className="text-sm font-semibold text-foreground tabular-nums">
                           {formatCurrency(item.balance)}
                         </span>
                       </div>
                     </div>
-                    <div className="w-full bg-zinc-800 rounded-full h-1">
+                    <div className="w-full bg-muted rounded-full h-1">
                       <div className="h-1 rounded-full transition-all duration-500"
                         style={{ width: `${item.percentage}%`, backgroundColor: palette.color }} />
                     </div>
@@ -166,9 +166,9 @@ export function AssetDonutChart({ data, totalAssets }: AssetDonutChartProps) {
                 {isExpanded && item.accounts.length > 1 && (
                   <div className="ml-11 mr-2 mt-0.5 mb-1 space-y-0.5">
                     {item.accounts.map(acc => (
-                      <div key={acc.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-zinc-800/40">
-                        <span className="text-xs text-zinc-400 truncate mr-2">{acc.name}</span>
-                        <span className="text-xs font-medium text-zinc-300 tabular-nums flex-shrink-0">
+                      <div key={acc.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-muted/40">
+                        <span className="text-xs text-muted-foreground truncate mr-2">{acc.name}</span>
+                        <span className="text-xs font-medium text-foreground/70 tabular-nums flex-shrink-0">
                           {formatCurrency(acc.balance)}
                         </span>
                       </div>
@@ -183,9 +183,9 @@ export function AssetDonutChart({ data, totalAssets }: AssetDonutChartProps) {
           {data.some(d => d.isLiability) && (
             <>
               <div className="flex items-center gap-2 py-1">
-                <div className="flex-1 h-px bg-zinc-800" />
-                <span className="text-[10px] text-zinc-600 px-1">미연결 부채</span>
-                <div className="flex-1 h-px bg-zinc-800" />
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-[10px] text-muted-foreground/60 px-1">미연결 부채</span>
+                <div className="flex-1 h-px bg-border" />
               </div>
               {data.filter(d => d.isLiability).map((item) => {
                 const palette = ASSET_PALETTE[item.type] || FALLBACK
@@ -211,15 +211,15 @@ export function AssetDonutChart({ data, totalAssets }: AssetDonutChartProps) {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2 mb-1">
-                          <span className="text-sm font-medium text-zinc-400 truncate">{item.label}</span>
+                          <span className="text-sm font-medium text-muted-foreground truncate">{item.label}</span>
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            <span className="text-xs text-zinc-600 tabular-nums">{item.percentage}%</span>
+                            <span className="text-xs text-muted-foreground/60 tabular-nums">{item.percentage}%</span>
                             <span className="text-sm font-semibold text-red-400 tabular-nums">
                               -{formatCurrency(item.balance)}
                             </span>
                           </div>
                         </div>
-                        <div className="w-full bg-zinc-800 rounded-full h-1">
+                        <div className="w-full bg-muted rounded-full h-1">
                           <div className="h-1 rounded-full transition-all duration-500"
                             style={{ width: `${item.percentage}%`, backgroundColor: palette.color }} />
                         </div>
@@ -229,7 +229,7 @@ export function AssetDonutChart({ data, totalAssets }: AssetDonutChartProps) {
                       <div className="ml-11 mr-2 mt-0.5 mb-1 space-y-0.5">
                         {item.accounts.map(acc => (
                           <div key={acc.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-red-950/20">
-                            <span className="text-xs text-zinc-500 truncate mr-2">{acc.name}</span>
+                            <span className="text-xs text-muted-foreground truncate mr-2">{acc.name}</span>
                             <span className="text-xs font-medium text-red-400/80 tabular-nums flex-shrink-0">
                               -{formatCurrency(acc.balance)}
                             </span>

@@ -43,11 +43,11 @@ function SettingsClient() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white px-4 py-8 max-w-2xl mx-auto">
+    <div className="min-h-screen bg-background text-foreground px-4 py-8 max-w-2xl mx-auto">
       <div className="flex items-center gap-3 mb-8">
         <Link
           href="/dashboard"
-          className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors"
+          className="p-2 rounded-xl bg-card border border-border text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
         </Link>
@@ -55,22 +55,22 @@ function SettingsClient() {
       </div>
 
       {/* 카테고리 관리 */}
-      <section className="rounded-2xl border border-zinc-800 bg-zinc-900/30 p-5 mb-4">
-        <h2 className="text-sm font-semibold text-zinc-300 mb-3">데이터 관리</h2>
+      <section className="rounded-2xl border border-border bg-card/30 p-5 mb-4">
+        <h2 className="text-sm font-semibold text-foreground/70 mb-3">데이터 관리</h2>
         <Link
           href="/dashboard/settings/categories"
-          className="flex items-center justify-between p-3 rounded-xl hover:bg-zinc-800/60 transition-colors group"
+          className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/60 transition-colors group"
         >
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-zinc-800 flex items-center justify-center">
-              <Tag className="w-4 h-4 text-zinc-400" />
+            <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+              <Tag className="w-4 h-4 text-muted-foreground" />
             </div>
             <div>
-              <p className="text-sm font-medium text-white">카테고리 관리</p>
-              <p className="text-xs text-zinc-500 mt-0.5">수입/지출 카테고리 및 자산 유형 표시 이름 설정</p>
+              <p className="text-sm font-medium text-foreground">카테고리 관리</p>
+              <p className="text-xs text-muted-foreground mt-0.5">수입/지출 카테고리 및 자산 유형 표시 이름 설정</p>
             </div>
           </div>
-          <ChevronRight className="w-4 h-4 text-zinc-600 group-hover:text-zinc-400 transition-colors" />
+          <ChevronRight className="w-4 h-4 text-muted-foreground/60 group-hover:text-muted-foreground transition-colors" />
         </Link>
       </section>
 
@@ -83,8 +83,8 @@ function SettingsClient() {
 
         <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-sm font-medium text-white">모든 거래 데이터 초기화</p>
-            <p className="text-xs text-zinc-500 mt-1">
+            <p className="text-sm font-medium text-foreground">모든 거래 데이터 초기화</p>
+            <p className="text-xs text-muted-foreground mt-1">
               모든 지출/수입 내역과 예산을 삭제하고 계좌 잔액을 0으로 초기화합니다.
             </p>
           </div>
@@ -111,7 +111,7 @@ function SettingsClient() {
                   <span className="block text-red-400 font-medium text-sm">
                     이 작업은 되돌릴 수 없습니다. 모든 지출/수입 내역이 삭제됩니다.
                   </span>
-                  <span className="block text-zinc-500 text-xs">
+                  <span className="block text-muted-foreground text-xs">
                     • 가족 전체의 모든 거래 내역 삭제<br />
                     • 모든 예산 설정 삭제<br />
                     • 모든 계좌 잔액 0으로 초기화

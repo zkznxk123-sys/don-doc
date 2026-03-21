@@ -33,20 +33,20 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   const totalAssets = payload.find((p: any) => p.dataKey === 'totalAssets')?.value ?? 0
 
   return (
-    <div className="bg-zinc-900 border border-zinc-700 rounded-xl px-4 py-3 shadow-xl min-w-[160px]">
-      <p className="text-xs text-zinc-500 mb-2">{label}</p>
+    <div className="bg-card border border-border rounded-xl px-4 py-3 shadow-xl min-w-[160px]">
+      <p className="text-xs text-muted-foreground mb-2">{label}</p>
       <div className="space-y-1.5">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
-            <span className="text-xs text-zinc-400">총 자산</span>
+            <span className="text-xs text-muted-foreground">총 자산</span>
           </div>
-          <span className="text-xs font-semibold text-white tabular-nums">{formatCurrency(totalAssets)}</span>
+          <span className="text-xs font-semibold text-foreground tabular-nums">{formatCurrency(totalAssets)}</span>
         </div>
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-1.5">
             <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
-            <span className="text-xs text-zinc-400">순자산</span>
+            <span className="text-xs text-muted-foreground">순자산</span>
           </div>
           <span className="text-xs font-semibold text-emerald-400 tabular-nums">{formatCurrency(netWorth)}</span>
         </div>
@@ -73,19 +73,19 @@ export function NetWorthChart({ data, onDataSaved }: NetWorthChartProps) {
 
   return (
     <>
-      <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-emerald-400" />
-            <h2 className="text-sm font-semibold text-white">순자산 추이</h2>
+            <h2 className="text-sm font-semibold text-foreground">순자산 추이</h2>
             {data.length > 0 && (
-              <span className="text-xs text-zinc-600">{data.length}개월</span>
+              <span className="text-xs text-muted-foreground/60">{data.length}개월</span>
             )}
           </div>
           <button
             onClick={() => setModalOpen(true)}
-            className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 px-3 py-1.5 rounded-lg transition-colors"
+            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground bg-muted hover:bg-accent px-3 py-1.5 rounded-lg transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             과거 데이터 기록
@@ -96,11 +96,11 @@ export function NetWorthChart({ data, onDataSaved }: NetWorthChartProps) {
         <div className="px-2 py-4">
           {isEmpty ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="w-12 h-12 rounded-2xl bg-zinc-800 flex items-center justify-center mb-3">
-                <TrendingUp className="w-6 h-6 text-zinc-600" />
+              <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mb-3">
+                <TrendingUp className="w-6 h-6 text-muted-foreground/60" />
               </div>
-              <p className="text-sm text-zinc-500 mb-1">아직 기록된 데이터가 없어요</p>
-              <p className="text-xs text-zinc-600">과거 데이터 기록 버튼으로 추가해 보세요</p>
+              <p className="text-sm text-muted-foreground mb-1">아직 기록된 데이터가 없어요</p>
+              <p className="text-xs text-muted-foreground/60">과거 데이터 기록 버튼으로 추가해 보세요</p>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
@@ -116,11 +116,11 @@ export function NetWorthChart({ data, onDataSaved }: NetWorthChartProps) {
                   </linearGradient>
                 </defs>
 
-                <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
 
                 <XAxis
                   dataKey="label"
-                  tick={{ fill: '#71717a', fontSize: 11 }}
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
                   axisLine={false}
                   tickLine={false}
                   dy={6}
@@ -128,13 +128,13 @@ export function NetWorthChart({ data, onDataSaved }: NetWorthChartProps) {
 
                 <YAxis
                   tickFormatter={formatYAxis}
-                  tick={{ fill: '#71717a', fontSize: 11 }}
+                  tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 11 }}
                   axisLine={false}
                   tickLine={false}
                   width={48}
                 />
 
-                <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#3f3f46', strokeWidth: 1 }} />
+                <Tooltip content={<CustomTooltip />} cursor={{ stroke: 'hsl(var(--border))', strokeWidth: 1 }} />
 
                 {/* 총 자산 — 뒤에 그려서 순자산이 위에 올라옴 */}
                 <Area
@@ -169,11 +169,11 @@ export function NetWorthChart({ data, onDataSaved }: NetWorthChartProps) {
           <div className="flex items-center gap-4 px-5 pb-4">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-0.5 rounded-full bg-emerald-400" />
-              <span className="text-xs text-zinc-500">순자산</span>
+              <span className="text-xs text-muted-foreground">순자산</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-0.5 rounded-full bg-blue-400" />
-              <span className="text-xs text-zinc-500">총 자산</span>
+              <span className="text-xs text-muted-foreground">총 자산</span>
             </div>
           </div>
         )}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, createContext, useContext, useCallback } from 'react'
+import { useState, useMemo, createContext, useContext, useCallback, useEffect } from 'react'
 import { AppSidebar } from './AppSidebar'
 import { TopBar } from './TopBar'
 import { TransactionDrawer, type EditTransactionData } from '@/components/ui/transaction-drawer'
@@ -45,6 +45,11 @@ export function DashboardShell({
   children: React.ReactNode
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [isDemo, setIsDemo] = useState(false)
+
+  useEffect(() => {
+    setIsDemo(document.cookie.includes('is_demo=1'))
+  }, [])
   const [editTransaction, setEditTransaction] = useState<EditTransactionData | null>(null)
   const [isTransactionOpen, setIsTransactionOpen] = useState(false)
   const [isExcelOpen, setIsExcelOpen] = useState(false)
@@ -70,7 +75,7 @@ export function DashboardShell({
 
   return (
     <DashboardActionsContext.Provider value={contextValue}>
-      <div className="flex h-screen bg-black isolate">
+      <div className="flex h-screen bg-background isolate">
         {/* 모바일 오버레이 */}
         {sidebarOpen && (
           <div
@@ -90,6 +95,17 @@ export function DashboardShell({
         />
 
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
+          {isDemo && (
+            <div className="flex-shrink-0 flex items-center justify-between gap-3 px-4 py-2 bg-amber-500/10 border-b border-amber-500/20 text-xs text-amber-300">
+              <span>🎭 데모 모드 — 실제 데이터가 아닙니다.</span>
+              <a
+                href="/api/auth/logout?redirect=/"
+                className="underline underline-offset-2 hover:text-amber-200 transition-colors"
+              >
+                나가기
+              </a>
+            </div>
+          )}
           <TopBar
             sidebarOpen={sidebarOpen}
             onToggleSidebar={() => setSidebarOpen(prev => !prev)}

@@ -129,7 +129,7 @@ export default function FamilyPage() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-32">
-        <Loader2 className="w-6 h-6 animate-spin text-zinc-500" />
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
       </div>
     )
   }
@@ -141,14 +141,14 @@ export default function FamilyPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold text-white mb-6">가족 관리</h1>
+        <h1 className="text-2xl font-bold text-foreground mb-6">가족 관리</h1>
 
         {/* 가족 정보 카드 */}
-        <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6 mb-6">
+        <div className="bg-card rounded-2xl border border-border p-6 mb-6">
           <div className="flex items-start justify-between gap-4 mb-6">
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
-                <Users className="w-5 h-5 text-white" />
+              <div className="w-10 h-10 rounded-xl bg-foreground/10 flex items-center justify-center flex-shrink-0">
+                <Users className="w-5 h-5 text-foreground" />
               </div>
               {isEditing ? (
                 <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -161,29 +161,29 @@ export default function FamilyPage() {
                       if (e.key === 'Escape') handleCancelEdit()
                     }}
                     maxLength={30}
-                    className="flex-1 min-w-0 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-white outline-none focus:border-zinc-500"
+                    className="flex-1 min-w-0 bg-muted border border-border rounded-lg px-3 py-1.5 text-sm text-foreground outline-none focus:border-ring"
                   />
                   <button
                     onClick={handleSaveName}
                     disabled={isSaving}
-                    className="flex-shrink-0 px-3 py-1.5 bg-white text-black text-xs font-semibold rounded-lg hover:bg-zinc-200 transition-colors disabled:opacity-50"
+                    className="flex-shrink-0 px-3 py-1.5 bg-foreground text-background text-xs font-semibold rounded-lg hover:bg-foreground/90 transition-colors disabled:opacity-50"
                   >
                     {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : '저장'}
                   </button>
                   <button
                     onClick={handleCancelEdit}
-                    className="flex-shrink-0 p-1.5 text-zinc-500 hover:text-white transition-colors"
+                    className="flex-shrink-0 p-1.5 text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
               ) : (
                 <div className="flex items-center gap-2 min-w-0">
-                  <p className="text-base font-semibold text-white truncate">{family.name}</p>
+                  <p className="text-base font-semibold text-foreground truncate">{family.name}</p>
                   {currentUserRole === 'CFO' && (
                     <button
                       onClick={handleStartEdit}
-                      className="flex-shrink-0 p-1 text-zinc-600 hover:text-zinc-300 transition-colors"
+                      className="flex-shrink-0 p-1 text-muted-foreground/60 hover:text-foreground/70 transition-colors"
                     >
                       <Pencil className="w-3.5 h-3.5" />
                     </button>
@@ -191,25 +191,25 @@ export default function FamilyPage() {
                 </div>
               )}
             </div>
-            <span className="flex-shrink-0 text-xs text-zinc-500 bg-zinc-800 px-2.5 py-1 rounded-full border border-zinc-700">
+            <span className="flex-shrink-0 text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-full border border-border">
               {family.members.length}명
             </span>
           </div>
 
           {/* 초대 코드 섹션 */}
-          <div className="bg-black rounded-xl border border-zinc-800 p-4">
+          <div className="bg-background rounded-xl border border-border p-4">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs text-zinc-500">초대 코드</p>
+              <p className="text-xs text-muted-foreground">초대 코드</p>
               <button
                 onClick={handleRefreshCode}
                 disabled={inviteLoading}
-                className="p-1 text-zinc-600 hover:text-zinc-400 transition-colors disabled:opacity-50"
+                className="p-1 text-muted-foreground/60 hover:text-muted-foreground transition-colors disabled:opacity-50"
               >
                 <RefreshCw className={cn('w-3.5 h-3.5', inviteLoading && 'animate-spin')} />
               </button>
             </div>
             <div className="flex items-center justify-between gap-4">
-              <span className="text-2xl font-mono font-bold tracking-[0.3em] text-white">
+              <span className="text-2xl font-mono font-bold tracking-[0.3em] text-foreground">
                 {inviteCode ?? '------'}
               </span>
               <button
@@ -219,24 +219,24 @@ export default function FamilyPage() {
                   'flex items-center gap-1.5 px-4 py-2 rounded-xl border text-xs font-medium transition-all flex-shrink-0',
                   copied
                     ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
-                    : 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-600'
+                    : 'bg-muted border-border text-foreground/70 hover:text-foreground hover:border-ring'
                 )}
               >
                 {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
                 {copied ? '복사됨' : '초대 링크 복사'}
               </button>
             </div>
-            <p className="text-xs text-zinc-700 mt-3">링크를 받은 사람은 앱에서 가족에 바로 합류할 수 있어요</p>
+            <p className="text-xs text-muted-foreground/40 mt-3">링크를 받은 사람은 앱에서 가족에 바로 합류할 수 있어요</p>
           </div>
         </div>
 
         {/* 멤버 리스트 */}
-        <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
-          <div className="px-5 py-4 border-b border-zinc-800">
-            <h2 className="text-sm font-semibold text-white">구성원</h2>
+        <div className="bg-card rounded-2xl border border-border overflow-hidden">
+          <div className="px-5 py-4 border-b border-border">
+            <h2 className="text-sm font-semibold text-foreground">구성원</h2>
           </div>
 
-          <div className="divide-y divide-zinc-800/60">
+          <div className="divide-y divide-border/60">
             {/* CFO */}
             {cfo && (
               <MemberRow
@@ -278,7 +278,7 @@ function MemberRow({
       {/* 아바타 */}
       <div className={cn(
         'w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-xs font-bold',
-        role === 'CFO' ? 'bg-amber-500/15 text-amber-400' : 'bg-zinc-800 text-zinc-400'
+        role === 'CFO' ? 'bg-amber-500/15 text-amber-400' : 'bg-muted text-muted-foreground'
       )}>
         {initials}
       </div>
@@ -286,14 +286,14 @@ function MemberRow({
       {/* 이름 + 이메일 */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className="text-sm font-medium text-white truncate">
+          <p className="text-sm font-medium text-foreground truncate">
             {member.name ?? '이름 없음'}
           </p>
           {isCurrentUser && (
-            <span className="text-[10px] text-zinc-600 bg-zinc-800 px-1.5 py-0.5 rounded-full flex-shrink-0">나</span>
+            <span className="text-[10px] text-muted-foreground/60 bg-muted px-1.5 py-0.5 rounded-full flex-shrink-0">나</span>
           )}
         </div>
-        <p className="text-xs text-zinc-500 truncate mt-0.5">{member.email}</p>
+        <p className="text-xs text-muted-foreground truncate mt-0.5">{member.email}</p>
       </div>
 
       {/* 역할 배지 */}
@@ -303,9 +303,9 @@ function MemberRow({
           <span className="text-xs font-medium text-amber-400">총괄</span>
         </div>
       ) : (
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-zinc-800 border border-zinc-700 flex-shrink-0">
-          <Users className="w-3 h-3 text-zinc-400" />
-          <span className="text-xs font-medium text-zinc-400">구성원</span>
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-muted border border-border flex-shrink-0">
+          <Users className="w-3 h-3 text-muted-foreground" />
+          <span className="text-xs font-medium text-muted-foreground">구성원</span>
         </div>
       )}
     </div>

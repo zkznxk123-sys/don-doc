@@ -26,7 +26,7 @@ import {
   createSnapshotFromCurrentBalances,
   type NetWorthSnapshotData,
 } from '@/lib/actions/networth'
-import { TrendingUp, TrendingDown, Wallet, Building2, Landmark, CreditCard, Camera } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, Building2, Landmark, CreditCard, Camera, Plus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const REAL_ESTATE_TYPES = new Set(['REAL_ESTATE'])
@@ -38,7 +38,7 @@ function getCurrentYearMonth(): string {
 }
 
 export default function AssetsPage() {
-  const { refreshKey } = useDashboardActions()
+  const { refreshKey, setPageActions } = useDashboardActions()
   const [accounts, setAccounts] = useState<AccountInitialData[]>([])
   const [liabilities, setLiabilities] = useState<AccountInitialData[]>([])
   const [assetsByType, setAssetsByType] = useState<AssetTypeData[]>([])
@@ -108,6 +108,21 @@ export default function AssetsPage() {
 
   useEffect(() => { loadData() }, [refreshKey, loadData])
 
+  // TopBar에 자산 추가 버튼 등록
+  useEffect(() => {
+    setPageActions(
+      <button
+        onClick={openAdd}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-semibold hover:bg-foreground/90 transition-colors active:scale-[0.97]"
+      >
+        <Plus className="w-3.5 h-3.5" />
+        <span className="hidden sm:inline">자산 추가</span>
+      </button>
+    )
+    return () => setPageActions(null)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const openAdd = () => {
     setSelectedAccount(undefined)
     setIsAccountDrawerOpen(true)
@@ -154,45 +169,45 @@ export default function AssetsPage() {
       )}
 
       {/* 순자산 헤더 카드 */}
-      <div className="bg-zinc-900 rounded-2xl p-5 border border-zinc-800">
+      <div className="bg-card rounded-2xl p-5 border border-border">
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Wallet className="w-4 h-4 text-emerald-500" />
-              <span className="text-xs text-zinc-500 font-medium">가족 순자산</span>
+              <span className="text-xs text-muted-foreground font-medium">가족 순자산</span>
             </div>
             <p className={cn(
               'text-3xl font-bold tabular-nums',
-              totalNetWorth >= 0 ? 'text-white' : 'text-red-400'
+              totalNetWorth >= 0 ? 'text-foreground' : 'text-red-400'
             )}>
               {loading ? '...' : formatCurrency(totalNetWorth)}
             </p>
           </div>
 
-          {/* 📸 현재 자산 기록하기 */}
+          {/* 현재 자산 기록하기 */}
           <button
             onClick={() => setConfirmOpen(true)}
-            className="flex-shrink-0 flex items-center gap-1.5 text-xs text-zinc-400 hover:text-white bg-zinc-800 hover:bg-zinc-700 border border-zinc-700 hover:border-zinc-600 px-3 py-2 rounded-xl transition-colors mt-0.5"
+            className="flex-shrink-0 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground bg-muted hover:bg-accent border border-border px-3 py-2 rounded-xl transition-colors mt-0.5"
           >
             <Camera className="w-3.5 h-3.5" />
             현재 자산 기록
           </button>
         </div>
 
-        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-zinc-800">
+        <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border">
           <div className="flex items-center gap-1.5">
             <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-            <span className="text-xs text-zinc-500">총 자산</span>
-            <span className="text-xs font-semibold text-white tabular-nums ml-1">
+            <span className="text-xs text-muted-foreground">총 자산</span>
+            <span className="text-xs font-semibold text-foreground tabular-nums ml-1">
               {loading ? '...' : formatLargeNumber(totalAssets)}
             </span>
           </div>
           {totalLiabilities > 0 && (
             <>
-              <span className="text-zinc-700 text-xs">—</span>
+              <span className="text-border text-xs">—</span>
               <div className="flex items-center gap-1.5">
                 <TrendingDown className="w-3.5 h-3.5 text-red-400" />
-                <span className="text-xs text-zinc-500">총 부채</span>
+                <span className="text-xs text-muted-foreground">총 부채</span>
                 <span className="text-xs font-semibold text-red-400 tabular-nums ml-1">
                   {loading ? '...' : formatLargeNumber(totalLiabilities)}
                 </span>
@@ -249,16 +264,16 @@ export default function AssetsPage() {
         <TabsContent value="realestate" className="space-y-4">
           {realEstateAccounts.length === 0 ? (
             <EmptyTab
-              icon={<Building2 className="w-6 h-6 text-zinc-600" />}
+              icon={<Building2 className="w-6 h-6 text-muted-foreground/60" />}
               message="등록된 부동산 자산이 없습니다"
               onAdd={openAdd}
             />
           ) : (
             <>
               {/* 총계 요약 바 */}
-              <div className="flex items-center justify-between px-4 py-2.5 bg-zinc-900 border border-zinc-800 rounded-xl">
-                <span className="text-xs text-zinc-500">부동산 {realEstateAccounts.length}건</span>
-                <span className="text-sm font-bold text-white tabular-nums">{formatCurrency(realEstateTotalAssets)}</span>
+              <div className="flex items-center justify-between px-4 py-2.5 bg-card border border-border rounded-xl">
+                <span className="text-xs text-muted-foreground">부동산 {realEstateAccounts.length}건</span>
+                <span className="text-sm font-bold text-foreground tabular-nums">{formatCurrency(realEstateTotalAssets)}</span>
               </div>
               {realEstateAccounts.map(account => (
                 <RealEstateCard
@@ -270,7 +285,7 @@ export default function AssetsPage() {
               {/* 추가 버튼 */}
               <button
                 onClick={openAdd}
-                className="w-full py-3 border border-dashed border-zinc-800 rounded-2xl text-xs text-zinc-600 hover:text-zinc-400 hover:border-zinc-700 transition-colors"
+                className="w-full py-3 border border-dashed border-border rounded-2xl text-xs text-muted-foreground/60 hover:text-muted-foreground hover:border-border transition-colors"
               >
                 + 부동산 추가
               </button>
@@ -282,7 +297,7 @@ export default function AssetsPage() {
         <TabsContent value="financial" className="space-y-5">
           {financialAccounts.length === 0 ? (
             <EmptyTab
-              icon={<Landmark className="w-6 h-6 text-zinc-600" />}
+              icon={<Landmark className="w-6 h-6 text-muted-foreground/60" />}
               message="등록된 금융자산이 없습니다"
               onAdd={openAdd}
             />
@@ -324,10 +339,10 @@ export default function AssetsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>이번 달 자산 기록</AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="space-y-2 text-sm text-zinc-400">
+              <div className="space-y-2 text-sm text-muted-foreground">
                 <p>
                   현재 등록된 자산·부채 잔액을 기준으로{' '}
-                  <strong className="text-white">{getCurrentYearMonth().replace('-', '년 ')}월</strong>{' '}
+                  <strong className="text-foreground">{getCurrentYearMonth().replace('-', '년 ')}월</strong>{' '}
                   순자산 스냅샷을 저장합니다.
                 </p>
                 <p className="text-amber-400/80">
@@ -362,14 +377,14 @@ function EmptyTab({
   onAdd: () => void
 }) {
   return (
-    <div className="bg-zinc-900 rounded-2xl border border-zinc-800 px-5 py-12 flex flex-col items-center text-center gap-3">
-      <div className="w-12 h-12 rounded-2xl bg-zinc-800 flex items-center justify-center">
+    <div className="bg-card rounded-2xl border border-border px-5 py-12 flex flex-col items-center text-center gap-3">
+      <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center">
         {icon}
       </div>
-      <p className="text-sm text-zinc-500">{message}</p>
+      <p className="text-sm text-muted-foreground">{message}</p>
       <button
         onClick={onAdd}
-        className="text-xs text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 px-4 py-2 rounded-lg transition-colors"
+        className="text-xs text-muted-foreground hover:text-foreground border border-border hover:border-ring px-4 py-2 rounded-lg transition-colors"
       >
         + 자산 추가
       </button>

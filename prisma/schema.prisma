@@ -49,6 +49,14 @@ enum RepaymentType {
   INTEREST_ONLY            // 이자만납부
 }
 
+enum DebtType {
+  MORTGAGE        // 주택담보대출
+  JEONSE_DEPOSIT  // 전세보증금(수취)
+  CREDIT_LOAN     // 신용대출
+  OVERDRAFT       // 마이너스통장
+  ETC             // 기타
+}
+
 model FamilyGroup {
   id                String             @id @default(cuid())
   name              String             // 예: "우리집 패밀리오피스"
@@ -167,6 +175,7 @@ model DebtDetail {
   id             String         @id @default(cuid())
   accountId      String         @unique
   account        Account        @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  debtType       DebtType       @default(ETC) // 부채 세부 유형
   interestRate   Float?         // 대출 금리 (% 단위, 예: 3.8)
   maturityDate   DateTime?      // 대출 만기일
   repaymentType  RepaymentType? // 상환 방식

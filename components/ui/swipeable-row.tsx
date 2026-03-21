@@ -13,13 +13,13 @@ interface SwipeableRowProps {
   onDelete?: () => void
 }
 
-export function SwipeableRow({ 
-  children, 
-  isPrivate = false, 
+export function SwipeableRow({
+  children,
+  isPrivate = false,
   isOwnTransaction = false,
   onVisibilityToggle,
   onEdit,
-  onDelete 
+  onDelete
 }: SwipeableRowProps) {
   const [translateX, setTranslateX] = useState(0)
   const [isDragging, setIsDragging] = useState(false)
@@ -35,11 +35,11 @@ export function SwipeableRow({
 
   const handleTouchMove = (e: TouchEvent) => {
     if (!isDragging) return
-    
+
     const currentTouchX = e.touches[0].clientX
     const diff = currentTouchX - startX.current
     const newTranslateX = currentX.current + diff
-    
+
     // 스와이프 제한 (-120px ~ 0px)
     const clampedX = Math.max(-120, Math.min(0, newTranslateX))
     setTranslateX(clampedX)
@@ -47,9 +47,9 @@ export function SwipeableRow({
 
   const handleTouchEnd = () => {
     if (!isDragging) return
-    
+
     setIsDragging(false)
-    
+
     // 스와이프 임계값을 넘으면 액션 실행
     if (translateX < -60) {
       setTranslateX(-120)
@@ -70,9 +70,9 @@ export function SwipeableRow({
   return (
     <div className="relative overflow-hidden">
       {/* 액션 버튼 배경 */}
-      <div 
+      <div
         className={cn(
-          "absolute inset-y-0 right-0 flex items-center gap-1 px-2 bg-zinc-800 rounded-l-lg transition-transform duration-200",
+          "absolute inset-y-0 right-0 flex items-center gap-1 px-2 bg-muted rounded-l-lg transition-transform duration-200",
           translateX === 0 && "translate-x-full"
         )}
         style={{ width: '120px' }}
@@ -88,7 +88,7 @@ export function SwipeableRow({
             </button>
             <button
               onClick={() => handleActionClick(() => onEdit?.())}
-              className="p-2 bg-zinc-600 rounded-lg text-white"
+              className="p-2 bg-accent rounded-lg text-foreground"
               title="편집"
             >
               <MoreHorizontal className="w-4 h-4" />
@@ -101,7 +101,7 @@ export function SwipeableRow({
       <div
         ref={rowRef}
         className={cn(
-          "relative bg-zinc-900 transition-transform duration-200 touch-pan-y",
+          "relative bg-card transition-transform duration-200 touch-pan-y",
           isDragging && "transition-none"
         )}
         style={{ transform: `translateX(${translateX}px)` }}

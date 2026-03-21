@@ -7,6 +7,7 @@ import { getAuthUser } from '@/lib/auth'
 export type AccountType = 'CASH' | 'INVESTMENT' | 'CRYPTO' | 'REAL_ESTATE' | 'STO' | 'DEBT' | 'CREDIT_CARD'
 export type ShareLevel = 'PUBLIC' | 'BALANCE_ONLY' | 'PRIVATE'
 export type RepaymentType = 'EQUAL_PRINCIPAL_INTEREST' | 'EQUAL_PRINCIPAL' | 'BULLET' | 'INTEREST_ONLY'
+export type DebtType = 'MORTGAGE' | 'JEONSE_DEPOSIT' | 'CREDIT_LOAN' | 'OVERDRAFT' | 'ETC'
 
 const LIABILITY_TYPES: AccountType[] = ['DEBT', 'CREDIT_CARD']
 
@@ -27,6 +28,7 @@ export interface FinancialAssetDetailInput {
 }
 
 export interface DebtDetailInput {
+  debtType?: DebtType | null
   interestRate?: number | null
   maturityDate?: string | null   // "YYYY-MM-DD"
   repaymentType?: RepaymentType | null
@@ -67,6 +69,7 @@ export interface AccountWithDetail {
     monthlyPayment: number | null
   } | null
   debtDetail: {
+    debtType: DebtType
     interestRate: number | null
     maturityDate: string | null
     repaymentType: RepaymentType | null
@@ -116,6 +119,7 @@ export async function getAccountWithDetail(id: string): Promise<AccountWithDetai
       : null,
     debtDetail: account.debtDetail
       ? {
+          debtType: account.debtDetail.debtType as DebtType,
           interestRate: account.debtDetail.interestRate,
           maturityDate: toDateStr(account.debtDetail.maturityDate),
           repaymentType: account.debtDetail.repaymentType as RepaymentType | null,
@@ -381,6 +385,7 @@ function buildFinancialData(d: FinancialAssetDetailInput) {
 
 function buildDebtData(d: DebtDetailInput) {
   return {
+    debtType: d.debtType ?? 'ETC',
     interestRate: d.interestRate ?? null,
     maturityDate: d.maturityDate ? new Date(d.maturityDate) : null,
     repaymentType: d.repaymentType ?? null,

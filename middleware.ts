@@ -20,16 +20,19 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  // 공개 경로는 인증 불필요
-  const isPublicPath = PUBLIC_PATHS.some(p => pathname.startsWith(p))
+  // 공개 경로는 인증 불필요 (루트 `/` 포함)
+  const isPublicPath = pathname === '/' || PUBLIC_PATHS.some(p => pathname.startsWith(p))
 
   // API 경로는 미들웨어에서 리다이렉트하지 않음 (각 라우트에서 자체 처리)
   if (pathname.startsWith('/api')) {
     return response
   }
 
+  // 데모 세션 쿠키가 있으면 인증된 것으로 간주
+  const hasDemoSession = !!request.cookies.get('demo_session')?.value
+
   // 미인증 + 보호 경로 → /login 리다이렉트
-  if (!session && !isPublicPath) {
+  if (!session && !hasDemoSession && !isPublicPath) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('redirectTo', pathname)
     return NextResponse.redirect(loginUrl)

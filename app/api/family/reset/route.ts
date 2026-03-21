@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic'
+
 import { NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth'
 import { resetFamilyData } from '@/lib/actions/family'

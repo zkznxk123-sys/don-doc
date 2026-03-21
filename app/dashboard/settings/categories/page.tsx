@@ -53,25 +53,25 @@ export default function CategoriesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black flex items-center justify-center">
-        <Loader2 className="w-5 h-5 text-zinc-500 animate-spin" />
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="w-5 h-5 text-muted-foreground animate-spin" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-black text-white px-4 py-8 max-w-2xl mx-auto">
+    <div className="min-h-screen bg-background text-foreground px-4 py-8 max-w-2xl mx-auto">
       {/* 헤더 */}
       <div className="flex items-center gap-3 mb-8">
         <Link
           href="/dashboard/settings"
-          className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors"
+          className="p-2 rounded-xl bg-card border border-border text-muted-foreground hover:text-foreground transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <div>
           <h1 className="text-2xl font-bold">카테고리 관리</h1>
-          <p className="text-xs text-zinc-500 mt-0.5">수입/지출 카테고리 및 자산 유형 표시 이름을 설정합니다</p>
+          <p className="text-xs text-muted-foreground mt-0.5">수입/지출 카테고리 및 자산 유형 표시 이름을 설정합니다</p>
         </div>
       </div>
 
@@ -129,9 +129,9 @@ function CategoryTab({
   return (
     <div className="space-y-2">
       {/* 리스트 */}
-      <div className="rounded-2xl border border-zinc-800 overflow-hidden divide-y divide-zinc-800/60">
+      <div className="rounded-2xl border border-border overflow-hidden divide-y divide-border/60">
         {categories.length === 0 && (
-          <div className="py-10 text-center text-zinc-600 text-sm">
+          <div className="py-10 text-center text-muted-foreground/60 text-sm">
             카테고리가 없습니다
           </div>
         )}
@@ -157,7 +157,7 @@ function CategoryTab({
       {!showAddForm && (
         <button
           onClick={() => setShowAddForm(true)}
-          className="flex items-center gap-2 w-full px-4 py-3 rounded-2xl border border-dashed border-zinc-700 text-zinc-500 hover:text-white hover:border-zinc-500 transition-colors text-sm"
+          className="flex items-center gap-2 w-full px-4 py-3 rounded-2xl border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-ring transition-colors text-sm"
         >
           <Plus className="w-4 h-4" />
           새 카테고리 추가
@@ -223,44 +223,44 @@ function CategoryRow({
           onChange={e => setIcon(e.target.value)}
           onBlur={handleSave}
           maxLength={4}
-          className="w-8 h-8 text-center text-lg bg-zinc-800 border border-zinc-700 rounded-lg outline-none focus:border-zinc-500 flex-shrink-0"
+          className="w-8 h-8 text-center text-lg bg-muted border border-border rounded-lg outline-none focus:border-ring flex-shrink-0"
           title="아이콘 (이모지)"
         />
       )}
 
       {/* 이름 */}
       {isSystem ? (
-        <span className="flex-1 text-sm text-zinc-400">{name}</span>
+        <span className="flex-1 text-sm text-muted-foreground">{name}</span>
       ) : (
         <input
           value={name}
           onChange={e => setName(e.target.value)}
           onBlur={handleSave}
           onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}
-          className="flex-1 h-8 bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 text-sm text-white outline-none focus:border-zinc-500 transition-colors min-w-0"
+          className="flex-1 h-8 bg-muted border border-border rounded-lg px-2.5 text-sm text-foreground outline-none focus:border-ring transition-colors min-w-0"
         />
       )}
 
       {/* 시스템 배지 */}
       {isSystem && (
-        <span className="text-[10px] text-zinc-600 bg-zinc-800 border border-zinc-700/50 px-1.5 py-0.5 rounded-md flex-shrink-0">
+        <span className="text-[10px] text-muted-foreground/60 bg-muted border border-border/50 px-1.5 py-0.5 rounded-md flex-shrink-0">
           기본
         </span>
       )}
 
       {/* 저장 중 인디케이터 */}
-      {saving && <Loader2 className="w-3.5 h-3.5 text-zinc-500 animate-spin flex-shrink-0" />}
+      {saving && <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin flex-shrink-0" />}
 
       {/* 삭제 버튼 */}
       {isSystem ? (
-        <button disabled className="p-1.5 rounded-lg text-zinc-700 cursor-not-allowed flex-shrink-0" title="기본 카테고리는 삭제할 수 없습니다">
+        <button disabled className="p-1.5 rounded-lg text-muted-foreground/40 cursor-not-allowed flex-shrink-0" title="기본 카테고리는 삭제할 수 없습니다">
           <Lock className="w-3.5 h-3.5" />
         </button>
       ) : (
         <button
           onClick={handleDelete}
           disabled={deleting}
-          className="p-1.5 rounded-lg text-zinc-600 hover:text-red-400 hover:bg-red-950/30 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100 disabled:opacity-50"
+          className="p-1.5 rounded-lg text-muted-foreground/60 hover:text-red-400 hover:bg-red-950/30 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100 disabled:opacity-50"
           title="삭제"
         >
           {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
@@ -299,12 +299,12 @@ function AddCategoryForm({
   }
 
   return (
-    <div className="flex items-center gap-3 px-4 py-3 bg-zinc-900/50">
+    <div className="flex items-center gap-3 px-4 py-3 bg-card/50">
       <input
         value={icon}
         onChange={e => setIcon(e.target.value)}
         maxLength={4}
-        className="w-8 h-8 text-center text-lg bg-zinc-800 border border-zinc-600 rounded-lg outline-none focus:border-zinc-400 flex-shrink-0"
+        className="w-8 h-8 text-center text-lg bg-muted border border-border rounded-lg outline-none focus:border-ring flex-shrink-0"
         title="아이콘 (이모지)"
       />
       <input
@@ -316,19 +316,19 @@ function AddCategoryForm({
           if (e.key === 'Escape') onCancel()
         }}
         placeholder="카테고리 이름"
-        className="flex-1 h-8 bg-zinc-800 border border-zinc-600 rounded-lg px-2.5 text-sm text-white placeholder-zinc-600 outline-none focus:border-zinc-400 transition-colors"
+        className="flex-1 h-8 bg-muted border border-border rounded-lg px-2.5 text-sm text-foreground placeholder-muted-foreground/50 outline-none focus:border-ring transition-colors"
       />
       <button
         onClick={handleAdd}
         disabled={saving || !name.trim()}
-        className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+        className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-foreground text-background text-xs font-semibold hover:bg-foreground/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
       >
         {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
         추가
       </button>
       <button
         onClick={onCancel}
-        className="h-8 px-3 rounded-lg text-xs text-zinc-500 hover:text-white transition-colors flex-shrink-0"
+        className="h-8 px-3 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
       >
         취소
       </button>
@@ -362,9 +362,9 @@ function AssetTab({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-2xl border border-zinc-800 overflow-hidden divide-y divide-zinc-800/60">
+      <div className="rounded-2xl border border-border overflow-hidden divide-y divide-border/60">
         {/* 헤더 */}
-        <div className="grid grid-cols-[120px_1fr_1fr] px-4 py-2.5 bg-zinc-900 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">
+        <div className="grid grid-cols-[120px_1fr_1fr] px-4 py-2.5 bg-card text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
           <span>유형</span>
           <span>기본 이름</span>
           <span>커스텀 표시 이름</span>
@@ -379,12 +379,12 @@ function AssetTab({
             <div key={type} className="grid grid-cols-[120px_1fr_1fr] items-center px-4 py-3 gap-3">
               {/* 유형 코드 + 설명 */}
               <div>
-                <p className="text-xs font-mono font-medium text-zinc-300">{type}</p>
-                <p className="text-[10px] text-zinc-600 mt-0.5 leading-tight">{description}</p>
+                <p className="text-xs font-mono font-medium text-foreground/70">{type}</p>
+                <p className="text-[10px] text-muted-foreground/60 mt-0.5 leading-tight">{description}</p>
               </div>
 
               {/* 기본 이름 */}
-              <span className="text-sm text-zinc-500">{defaultLabel}</span>
+              <span className="text-sm text-muted-foreground">{defaultLabel}</span>
 
               {/* 커스텀 입력 */}
               <div className="flex items-center gap-2">
@@ -394,9 +394,9 @@ function AssetTab({
                   onBlur={e => handleBlur(type, e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}
                   placeholder={defaultLabel}
-                  className="flex-1 h-7 bg-zinc-800 border border-zinc-700 rounded-lg px-2.5 text-xs text-white placeholder-zinc-600 outline-none focus:border-zinc-500 transition-colors"
+                  className="flex-1 h-7 bg-muted border border-border rounded-lg px-2.5 text-xs text-foreground placeholder-muted-foreground/50 outline-none focus:border-ring transition-colors"
                 />
-                {saving === type && <Loader2 className="w-3.5 h-3.5 text-zinc-500 animate-spin flex-shrink-0" />}
+                {saving === type && <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin flex-shrink-0" />}
                 {isCustom && saving !== type && (
                   <span className="text-[9px] text-emerald-500 flex-shrink-0">커스텀</span>
                 )}
@@ -406,7 +406,7 @@ function AssetTab({
         })}
       </div>
 
-      <p className="text-xs text-zinc-600 px-1">
+      <p className="text-xs text-muted-foreground/60 px-1">
         커스텀 표시 이름은 자산 현황 화면에서 이 가족에게만 적용됩니다. 비워두면 기본 이름이 사용됩니다.
       </p>
     </div>

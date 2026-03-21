@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label'
 import {
   createAccount, updateAccount, deleteAccount,
   getAccountWithDetail, getFamilyAssetsForLinking,
-  type AccountType, type ShareLevel, type RepaymentType,
+  type AccountType, type ShareLevel, type RepaymentType, type DebtType,
   type RealEstateDetailInput, type FinancialAssetDetailInput, type DebtDetailInput,
 } from '@/lib/actions/accounts'
 import { toast } from 'sonner'
@@ -51,7 +51,7 @@ const SHARE_LEVELS: {
 }[] = [
   { value: 'PUBLIC',       label: '내역까지 공개', desc: '이름·금액·거래 내역 모두 공개',         icon: Users,  color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30' },
   { value: 'BALANCE_ONLY', label: '금액만 합산',   desc: '금액은 가족 합계에 포함, 내역은 숨김', icon: Eye,    color: 'text-blue-400',    bg: 'bg-blue-500/10 border-blue-500/30' },
-  { value: 'PRIVATE',      label: '나만 보기',     desc: '가족 리스트에서 완전히 제외됨',         icon: EyeOff, color: 'text-zinc-400',    bg: 'bg-zinc-800 border-zinc-700' },
+  { value: 'PRIVATE',      label: '나만 보기',     desc: '가족 리스트에서 완전히 제외됨',         icon: EyeOff, color: 'text-muted-foreground',    bg: 'bg-muted border-border' },
 ]
 
 const REPAYMENT_TYPES: { value: RepaymentType; label: string }[] = [
@@ -60,6 +60,16 @@ const REPAYMENT_TYPES: { value: RepaymentType; label: string }[] = [
   { value: 'BULLET',                   label: '만기일시' },
   { value: 'INTEREST_ONLY',            label: '이자만납부' },
 ]
+
+const DEBT_TYPES: { value: DebtType; label: string }[] = [
+  { value: 'MORTGAGE',       label: '주택담보대출' },
+  { value: 'JEONSE_DEPOSIT', label: '전세보증금(수취)' },
+  { value: 'CREDIT_LOAN',    label: '신용대출' },
+  { value: 'OVERDRAFT',      label: '마이너스통장' },
+  { value: 'ETC',            label: '기타' },
+]
+
+const DEBT_TYPES_NEEDING_ASSET: DebtType[] = ['MORTGAGE', 'JEONSE_DEPOSIT']
 
 const PROPERTY_TYPES = ['아파트', '빌라', '오피스텔', '단독주택', '상가', '토지', '기타']
 
@@ -82,9 +92,9 @@ function parseNum(val: string): number | null {
 function SectionDivider({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-2 pt-1">
-      <span className="text-xs font-semibold text-zinc-500 whitespace-nowrap">{label}</span>
-      <div className="flex-1 h-px bg-zinc-800" />
-      <span className="text-[10px] text-zinc-700">선택</span>
+      <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap">{label}</span>
+      <div className="flex-1 h-px bg-border" />
+      <span className="text-[10px] text-muted-foreground/40">선택</span>
     </div>
   )
 }
@@ -96,7 +106,7 @@ function NumberField({
 }) {
   return (
     <div>
-      <Label className="text-zinc-500 text-xs mb-1.5 block">{label}</Label>
+      <Label className="text-muted-foreground text-xs mb-1.5 block">{label}</Label>
       <div className="relative">
         <input
           type="text"
@@ -104,9 +114,9 @@ function NumberField({
           value={value}
           onChange={e => onChange(fmtNum(e.target.value))}
           placeholder={placeholder}
-          className="w-full h-10 bg-zinc-900 border border-zinc-800 rounded-xl pl-4 pr-10 text-sm text-white placeholder-zinc-700 outline-none focus:border-zinc-600 transition-colors tabular-nums"
+          className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-10 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors tabular-nums"
         />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-600">{suffix}</span>
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/60">{suffix}</span>
       </div>
     </div>
   )
@@ -119,7 +129,7 @@ function RateField({
 }) {
   return (
     <div>
-      <Label className="text-zinc-500 text-xs mb-1.5 block">{label}</Label>
+      <Label className="text-muted-foreground text-xs mb-1.5 block">{label}</Label>
       <div className="relative">
         <input
           type="number"
@@ -129,9 +139,9 @@ function RateField({
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder="0.00"
-          className="w-full h-10 bg-zinc-900 border border-zinc-800 rounded-xl pl-4 pr-10 text-sm text-white placeholder-zinc-700 outline-none focus:border-zinc-600 transition-colors"
+          className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-10 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors"
         />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-zinc-600">%</span>
+        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/60">%</span>
       </div>
     </div>
   )
@@ -144,12 +154,12 @@ function DateField({
 }) {
   return (
     <div>
-      <Label className="text-zinc-500 text-xs mb-1.5 block">{label}</Label>
+      <Label className="text-muted-foreground text-xs mb-1.5 block">{label}</Label>
       <input
         type="date"
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="w-full h-10 bg-zinc-900 border border-zinc-800 rounded-xl px-4 text-sm text-white outline-none focus:border-zinc-600 transition-colors [color-scheme:dark]"
+        className="w-full h-10 bg-card border border-border rounded-xl px-4 text-sm text-foreground outline-none focus:border-ring transition-colors [color-scheme:dark]"
       />
     </div>
   )
@@ -186,10 +196,13 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
   const [faMonthlyPayment, setFaMonthlyPayment] = useState('')
 
   // 부채 상세
+  const [dDebtType, setDDebtType]             = useState<DebtType>('ETC')
   const [dInterestRate, setDInterestRate]     = useState('')
   const [dMaturityDate, setDMaturityDate]     = useState('')
   const [dRepaymentType, setDRepaymentType]   = useState<RepaymentType | ''>('')
   const [dMonthlyPayment, setDMonthlyPayment] = useState('')
+
+  const needsLinkedAsset = DEBT_TYPES_NEEDING_ASSET.includes(dDebtType)
 
   const isLiabilityType = type === 'DEBT' || type === 'CREDIT_CARD'
   const isFinancialType  = FINANCIAL_TYPES.includes(type)
@@ -227,6 +240,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
         }
         if (detail.debtDetail) {
           const d = detail.debtDetail
+          setDDebtType(d.debtType ?? 'ETC')
           setDInterestRate(d.interestRate != null ? String(d.interestRate) : '')
           setDMaturityDate(d.maturityDate ?? '')
           setDRepaymentType(d.repaymentType ?? '')
@@ -252,7 +266,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
     setLinkedAssetId('')
     setRePropertyType(''); setRePurchasePrice(''); setRePurchaseDate(''); setReCurrentPrice(''); setReTargetPrice('')
     setFaInterestRate(''); setFaMaturityDate(''); setFaMonthlyPayment('')
-    setDInterestRate(''); setDMaturityDate(''); setDRepaymentType(''); setDMonthlyPayment('')
+    setDDebtType('ETC'); setDInterestRate(''); setDMaturityDate(''); setDRepaymentType(''); setDMonthlyPayment('')
   }
 
   const handleClose = () => { setConfirmDelete(false); onClose() }
@@ -273,6 +287,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
     } : undefined
 
     const debtDetail: DebtDetailInput | undefined = isDebt ? {
+      debtType: dDebtType,
       interestRate: dInterestRate ? parseFloat(dInterestRate) : null,
       maturityDate: dMaturityDate || null,
       repaymentType: (dRepaymentType as RepaymentType) || null,
@@ -334,9 +349,9 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
 
   return (
     <Drawer open={isOpen} onOpenChange={(open) => { if (!open) handleClose() }}>
-      <DrawerContent className="bg-zinc-950 border-zinc-800 max-h-[92vh]">
+      <DrawerContent className="bg-background border-border max-h-[92vh]">
         <DrawerHeader className="px-6 pt-6 pb-2">
-          <DrawerTitle className="text-white text-lg font-semibold">
+          <DrawerTitle className="text-foreground text-lg font-semibold">
             {isEditMode ? (isLiabilityType ? '부채 수정' : '자산 수정') : '자산 / 부채 추가'}
           </DrawerTitle>
         </DrawerHeader>
@@ -345,7 +360,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
 
           {/* 계좌 종류 */}
           <div>
-            <Label className="text-zinc-400 text-xs mb-3 block">종류</Label>
+            <Label className="text-muted-foreground text-xs mb-3 block">종류</Label>
             <div className="grid grid-cols-2 gap-2">
               {ACCOUNT_TYPES.map((t) => {
                 const TypeIcon = t.Icon
@@ -358,19 +373,19 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
                     className={cn(
                       'relative flex items-center gap-3 p-3 rounded-xl border text-left transition-all',
                       isSelected
-                        ? 'bg-white border-white shadow-[0_0_12px_rgba(255,255,255,0.1)]'
-                        : 'bg-zinc-800/40 border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800/70'
+                        ? 'bg-foreground border-foreground shadow-[0_0_12px_rgba(255,255,255,0.1)]'
+                        : 'bg-muted/40 border-border hover:border-ring hover:bg-muted/70'
                     )}
                   >
-                    <TypeIcon className={cn('w-5 h-5 flex-shrink-0', isSelected ? 'text-black' : t.color)} />
+                    <TypeIcon className={cn('w-5 h-5 flex-shrink-0', isSelected ? 'text-background' : t.color)} />
                     <div>
-                      <p className={cn('text-xs font-semibold leading-tight', isSelected ? 'text-black' : 'text-white')}>{t.label}</p>
-                      <p className={cn('text-[10px] mt-0.5', isSelected ? 'text-black/50' : 'text-zinc-500')}>{t.desc}</p>
+                      <p className={cn('text-xs font-semibold leading-tight', isSelected ? 'text-background' : 'text-foreground')}>{t.label}</p>
+                      <p className={cn('text-[10px] mt-0.5', isSelected ? 'text-background/50' : 'text-muted-foreground')}>{t.desc}</p>
                     </div>
                     {isSelected && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow">
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-foreground rounded-full flex items-center justify-center shadow">
                         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                          <path d="M2 5.5L4 7.5L8 3" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                          <path d="M2 5.5L4 7.5L8 3" stroke="currentColor" className="text-background" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </span>
                     )}
@@ -382,20 +397,20 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
 
           {/* 이름 */}
           <div>
-            <Label className="text-zinc-400 text-xs mb-2 block">이름</Label>
+            <Label className="text-muted-foreground text-xs mb-2 block">이름</Label>
             <input
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder={isRealEstate ? '예: 래미안위브 아파트' : isDebt ? '예: 주택담보대출' : '예: 생활비 통장'}
               maxLength={30}
-              className="w-full h-11 bg-zinc-900 border border-zinc-800 rounded-xl px-4 text-sm text-white placeholder-zinc-600 outline-none focus:border-zinc-600 transition-colors"
+              className="w-full h-11 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors"
             />
           </div>
 
           {/* 잔액 / 부채 금액 */}
           <div>
-            <Label className="text-zinc-400 text-xs mb-2 block">
+            <Label className="text-muted-foreground text-xs mb-2 block">
               {isLiabilityType ? '부채 금액' : '현재 잔액'}
             </Label>
             <div className="relative">
@@ -405,9 +420,9 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
                 value={balance}
                 onChange={e => setBalance(fmtNum(e.target.value))}
                 placeholder="0"
-                className="w-full h-11 bg-zinc-900 border border-zinc-800 rounded-xl pl-4 pr-10 text-sm text-white placeholder-zinc-600 outline-none focus:border-zinc-600 transition-colors tabular-nums"
+                className="w-full h-11 bg-card border border-border rounded-xl pl-4 pr-10 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors tabular-nums"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-zinc-500">원</span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">원</span>
             </div>
           </div>
 
@@ -416,19 +431,19 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
             <>
               <SectionDivider label="부동산 상세" />
               <div>
-                <Label className="text-zinc-500 text-xs mb-1.5 block">부동산 유형</Label>
+                <Label className="text-muted-foreground text-xs mb-1.5 block">부동산 유형</Label>
                 <div className="relative">
                   <select
                     value={rePropertyType}
                     onChange={e => setRePropertyType(e.target.value)}
-                    className="w-full h-10 bg-zinc-900 border border-zinc-800 rounded-xl pl-4 pr-9 text-sm text-white outline-none focus:border-zinc-600 transition-colors appearance-none"
+                    className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-9 text-sm text-foreground outline-none focus:border-ring transition-colors appearance-none"
                   >
                     <option value="">선택 안 함</option>
                     {PROPERTY_TYPES.map(pt => (
                       <option key={pt} value={pt}>{pt}</option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -459,25 +474,64 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
             <>
               <SectionDivider label="부채 상세" />
 
-              {/* 연결 자산 Select */}
+              {/* 부채 세부 유형 */}
               <div>
-                <Label className="text-zinc-500 text-xs mb-1.5 block">연결된 자산 (담보 등)</Label>
+                <Label className="text-muted-foreground text-xs mb-1.5 block">부채 세부 유형</Label>
+                <div className="relative">
+                  <select
+                    value={dDebtType}
+                    onChange={e => setDDebtType(e.target.value as DebtType)}
+                    className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-9 text-sm text-foreground outline-none focus:border-ring transition-colors appearance-none"
+                  >
+                    {DEBT_TYPES.map(dt => (
+                      <option key={dt.value} value={dt.value}>{dt.label}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                </div>
+              </div>
+
+              {/* 연결 자산 Select — 주담대/전세 시 강조 */}
+              <div className={cn(
+                'rounded-xl p-3 -mx-1 transition-all',
+                needsLinkedAsset
+                  ? 'bg-amber-500/8 border border-amber-500/30'
+                  : 'bg-transparent border border-transparent'
+              )}>
+                <Label className={cn(
+                  'text-xs mb-1.5 flex items-center gap-1.5',
+                  needsLinkedAsset ? 'text-amber-400 font-medium' : 'text-muted-foreground'
+                )}>
+                  연결된 자산 (담보 등)
+                  {needsLinkedAsset && (
+                    <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded-md">
+                      {dDebtType === 'MORTGAGE' ? '주담대 담보 자산' : '전세 대상 자산'} 연결 권장
+                    </span>
+                  )}
+                </Label>
                 <div className="relative">
                   <select
                     value={linkedAssetId}
                     onChange={e => setLinkedAssetId(e.target.value)}
-                    className="w-full h-10 bg-zinc-900 border border-zinc-800 rounded-xl pl-4 pr-9 text-sm text-white outline-none focus:border-zinc-600 transition-colors appearance-none"
+                    className={cn(
+                      'w-full h-10 bg-card rounded-xl pl-4 pr-9 text-sm text-foreground outline-none transition-colors appearance-none',
+                      needsLinkedAsset && !linkedAssetId
+                        ? 'border border-amber-500/50 focus:border-amber-400'
+                        : 'border border-border focus:border-ring'
+                    )}
                   >
                     <option value="">없음</option>
                     {linkableAssets.map(a => (
                       <option key={a.id} value={a.id}>{a.name}</option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
                 </div>
-                {linkableAssets.length === 0 && (
-                  <p className="text-xs text-zinc-600 mt-1">등록된 자산이 없습니다.</p>
-                )}
+                {linkableAssets.length === 0 ? (
+                  <p className="text-xs text-muted-foreground/60 mt-1">등록된 자산이 없습니다.</p>
+                ) : needsLinkedAsset && !linkedAssetId ? (
+                  <p className="text-xs text-amber-500/70 mt-1">LTV 분석을 위해 연결 자산을 선택하면 좋아요.</p>
+                ) : null}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -488,19 +542,19 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
               <div className="grid grid-cols-2 gap-3">
                 {/* 상환 방식 */}
                 <div>
-                  <Label className="text-zinc-500 text-xs mb-1.5 block">상환 방식</Label>
+                  <Label className="text-muted-foreground text-xs mb-1.5 block">상환 방식</Label>
                   <div className="relative">
                     <select
                       value={dRepaymentType}
                       onChange={e => setDRepaymentType(e.target.value as RepaymentType | '')}
-                      className="w-full h-10 bg-zinc-900 border border-zinc-800 rounded-xl pl-4 pr-9 text-sm text-white outline-none focus:border-zinc-600 transition-colors appearance-none"
+                      className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-9 text-sm text-foreground outline-none focus:border-ring transition-colors appearance-none"
                     >
                       <option value="">선택 안 함</option>
                       {REPAYMENT_TYPES.map(rt => (
                         <option key={rt.value} value={rt.value}>{rt.label}</option>
                       ))}
                     </select>
-                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500 pointer-events-none" />
+                    <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
                   </div>
                 </div>
                 <DateField label="만기일" value={dMaturityDate} onChange={setDMaturityDate} />
@@ -510,7 +564,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
 
           {/* 가족 공유 설정 */}
           <div>
-            <Label className="text-zinc-400 text-xs mb-3 block">가족 공유 설정</Label>
+            <Label className="text-muted-foreground text-xs mb-3 block">가족 공유 설정</Label>
             <div className="space-y-2">
               {SHARE_LEVELS.map((s) => {
                 const ShareIcon = s.icon
@@ -522,19 +576,19 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
                     onClick={() => setShareLevel(s.value)}
                     className={cn(
                       'w-full flex items-center gap-3 p-3.5 rounded-xl border text-left transition-all',
-                      isSelected ? s.bg : 'bg-zinc-900 border-zinc-800 hover:border-zinc-700'
+                      isSelected ? s.bg : 'bg-card border-border hover:border-ring'
                     )}
                   >
-                    <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', isSelected ? 'bg-white/10' : 'bg-zinc-800')}>
-                      <ShareIcon className={cn('w-4 h-4', isSelected ? s.color : 'text-zinc-500')} />
+                    <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', isSelected ? 'bg-foreground/10' : 'bg-muted')}>
+                      <ShareIcon className={cn('w-4 h-4', isSelected ? s.color : 'text-muted-foreground')} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={cn('text-sm font-medium', isSelected ? 'text-white' : 'text-zinc-400')}>{s.label}</p>
-                      <p className="text-xs text-zinc-500 mt-0.5">{s.desc}</p>
+                      <p className={cn('text-sm font-medium', isSelected ? 'text-foreground' : 'text-muted-foreground')}>{s.label}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{s.desc}</p>
                     </div>
                     <div className={cn(
                       'w-4 h-4 rounded-full border-2 flex-shrink-0 transition-all',
-                      isSelected ? `border-current ${s.color} bg-current scale-110` : 'border-zinc-700'
+                      isSelected ? `border-current ${s.color} bg-current scale-110` : 'border-border'
                     )} />
                   </button>
                 )
@@ -550,8 +604,8 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
             className={cn(
               'w-full h-12 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2',
               isValid && !isLoading
-                ? 'bg-white text-black hover:bg-zinc-200 active:scale-[0.98]'
-                : 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+                ? 'bg-foreground text-background hover:bg-foreground/90 active:scale-[0.98]'
+                : 'bg-muted text-muted-foreground cursor-not-allowed'
             )}
           >
             {isLoading
@@ -568,7 +622,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
                 'w-full h-11 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2',
                 confirmDelete
                   ? 'bg-red-500/20 border border-red-500/40 text-red-400 hover:bg-red-500/30'
-                  : 'bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-red-400 hover:border-red-500/30'
+                  : 'bg-card border border-border text-muted-foreground hover:text-red-400 hover:border-red-500/30'
               )}
             >
               {isDeleting
@@ -579,7 +633,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
           )}
 
           <DrawerClose asChild>
-            <button onClick={handleClose} className="w-full h-10 rounded-xl text-sm text-zinc-500 hover:text-zinc-300 transition-colors">
+            <button onClick={handleClose} className="w-full h-10 rounded-xl text-sm text-muted-foreground hover:text-foreground/70 transition-colors">
               {confirmDelete ? '취소' : '닫기'}
             </button>
           </DrawerClose>

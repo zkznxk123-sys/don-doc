@@ -67,17 +67,17 @@ export default function TransactionsPage() {
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="min-h-screen bg-background text-foreground">
       <div className="max-w-3xl mx-auto px-4 py-8">
 
         {/* 헤더 */}
         <div className="flex items-center gap-3 mb-8">
-          <Link href="/dashboard" className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white transition-colors">
+          <Link href="/dashboard" className="p-2 rounded-xl bg-card border border-border text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="w-4 h-4" />
           </Link>
           <div>
-            <h1 className="text-xl font-bold text-white">전체 내역</h1>
-            <p className="text-xs text-zinc-500 mt-0.5">수입·지출 전체 조회</p>
+            <h1 className="text-xl font-bold text-foreground">전체 내역</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">수입·지출 전체 조회</p>
           </div>
         </div>
 
@@ -85,20 +85,20 @@ export default function TransactionsPage() {
         <div className="flex items-center justify-between mb-6">
           <button
             onClick={prevMonth}
-            className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors"
+            className="p-2 rounded-xl bg-card border border-border text-muted-foreground hover:text-foreground hover:border-ring transition-colors"
           >
             <ChevronLeft className="w-4 h-4" />
           </button>
           <div className="text-center">
-            <p className="text-lg font-bold text-white">{getMonthLabel(year, month)}</p>
+            <p className="text-lg font-bold text-foreground">{getMonthLabel(year, month)}</p>
             {isCurrentMonth && (
-              <span className="text-[10px] text-zinc-500 bg-zinc-900 px-2 py-0.5 rounded-full border border-zinc-800">이번 달</span>
+              <span className="text-[10px] text-muted-foreground bg-card px-2 py-0.5 rounded-full border border-border">이번 달</span>
             )}
           </div>
           <button
             onClick={nextMonth}
             disabled={isCurrentMonth}
-            className="p-2 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+            className="p-2 rounded-xl bg-card border border-border text-muted-foreground hover:text-foreground hover:border-ring transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
           >
             <ChevronRight className="w-4 h-4" />
           </button>
@@ -153,24 +153,24 @@ export default function TransactionsPage() {
         )}
 
         {/* 내역 테이블 */}
-        <div className="rounded-2xl border border-zinc-800 overflow-hidden">
+        <div className="rounded-2xl border border-border overflow-hidden">
           {/* 테이블 헤더 */}
-          <div className="grid grid-cols-[72px_1fr_88px_72px] px-4 py-2.5 bg-zinc-900 border-b border-zinc-800">
+          <div className="grid grid-cols-[72px_1fr_88px_72px] px-4 py-2.5 bg-card border-b border-border">
             {['날짜', '내용', '금액', '카테고리'].map(h => (
-              <span key={h} className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">{h}</span>
+              <span key={h} className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{h}</span>
             ))}
           </div>
 
           {loading ? (
             <div className="py-20 text-center">
-              <div className="inline-block w-5 h-5 border-2 border-zinc-700 border-t-zinc-400 rounded-full animate-spin" />
+              <div className="inline-block w-5 h-5 border-2 border-border border-t-muted-foreground rounded-full animate-spin" />
             </div>
           ) : transactions.length === 0 ? (
-            <div className="py-20 text-center text-zinc-600 text-sm">
+            <div className="py-20 text-center text-muted-foreground/60 text-sm">
               {getMonthLabel(year, month)}에 등록된 내역이 없습니다
             </div>
           ) : (
-            <div className="divide-y divide-zinc-800/60">
+            <div className="divide-y divide-border/60">
               {transactions.map(tx => (
                 <TransactionRow key={tx.id} tx={tx} />
               ))}
@@ -179,7 +179,7 @@ export default function TransactionsPage() {
         </div>
 
         {!loading && transactions.length > 0 && (
-          <p className="text-center text-xs text-zinc-600 mt-4">총 {transactions.length}건</p>
+          <p className="text-center text-xs text-muted-foreground/60 mt-4">총 {transactions.length}건</p>
         )}
       </div>
     </div>
@@ -192,26 +192,26 @@ function TransactionRow({ tx }: { tx: Transaction }) {
 
   return (
     <div className={cn(
-      'grid grid-cols-[72px_1fr_88px_72px] px-4 py-3 hover:bg-zinc-900/50 transition-colors',
+      'grid grid-cols-[72px_1fr_88px_72px] px-4 py-3 hover:bg-card/50 transition-colors',
       tx.isMasked && 'opacity-60'
     )}>
       <div>
-        <p className="text-xs text-zinc-500 tabular-nums">{dateStr}</p>
+        <p className="text-xs text-muted-foreground tabular-nums">{dateStr}</p>
         {tx.userName && (
-          <p className="text-[10px] text-zinc-600 mt-0.5 truncate">{tx.userName}</p>
+          <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">{tx.userName}</p>
         )}
       </div>
       <div className="min-w-0 pr-2">
         <p className={cn(
           'text-sm truncate',
-          tx.isMasked ? 'text-zinc-500 italic' : 'text-white'
+          tx.isMasked ? 'text-muted-foreground italic' : 'text-foreground'
         )}>
           {tx.description}
         </p>
       </div>
       <p className={cn(
         'text-sm tabular-nums text-right font-medium',
-        tx.amount > 0 ? 'text-emerald-400' : 'text-white'
+        tx.amount > 0 ? 'text-emerald-400' : 'text-foreground'
       )}>
         {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)}
       </p>
@@ -219,8 +219,8 @@ function TransactionRow({ tx }: { tx: Transaction }) {
         <span className={cn(
           'inline-block text-[10px] px-1.5 py-0.5 rounded-md truncate max-w-full',
           tx.isMasked
-            ? 'bg-zinc-800 text-zinc-600'
-            : 'bg-zinc-800 text-zinc-400'
+            ? 'bg-muted text-muted-foreground/60'
+            : 'bg-muted text-muted-foreground'
         )}>
           {tx.category}
         </span>

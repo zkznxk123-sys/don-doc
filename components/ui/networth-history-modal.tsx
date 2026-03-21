@@ -130,19 +130,19 @@ export function NetWorthHistoryModal({
       {/* Modal */}
       <div
         ref={modalRef}
-        className="relative w-full max-w-sm bg-zinc-900 border border-zinc-800 rounded-2xl shadow-2xl overflow-hidden"
+        className="relative w-full max-w-sm bg-card border border-border rounded-2xl shadow-2xl overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center">
               <TrendingUp className="w-4 h-4 text-blue-400" />
             </div>
-            <h2 className="text-sm font-semibold text-white">순자산 기록 추가</h2>
+            <h2 className="text-sm font-semibold text-foreground">순자산 기록 추가</h2>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-zinc-500 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+            className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -152,19 +152,19 @@ export function NetWorthHistoryModal({
         <div className="px-5 py-5 space-y-4">
           {/* 기준 연월 */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-zinc-400">기준 연월</label>
+            <label className="text-xs font-medium text-muted-foreground">기준 연월</label>
             <input
               type="month"
               value={yearMonth}
               max={defaultYearMonth}
               onChange={e => setYearMonth(e.target.value)}
-              className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors [color-scheme:dark]"
+              className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-blue-500 transition-colors [color-scheme:dark]"
             />
           </div>
 
           {/* 총 자산 */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-zinc-400">총 자산</label>
+            <label className="text-xs font-medium text-muted-foreground">총 자산</label>
             <div className="relative">
               <input
                 type="text"
@@ -172,15 +172,15 @@ export function NetWorthHistoryModal({
                 placeholder="0"
                 value={assetsRaw}
                 onChange={e => handleAssetsChange(e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-4 pr-8 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-blue-500 transition-colors tabular-nums"
+                className="w-full bg-muted border border-border rounded-xl pl-4 pr-8 py-3 text-sm text-foreground placeholder-muted-foreground/40 focus:outline-none focus:border-blue-500 transition-colors tabular-nums"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-zinc-500">원</span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">원</span>
             </div>
           </div>
 
           {/* 총 부채 */}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-zinc-400">총 부채</label>
+            <label className="text-xs font-medium text-muted-foreground">총 부채</label>
             <div className="relative">
               <input
                 type="text"
@@ -188,15 +188,15 @@ export function NetWorthHistoryModal({
                 placeholder="0"
                 value={liabilitiesRaw}
                 onChange={e => handleLiabilitiesChange(e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl pl-4 pr-8 py-3 text-sm text-white placeholder-zinc-600 focus:outline-none focus:border-red-500 transition-colors tabular-nums"
+                className="w-full bg-muted border border-border rounded-xl pl-4 pr-8 py-3 text-sm text-foreground placeholder-muted-foreground/40 focus:outline-none focus:border-red-500 transition-colors tabular-nums"
               />
-              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-zinc-500">원</span>
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">원</span>
             </div>
           </div>
 
           {/* 순자산 자동 계산 */}
-          <div className="bg-zinc-800/60 rounded-xl px-4 py-3 flex items-center justify-between">
-            <span className="text-xs text-zinc-500">순자산 (자동 계산)</span>
+          <div className="bg-muted/60 rounded-xl px-4 py-3 flex items-center justify-between">
+            <span className="text-xs text-muted-foreground">순자산 (자동 계산)</span>
             <span className={`text-sm font-bold tabular-nums ${netWorthColor}`}>
               {netWorth >= 0 ? '' : '-'}{formatCurrency(Math.abs(netWorth))}
             </span>
@@ -213,7 +213,7 @@ export function NetWorthHistoryModal({
           <button
             onClick={handleSave}
             disabled={saving || !yearMonth}
-            className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-700 disabled:text-zinc-500 disabled:cursor-not-allowed text-white text-sm font-semibold py-3 rounded-xl transition-colors"
+            className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed text-white text-sm font-semibold py-3 rounded-xl transition-colors"
           >
             {saving ? '저장 중...' : '저장'}
           </button>

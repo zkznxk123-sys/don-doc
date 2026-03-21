@@ -303,7 +303,7 @@ export function TransactionDrawer({
                   "px-5 py-2 rounded-full text-sm font-medium transition-all border",
                   isExpense
                     ? "bg-red-500/10 border-red-500/30 text-red-400"
-                    : "bg-zinc-800/50 border-zinc-800 text-zinc-500 hover:border-zinc-700"
+                    : "bg-muted/50 border-border text-muted-foreground hover:border-ring"
                 )}
               >
                 <Minus className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
@@ -315,7 +315,7 @@ export function TransactionDrawer({
                   "px-5 py-2 rounded-full text-sm font-medium transition-all border",
                   !isExpense
                     ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                    : "bg-zinc-800/50 border-zinc-800 text-zinc-500 hover:border-zinc-700"
+                    : "bg-muted/50 border-border text-muted-foreground hover:border-ring"
                 )}
               >
                 <Plus className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
@@ -341,14 +341,14 @@ export function TransactionDrawer({
                 placeholder="0"
                 autoFocus
                 className={cn(
-                  "bg-transparent text-center font-bold placeholder-zinc-700 outline-none tabular-nums tracking-tight text-5xl",
-                  isExpense ? "text-white" : "text-emerald-400"
+                  "bg-transparent text-center font-bold placeholder-muted-foreground/40 outline-none tabular-nums tracking-tight text-5xl",
+                  isExpense ? "text-foreground" : "text-emerald-400"
                 )}
                 style={{ width: `${Math.max(displayAmount.length, 1) * 1.8 + 1.5}rem` }}
               />
             </div>
             {amount && (
-              <p className="text-center text-xs text-zinc-600 mt-2 tabular-nums">
+              <p className="text-center text-xs text-muted-foreground/60 mt-2 tabular-nums">
                 {formatCurrency(isExpense ? -Number(amount) : Number(amount))}
               </p>
             )}
@@ -358,7 +358,7 @@ export function TransactionDrawer({
                 <button
                   key={q.label}
                   onClick={() => setAmount(String(Number(amount || '0') + q.value))}
-                  className="px-4 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-xs font-medium text-zinc-300 hover:bg-zinc-700 hover:text-white transition-colors active:scale-95"
+                  className="px-4 py-1.5 rounded-lg bg-muted border border-border text-xs font-medium text-foreground/70 hover:bg-accent hover:text-foreground transition-colors active:scale-95"
                 >
                   {q.label}
                 </button>
@@ -379,7 +379,7 @@ export function TransactionDrawer({
                   className={cn(
                     'flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all',
                     isAiCategorizing || (!description.trim() && !amount)
-                      ? 'text-zinc-600 cursor-not-allowed'
+                      ? 'text-muted-foreground/60 cursor-not-allowed'
                       : 'text-violet-400 hover:text-violet-300 hover:bg-violet-500/10 active:scale-95'
                   )}
                 >
@@ -402,15 +402,15 @@ export function TransactionDrawer({
                           className={cn(
                             "relative flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-medium transition-all border",
                             isSelected
-                              ? "bg-white text-black border-white shadow-[0_0_12px_rgba(255,255,255,0.1)]"
-                              : "bg-zinc-800/40 border-zinc-800 text-zinc-500 hover:border-zinc-700 hover:text-zinc-300"
+                              ? "bg-foreground text-background border-foreground shadow-[0_0_12px_rgba(255,255,255,0.1)]"
+                              : "bg-muted/40 border-border text-muted-foreground hover:border-ring hover:text-foreground/70"
                           )}
                         >
                           <span className="text-base">{cat.icon}</span>
                           {cat.name}
                           {isSelected && (
-                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-white rounded-full flex items-center justify-center shadow">
-                              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5.5L4 7.5L8 3" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-foreground rounded-full flex items-center justify-center shadow">
+                              <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5.5L4 7.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-background"/></svg>
                             </span>
                           )}
                         </button>
@@ -428,19 +428,19 @@ export function TransactionDrawer({
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full h-11 bg-zinc-800 rounded-xl px-4 border border-zinc-700 text-sm text-white outline-none focus:ring-2 focus:ring-zinc-600 focus:ring-offset-2 focus:ring-offset-zinc-900 transition-all [color-scheme:dark]"
+                className="w-full h-11 bg-muted rounded-xl px-4 border border-border text-sm text-foreground outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-all [color-scheme:dark]"
               />
             </div>
 
             {/* Description */}
             <div>
-              <Label className="mb-2.5 block">메모 <span className="text-zinc-600">(선택)</span></Label>
+              <Label className="mb-2.5 block">메모 <span className="text-muted-foreground/60">(선택)</span></Label>
               <input
                 type="text"
                 value={description}
                 onChange={(e) => handleDescriptionChange(e.target.value)}
                 placeholder="어디서, 무엇을 했나요? (예: 스타벅스)"
-                className="w-full h-11 bg-zinc-800 rounded-xl px-4 border border-zinc-700 text-sm text-white placeholder-zinc-600 outline-none focus:ring-2 focus:ring-zinc-600 focus:ring-offset-2 focus:ring-offset-zinc-900 transition-all"
+                className="w-full h-11 bg-muted rounded-xl px-4 border border-border text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-all"
               />
               {autoSuggestedCategory && (
                 <p className="text-xs text-emerald-400/80 mt-1.5 pl-1 flex items-center gap-1">
@@ -465,8 +465,8 @@ export function TransactionDrawer({
                   {isShared ? <Globe className="w-4.5 h-4.5" /> : <Lock className="w-4.5 h-4.5" />}
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-white">공동 지출로 기록</p>
-                  <p className="text-xs text-zinc-500 mt-0.5">
+                  <p className="text-sm font-medium text-foreground">공동 지출로 기록</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {isShared
                       ? '가족 모두가 상세 내용을 확인할 수 있어요'
                       : '가족에게는 금액만 노출됩니다 🔒'}
@@ -502,13 +502,13 @@ export function TransactionDrawer({
               className={cn(
                 "w-full py-4 rounded-xl text-sm font-semibold transition-all",
                 amount && category && !isSubmitting
-                  ? "bg-white text-black hover:bg-zinc-200 active:scale-[0.98]"
-                  : "bg-zinc-800 text-zinc-600 cursor-not-allowed"
+                  ? "bg-foreground text-background hover:bg-foreground/90 active:scale-[0.98]"
+                  : "bg-muted text-muted-foreground cursor-not-allowed"
               )}
             >
               {isSubmitting ? (
                 <span className="flex items-center justify-center gap-2">
-                  <span className="w-4 h-4 border-2 border-zinc-600 border-t-transparent rounded-full animate-spin" />
+                  <span className="w-4 h-4 border-2 border-muted-foreground border-t-transparent rounded-full animate-spin" />
                   {isEditMode ? '수정 중...' : '저장 중...'}
                 </span>
               ) : (
@@ -540,7 +540,7 @@ export function TransactionDrawer({
                     </button>
                     <button
                       onClick={() => setShowDeleteConfirm(false)}
-                      className="flex-1 py-3.5 rounded-xl text-sm font-medium text-zinc-400 border border-zinc-800 hover:border-zinc-600 hover:text-zinc-200 transition-all"
+                      className="flex-1 py-3.5 rounded-xl text-sm font-medium text-muted-foreground border border-border hover:border-ring hover:text-foreground transition-all"
                     >
                       취소
                     </button>
@@ -558,7 +558,7 @@ export function TransactionDrawer({
             )}
 
             <DrawerClose asChild>
-              <button className="w-full py-3 rounded-xl text-sm font-medium text-zinc-500 hover:text-zinc-300 transition-colors">
+              <button className="w-full py-3 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground/70 transition-colors">
                 취소
               </button>
             </DrawerClose>

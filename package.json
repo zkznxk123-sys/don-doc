@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "seed": "npx tsx prisma/seed.ts"
+    "seed": "npx tsx prisma/seed.ts",
+    "postinstall": "prisma generate"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
@@ -30,6 +31,7 @@
     "framer-motion": "^12.36.0",
     "lucide-react": "^0.453.0",
     "next": "14.2.5",
+    "next-themes": "^0.4.6",
     "prisma": "5.22.0",
     "react": "^18",
     "react-dom": "^18",

@@ -1,6 +1,9 @@
 import { redirect } from 'next/navigation'
+import { getAuthUser } from '@/lib/auth'
+import { LandingPage } from '@/components/marketing/LandingPage'
 
-export default function Home() {
-  // 미들웨어가 인증 상태를 체크하여 /login 또는 /dashboard로 리다이렉트
-  redirect('/dashboard')
+export default async function Home() {
+  const user = await getAuthUser()
+  if (user) redirect('/dashboard')
+  return <LandingPage />
 }

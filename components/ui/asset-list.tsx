@@ -69,12 +69,12 @@ function buildGroups(accounts: AccountInitialData[]): CategoryGroup[] {
 
 function CategoryHeader({ label, total }: { label: string; total: number }) {
   return (
-    <div className="flex items-center gap-3 px-5 py-2 bg-zinc-950/60 border-b border-zinc-800/50 sticky top-0 z-10">
-      <span className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wide whitespace-nowrap">
+    <div className="flex items-center gap-3 px-5 py-2 bg-background/60 border-b border-border/50 sticky top-0 z-10">
+      <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide whitespace-nowrap">
         {label}
       </span>
-      <div className="flex-1 h-px bg-zinc-800/70" />
-      <span className="text-[11px] text-zinc-600 tabular-nums whitespace-nowrap">
+      <div className="flex-1 h-px bg-border/70" />
+      <span className="text-[11px] text-muted-foreground/60 tabular-nums whitespace-nowrap">
         {formatLargeNumber(total)}
       </span>
     </div>
@@ -101,14 +101,14 @@ function AssetRow({
   if (account.isMasked) {
     return (
       <div className="w-full flex items-center gap-4 px-5 py-3.5 text-left opacity-60">
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-zinc-800">
-          <Lock className="w-4 h-4 text-zinc-500" />
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-muted">
+          <Lock className="w-4 h-4 text-muted-foreground" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-zinc-500">🔒 개인 자산</p>
-          <p className="text-xs text-zinc-600 mt-0.5">{meta.label} · {allocation}%</p>
+          <p className="text-sm font-medium text-muted-foreground">🔒 개인 자산</p>
+          <p className="text-xs text-muted-foreground/60 mt-0.5">{meta.label} · {allocation}%</p>
         </div>
-        <span className="text-sm font-semibold text-zinc-400 tabular-nums flex-shrink-0">
+        <span className="text-sm font-semibold text-muted-foreground tabular-nums flex-shrink-0">
           {formatCurrency(account.balance)}
         </span>
       </div>
@@ -118,7 +118,7 @@ function AssetRow({
   return (
     <button
       onClick={() => onEdit(account)}
-      className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-zinc-800/50 transition-colors text-left group"
+      className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-muted/50 transition-colors text-left group"
     >
       <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0', meta.bg)}>
         <MetaIcon className={cn('w-4 h-4', meta.color)} />
@@ -126,18 +126,18 @@ function AssetRow({
 
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
-          <p className="text-sm font-medium text-white truncate">{account.name}</p>
+          <p className="text-sm font-medium text-foreground truncate">{account.name}</p>
           {account.shareLevel === 'PUBLIC'
-            ? <Users className="w-3 h-3 text-zinc-600 flex-shrink-0" />
+            ? <Users className="w-3 h-3 text-muted-foreground/60 flex-shrink-0" />
             : account.shareLevel === 'BALANCE_ONLY'
-            ? <Eye className="w-3 h-3 text-zinc-600 flex-shrink-0" />
-            : <User className="w-3 h-3 text-zinc-600 flex-shrink-0" />
+            ? <Eye className="w-3 h-3 text-muted-foreground/60 flex-shrink-0" />
+            : <User className="w-3 h-3 text-muted-foreground/60 flex-shrink-0" />
           }
         </div>
         <div className="flex items-center gap-2 mt-0.5">
-          <p className="text-xs text-zinc-500">{meta.label} · {allocation}%</p>
+          <p className="text-xs text-muted-foreground">{meta.label} · {allocation}%</p>
           {hasLinkedDebts && netEquity != null && (
-            <p className="text-xs text-zinc-600 tabular-nums">
+            <p className="text-xs text-muted-foreground/60 tabular-nums">
               순자본 {netEquity >= 0
                 ? formatLargeNumber(netEquity)
                 : `-${formatLargeNumber(Math.abs(netEquity))}`}
@@ -147,10 +147,10 @@ function AssetRow({
       </div>
 
       <div className="flex items-center gap-2 flex-shrink-0">
-        <span className="text-sm font-semibold text-white tabular-nums">
+        <span className="text-sm font-semibold text-foreground tabular-nums">
           {formatCurrency(account.balance)}
         </span>
-        <ChevronRight className="w-4 h-4 text-zinc-700 group-hover:text-zinc-500 transition-colors" />
+        <ChevronRight className="w-4 h-4 text-border group-hover:text-muted-foreground transition-colors" />
       </div>
     </button>
   )
@@ -160,9 +160,9 @@ function AssetRow({
 
 function LinkedDebtRow({ debt }: { debt: { id: string; name: string; balance: number } }) {
   return (
-    <div className="flex items-center gap-2 pl-[52px] pr-5 py-2 border-t border-zinc-800/40 bg-zinc-950/30">
-      <CornerDownRight className="w-3 h-3 text-zinc-700 flex-shrink-0" />
-      <span className="text-xs text-zinc-500 flex-1 truncate">{debt.name}</span>
+    <div className="flex items-center gap-2 pl-[52px] pr-5 py-2 border-t border-border/40 bg-background/30">
+      <CornerDownRight className="w-3 h-3 text-border flex-shrink-0" />
+      <span className="text-xs text-muted-foreground flex-1 truncate">{debt.name}</span>
       <span className="text-xs font-medium text-red-400/80 tabular-nums flex-shrink-0">
         -{formatCurrency(debt.balance)}
       </span>
@@ -185,23 +185,23 @@ export function AssetList({ accounts, totalAssets, onEdit, onAdd }: AssetListPro
   const multiGroup = groups.length > 1
 
   return (
-    <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden">
+    <div className="bg-card rounded-2xl border border-border overflow-hidden">
       {/* 헤더 */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
-        <h3 className="text-sm font-semibold text-white">등록된 자산</h3>
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+        <h3 className="text-sm font-semibold text-foreground">등록된 자산</h3>
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-1.5 cursor-pointer select-none">
-            <span className="text-xs text-zinc-500">10만원 이하 제외</span>
+            <span className="text-xs text-muted-foreground">10만원 이하 제외</span>
             <Switch
               checked={excludeZero}
               onCheckedChange={setExcludeZero}
               className="scale-75 origin-right"
             />
           </label>
-          <span className="text-xs text-zinc-600">{visibleAccounts.length}개</span>
+          <span className="text-xs text-muted-foreground/60">{visibleAccounts.length}개</span>
           <button
             onClick={onAdd}
-            className="flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition-colors"
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             추가
@@ -218,7 +218,7 @@ export function AssetList({ accounts, totalAssets, onEdit, onAdd }: AssetListPro
               <CategoryHeader label={group.label} total={group.total} />
             )}
 
-            <div className={cn('divide-y divide-zinc-800/60', gi > 0 && !multiGroup && 'border-t border-zinc-800/60')}>
+            <div className={cn('divide-y divide-border/60', gi > 0 && !multiGroup && 'border-t border-border/60')}>
               {group.accounts.map((account) => (
                 <div key={account.id}>
                   <AssetRow
@@ -238,9 +238,9 @@ export function AssetList({ accounts, totalAssets, onEdit, onAdd }: AssetListPro
       </div>
 
       {/* 합계 */}
-      <div className="flex items-center justify-between px-5 py-3 bg-zinc-950/50 border-t border-zinc-800">
-        <span className="text-xs text-zinc-500">총 자산</span>
-        <span className="text-sm font-bold text-white tabular-nums">{formatCurrency(totalAssets)}</span>
+      <div className="flex items-center justify-between px-5 py-3 bg-background/50 border-t border-border">
+        <span className="text-xs text-muted-foreground">총 자산</span>
+        <span className="text-sm font-bold text-foreground tabular-nums">{formatCurrency(totalAssets)}</span>
       </div>
     </div>
   )
@@ -251,18 +251,18 @@ export function AssetList({ accounts, totalAssets, onEdit, onAdd }: AssetListPro
 export function LiabilityList({ liabilities, totalLiabilities, onEdit, onAdd }: LiabilityListProps) {
   if (liabilities.length === 0) {
     return (
-      <div className="bg-zinc-900 rounded-2xl border border-zinc-800">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
-          <h3 className="text-sm font-semibold text-white">부채</h3>
+      <div className="bg-card rounded-2xl border border-border">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+          <h3 className="text-sm font-semibold text-foreground">부채</h3>
           <button
             onClick={onAdd}
-            className="flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition-colors"
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             추가
           </button>
         </div>
-        <div className="px-5 py-8 text-center text-zinc-600 text-sm">
+        <div className="px-5 py-8 text-center text-muted-foreground/60 text-sm">
           등록된 부채가 없습니다
         </div>
       </div>
@@ -270,14 +270,14 @@ export function LiabilityList({ liabilities, totalLiabilities, onEdit, onAdd }: 
   }
 
   return (
-    <div className="bg-zinc-900 rounded-2xl border border-red-950/50 overflow-hidden">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-800">
-        <h3 className="text-sm font-semibold text-white">부채</h3>
+    <div className="bg-card rounded-2xl border border-red-950/50 overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+        <h3 className="text-sm font-semibold text-foreground">부채</h3>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-zinc-600">{liabilities.length}개</span>
+          <span className="text-xs text-muted-foreground/60">{liabilities.length}개</span>
           <button
             onClick={onAdd}
-            className="flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition-colors"
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             <Plus className="w-3.5 h-3.5" />
             추가
@@ -285,7 +285,7 @@ export function LiabilityList({ liabilities, totalLiabilities, onEdit, onAdd }: 
         </div>
       </div>
 
-      <div className="divide-y divide-zinc-800/60">
+      <div className="divide-y divide-border/60">
         {liabilities.map((account) => {
           const meta = TYPE_META[account.type] ?? TYPE_META['DEBT']
           const MetaIcon = meta.Icon
@@ -293,36 +293,36 @@ export function LiabilityList({ liabilities, totalLiabilities, onEdit, onAdd }: 
             <button
               key={account.id}
               onClick={() => onEdit(account)}
-              className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-zinc-800/50 transition-colors text-left group"
+              className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-muted/50 transition-colors text-left group"
             >
               <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0', meta.bg)}>
                 <MetaIcon className={cn('w-4 h-4', meta.color)} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <p className="text-sm font-medium text-white truncate">{account.name}</p>
+                  <p className="text-sm font-medium text-foreground truncate">{account.name}</p>
                   {account.shareLevel === 'PUBLIC'
-                    ? <Users className="w-3 h-3 text-zinc-600 flex-shrink-0" />
+                    ? <Users className="w-3 h-3 text-muted-foreground/60 flex-shrink-0" />
                     : account.shareLevel === 'BALANCE_ONLY'
-                    ? <Eye className="w-3 h-3 text-zinc-600 flex-shrink-0" />
-                    : <User className="w-3 h-3 text-zinc-600 flex-shrink-0" />
+                    ? <Eye className="w-3 h-3 text-muted-foreground/60 flex-shrink-0" />
+                    : <User className="w-3 h-3 text-muted-foreground/60 flex-shrink-0" />
                   }
                 </div>
-                <p className="text-xs text-zinc-500 mt-0.5">{meta.label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{meta.label}</p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <span className="text-sm font-semibold text-red-400 tabular-nums">
                   -{formatCurrency(account.balance)}
                 </span>
-                <ChevronRight className="w-4 h-4 text-zinc-700 group-hover:text-zinc-500 transition-colors" />
+                <ChevronRight className="w-4 h-4 text-border group-hover:text-muted-foreground transition-colors" />
               </div>
             </button>
           )
         })}
       </div>
 
-      <div className="flex items-center justify-between px-5 py-3 bg-zinc-950/50 border-t border-zinc-800">
-        <span className="text-xs text-zinc-500">총 부채</span>
+      <div className="flex items-center justify-between px-5 py-3 bg-background/50 border-t border-border">
+        <span className="text-xs text-muted-foreground">총 부채</span>
         <span className="text-sm font-bold text-red-400 tabular-nums">-{formatCurrency(totalLiabilities)}</span>
       </div>
     </div>

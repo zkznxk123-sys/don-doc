@@ -26,7 +26,7 @@ import {
 import type { MappingResult } from '@/app/api/ai/map-categories/route'
 import { InputGuide } from '@/components/dashboard/InputGuide'
 
-// ━━ 내부 타입 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+// ━━ 내부 타입 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 interface ParsedRow extends BulkTransactionRow {
   _error?: string
@@ -353,17 +353,17 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
 
   return (
     <Drawer open={isOpen} onOpenChange={v => { if (!v) handleClose() }}>
-      <DrawerContent className="bg-black border-t border-zinc-800 max-h-[92vh] flex flex-col">
+      <DrawerContent className="bg-background border-t border-border max-h-[92vh] flex flex-col">
         <DrawerHeader className="flex-shrink-0 pb-2">
           <div className="flex items-center justify-between">
-            <DrawerTitle className="text-white text-lg font-bold">엑셀 일괄 등록</DrawerTitle>
+            <DrawerTitle className="text-foreground text-lg font-bold">엑셀 일괄 등록</DrawerTitle>
             <DrawerClose asChild>
-              <button onClick={handleClose} className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors">
+              <button onClick={handleClose} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </DrawerClose>
           </div>
-          <p className="text-xs text-zinc-500 mt-1">.xlsx, .xls, .csv 파일을 지원합니다</p>
+          <p className="text-xs text-muted-foreground mt-1">.xlsx, .xls, .csv 파일을 지원합니다</p>
         </DrawerHeader>
 
         <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">
@@ -379,15 +379,15 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
               onClick={() => fileInputRef.current?.click()}
               className={cn(
                 'flex flex-col items-center justify-center gap-3 py-14 rounded-2xl border-2 border-dashed cursor-pointer transition-all',
-                isDragging ? 'border-white/40 bg-zinc-800/50' : 'border-zinc-700 hover:border-zinc-500 hover:bg-zinc-900/50'
+                isDragging ? 'border-foreground/40 bg-muted/50' : 'border-border hover:border-ring hover:bg-card/50'
               )}
             >
-              <div className="w-14 h-14 rounded-2xl bg-zinc-800 flex items-center justify-center">
-                <Upload className="w-6 h-6 text-zinc-400" />
+              <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center">
+                <Upload className="w-6 h-6 text-muted-foreground" />
               </div>
               <div className="text-center">
-                <p className="text-sm font-medium text-white">파일을 드래그하거나 탭해서 선택</p>
-                <p className="text-xs text-zinc-500 mt-1">뱅크샐러드 · 신한 · KB · 카카오페이 · 하나 · 우리</p>
+                <p className="text-sm font-medium text-foreground">파일을 드래그하거나 탭해서 선택</p>
+                <p className="text-xs text-muted-foreground mt-1">뱅크샐러드 · 신한 · KB · 카카오페이 · 하나 · 우리</p>
               </div>
               <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) processFile(f) }} />
             </div>
@@ -395,19 +395,19 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
           ) : (
             <>
               {/* ── 파일 정보 ── */}
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-zinc-900 border border-zinc-800">
-                <div className="w-9 h-9 rounded-xl bg-zinc-800 flex items-center justify-center flex-shrink-0">
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
+                <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
                   <FileSpreadsheet className={cn("w-4 h-4", isBanksalad ? "text-violet-400" : "text-emerald-400")} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{fileName}</p>
-                  <p className="text-xs text-zinc-500 mt-0.5">
+                  <p className="text-sm font-medium text-foreground truncate">{fileName}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     총 {rows.length}행
                     {errorRows.length > 0 && <span className="text-amber-400 ml-1">· {errorRows.length}행 오류</span>}
-                    {banksaladMeta?.skipped ? <span className="text-zinc-600 ml-1">· 이체 {banksaladMeta.skipped}건 제외</span> : null}
+                    {banksaladMeta?.skipped ? <span className="text-muted-foreground/60 ml-1">· 이체 {banksaladMeta.skipped}건 제외</span> : null}
                   </p>
                 </div>
-                <button onClick={handleReset} className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors">
+                <button onClick={handleReset} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -423,8 +423,8 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                     </p>
                     {banksaladMeta?.skipped ? (
                       <div className="flex items-center gap-1 mt-1">
-                        <SkipForward className="w-3 h-3 text-zinc-500" />
-                        <p className="text-[11px] text-zinc-500">"이체" {banksaladMeta.skipped}건 자동 제외</p>
+                        <SkipForward className="w-3 h-3 text-muted-foreground" />
+                        <p className="text-[11px] text-muted-foreground">"이체" {banksaladMeta.skipped}건 자동 제외</p>
                       </div>
                     ) : null}
                   </div>
@@ -438,9 +438,9 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-2.5 p-3 rounded-xl bg-zinc-900 border border-zinc-800">
-                  <AlertCircle className="w-4 h-4 text-zinc-500 flex-shrink-0" />
-                  <p className="text-xs text-zinc-400">양식 자동 감지 실패 — 아래 헤더 셀렉트에서 직접 지정해주세요</p>
+                <div className="flex items-center gap-2.5 p-3 rounded-xl bg-card border border-border">
+                  <AlertCircle className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <p className="text-xs text-muted-foreground">양식 자동 감지 실패 — 아래 헤더 셀렉트에서 직접 지정해주세요</p>
                 </div>
               )}
 
@@ -465,23 +465,23 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                     {visibility === 'SHARED' ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-white">
+                    <p className="text-sm font-medium text-foreground">
                       {visibility === 'SHARED' ? '전체 공개' : '금액만 공개'}
                     </p>
-                    <p className="text-[11px] text-zinc-500 mt-0.5">
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
                       {visibility === 'SHARED' ? '가족 모두가 상세 내용을 확인할 수 있어요' : '가족에게는 금액만 노출됩니다 🔒'}
                     </p>
                   </div>
                 </div>
-                <p className="text-[10px] text-zinc-600">탭하여 변경</p>
+                <p className="text-[10px] text-muted-foreground/60">탭하여 변경</p>
               </div>
 
               {/* ── 계좌 자동 매칭 안내 ── */}
-              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-zinc-900 border border-zinc-800">
-                <Link2 className="w-4 h-4 text-zinc-400 flex-shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-card border border-border">
+                <Link2 className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs font-medium text-zinc-300">계좌 자동 매칭</p>
-                  <p className="text-[11px] text-zinc-500 mt-0.5">
+                  <p className="text-xs font-medium text-foreground/70">계좌 자동 매칭</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
                     엑셀 내역에 포함된 결제수단 정보로 계좌가 자동 매칭됩니다.
                     {accountBalances.length > 0 && (
                       <span className="text-emerald-500 ml-1">
@@ -495,21 +495,21 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
               {/* ── 미리보기 테이블 ── */}
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-semibold text-zinc-400">미리보기</p>
-                  <p className="text-xs text-zinc-600">
+                  <p className="text-xs font-semibold text-muted-foreground">미리보기</p>
+                  <p className="text-xs text-muted-foreground/60">
                     {rows.length > PREVIEW_LIMIT ? `상위 ${PREVIEW_LIMIT}행 / 전체 ${rows.length}행` : `${rows.length}행`}
                   </p>
                 </div>
-                <div className="rounded-xl border border-zinc-800 overflow-hidden">
+                <div className="rounded-xl border border-border overflow-hidden">
                   {/* 헤더 */}
                   {isBanksalad ? (
-                    <div className="grid grid-cols-[86px_1fr_76px_100px] bg-zinc-900 border-b border-zinc-800 px-3 py-2">
+                    <div className="grid grid-cols-[86px_1fr_76px_100px] bg-card border-b border-border px-3 py-2">
                       {['날짜·시간', '내용 / 결제수단', '금액', 'AI 분류'].map(h => (
-                        <span key={h} className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">{h}</span>
+                        <span key={h} className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{h}</span>
                       ))}
                     </div>
                   ) : colMap ? (
-                    <div className="grid grid-cols-[100px_1fr_90px_80px] bg-zinc-900 border-b border-zinc-800">
+                    <div className="grid grid-cols-[100px_1fr_90px_80px] bg-card border-b border-border">
                       <ColSelect label="날짜"     value={colMap.date ?? ''}        options={headerOptions} onChange={v => handleColChange('date', v)}        hasValue={!!colMap.date} />
                       <ColSelect label="내용"     value={colMap.description ?? ''} options={headerOptions} onChange={v => handleColChange('description', v)} hasValue={!!colMap.description} />
                       <ColSelect label="금액"     value={colMap.amount ?? colMap.withdraw ?? ''} options={headerOptions} onChange={v => handleColChange('amount', v)} hasValue={!!(colMap.amount || colMap.withdraw)} />
@@ -518,7 +518,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                   ) : null}
 
                   {/* 바디 */}
-                  <div className="divide-y divide-zinc-800/60 max-h-[300px] overflow-y-auto">
+                  <div className="divide-y divide-border/60 max-h-[300px] overflow-y-auto">
                     {rows.slice(0, PREVIEW_LIMIT).map((row, i) =>
                       isBanksalad
                         ? <BanksaladPreviewRow key={i} row={row} aiStatus={aiStatus} />
@@ -533,7 +533,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                 <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-950/20 border border-amber-800/40">
                   <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
                   <p className="text-xs text-amber-400">
-                    {errorRows.length}행 오류 제외 · <strong className="text-white">{validRows.length}건</strong> 등록 예정
+                    {errorRows.length}행 오류 제외 · <strong className="text-foreground">{validRows.length}건</strong> 등록 예정
                   </p>
                 </div>
               )}
@@ -550,8 +550,8 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
               className={cn(
                 'w-full h-12 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2',
                 isLoading || validRows.length === 0
-                  ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
-                  : 'bg-white text-black hover:bg-zinc-200 active:scale-[0.98]'
+                  ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                  : 'bg-foreground text-background hover:bg-foreground/90 active:scale-[0.98]'
               )}
             >
               {isLoading
@@ -573,11 +573,11 @@ function AiMappingStatus({
   if (status === 'idle') return null
 
   if (status === 'loading') return (
-    <div className="flex items-center gap-2.5 p-3 rounded-xl bg-zinc-900 border border-zinc-800">
+    <div className="flex items-center gap-2.5 p-3 rounded-xl bg-card border border-border">
       <Loader2 className="w-4 h-4 text-violet-400 animate-spin flex-shrink-0" />
       <div>
         <p className="text-xs font-semibold text-violet-300">AI 카테고리 분류 중...</p>
-        <p className="text-[11px] text-zinc-500 mt-0.5">고유 내역 {totalUnique}건을 분류하고 있어요</p>
+        <p className="text-[11px] text-muted-foreground mt-0.5">고유 내역 {totalUnique}건을 분류하고 있어요</p>
       </div>
     </div>
   )
@@ -593,10 +593,10 @@ function AiMappingStatus({
   )
 
   if (status === 'error') return (
-    <div className="flex items-center justify-between p-3 rounded-xl bg-zinc-900 border border-zinc-800">
+    <div className="flex items-center justify-between p-3 rounded-xl bg-card border border-border">
       <div className="flex items-center gap-2">
-        <AlertCircle className="w-4 h-4 text-zinc-500 flex-shrink-0" />
-        <p className="text-xs text-zinc-500">AI 분류 실패 — 기존 매핑 사용 중</p>
+        <AlertCircle className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        <p className="text-xs text-muted-foreground">AI 분류 실패 — 기존 매핑 사용 중</p>
       </div>
       <button onClick={onRetry} className="text-[11px] text-violet-400 hover:text-violet-300 transition-colors">
         재시도
@@ -613,14 +613,14 @@ function BanksaladPreviewRow({ row, aiStatus }: { row: ParsedRow; aiStatus: AiSt
   return (
     <div className={cn('grid grid-cols-[86px_1fr_76px_100px] px-3 py-2.5', row._error && 'bg-red-950/20')}>
       <div>
-        <p className={cn('text-xs tabular-nums', row._error ? 'text-red-400' : 'text-zinc-400')}>{row.date || '—'}</p>
-        {row._time && <p className="text-[10px] text-zinc-600">{row._time}</p>}
+        <p className={cn('text-xs tabular-nums', row._error ? 'text-red-400' : 'text-muted-foreground')}>{row.date || '—'}</p>
+        {row._time && <p className="text-[10px] text-muted-foreground/60">{row._time}</p>}
       </div>
       <div className="min-w-0 pr-2">
-        <p className="text-xs text-white truncate">{row.description || <span className="text-zinc-600 italic">내용 없음</span>}</p>
-        {row._paymentMethod && <p className="text-[10px] text-zinc-600 truncate">{row._paymentMethod}</p>}
+        <p className="text-xs text-foreground truncate">{row.description || <span className="text-muted-foreground/60 italic">내용 없음</span>}</p>
+        {row._paymentMethod && <p className="text-[10px] text-muted-foreground/60 truncate">{row._paymentMethod}</p>}
       </div>
-      <p className={cn('text-xs tabular-nums text-right', row._error ? 'text-red-400' : row.amount > 0 ? 'text-emerald-400' : 'text-white')}>
+      <p className={cn('text-xs tabular-nums text-right', row._error ? 'text-red-400' : row.amount > 0 ? 'text-emerald-400' : 'text-foreground')}>
         {row._error ? '?' : (row.amount > 0 ? '+' : '') + formatCurrency(row.amount)}
       </p>
       <div className="pl-1 min-w-0">
@@ -628,15 +628,15 @@ function BanksaladPreviewRow({ row, aiStatus }: { row: ParsedRow; aiStatus: AiSt
           <span className="text-red-400 text-[10px]">{row._error}</span>
         ) : row.categoryId ? (
           <>
-            <p className="text-xs text-white truncate">{row.categoryIcon} {row.categoryName}</p>
-            {row._banksaladCategory && <p className="text-[10px] text-zinc-600 truncate">{row._banksaladCategory}</p>}
+            <p className="text-xs text-foreground truncate">{row.categoryIcon} {row.categoryName}</p>
+            {row._banksaladCategory && <p className="text-[10px] text-muted-foreground/60 truncate">{row._banksaladCategory}</p>}
           </>
         ) : aiStatus === 'loading' ? (
-          <p className="text-[10px] text-zinc-600 animate-pulse">분류 중...</p>
+          <p className="text-[10px] text-muted-foreground/60 animate-pulse">분류 중...</p>
         ) : (
           <>
-            <p className="text-xs text-zinc-400 truncate">{row.category}</p>
-            {row._banksaladCategory && <p className="text-[10px] text-zinc-600 truncate">{row._banksaladCategory}</p>}
+            <p className="text-xs text-muted-foreground truncate">{row.category}</p>
+            {row._banksaladCategory && <p className="text-[10px] text-muted-foreground/60 truncate">{row._banksaladCategory}</p>}
           </>
         )}
       </div>
@@ -649,20 +649,20 @@ function BanksaladPreviewRow({ row, aiStatus }: { row: ParsedRow; aiStatus: AiSt
 function GenericPreviewRow({ row, aiStatus }: { row: ParsedRow; aiStatus: AiStatus }) {
   return (
     <div className={cn('grid grid-cols-[100px_1fr_90px_80px] px-3 py-2.5', row._error && 'bg-red-950/20')}>
-      <span className={cn('text-xs tabular-nums', row._error === '날짜 오류' ? 'text-red-400' : 'text-zinc-400')}>{row.date || '—'}</span>
-      <span className="text-xs text-white truncate pr-2">{row.description || <span className="text-zinc-600 italic">내용 없음</span>}</span>
-      <span className={cn('text-xs tabular-nums text-right', row._error === '금액 오류' ? 'text-red-400' : row.amount > 0 ? 'text-emerald-400' : 'text-white')}>
+      <span className={cn('text-xs tabular-nums', row._error === '날짜 오류' ? 'text-red-400' : 'text-muted-foreground')}>{row.date || '—'}</span>
+      <span className="text-xs text-foreground truncate pr-2">{row.description || <span className="text-muted-foreground/60 italic">내용 없음</span>}</span>
+      <span className={cn('text-xs tabular-nums text-right', row._error === '금액 오류' ? 'text-red-400' : row.amount > 0 ? 'text-emerald-400' : 'text-foreground')}>
         {row._error === '금액 오류' ? '?' : (row.amount > 0 ? '+' : '') + formatCurrency(row.amount)}
       </span>
       <div className="pl-1 min-w-0">
         {row._error ? (
           <span className="text-red-400 text-[10px]">{row._error}</span>
         ) : row.categoryId ? (
-          <span className="text-xs text-white">{row.categoryIcon} {row.categoryName}</span>
+          <span className="text-xs text-foreground">{row.categoryIcon} {row.categoryName}</span>
         ) : aiStatus === 'loading' ? (
-          <span className="text-[10px] text-zinc-600 animate-pulse">분류 중...</span>
+          <span className="text-[10px] text-muted-foreground/60 animate-pulse">분류 중...</span>
         ) : (
-          <span className="text-xs text-zinc-500">{row.category}</span>
+          <span className="text-xs text-muted-foreground">{row.category}</span>
         )}
       </div>
     </div>
@@ -675,17 +675,17 @@ function ColSelect({ label, value, options, onChange, hasValue }: {
   label: string; value: string; options: string[]; onChange: (v: string) => void; hasValue: boolean
 }) {
   return (
-    <div className="px-2 py-2 border-r border-zinc-800 last:border-r-0">
+    <div className="px-2 py-2 border-r border-border last:border-r-0">
       <div className="flex items-center gap-1 mb-1">
-        {hasValue ? <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500 flex-shrink-0" /> : <AlertCircle className="w-2.5 h-2.5 text-zinc-600 flex-shrink-0" />}
-        <span className="text-[9px] font-semibold text-zinc-500 uppercase tracking-wide truncate">{label}</span>
+        {hasValue ? <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500 flex-shrink-0" /> : <AlertCircle className="w-2.5 h-2.5 text-muted-foreground/60 flex-shrink-0" />}
+        <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wide truncate">{label}</span>
       </div>
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
         className={cn(
           'w-full text-[10px] rounded px-1 py-0.5 border outline-none transition-colors truncate',
-          hasValue ? 'bg-zinc-800 text-zinc-200 border-zinc-700' : 'bg-zinc-800/50 text-zinc-500 border-zinc-800'
+          hasValue ? 'bg-muted text-foreground/80 border-border' : 'bg-muted/50 text-muted-foreground border-border/50'
         )}
       >
         <option value="">미지정</option>

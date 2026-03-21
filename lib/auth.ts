@@ -19,6 +19,27 @@ export interface AuthUser {
 export async function getAuthUser(): Promise<AuthUser | null> {
   try {
     const cookieStore = cookies()
+
+    // ── 데모 세션 (Supabase 없이 동작) ────────────────────────────────────────
+    const demoSessionId = cookieStore.get('demo_session')?.value
+    if (demoSessionId) {
+      const prismaUser = await prisma.user.findFirst({
+        where: { id: demoSessionId },
+        include: { family: true },
+      })
+      if (prismaUser) {
+        return {
+          id: prismaUser.id,
+          email: prismaUser.email,
+          name: prismaUser.name,
+          role: prismaUser.role as 'CFO' | 'MEMBER',
+          familyId: prismaUser.familyId,
+          familyName: prismaUser.family?.name ?? null,
+        }
+      }
+    }
+
+    // ── 일반 Supabase 세션 ─────────────────────────────────────────────────────
     const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
     const { data: { session } } = await supabase.auth.getSession()
     const authUser = session?.user
