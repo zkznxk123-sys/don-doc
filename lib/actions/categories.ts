@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
-import { CategoryType, AccountType } from '@prisma/client'
+import type { CategoryType, AccountType } from '@prisma/client'
 import { DEFAULT_ACCOUNT_TYPE_LABELS } from '@/lib/utils/account-type-labels'
 
 export interface CategoryItem {
