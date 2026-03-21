@@ -1,7 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Prisma가 빌드 타임에 DATABASE_URL 없이 모듈 로드 시 실패하지 않도록
-  // 실제 DB 연결은 런타임에만 발생하므로 더미값으로 충분합니다.
+  // @prisma/client은 네이티브 바이너리(.so.node)를 사용하므로
+  // webpack이 번들링하지 않고 Node.js가 직접 require()하도록 설정합니다.
+  // 이렇게 하면 빌드 타임 "collect page data" 단계에서 바이너리 로드를 시도하지 않습니다.
+  experimental: {
+    serverComponentsExternalPackages: ['@prisma/client', '.prisma/client'],
+  },
   env: {
     DATABASE_URL: process.env.DATABASE_URL ?? 'postgresql://placeholder:placeholder@localhost:5432/placeholder',
     DIRECT_URL: process.env.DIRECT_URL ?? 'postgresql://placeholder:placeholder@localhost:5432/placeholder',
