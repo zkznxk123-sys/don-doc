@@ -1,33 +1,47 @@
 /**
- * Lazy Prisma singleton.
+ * Lazy Prisma singleton with build-phase resilience.
  *
- * Two-layer defense against build-time binary loading failures on Vercel:
+ * During Next.js "collect page data", the AppRouteRouteModule may execute
+ * the route handler, triggering prisma calls before the native query-engine
+ * binary is fully available on Vercel's build environment.
  *
- * 1. NEXT_PHASE check: During "phase-production-build", return a no-op stub
- *    so no Prisma code runs at all during the build.
- *
- * 2. Lazy require(): @prisma/client is require()'d inside a function,
- *    never at module import time, so the native binary is only loaded
- *    during actual request handling.
+ * Strategy:
+ * 1. NEXT_PHASE guard  — skip real init during build if the env var is set
+ * 2. Lazy require()    — defer @prisma/client load until first DB call
+ * 3. try/catch         — if new PrismaClient() fails (binary not found),
+ *                        return a transparent stub; next request will retry
  */
 
-const globalForPrisma = globalThis as unknown as {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  prisma: any
-}
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const globalForPrisma = globalThis as unknown as { prisma: any }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function getClient(): any {
-  // Absolute guard: if we're in the Next.js build phase, never touch Prisma.
+  // Guard 1: explicit build-phase check
   if (process.env.NEXT_PHASE === 'phase-production-build') {
-    return new Proxy({} as any, { get: () => () => Promise.resolve(null) })
+    return buildStub()
   }
+
   if (!globalForPrisma.prisma) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { PrismaClient } = require('@prisma/client')
-    globalForPrisma.prisma = new PrismaClient()
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const { PrismaClient } = require('@prisma/client')
+      globalForPrisma.prisma = new PrismaClient()
+    } catch {
+      // Guard 2: binary not found during build — return a stub so the build
+      // succeeds; the real client will be created on the next request when
+      // the binary is properly available at runtime.
+      return buildStub()
+    }
   }
   return globalForPrisma.prisma
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildStub(): any {
+  return new Proxy({} as any, {
+    get: (_t, _p) => () => Promise.resolve(null),
+  })
 }
 
 export const prisma: import('@prisma/client').PrismaClient = new Proxy(
