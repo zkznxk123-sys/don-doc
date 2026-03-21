@@ -6,10 +6,6 @@ const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ['@prisma/client', '.prisma/client'],
   },
-  env: {
-    DATABASE_URL: process.env.DATABASE_URL ?? 'postgresql://placeholder:placeholder@localhost:5432/placeholder',
-    DIRECT_URL: process.env.DIRECT_URL ?? 'postgresql://placeholder:placeholder@localhost:5432/placeholder',
-  },
 }
 
 module.exports = nextConfig
