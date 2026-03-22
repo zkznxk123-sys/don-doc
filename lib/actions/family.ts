@@ -177,6 +177,10 @@ export async function resetFamilyData(
       prisma.budget.deleteMany({
         where: { familyId },
       }),
+      // 순자산 스냅샷 삭제
+      prisma.netWorthSnapshot.deleteMany({
+        where: { familyId },
+      }),
       // 해당 가족의 모든 Account 잔액 0으로 초기화
       prisma.account.updateMany({
         where: { familyId },
