@@ -6,6 +6,7 @@ import { useDashboardActions } from './DashboardShell'
 import { NAV_ITEMS } from './AppSidebar'
 import { cn } from '@/lib/utils'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { UserButton } from '@clerk/nextjs'
 
 const EXTRA_TITLES: Record<string, string> = {
   '/dashboard/family': '가족 관리',
@@ -62,6 +63,7 @@ export function TopBar({ onToggleSidebar }: TopBarProps) {
           </>
         )}
         <ThemeToggle />
+        <UserButton />
       </div>
     </header>
   )

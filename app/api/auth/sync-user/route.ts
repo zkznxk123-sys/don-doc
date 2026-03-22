@@ -1,25 +1,38 @@
 export const dynamic = 'force-dynamic'
 
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { auth, currentUser } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 /**
- * Supabase auth.user → Prisma User 동기화
- * 로그인/회원가입 직후 클라이언트에서 호출
+ * Clerk userId → Prisma User 동기화
+ * 로그인 직후 또는 온보딩에서 초대 코드와 함께 호출
  */
 export async function POST(req: Request) {
   try {
-    const cookieStore = cookies()
-    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
-    const { data: { session } } = await supabase.auth.getSession()
-    const authUser = session?.user
-
-    if (!authUser) {
+    const { userId: clerkId } = await auth()
+    if (!clerkId) {
       return NextResponse.json(
         { success: false, error: '인증되지 않은 사용자입니다.' },
         { status: 401 }
+      )
+    }
+
+    const clerkUser = await currentUser()
+    if (!clerkUser) {
+      return NextResponse.json(
+        { success: false, error: '사용자 정보를 가져올 수 없습니다.' },
+        { status: 401 }
+      )
+    }
+
+    const email =
+      clerkUser.emailAddresses.find(e => e.id === clerkUser.primaryEmailAddressId)?.emailAddress
+      ?? clerkUser.emailAddresses[0]?.emailAddress
+    if (!email) {
+      return NextResponse.json(
+        { success: false, error: '이메일 정보가 없습니다.' },
+        { status: 400 }
       )
     }
 
@@ -32,32 +45,52 @@ export async function POST(req: Request) {
       // body 없는 경우 무시
     }
 
-    // 이미 Prisma User가 있는지 확인
-    const existingUser = await prisma.user.findFirst({
-      where: { email: authUser.email! },
+    const displayName =
+      [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ')
+      || email.split('@')[0]
+
+    // 이미 Prisma User가 있는지 확인 (clerkId 기준)
+    const existingByClerkId = await prisma.user.findUnique({
+      where: { clerkId },
       include: { family: true },
     })
 
-    if (existingUser) {
+    if (existingByClerkId) {
       return NextResponse.json({
         success: true,
         user: {
-          id: existingUser.id,
-          email: existingUser.email,
-          name: existingUser.name,
-          role: existingUser.role,
-          familyId: existingUser.familyId,
-          familyName: existingUser.family?.name ?? null,
+          id: existingByClerkId.id,
+          email: existingByClerkId.email,
+          name: existingByClerkId.name,
+          role: existingByClerkId.role,
+          familyId: existingByClerkId.familyId,
+          familyName: existingByClerkId.family?.name ?? null,
         },
       })
     }
 
-    // 신규 사용자
-    const displayName = authUser.user_metadata?.name
-      || authUser.email?.split('@')[0]
-      || '사용자'
+    // 이메일로 기존 유저 있으면 clerkId 연결
+    const existingByEmail = await prisma.user.findUnique({ where: { email } })
+    if (existingByEmail) {
+      const updated = await prisma.user.update({
+        where: { id: existingByEmail.id },
+        data: { clerkId, name: existingByEmail.name ?? displayName },
+        include: { family: true },
+      })
+      return NextResponse.json({
+        success: true,
+        user: {
+          id: updated.id,
+          email: updated.email,
+          name: updated.name,
+          role: updated.role,
+          familyId: updated.familyId,
+          familyName: updated.family?.name ?? null,
+        },
+      })
+    }
 
-    // 초대 코드가 있으면 해당 가족에 MEMBER로 합류
+    // 신규 사용자: 초대 코드가 있으면 해당 가족에 MEMBER로 합류
     if (inviteCode) {
       const invite = await prisma.familyInvite.findUnique({
         where: { code: inviteCode.toUpperCase().trim() },
@@ -67,17 +100,17 @@ export async function POST(req: Request) {
       if (invite && invite.expiresAt > new Date() && !invite.usedBy) {
         const joinedUser = await prisma.user.create({
           data: {
-            email: authUser.email!,
+            clerkId,
+            email,
             name: displayName,
             role: 'MEMBER',
             familyId: invite.familyId,
           },
         })
 
-        // 초대 코드 사용 처리
         await prisma.familyInvite.update({
           where: { id: invite.id },
-          data: { usedBy: authUser.email, usedAt: new Date() },
+          data: { usedBy: email, usedAt: new Date() },
         })
 
         return NextResponse.json({
@@ -98,10 +131,7 @@ export async function POST(req: Request) {
 
     // 초대 코드 없거나 유효하지 않은 경우: familyId 없이 유저만 생성 → /onboarding에서 선택
     const newUser = await prisma.user.create({
-      data: {
-        email: authUser.email!,
-        name: displayName,
-      },
+      data: { clerkId, email, name: displayName },
     })
 
     return NextResponse.json({

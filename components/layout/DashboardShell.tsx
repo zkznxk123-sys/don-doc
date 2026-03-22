@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, createContext, useContext, useCallback, useEffect } from 'react'
+import { useClerk } from '@clerk/nextjs'
 import { AppSidebar } from './AppSidebar'
 import { TopBar } from './TopBar'
 import { TransactionDrawer, type EditTransactionData } from '@/components/ui/transaction-drawer'
@@ -44,12 +45,8 @@ export function DashboardShell({
   user: ShellUser
   children: React.ReactNode
 }) {
+  const { signOut } = useClerk()
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const [isDemo, setIsDemo] = useState(false)
-
-  useEffect(() => {
-    setIsDemo(document.cookie.includes('is_demo=1'))
-  }, [])
   const [editTransaction, setEditTransaction] = useState<EditTransactionData | null>(null)
   const [isTransactionOpen, setIsTransactionOpen] = useState(false)
   const [isExcelOpen, setIsExcelOpen] = useState(false)
@@ -88,24 +85,10 @@ export function DashboardShell({
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
           user={user}
-          onLogout={async () => {
-            await fetch('/api/auth/logout', { method: 'POST' })
-            window.location.href = '/login'
-          }}
+          onLogout={() => signOut({ redirectUrl: '/sign-in' })}
         />
 
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-          {isDemo && (
-            <div className="flex-shrink-0 flex items-center justify-between gap-3 px-4 py-2 bg-amber-50 dark:bg-amber-500/10 border-b border-amber-200 dark:border-amber-500/20 text-xs text-amber-700 dark:text-amber-300">
-              <span>🎭 데모 모드 — 실제 데이터가 아닙니다.</span>
-              <a
-                href="/api/auth/logout?redirect=/"
-                className="underline underline-offset-2 hover:text-amber-200 transition-colors"
-              >
-                나가기
-              </a>
-            </div>
-          )}
           <TopBar
             sidebarOpen={sidebarOpen}
             onToggleSidebar={() => setSidebarOpen(prev => !prev)}

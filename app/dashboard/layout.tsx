@@ -9,7 +9,7 @@ export default async function DashboardLayout({
 }) {
   const user = await getAuthUser()
 
-  if (!user) redirect('/login')
+  if (!user) redirect('/sign-in')
   if (!user.familyId) redirect('/onboarding')
 
   return (

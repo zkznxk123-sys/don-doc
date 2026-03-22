@@ -97,6 +97,7 @@ model FamilyInvite {
 
 model User {
   id            String       @id @default(cuid())
+  clerkId       String?      @unique // Clerk user ID (user_xxxx)
   email         String       @unique
   name          String?
   role          Role         @default(MEMBER)

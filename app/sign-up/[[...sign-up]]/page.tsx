@@ -1,0 +1,51 @@
+import { SignUp } from '@clerk/nextjs'
+
+interface Props {
+  searchParams: { code?: string }
+}
+
+export default function SignUpPage({ searchParams }: Props) {
+  const inviteCode = searchParams.code
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* 상단 브랜드 */}
+      <div className="flex items-center px-8 h-16 border-b border-border/40">
+        <span className="text-sm font-bold tracking-tight text-foreground font-serif">돈독</span>
+      </div>
+
+      {/* 콘텐츠 */}
+      <div className="flex flex-1 items-center justify-center px-4 py-16">
+        <div className="w-full max-w-md">
+          {/* 헤딩 */}
+          <div className="mb-8 text-center">
+            <h1 className="text-2xl font-bold tracking-tight font-serif text-foreground mb-2">
+              무료로 시작하세요
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              가입은 1분 · 데이터는 평생 내 것
+            </p>
+          </div>
+
+          {/* Clerk SignUp 컴포넌트 */}
+          <SignUp
+            fallbackRedirectUrl={inviteCode ? `/onboarding?code=${inviteCode}` : '/onboarding'}
+            signInUrl="/sign-in"
+            appearance={{
+              layout: {
+                logoPlacement: 'none',
+                socialButtonsVariant: 'blockButton',
+                socialButtonsPlacement: 'top',
+              },
+            }}
+          />
+        </div>
+      </div>
+
+      {/* 푸터 */}
+      <div className="px-8 py-6 text-center border-t border-border/40">
+        <p className="text-xs text-muted-foreground/50">© 2025 돈독 · 가족 재정관리 플랫폼</p>
+      </div>
+    </div>
+  )
+}

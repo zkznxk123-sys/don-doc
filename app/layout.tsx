@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { Inter, Noto_Serif } from "next/font/google"
 import { Toaster } from "sonner"
 import { ThemeProvider } from "@/components/ThemeProvider"
+import { ClerkThemeProvider } from "@/components/ClerkThemeProvider"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
@@ -29,8 +30,10 @@ export default function RootLayout({
           defaultTheme="system"
           enableSystem
         >
-          {children}
-          <Toaster theme="system" position="top-center" richColors />
+          <ClerkThemeProvider>
+            {children}
+            <Toaster theme="system" position="top-center" richColors />
+          </ClerkThemeProvider>
         </ThemeProvider>
       </body>
     </html>
