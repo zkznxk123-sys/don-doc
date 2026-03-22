@@ -73,7 +73,7 @@ const AVATAR_COLORS = [
 ]
 function UserAvatar({ name, userId, isMe }: { name: string | null; userId: string; isMe: boolean }) {
   const letter = name?.[0]?.toUpperCase() ?? '?'
-  const color = isMe ? 'bg-zinc-500' : AVATAR_COLORS[userId.charCodeAt(0) % AVATAR_COLORS.length]
+  const color = isMe ? 'bg-muted-foreground/40' : AVATAR_COLORS[userId.charCodeAt(0) % AVATAR_COLORS.length]
   return (
     <span className={cn('inline-flex w-4 h-4 rounded-full items-center justify-center text-[9px] font-bold text-white flex-shrink-0', color)}>
       {letter}
@@ -107,7 +107,7 @@ export function TransactionFeed({
   const groups = groupByDate(limited)
 
   if (groups.length === 0) {
-    return <p className="text-center py-12 text-sm text-zinc-500">{emptyMessage}</p>
+    return <p className="text-center py-12 text-sm text-muted-foreground">{emptyMessage}</p>
   }
 
   return (
@@ -116,18 +116,22 @@ export function TransactionFeed({
         <div key={group.date}>
           {/* ── 날짜 헤더 ── */}
           <div className="flex items-center gap-3 mb-2 px-1">
-            <span className="text-xs font-semibold text-zinc-400 whitespace-nowrap">{group.label}</span>
-            <div className="flex-1 h-px bg-zinc-800/80" />
+            <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap">{group.label}</span>
+            <div className="flex-1 h-px bg-border" />
             <span className={cn(
               'text-xs font-medium tabular-nums whitespace-nowrap',
-              group.dailyNet > 0 ? 'text-emerald-500' : group.dailyNet < 0 ? 'text-zinc-400' : 'text-zinc-600'
+              group.dailyNet > 0
+                ? 'text-emerald-600 dark:text-emerald-400'
+                : group.dailyNet < 0
+                ? 'text-muted-foreground'
+                : 'text-muted-foreground/60'
             )}>
               {group.dailyNet > 0 ? '+' : ''}{formatCurrency(group.dailyNet)}
             </span>
           </div>
 
           {/* ── 거래 목록 ── */}
-          <div className="divide-y divide-zinc-800/60">
+          <div className="divide-y divide-border/60">
             {group.items.map(tx => {
               const isMe = tx.userId === currentUserId
               const canEdit = !tx.isMasked && (isMe || userRole === 'CFO') && !!onEdit
@@ -140,17 +144,17 @@ export function TransactionFeed({
                   onClick={canEdit ? () => onEdit!(tx) : undefined}
                   className={cn(
                     'flex items-center gap-3 px-2 py-2.5 rounded-xl transition-colors',
-                    canEdit ? 'hover:bg-zinc-800/50 cursor-pointer active:bg-zinc-800' : 'cursor-default',
+                    canEdit ? 'hover:bg-muted cursor-pointer active:bg-muted/70' : 'cursor-default',
                   )}
                 >
                   {/* 카테고리 아이콘 */}
                   <div className={cn(
                     'w-9 h-9 rounded-xl flex items-center justify-center text-base flex-shrink-0',
                     tx.isMasked
-                      ? 'bg-zinc-800 border border-dashed border-zinc-700'
+                      ? 'bg-muted border border-dashed border-border'
                       : tx.amount > 0
                       ? 'bg-emerald-500/10'
-                      : 'bg-zinc-800'
+                      : 'bg-muted'
                   )}>
                     {tx.isMasked ? '🔒' : icon}
                   </div>
@@ -159,7 +163,7 @@ export function TransactionFeed({
                   <div className="flex-1 min-w-0">
                     <p className={cn(
                       'text-sm font-medium truncate leading-snug',
-                      tx.isMasked ? 'text-zinc-500 italic' : 'text-white'
+                      tx.isMasked ? 'text-muted-foreground italic' : 'text-foreground'
                     )}>
                       {tx.description}
                     </p>
@@ -168,21 +172,21 @@ export function TransactionFeed({
                       {!tx.isMasked && (
                         <>
                           <UserAvatar name={tx.userName} userId={tx.userId} isMe={isMe} />
-                          <span className="text-xs text-zinc-600">
+                          <span className="text-xs text-muted-foreground">
                             {isMe ? '나' : (tx.userName ?? '멤버')}
                           </span>
-                          <span className="text-zinc-700 text-xs">·</span>
+                          <span className="text-muted-foreground/50 text-xs">·</span>
                         </>
                       )}
                       {/* 카테고리 */}
-                      <span className="text-xs text-zinc-600 truncate">
+                      <span className="text-xs text-muted-foreground truncate">
                         {tx.isMasked ? '비공개' : tx.category}
                       </span>
                       {/* 수정 가능 힌트 */}
                       {canEdit && (
                         <>
-                          <span className="text-zinc-700 text-xs">·</span>
-                          <span className="text-xs text-zinc-700">탭하여 수정</span>
+                          <span className="text-muted-foreground/50 text-xs">·</span>
+                          <span className="text-xs text-muted-foreground/50">탭하여 수정</span>
                         </>
                       )}
                     </div>
@@ -191,9 +195,9 @@ export function TransactionFeed({
                   {/* 금액 */}
                   <span className={cn(
                     'text-sm font-semibold tabular-nums flex-shrink-0',
-                    tx.isMasked ? 'text-zinc-500'
-                    : tx.amount > 0 ? 'text-emerald-400'
-                    : 'text-white'
+                    tx.isMasked ? 'text-muted-foreground'
+                    : tx.amount > 0 ? 'text-emerald-600 dark:text-emerald-400'
+                    : 'text-foreground'
                   )}>
                     {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)}
                   </span>

@@ -310,7 +310,7 @@ export default function BudgetPage() {
       {/* ── 재무 목표 설정 ── */}
       <div className="bg-card rounded-2xl p-6 border border-border mb-4">
         <div className="flex items-center gap-2 mb-5">
-          <Target className="w-5 h-5 text-emerald-500" />
+          <Target className="w-5 h-5 text-emerald-600 dark:text-emerald-500" />
           <h2 className="text-base font-semibold text-foreground">이번 달 재무 목표</h2>
         </div>
 
@@ -328,11 +328,11 @@ export default function BudgetPage() {
                   value={goalInput.targetIncome}
                   onChange={e => handleIncomeChange(e.target.value)}
                   placeholder="0"
-                  className="w-full h-11 bg-muted border border-border rounded-xl px-3 text-sm font-bold text-emerald-400 placeholder-muted-foreground/50 outline-none focus:border-emerald-700 transition-colors tabular-nums"
+                  className="w-full h-11 bg-muted border border-border rounded-xl px-3 text-sm font-bold text-emerald-600 dark:text-emerald-400 placeholder-muted-foreground/50 outline-none focus:border-emerald-600 dark:focus:border-emerald-700 transition-colors tabular-nums"
                 />
               </div>
             ) : (
-              <div className="h-11 flex items-center px-3 bg-muted rounded-xl text-sm font-bold text-emerald-400">
+              <div className="h-11 flex items-center px-3 bg-muted rounded-xl text-sm font-bold text-emerald-600 dark:text-emerald-400">
                 {goalData?.targetIncome ? formatCurrency(goalData.targetIncome) : '—'}
               </div>
             )}
@@ -350,10 +350,10 @@ export default function BudgetPage() {
                 value={goalInput.targetExpense}
                 onChange={e => handleExpenseChange(e.target.value)}
                 placeholder="0"
-                className="w-full h-11 bg-muted border border-border rounded-xl px-3 text-sm font-bold text-red-400 placeholder-muted-foreground/50 outline-none focus:border-red-900 transition-colors tabular-nums"
+                className="w-full h-11 bg-muted border border-border rounded-xl px-3 text-sm font-bold text-red-600 dark:text-red-400 placeholder-muted-foreground/50 outline-none focus:border-red-600 dark:focus:border-red-900 transition-colors tabular-nums"
               />
             ) : (
-              <div className="h-11 flex items-center px-3 bg-muted rounded-xl text-sm font-bold text-red-400">
+              <div className="h-11 flex items-center px-3 bg-muted rounded-xl text-sm font-bold text-red-600 dark:text-red-400">
                 {goalData?.targetExpense ? formatCurrency(goalData.targetExpense) : '—'}
               </div>
             )}
@@ -375,12 +375,12 @@ export default function BudgetPage() {
                   value={goalInput.targetSavingsRate}
                   onChange={e => handleRateChange(e.target.value)}
                   placeholder="0"
-                  className="w-full h-11 bg-muted border border-border rounded-xl px-3 pr-7 text-sm font-bold text-blue-400 placeholder-muted-foreground/50 outline-none focus:border-blue-900 transition-colors tabular-nums"
+                  className="w-full h-11 bg-muted border border-border rounded-xl px-3 pr-7 text-sm font-bold text-blue-600 dark:text-blue-400 placeholder-muted-foreground/50 outline-none focus:border-blue-600 dark:focus:border-blue-900 transition-colors tabular-nums"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
               </div>
             ) : (
-              <div className="h-11 flex items-center px-3 bg-muted rounded-xl text-sm font-bold text-blue-400">
+              <div className="h-11 flex items-center px-3 bg-muted rounded-xl text-sm font-bold text-blue-600 dark:text-blue-400">
                 {goalData?.targetSavingsRate ? `${goalData.targetSavingsRate}%` : '—'}
               </div>
             )}
@@ -394,7 +394,7 @@ export default function BudgetPage() {
             <div className="text-right">
               <span className={cn(
                 'text-sm font-bold tabular-nums',
-                savingsAmount >= 0 ? 'text-emerald-400' : 'text-red-400'
+                savingsAmount >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
               )}>
                 {savingsAmount >= 0 ? '+' : ''}{formatCurrency(savingsAmount)}
               </span>
@@ -409,7 +409,7 @@ export default function BudgetPage() {
       {/* ── 가족 전체 지출 한도 ── */}
       <div className="bg-card rounded-2xl p-6 border border-border mb-4">
         <div className="flex items-center gap-2 mb-4">
-          <Wallet className="w-5 h-5 text-emerald-500" />
+          <Wallet className="w-5 h-5 text-emerald-600 dark:text-emerald-500" />
           <h2 className="text-base font-semibold text-foreground">가족 지출 한도</h2>
           <span className="text-[10px] text-muted-foreground/60 bg-muted px-2 py-0.5 rounded-full ml-auto">구성원 배분 기준</span>
         </div>
@@ -433,7 +433,7 @@ export default function BudgetPage() {
           <div className="mt-4">
             <div className="flex justify-between text-xs text-muted-foreground mb-2">
               <span>이번 달 실제 지출</span>
-              <span className={cn(data && data.familySpent > parsedFamilyBudget ? 'text-red-400' : 'text-muted-foreground')}>
+              <span className={cn(data && data.familySpent > parsedFamilyBudget ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground')}>
                 {formatCurrency(data?.familySpent ?? 0)} / {formatCurrency(parsedFamilyBudget)}
               </span>
             </div>
@@ -450,12 +450,12 @@ export default function BudgetPage() {
         <div className={cn(
           'rounded-2xl p-4 border mb-6 flex items-center justify-between',
           overAllocated
-            ? 'bg-red-900/20 border-red-800'
+            ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
             : 'bg-card border-border'
         )}>
           <div className="flex items-center gap-2">
             {overAllocated
-              ? <AlertCircle className="w-4 h-4 text-red-400" />
+              ? <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
               : <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
             }
             <span className="text-sm text-muted-foreground">

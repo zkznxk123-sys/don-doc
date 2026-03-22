@@ -48,7 +48,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
             <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
             <span className="text-xs text-muted-foreground">순자산</span>
           </div>
-          <span className="text-xs font-semibold text-emerald-400 tabular-nums">{formatCurrency(netWorth)}</span>
+          <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{formatCurrency(netWorth)}</span>
         </div>
       </div>
     </div>
@@ -77,8 +77,8 @@ export function NetWorthChart({ data, onDataSaved }: NetWorthChartProps) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-emerald-400" />
-            <h2 className="text-sm font-semibold text-foreground">순자산 추이</h2>
+            <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <h2 className="text-sm font-semibold text-foreground font-serif tracking-tight">순자산 추이</h2>
             {data.length > 0 && (
               <span className="text-xs text-muted-foreground/60">{data.length}개월</span>
             )}

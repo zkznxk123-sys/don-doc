@@ -21,7 +21,7 @@ const REPAYMENT_LABELS: Record<string, string> = {
 function MetricBadge({ value, suffix = '%', positive = true }: { value: number; suffix?: string; positive?: boolean }) {
   const isGood = positive ? value >= 0 : value <= 0
   return (
-    <span className={cn('text-xs font-semibold tabular-nums', isGood ? 'text-emerald-400' : 'text-red-400')}>
+    <span className={cn('text-xs font-semibold tabular-nums', isGood ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
       {value >= 0 ? '+' : ''}{value.toFixed(1)}{suffix}
     </span>
   )
@@ -30,14 +30,14 @@ function MetricBadge({ value, suffix = '%', positive = true }: { value: number; 
 function LtvBar({ ltv }: { ltv: number }) {
   const pct = Math.min(ltv, 100)
   const color = ltv < 40 ? 'bg-emerald-500' : ltv < 60 ? 'bg-amber-500' : ltv < 80 ? 'bg-orange-500' : 'bg-red-500'
-  const textColor = ltv < 40 ? 'text-emerald-400' : ltv < 60 ? 'text-amber-400' : ltv < 80 ? 'text-orange-400' : 'text-red-400'
+  const textColor = ltv < 40 ? 'text-emerald-600 dark:text-emerald-400' : ltv < 60 ? 'text-amber-600 dark:text-amber-400' : ltv < 80 ? 'text-orange-600 dark:text-orange-400' : 'text-red-600 dark:text-red-400'
 
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
           <span className="text-xs text-muted-foreground">LTV</span>
-          {ltv >= 80 && <AlertTriangle className="w-3 h-3 text-red-400" />}
+          {ltv >= 80 && <AlertTriangle className="w-3 h-3 text-red-600 dark:text-red-400" />}
         </div>
         <span className={cn('text-sm font-bold tabular-nums', textColor)}>{ltv.toFixed(1)}%</span>
       </div>
@@ -60,7 +60,7 @@ function DebtRow({ debt }: { debt: LinkedDebt }) {
   return (
     <div className="flex items-center gap-3 py-2.5 border-b border-border/60 last:border-0">
       <div className="w-7 h-7 rounded-lg bg-red-400/10 flex items-center justify-center flex-shrink-0">
-        <HandCoins className="w-3.5 h-3.5 text-red-400" />
+        <HandCoins className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs font-medium text-foreground/70 truncate">{debt.name}</p>
@@ -77,7 +77,7 @@ function DebtRow({ debt }: { debt: LinkedDebt }) {
         </div>
       </div>
       <div className="text-right flex-shrink-0">
-        <p className="text-xs font-semibold text-red-400 tabular-nums">-{formatCurrency(debt.balance)}</p>
+        <p className="text-xs font-semibold text-red-600 dark:text-red-400 tabular-nums">-{formatCurrency(debt.balance)}</p>
         {debt.monthlyPayment != null && (
           <p className="text-[10px] text-muted-foreground/60 tabular-nums">월 {formatLargeNumber(debt.monthlyPayment)}</p>
         )}
@@ -229,7 +229,7 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
                   className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted/40 transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <HandCoins className="w-3.5 h-3.5 text-red-400" />
+                    <HandCoins className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
                     <span className="text-xs font-medium text-muted-foreground">연결된 부채</span>
                     <span className="text-xs text-muted-foreground/60">{data.linkedDebts.length}건</span>
                   </div>

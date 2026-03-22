@@ -38,19 +38,19 @@ interface AccountDrawerProps {
 const ACCOUNT_TYPES: {
   value: AccountType; label: string; desc: string; Icon: React.ElementType; color: string; isLiability?: boolean
 }[] = [
-  { value: 'CASH',        label: '현금 · 예적금', desc: '생활비, 비상금, 저축',      Icon: Banknote,   color: 'text-blue-400' },
-  { value: 'INVESTMENT',  label: '주식 · 펀드',   desc: '국내외 주식, 펀드, ETF',    Icon: TrendingUp, color: 'text-emerald-400' },
-  { value: 'CRYPTO',      label: '가상자산',       desc: '비트코인, 이더리움 등',      Icon: Bitcoin,    color: 'text-amber-400' },
-  { value: 'REAL_ESTATE', label: '부동산',         desc: '아파트, 토지, 상가',         Icon: Building2,  color: 'text-purple-400' },
-  { value: 'DEBT',        label: '대출',           desc: '주택담보대출, 신용대출 등',  Icon: HandCoins,  color: 'text-red-400',  isLiability: true },
-  { value: 'CREDIT_CARD', label: '신용카드',       desc: '카드 사용액, 미결제 금액',   Icon: CreditCard, color: 'text-rose-400', isLiability: true },
+  { value: 'CASH',        label: '현금 · 예적금', desc: '생활비, 비상금, 저축',      Icon: Banknote,   color: 'text-blue-600 dark:text-blue-400' },
+  { value: 'INVESTMENT',  label: '주식 · 펀드',   desc: '국내외 주식, 펀드, ETF',    Icon: TrendingUp, color: 'text-emerald-600 dark:text-emerald-400' },
+  { value: 'CRYPTO',      label: '가상자산',       desc: '비트코인, 이더리움 등',      Icon: Bitcoin,    color: 'text-amber-600 dark:text-amber-400' },
+  { value: 'REAL_ESTATE', label: '부동산',         desc: '아파트, 토지, 상가',         Icon: Building2,  color: 'text-purple-600 dark:text-purple-400' },
+  { value: 'DEBT',        label: '대출',           desc: '주택담보대출, 신용대출 등',  Icon: HandCoins,  color: 'text-red-600 dark:text-red-400',  isLiability: true },
+  { value: 'CREDIT_CARD', label: '신용카드',       desc: '카드 사용액, 미결제 금액',   Icon: CreditCard, color: 'text-rose-600 dark:text-rose-400', isLiability: true },
 ]
 
 const SHARE_LEVELS: {
   value: ShareLevel; label: string; desc: string; icon: React.ElementType; color: string; bg: string
 }[] = [
-  { value: 'PUBLIC',       label: '내역까지 공개', desc: '이름·금액·거래 내역 모두 공개',         icon: Users,  color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/30' },
-  { value: 'BALANCE_ONLY', label: '금액만 합산',   desc: '금액은 가족 합계에 포함, 내역은 숨김', icon: Eye,    color: 'text-blue-400',    bg: 'bg-blue-500/10 border-blue-500/30' },
+  { value: 'PUBLIC',       label: '내역까지 공개', desc: '이름·금액·거래 내역 모두 공개',         icon: Users,  color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-100 border-emerald-300 dark:bg-emerald-500/10 dark:border-emerald-500/30' },
+  { value: 'BALANCE_ONLY', label: '금액만 합산',   desc: '금액은 가족 합계에 포함, 내역은 숨김', icon: Eye,    color: 'text-blue-600 dark:text-blue-400',    bg: 'bg-blue-100 border-blue-300 dark:bg-blue-500/10 dark:border-blue-500/30' },
   { value: 'PRIVATE',      label: '나만 보기',     desc: '가족 리스트에서 완전히 제외됨',         icon: EyeOff, color: 'text-muted-foreground',    bg: 'bg-muted border-border' },
 ]
 

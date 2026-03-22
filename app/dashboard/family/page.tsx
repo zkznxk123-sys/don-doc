@@ -218,7 +218,7 @@ export default function FamilyPage() {
                 className={cn(
                   'flex items-center gap-1.5 px-4 py-2 rounded-xl border text-xs font-medium transition-all flex-shrink-0',
                   copied
-                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                    ? 'bg-emerald-100 border-emerald-300 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-400'
                     : 'bg-muted border-border text-foreground/70 hover:text-foreground hover:border-ring'
                 )}
               >

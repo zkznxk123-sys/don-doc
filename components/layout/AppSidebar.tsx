@@ -53,12 +53,12 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
         'flex items-center gap-3 px-4 h-14 border-b border-border/60 flex-shrink-0',
         !open && 'lg:justify-center lg:px-0',
       )}>
-        <div className="w-7 h-7 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
-          <span className="text-xs font-bold text-emerald-400">돈</span>
+        <div className="w-7 h-7 rounded-md bg-foreground flex items-center justify-center flex-shrink-0">
+          <span className="text-xs font-bold text-background">돈</span>
         </div>
         {open && (
           <div className="min-w-0">
-            <p className="text-sm font-bold text-foreground truncate">돈독</p>
+            <p className="text-sm font-bold text-foreground truncate font-serif tracking-tight">돈독</p>
             {user.familyName && (
               <p className="text-[10px] text-muted-foreground truncate">{user.familyName}</p>
             )}
@@ -92,7 +92,7 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
                 !open && 'lg:justify-center lg:px-0',
               )}
             >
-              <Icon className={cn('w-4 h-4 flex-shrink-0', active ? 'text-emerald-400' : '')} />
+              <Icon className="w-4 h-4 flex-shrink-0" />
               {open && <span className="truncate">{item.label}</span>}
             </Link>
           )
@@ -214,8 +214,8 @@ function InviteCodeButton() {
         className={cn(
           'w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
           open
-            ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-900/40'
-            : 'text-muted-foreground hover:text-emerald-400 hover:bg-muted'
+            ? 'bg-muted text-foreground border border-border'
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
         )}
       >
         <UserPlus className="w-4 h-4 flex-shrink-0" />

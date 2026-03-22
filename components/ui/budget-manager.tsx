@@ -135,7 +135,7 @@ export const BudgetManager = ({ month }: BudgetManagerProps) => {
                   if (e.key === 'Escape') setEditingFamily(false)
                 }}
               />
-              <button onClick={saveFamilyBudget} disabled={saving} className="p-1 text-emerald-500 hover:text-emerald-400 disabled:opacity-50">
+              <button onClick={saveFamilyBudget} disabled={saving} className="p-1 text-emerald-600 dark:text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-400 disabled:opacity-50">
                 <Check className="w-4 h-4" />
               </button>
             </div>
@@ -160,7 +160,7 @@ export const BudgetManager = ({ month }: BudgetManagerProps) => {
               </div>
               <div className="w-full bg-accent rounded-full h-2">
                 <div
-                  className={cn('h-2 rounded-full transition-all', spentPercent > 80 ? 'bg-red-500' : 'bg-emerald-500')}
+                  className={cn('h-2 rounded-full transition-all', spentPercent > 80 ? 'bg-red-600 dark:bg-red-500' : 'bg-emerald-600 dark:bg-emerald-500')}
                   style={{ width: `${spentPercent}%` }}
                 />
               </div>
@@ -173,7 +173,7 @@ export const BudgetManager = ({ month }: BudgetManagerProps) => {
               </div>
               <div className="w-full bg-accent rounded-full h-2">
                 <div
-                  className="h-2 rounded-full bg-blue-500 transition-all"
+                  className="h-2 rounded-full bg-blue-600 dark:bg-blue-500 transition-all"
                   style={{ width: `${allocatedPercent}%` }}
                 />
               </div>
@@ -227,7 +227,7 @@ export const BudgetManager = ({ month }: BudgetManagerProps) => {
                         if (e.key === 'Escape') setEditingMember(null)
                       }}
                     />
-                    <button onClick={() => saveMemberBudget(member.id)} disabled={saving} className="p-1 text-emerald-500 hover:text-emerald-400 disabled:opacity-50">
+                    <button onClick={() => saveMemberBudget(member.id)} disabled={saving} className="p-1 text-emerald-600 dark:text-emerald-500 hover:text-emerald-700 dark:hover:text-emerald-400 disabled:opacity-50">
                       <Check className="w-4 h-4" />
                     </button>
                   </div>
@@ -251,14 +251,14 @@ export const BudgetManager = ({ month }: BudgetManagerProps) => {
                     <div
                       className={cn(
                         'h-2 rounded-full transition-all',
-                        usedPercent > 80 ? 'bg-red-500' : usedPercent > 60 ? 'bg-amber-500' : 'bg-blue-500'
+                        usedPercent > 80 ? 'bg-red-600 dark:bg-red-500' : usedPercent > 60 ? 'bg-amber-600 dark:bg-amber-500' : 'bg-blue-600 dark:bg-blue-500'
                       )}
                       style={{ width: `${usedPercent}%` }}
                     />
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">{Math.round(usedPercent)}% 사용</span>
-                    <span className={cn('font-medium', remaining === 0 ? 'text-red-400' : 'text-muted-foreground')}>
+                    <span className={cn('font-medium', remaining === 0 ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground')}>
                       {formatCurrency(remaining)} 남음
                     </span>
                   </div>

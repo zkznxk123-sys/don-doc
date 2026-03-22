@@ -75,10 +75,10 @@ function SettingsClient() {
       </section>
 
       {/* Danger Zone */}
-      <section className="rounded-2xl border border-red-900/50 bg-red-950/10 p-6">
+      <section className="rounded-2xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/10 p-6">
         <div className="flex items-center gap-2.5 mb-4">
           <ShieldAlert className="w-5 h-5 text-red-500" />
-          <h2 className="text-base font-semibold text-red-400">Danger Zone</h2>
+          <h2 className="text-base font-semibold text-red-600 dark:text-red-400">Danger Zone</h2>
         </div>
 
         <div className="flex items-start justify-between gap-4">
@@ -92,7 +92,7 @@ function SettingsClient() {
             <AlertDialogTrigger asChild>
               <button
                 disabled={isLoading}
-                className="flex-shrink-0 flex items-center gap-2 px-4 h-9 rounded-xl text-sm font-semibold bg-red-950 text-red-400 border border-red-900/50 hover:bg-red-900/40 hover:text-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-shrink-0 flex items-center gap-2 px-4 h-9 rounded-xl text-sm font-semibold bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900/50 hover:bg-red-200 dark:hover:bg-red-900/40 hover:text-red-800 dark:hover:text-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 초기화
@@ -102,13 +102,13 @@ function SettingsClient() {
             <AlertDialogContent>
               <AlertDialogHeader>
                 <div className="flex items-center gap-2.5 mb-1">
-                  <div className="w-9 h-9 rounded-xl bg-red-950/60 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-xl bg-red-100 dark:bg-red-950/60 flex items-center justify-center">
                     <AlertTriangle className="w-4 h-4 text-red-500" />
                   </div>
                   <AlertDialogTitle>정말 초기화하시겠습니까?</AlertDialogTitle>
                 </div>
                 <AlertDialogDescription className="space-y-2">
-                  <span className="block text-red-400 font-medium text-sm">
+                  <span className="block text-red-600 dark:text-red-400 font-medium text-sm">
                     이 작업은 되돌릴 수 없습니다. 모든 지출/수입 내역이 삭제됩니다.
                   </span>
                   <span className="block text-muted-foreground text-xs">

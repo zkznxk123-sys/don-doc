@@ -1,10 +1,15 @@
 import type { Metadata } from "next"
-import { Inter } from "next/font/google"
+import { Inter, Noto_Serif } from "next/font/google"
 import { Toaster } from "sonner"
 import { ThemeProvider } from "@/components/ThemeProvider"
 import "./globals.css"
 
-const inter = Inter({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
+const notoSerif = Noto_Serif({
+  subsets: ["latin"],
+  variable: "--font-noto-serif",
+  weight: ["400", "700"],
+})
 
 export const metadata: Metadata = {
   title: "돈독 — 디지털 패밀리오피스",
@@ -18,12 +23,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko" suppressHydrationWarning>
-      <body className={inter.className}>
+      <body className={`${inter.variable} ${notoSerif.variable} font-sans`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
-          disableTransitionOnChange
         >
           {children}
           <Toaster theme="system" position="top-center" richColors />

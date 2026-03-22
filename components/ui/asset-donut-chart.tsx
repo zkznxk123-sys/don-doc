@@ -73,7 +73,7 @@ export function AssetDonutChart({ data, totalAssets }: AssetDonutChartProps) {
   return (
     <div className="bg-card rounded-2xl p-5 md:p-6 border border-border overflow-hidden">
       <div className="mb-1">
-        <h2 className="text-lg md:text-xl font-bold text-foreground">자산 배분</h2>
+        <h2 className="text-lg md:text-xl font-bold text-foreground font-serif tracking-tight">자산 배분</h2>
       </div>
       <p className="text-xs text-muted-foreground mb-5">
         순자산 기준 <span className="text-foreground font-semibold">{formatCurrency(totalAssets)}</span>
@@ -112,7 +112,7 @@ export function AssetDonutChart({ data, totalAssets }: AssetDonutChartProps) {
           {activeIndex === null && (
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <span className="text-xs text-muted-foreground">총 순자산</span>
-              <span className={cn('text-lg font-bold', totalAssets >= 0 ? 'text-foreground' : 'text-red-400')}>
+              <span className={cn('text-lg font-bold', totalAssets >= 0 ? 'text-foreground' : 'text-red-600 dark:text-red-400')}>
                 {totalAssets < 0 ? '-' : ''}{formatLargeNumber(Math.abs(totalAssets))}
               </span>
               <span className="text-[10px] text-muted-foreground/60">
@@ -196,7 +196,7 @@ export function AssetDonutChart({ data, totalAssets }: AssetDonutChartProps) {
                     <button
                       className={cn(
                         "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all text-left",
-                        "hover:bg-red-950/30",
+                        "hover:bg-red-100 dark:hover:bg-red-950/30",
                         activeIndex === idx && "bg-red-950/40 ring-1 ring-red-900/50",
                       )}
                       onMouseEnter={() => setActiveIndex(idx)}

@@ -336,7 +336,7 @@ function KpiCard({
         {icon}
         <span className="text-xs text-muted-foreground font-medium">{label}</span>
       </div>
-      <p className="text-xl font-bold text-foreground tabular-nums leading-tight">{value}</p>
+      <p className="text-xl font-bold text-foreground tabular-nums leading-tight font-serif tracking-tight">{value}</p>
       {sub && <p className={cn('text-xs tabular-nums', subColor)}>{sub}</p>}
     </div>
   )
@@ -444,7 +444,7 @@ function TransactionFeedRow({ tx }: { tx: Transaction }) {
       </div>
       <span className={cn(
         'text-xs font-semibold tabular-nums flex-shrink-0',
-        tx.isMasked ? 'text-muted-foreground/60' : isIncome ? 'text-emerald-400' : 'text-red-400'
+        tx.isMasked ? 'text-muted-foreground/60' : isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
       )}>
         {isIncome ? '+' : ''}{formatCurrency(tx.amount)}
       </span>
@@ -470,20 +470,20 @@ function MemberBudgetCard({
   return (
     <div className={cn(
       'rounded-2xl p-5 border',
-      isOver ? 'bg-red-950/20 border-red-900/50'
-        : isWarning ? 'bg-amber-950/10 border-amber-900/40'
+      isOver ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/50'
+        : isWarning ? 'bg-amber-50 dark:bg-amber-950/10 border-amber-200 dark:border-amber-900/40'
         : 'bg-card border-border'
     )}>
       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">{monthLabel} 남은 예산</p>
       {myBudget > 0 ? (
         <>
-          <p className={cn('text-4xl font-bold tabular-nums mb-1', isOver ? 'text-red-400' : isWarning ? 'text-amber-400' : 'text-foreground')}>
+          <p className={cn('text-4xl font-bold tabular-nums mb-1 font-serif tracking-tight', isOver ? 'text-red-600 dark:text-red-400' : isWarning ? 'text-amber-600 dark:text-amber-400' : 'text-foreground')}>
             {isOver ? '-' : ''}{formatCurrency(remaining)}
           </p>
           <p className="text-xs text-muted-foreground mb-4">{formatCurrency(myExpenses)} 사용 / {formatCurrency(myBudget)} 예산</p>
           <Progress value={pct} className="h-2 mb-2" indicatorClassName={cn(isOver || isWarning ? 'bg-red-500' : 'bg-emerald-500')} />
           <div className="flex justify-between text-xs">
-            <span className={cn(isOver ? 'text-red-400' : isWarning ? 'text-amber-400' : 'text-muted-foreground')}>
+            <span className={cn(isOver ? 'text-red-600 dark:text-red-400' : isWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground')}>
               {Math.round(pct)}% 사용{isOver ? ' — 예산 초과' : isWarning ? ' — 주의' : ''}
             </span>
             <span className="text-muted-foreground/60">{myTxCount}건</span>
@@ -491,7 +491,7 @@ function MemberBudgetCard({
         </>
       ) : (
         <>
-          <p className="text-3xl font-bold text-foreground tabular-nums mb-1">{formatCurrency(myExpenses)}</p>
+          <p className="text-3xl font-bold text-foreground tabular-nums mb-1 font-serif tracking-tight">{formatCurrency(myExpenses)}</p>
           <p className="text-xs text-muted-foreground">{monthLabel} 지출 · {myTxCount}건</p>
           <p className="text-xs text-muted-foreground/60 mt-2">예산이 설정되지 않았습니다</p>
         </>
@@ -729,7 +729,7 @@ export default function Dashboard() {
                         ? `연평균보다 ${Math.abs(insights.expenseVsAvgPercent).toFixed(0)}% 더 지출`
                         : `연평균보다 ${Math.abs(insights.expenseVsAvgPercent).toFixed(0)}% 절감`
                       : undefined}
-                    subColor={insights && insights.expenseVsAvgPercent > 0 ? 'text-orange-400' : 'text-emerald-400'}
+                    subColor={insights && insights.expenseVsAvgPercent > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-emerald-600 dark:text-emerald-400'}
                   />
                   <KpiCard
                     icon={<PiggyBank className="w-3.5 h-3.5 text-blue-400" />}
@@ -740,7 +740,7 @@ export default function Dashboard() {
                         ? `연평균보다 ${Math.abs(insights.savingsRateVsAvgPercent).toFixed(0)}%p 높음`
                         : `연평균보다 ${Math.abs(insights.savingsRateVsAvgPercent).toFixed(0)}%p 낮음`
                       : undefined}
-                    subColor={insights && insights.savingsRateVsAvgPercent >= 0 ? 'text-emerald-400' : 'text-orange-400'}
+                    subColor={insights && insights.savingsRateVsAvgPercent >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-orange-600 dark:text-orange-400'}
                   />
                 </>
               )}
@@ -810,8 +810,8 @@ export default function Dashboard() {
                         <div className="grid grid-cols-3 gap-2 mb-3">
                           {[
                             { label: '예산', value: budgetData.familyBudget, color: 'text-foreground' },
-                            { label: '사용', value: budgetData.familySpent, color: budgetData.familySpent > budgetData.familyBudget * 0.8 ? 'text-red-400' : 'text-foreground' },
-                            { label: '잔여', value: Math.max(budgetData.familyBudget - budgetData.familySpent, 0), color: 'text-emerald-400' },
+                            { label: '사용', value: budgetData.familySpent, color: budgetData.familySpent > budgetData.familyBudget * 0.8 ? 'text-red-600 dark:text-red-400' : 'text-foreground' },
+                            { label: '잔여', value: Math.max(budgetData.familyBudget - budgetData.familySpent, 0), color: 'text-emerald-600 dark:text-emerald-400' },
                           ].map(item => (
                             <div key={item.label} className="bg-muted rounded-xl p-3 text-center">
                               <p className="text-[10px] text-muted-foreground mb-1">{item.label}</p>

@@ -110,12 +110,12 @@ export default function TransactionsPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-1.5">
-                  <TrendingUp className="w-3 h-3 text-emerald-500" />
+                  <TrendingUp className="w-3 h-3 text-emerald-600 dark:text-emerald-500" />
                   수입
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-base font-bold text-emerald-400 tabular-nums leading-tight">
+                <p className="text-base font-bold text-emerald-600 dark:text-emerald-400 tabular-nums leading-tight">
                   {formatCurrency(summary.income)}
                 </p>
               </CardContent>
@@ -123,12 +123,12 @@ export default function TransactionsPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-1.5">
-                  <TrendingDown className="w-3 h-3 text-red-400" />
+                  <TrendingDown className="w-3 h-3 text-red-600 dark:text-red-400" />
                   지출
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-base font-bold text-red-400 tabular-nums leading-tight">
+                <p className="text-base font-bold text-red-600 dark:text-red-400 tabular-nums leading-tight">
                   {formatCurrency(summary.expense)}
                 </p>
               </CardContent>
@@ -136,14 +136,14 @@ export default function TransactionsPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-1.5">
-                  <PiggyBank className="w-3 h-3 text-blue-400" />
+                  <PiggyBank className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                   저축
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className={cn(
                   'text-base font-bold tabular-nums leading-tight',
-                  summary.savings >= 0 ? 'text-blue-400' : 'text-amber-400'
+                  summary.savings >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-amber-600 dark:text-amber-400'
                 )}>
                   {formatCurrency(summary.savings)}
                 </p>
@@ -211,7 +211,7 @@ function TransactionRow({ tx }: { tx: Transaction }) {
       </div>
       <p className={cn(
         'text-sm tabular-nums text-right font-medium',
-        tx.amount > 0 ? 'text-emerald-400' : 'text-foreground'
+        tx.amount > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'
       )}>
         {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)}
       </p>

@@ -3,6 +3,7 @@
 import { useTheme } from 'next-themes'
 import { Sun, Moon, Monitor } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useEffect, useState } from 'react'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -18,16 +19,20 @@ const OPTIONS = [
 
 export function ThemeToggle() {
   const { theme, setTheme, resolvedTheme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+  useEffect(() => setMounted(true), [])
+
   const isDark = resolvedTheme === 'dark'
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className="p-1.5 rounded-lg text-zinc-500 hover:text-white hover:bg-zinc-800 transition-colors"
+          className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors duration-200"
           aria-label="테마 변경"
         >
-          {isDark ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
+          {/* mounted 전에는 고정 아이콘 — hydration mismatch 방지 */}
+          {mounted && isDark ? <Moon className="w-4 h-4" /> : <Sun className="w-4 h-4" />}
         </button>
       </DropdownMenuTrigger>
 
@@ -36,12 +41,12 @@ export function ThemeToggle() {
           <DropdownMenuItem
             key={value}
             onClick={() => setTheme(value)}
-            className={cn(theme === value && 'text-white bg-zinc-800')}
+            className={cn(theme === value && 'bg-muted text-foreground')}
           >
             <Icon className="w-3.5 h-3.5" />
             {label}
             {theme === value && (
-              <span className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-400" />
+              <span className="ml-auto w-1.5 h-1.5 rounded-full bg-secondary" />
             )}
           </DropdownMenuItem>
         ))}

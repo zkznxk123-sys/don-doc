@@ -54,7 +54,7 @@ export function TopBar({ onToggleSidebar }: TopBarProps) {
             </button>
             <button
               onClick={() => openTransactionDrawer()}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-semibold hover:bg-foreground/90 transition-colors active:scale-[0.97]"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-foreground text-background text-xs font-semibold hover:bg-foreground/90 transition-colors active:scale-[0.97]"
             >
               <Plus className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">거래 추가</span>
