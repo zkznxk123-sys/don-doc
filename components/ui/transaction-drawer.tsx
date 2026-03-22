@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Minus, Plus, Globe, Lock, Trash2, Sparkles, Loader2 } from 'lucide-react'
+import { Minus, Plus, Globe, Lock, Trash2, Sparkles, Loader2, PlusCircle, X } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle,
@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/drawer'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
-import { getFamilyCategories, type CategoryOption } from '@/lib/actions/categories'
+import { getFamilyCategories, addCustomCategory, type CategoryOption } from '@/lib/actions/categories'
 
 export interface EditTransactionData {
   id: string
@@ -108,6 +108,30 @@ export function TransactionDrawer({
   const [allCategories, setAllCategories] = useState<CategoryOption[]>([])
   const [autoSuggestedCategory, setAutoSuggestedCategory] = useState<string | null>(null)
   const [isAiCategorizing, setIsAiCategorizing] = useState(false)
+  const [showAddCategory, setShowAddCategory] = useState(false)
+  const [newCatName, setNewCatName] = useState('')
+  const [newCatIcon, setNewCatIcon] = useState('')
+  const [isAddingCategory, setIsAddingCategory] = useState(false)
+  const [addCatError, setAddCatError] = useState('')
+
+  const handleAddCategory = async () => {
+    if (!newCatName.trim()) return
+    setIsAddingCategory(true)
+    setAddCatError('')
+    const currentType = isExpense ? 'EXPENSE' : 'INCOME'
+    const result = await addCustomCategory(newCatName.trim(), currentType, newCatIcon.trim() || '📋')
+    if (result.success) {
+      const updated = await getFamilyCategories()
+      setAllCategories(updated)
+      setCategory(newCatName.trim())
+      setNewCatName('')
+      setNewCatIcon('')
+      setShowAddCategory(false)
+    } else {
+      setAddCatError(result.error ?? '추가 실패')
+    }
+    setIsAddingCategory(false)
+  }
 
   const handleAiCategorize = async () => {
     if (!description.trim() && !amount) return
@@ -392,6 +416,7 @@ export function TransactionDrawer({
                 const currentType = isExpense ? 'EXPENSE' : 'INCOME'
                 const displayCategories = allCategories.filter(c => c.type === currentType)
                 return (
+                  <>
                   <div className="grid grid-cols-3 gap-2">
                     {displayCategories.map((cat) => {
                       const isSelected = category === cat.name
@@ -416,7 +441,55 @@ export function TransactionDrawer({
                         </button>
                       )
                     })}
+                    {/* 카테고리 추가 버튼 */}
+                    <button
+                      onClick={() => { setShowAddCategory(true); setAddCatError('') }}
+                      className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-medium border border-dashed border-border text-muted-foreground hover:border-ring hover:text-foreground transition-all"
+                    >
+                      <PlusCircle className="w-3.5 h-3.5" />
+                      추가
+                    </button>
                   </div>
+
+                  {/* 인라인 카테고리 추가 폼 */}
+                  {showAddCategory && (
+                    <div className="mt-2 p-3 rounded-xl border border-border bg-muted/30 space-y-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={newCatIcon}
+                          onChange={e => setNewCatIcon(e.target.value)}
+                          placeholder="🏷️"
+                          maxLength={2}
+                          className="w-12 h-9 text-center bg-background border border-border rounded-lg text-sm outline-none focus:ring-1 focus:ring-ring"
+                        />
+                        <input
+                          type="text"
+                          value={newCatName}
+                          onChange={e => setNewCatName(e.target.value)}
+                          onKeyDown={e => e.key === 'Enter' && handleAddCategory()}
+                          placeholder="카테고리 이름"
+                          className="flex-1 h-9 bg-background border border-border rounded-lg px-3 text-sm outline-none focus:ring-1 focus:ring-ring"
+                          autoFocus
+                        />
+                        <button
+                          onClick={handleAddCategory}
+                          disabled={isAddingCategory || !newCatName.trim()}
+                          className="h-9 px-3 rounded-lg bg-foreground text-background text-xs font-medium disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          {isAddingCategory ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : '추가'}
+                        </button>
+                        <button
+                          onClick={() => { setShowAddCategory(false); setAddCatError('') }}
+                          className="h-9 w-9 flex items-center justify-center rounded-lg border border-border text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      {addCatError && <p className="text-xs text-red-400">{addCatError}</p>}
+                    </div>
+                  )}
+                  </>
                 )
               })()}
             </div>

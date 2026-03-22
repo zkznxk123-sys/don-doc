@@ -205,7 +205,7 @@ export const BudgetManager = ({ month }: BudgetManagerProps) => {
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-medium text-foreground">{member.name || '이름 없음'}</span>
                       {member.role === 'CFO' && (
-                        <span className="text-xs text-amber-500 bg-amber-900/30 px-1.5 py-0.5 rounded">CFO</span>
+                        <span className="text-xs text-amber-600 dark:text-amber-500 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">CFO</span>
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground">지출 {formatCurrency(member.spent)}</div>

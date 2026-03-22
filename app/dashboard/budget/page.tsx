@@ -515,7 +515,7 @@ export default function BudgetPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-foreground">{member.name}</span>
                         {member.role === 'CFO' && (
-                          <span className="text-xs text-amber-500 bg-amber-900/30 px-1.5 py-0.5 rounded-md">CFO</span>
+                          <span className="text-xs text-amber-600 dark:text-amber-500 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-md">CFO</span>
                         )}
                       </div>
                       <div className="text-xs text-muted-foreground">

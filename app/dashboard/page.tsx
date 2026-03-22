@@ -426,12 +426,12 @@ function TransactionFeedRow({ tx }: { tx: Transaction }) {
     <div className="flex items-center gap-3 py-2.5 border-b border-border/60 last:border-0">
       <div className={cn(
         'w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0',
-        tx.isMasked ? 'bg-muted' : isIncome ? 'bg-emerald-900/40' : 'bg-muted'
+        tx.isMasked ? 'bg-muted' : isIncome ? 'bg-emerald-100 dark:bg-emerald-900/40' : 'bg-muted'
       )}>
         {tx.isMasked
           ? <EyeOff className="w-3.5 h-3.5 text-muted-foreground/60" />
           : isIncome
-            ? <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />
+            ? <ArrowUpRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
             : <ArrowDownRight className="w-3.5 h-3.5 text-red-400" />}
       </div>
       <div className="flex-1 min-w-0">
@@ -551,7 +551,7 @@ export default function Dashboard() {
   const myExpenses = transactions.filter(tx => tx.userId === currentUserId && tx.amount < 0).reduce((s, tx) => s + Math.abs(tx.amount), 0)
   const myTxCount = transactions.filter(tx => tx.userId === currentUserId && tx.amount < 0).length
   const myIncome = transactions.filter(tx => tx.userId === currentUserId && tx.amount > 0).reduce((s, tx) => s + tx.amount, 0)
-  const myBudget = myBudgetFromDB || myIncome || 1
+  const myBudget = myBudgetFromDB || myIncome || 0
 
   const monthLabel = selectedMonth === nowMonth ? '이번 달' : selectedMonth.replace('-', '년 ') + '월'
 

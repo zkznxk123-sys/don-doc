@@ -32,18 +32,18 @@ export function SnapshotAlertBanner({ yearMonth, onSaved, onDismiss }: SnapshotA
   }
 
   return (
-    <div className="flex items-start gap-3 bg-amber-950/40 border border-amber-800/60 rounded-2xl px-4 py-3.5">
+    <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800/60 rounded-2xl px-4 py-3.5">
       {/* 아이콘 */}
       <div className="flex-shrink-0 mt-0.5">
-        <AlertTriangle className="w-4 h-4 text-amber-400" />
+        <AlertTriangle className="w-4 h-4 text-amber-500 dark:text-amber-400" />
       </div>
 
       {/* 텍스트 + 버튼 */}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-amber-200">
+        <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
           {formatYearMonth(yearMonth)} 자산 스냅샷이 기록되지 않았습니다
         </p>
-        <p className="text-xs text-amber-400/80 mt-0.5">
+        <p className="text-xs text-amber-700/80 dark:text-amber-400/80 mt-0.5">
           현재 잔액 기준으로 지난달 순자산을 기록할 수 있습니다.
         </p>
 
@@ -64,7 +64,7 @@ export function SnapshotAlertBanner({ yearMonth, onSaved, onDismiss }: SnapshotA
       {/* 닫기 */}
       <button
         onClick={onDismiss}
-        className="flex-shrink-0 p-1 text-amber-600 hover:text-amber-300 rounded transition-colors"
+        className="flex-shrink-0 p-1 text-amber-600 hover:text-amber-800 dark:hover:text-amber-300 rounded transition-colors"
         aria-label="닫기"
       >
         <X className="w-3.5 h-3.5" />

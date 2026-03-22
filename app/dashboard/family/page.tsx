@@ -278,7 +278,7 @@ function MemberRow({
       {/* 아바타 */}
       <div className={cn(
         'w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-xs font-bold',
-        role === 'CFO' ? 'bg-amber-500/15 text-amber-400' : 'bg-muted text-muted-foreground'
+        role === 'CFO' ? 'bg-amber-100 dark:bg-amber-500/15 text-amber-600 dark:text-amber-400' : 'bg-muted text-muted-foreground'
       )}>
         {initials}
       </div>

@@ -414,11 +414,11 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
 
               {/* ── 양식 감지 배지 ── */}
               {isBanksalad ? (
-                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-violet-950/30 border border-violet-700/40">
-                  <Sparkles className="w-4 h-4 text-violet-400 flex-shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-violet-50 dark:bg-violet-950/30 border border-violet-300 dark:border-violet-700/40">
+                  <Sparkles className="w-4 h-4 text-violet-500 dark:text-violet-400 flex-shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-violet-300">뱅크샐러드 양식이 감지되었습니다</p>
-                    <p className="text-[11px] text-violet-700 mt-0.5">
+                    <p className="text-xs font-semibold text-violet-700 dark:text-violet-300">뱅크샐러드 양식이 감지되었습니다</p>
+                    <p className="text-[11px] text-violet-500 dark:text-violet-700 mt-0.5">
                       시트: {banksaladMeta?.sheet} · 날짜·시간·대분류·소분류 자동 매핑
                     </p>
                     {banksaladMeta?.skipped ? (
@@ -430,11 +430,11 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                   </div>
                 </div>
               ) : detectedPreset ? (
-                <div className="flex items-center gap-2.5 p-3 rounded-xl bg-emerald-950/30 border border-emerald-800/40">
-                  <Sparkles className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                <div className="flex items-center gap-2.5 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800/40">
+                  <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                   <div>
-                    <p className="text-xs font-semibold text-emerald-400">{detectedPreset.name} 양식 감지됨</p>
-                    <p className="text-[10px] text-emerald-700 mt-0.5">{detectedPreset.description}</p>
+                    <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">{detectedPreset.name} 양식 감지됨</p>
+                    <p className="text-[10px] text-emerald-600 dark:text-emerald-700 mt-0.5">{detectedPreset.description}</p>
                   </div>
                 </div>
               ) : (
@@ -574,20 +574,20 @@ function AiMappingStatus({
 
   if (status === 'loading') return (
     <div className="flex items-center gap-2.5 p-3 rounded-xl bg-card border border-border">
-      <Loader2 className="w-4 h-4 text-violet-400 animate-spin flex-shrink-0" />
+      <Loader2 className="w-4 h-4 text-violet-500 dark:text-violet-400 animate-spin flex-shrink-0" />
       <div>
-        <p className="text-xs font-semibold text-violet-300">AI 카테고리 분류 중...</p>
+        <p className="text-xs font-semibold text-violet-700 dark:text-violet-300">AI 카테고리 분류 중...</p>
         <p className="text-[11px] text-muted-foreground mt-0.5">고유 내역 {totalUnique}건을 분류하고 있어요</p>
       </div>
     </div>
   )
 
   if (status === 'done') return (
-    <div className="flex items-center gap-2.5 p-3 rounded-xl bg-violet-950/20 border border-violet-800/30">
-      <Wand2 className="w-4 h-4 text-violet-400 flex-shrink-0" />
-      <p className="text-xs text-violet-300">
+    <div className="flex items-center gap-2.5 p-3 rounded-xl bg-violet-50 dark:bg-violet-950/20 border border-violet-300 dark:border-violet-800/30">
+      <Wand2 className="w-4 h-4 text-violet-500 dark:text-violet-400 flex-shrink-0" />
+      <p className="text-xs text-violet-700 dark:text-violet-300">
         <span className="font-semibold">AI 분류 완료</span>
-        <span className="text-violet-600 ml-1.5">{mappedCount}가지 내역 카테고리 매핑됨</span>
+        <span className="text-violet-500 dark:text-violet-600 ml-1.5">{mappedCount}가지 내역 카테고리 매핑됨</span>
       </p>
     </div>
   )
