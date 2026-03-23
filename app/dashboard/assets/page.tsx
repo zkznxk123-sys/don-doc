@@ -59,9 +59,6 @@ export default function AssetsPage() {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [manualSaving, setManualSaving] = useState(false)
 
-  // 소액 자산 필터 토글
-  const [hideSmall, setHideSmall] = useState(false)
-
   const loadAccounts = async () => {
     const res = await fetch('/api/wealth')
     const data = await res.json()
@@ -111,33 +108,20 @@ export default function AssetsPage() {
 
   useEffect(() => { loadData() }, [refreshKey, loadData])
 
-  // TopBar에 자산 추가 + 소액 필터 토글 버튼 등록
+  // TopBar에 자산 추가 버튼 등록
   useEffect(() => {
     setPageActions(
-      <div className="flex items-center gap-2">
-        <button
-          onClick={() => setHideSmall(v => !v)}
-          className={cn(
-            'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors',
-            hideSmall
-              ? 'bg-foreground text-background border-foreground'
-              : 'bg-card border-border text-muted-foreground hover:text-foreground hover:border-ring'
-          )}
-        >
-          <span>10만원 이하 제외</span>
-        </button>
-        <button
-          onClick={openAdd}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-semibold hover:bg-foreground/90 transition-colors active:scale-[0.97]"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">자산 추가</span>
-        </button>
-      </div>
+      <button
+        onClick={openAdd}
+        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-semibold hover:bg-foreground/90 transition-colors active:scale-[0.97]"
+      >
+        <Plus className="w-3.5 h-3.5" />
+        <span className="hidden sm:inline">자산 추가</span>
+      </button>
     )
     return () => setPageActions(null)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hideSmall])
+  }, [])
 
   const openAdd = () => {
     setSelectedAccount(undefined)
@@ -165,12 +149,8 @@ export default function AssetsPage() {
     await loadNetWorthHistory()
   }
 
-  // 탭별 필터링 (소액 토글 적용)
-  const filterSmall = <T extends { balance: number }>(list: T[]) =>
-    hideSmall ? list.filter(a => a.balance >= 100_000) : list
-
-  const realEstateAccounts = filterSmall(accounts.filter(a => REAL_ESTATE_TYPES.has(a.type)))
-  const financialAccounts = filterSmall(accounts.filter(a => FINANCIAL_TYPES.has(a.type)))
+  const realEstateAccounts = accounts.filter(a => REAL_ESTATE_TYPES.has(a.type))
+  const financialAccounts = accounts.filter(a => FINANCIAL_TYPES.has(a.type))
   const realEstateTotalAssets = realEstateAccounts.reduce((s, a) => s + a.balance, 0)
   const financialTotalAssets = financialAccounts.reduce((s, a) => s + a.balance, 0)
 
@@ -264,7 +244,7 @@ export default function AssetsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <AssetDonutChart data={assetsByType} totalAssets={totalNetWorth} showToggle />
             <AssetList
-              accounts={filterSmall(accounts)}
+              accounts={accounts}
               totalAssets={totalAssets}
               onEdit={openEdit}
               onAdd={openAdd}
@@ -272,7 +252,7 @@ export default function AssetsPage() {
           </div>
 
           <LiabilityList
-            liabilities={filterSmall(liabilities)}
+            liabilities={liabilities}
             totalLiabilities={totalLiabilities}
             onEdit={openEdit}
             onAdd={openAdd}
