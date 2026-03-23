@@ -3,20 +3,23 @@
 import { useState } from 'react'
 import { PieChart as RePieChart, Pie, Cell, ResponsiveContainer, Sector } from 'recharts'
 import { formatCurrency, formatLargeNumber, cn } from '@/lib/utils'
-import { Landmark, TrendingUp, Bitcoin, Building2, Coins, HandCoins, CreditCard } from 'lucide-react'
+import { Banknote, TrendingUp, Bitcoin, Building2, Layers, HandCoins, CreditCard, ArrowRight } from 'lucide-react'
+import Link from 'next/link'
+import { Switch } from '@/components/ui/switch'
+import { useAssetThreshold } from '@/lib/hooks/useAssetThreshold'
 
 const ASSET_PALETTE: Record<string, { color: string; icon: React.ReactNode }> = {
-  REAL_ESTATE: { color: '#6366f1', icon: <Building2 className="w-4 h-4" /> },
-  CASH:        { color: '#10b981', icon: <Landmark  className="w-4 h-4" /> },
-  INVESTMENT:  { color: '#3b82f6', icon: <TrendingUp className="w-4 h-4" /> },
-  CRYPTO:      { color: '#f59e0b', icon: <Bitcoin   className="w-4 h-4" /> },
-  STO:         { color: '#8b5cf6', icon: <Coins     className="w-4 h-4" /> },
+  REAL_ESTATE: { color: '#c084fc', icon: <Building2  className="w-4 h-4" /> },
+  CASH:        { color: '#60a5fa', icon: <Banknote   className="w-4 h-4" /> },
+  INVESTMENT:  { color: '#34d399', icon: <TrendingUp className="w-4 h-4" /> },
+  CRYPTO:      { color: '#fbbf24', icon: <Bitcoin    className="w-4 h-4" /> },
+  STO:         { color: '#f472b6', icon: <Layers     className="w-4 h-4" /> },
   // 미연결 부채 — 붉은 계열
   DEBT:        { color: '#ef4444', icon: <HandCoins  className="w-4 h-4" /> },
   CREDIT_CARD: { color: '#f43f5e', icon: <CreditCard className="w-4 h-4" /> },
 }
 
-const FALLBACK = { color: '#71717a', icon: <Coins className="w-4 h-4" /> }
+const FALLBACK = { color: '#71717a', icon: <Banknote className="w-4 h-4" /> }
 
 export interface AssetTypeData {
   type: string
@@ -30,6 +33,9 @@ export interface AssetTypeData {
 interface AssetDonutChartProps {
   data: AssetTypeData[]
   totalAssets: number   // 전체 순자산 (totalNetWorth)
+  manageLink?: string   // 제공 시 우측 상단에 "자산 관리하기 →" 버튼 표시
+  hideZeroAccounts?: boolean  // true 시 잔액 0 계좌 숨김
+  showToggle?: boolean  // true 시 "10만원 이하 제외" 토글 표시
 }
 
 const renderActiveShape = (props: any) => {
@@ -56,9 +62,11 @@ const renderActiveShape = (props: any) => {
   )
 }
 
-export function AssetDonutChart({ data, totalAssets }: AssetDonutChartProps) {
+export function AssetDonutChart({ data, totalAssets, manageLink, hideZeroAccounts, showToggle }: AssetDonutChartProps) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null)
   const [expandedType, setExpandedType] = useState<string | null>(null)
+  const [excludeSmall, setExcludeSmall] = useState(true)
+  const { threshold } = useAssetThreshold()
 
   // 파이 차트는 절댓값 기준 (양수만 렌더링)
   const chartData = data.map(d => ({
@@ -72,8 +80,29 @@ export function AssetDonutChart({ data, totalAssets }: AssetDonutChartProps) {
 
   return (
     <div className="bg-card rounded-2xl p-5 md:p-6 border border-border overflow-hidden">
-      <div className="mb-1">
+      <div className="flex items-start justify-between mb-1">
         <h2 className="text-lg md:text-xl font-bold text-foreground font-serif tracking-tight">자산 배분</h2>
+        <div className="flex items-center gap-3 mt-1">
+          {showToggle && (
+            <label className="flex items-center gap-1.5 cursor-pointer select-none">
+              <span className="text-xs text-muted-foreground">{(threshold / 10000).toLocaleString()}만원 이하 제외</span>
+              <Switch
+                checked={excludeSmall}
+                onCheckedChange={setExcludeSmall}
+                className="scale-75 origin-right"
+              />
+            </label>
+          )}
+          {manageLink && (
+            <Link
+              href={manageLink}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+            >
+              자산 관리하기
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          )}
+        </div>
       </div>
       <p className="text-xs text-muted-foreground mb-5">
         순자산 기준 <span className="text-foreground font-semibold">{formatCurrency(totalAssets)}</span>
@@ -163,9 +192,9 @@ export function AssetDonutChart({ data, totalAssets }: AssetDonutChartProps) {
                     </div>
                   </div>
                 </button>
-                {isExpanded && item.accounts.length > 1 && (
+                {isExpanded && item.accounts.filter(a => (!hideZeroAccounts || a.balance !== 0) && (!excludeSmall || a.balance >= threshold)).length > 1 && (
                   <div className="ml-11 mr-2 mt-0.5 mb-1 space-y-0.5">
-                    {item.accounts.map(acc => (
+                    {item.accounts.filter(a => (!hideZeroAccounts || a.balance !== 0) && (!excludeSmall || a.balance >= threshold)).map(acc => (
                       <div key={acc.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-muted/40">
                         <span className="text-xs text-muted-foreground truncate mr-2">{acc.name}</span>
                         <span className="text-xs font-medium text-foreground/70 tabular-nums flex-shrink-0">
@@ -225,9 +254,9 @@ export function AssetDonutChart({ data, totalAssets }: AssetDonutChartProps) {
                         </div>
                       </div>
                     </button>
-                    {isExpanded && item.accounts.length > 1 && (
+                    {isExpanded && item.accounts.filter(a => (!hideZeroAccounts || a.balance !== 0) && (!excludeSmall || a.balance >= threshold)).length > 1 && (
                       <div className="ml-11 mr-2 mt-0.5 mb-1 space-y-0.5">
-                        {item.accounts.map(acc => (
+                        {item.accounts.filter(a => (!hideZeroAccounts || a.balance !== 0) && (!excludeSmall || a.balance >= threshold)).map(acc => (
                           <div key={acc.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-red-950/20">
                             <span className="text-xs text-muted-foreground truncate mr-2">{acc.name}</span>
                             <span className="text-xs font-medium text-red-400/80 tabular-nums flex-shrink-0">

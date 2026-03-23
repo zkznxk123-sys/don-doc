@@ -57,17 +57,19 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
         'flex items-center gap-3 px-4 h-14 border-b border-border/60 flex-shrink-0',
         !open && 'lg:justify-center lg:px-0',
       )}>
-        <div className="w-7 h-7 rounded-md bg-foreground flex items-center justify-center flex-shrink-0">
-          <span className="text-xs font-bold text-background">돈</span>
-        </div>
-        {open && (
-          <div className="min-w-0">
-            <p className="text-sm font-bold text-foreground truncate font-serif tracking-tight">돈독</p>
-            {user.familyName && (
-              <p className="text-[10px] text-muted-foreground truncate">{user.familyName}</p>
-            )}
+        <Link href="/dashboard" className="flex items-center gap-3 min-w-0 flex-1">
+          <div className="w-7 h-7 rounded-md bg-foreground flex items-center justify-center flex-shrink-0">
+            <span className="text-xs font-bold text-background">돈</span>
           </div>
-        )}
+          {open && (
+            <div className="min-w-0">
+              <p className="text-sm font-bold text-foreground truncate font-serif tracking-tight">돈독</p>
+              {user.familyName && (
+                <p className="text-[10px] text-muted-foreground truncate">{user.familyName}</p>
+              )}
+            </div>
+          )}
+        </Link>
         {/* 모바일 닫기 */}
         {open && (
           <button

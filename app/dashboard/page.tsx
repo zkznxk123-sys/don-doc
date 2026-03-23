@@ -7,8 +7,8 @@ import {
   Users, User, ChevronLeft, ChevronRight, EyeOff, Calculator,
 } from 'lucide-react'
 import {
-  ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer,
+  ComposedChart, Bar, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, ReferenceLine,
 } from 'recharts'
 import { formatCurrency, formatLargeNumber, cn } from '@/lib/utils'
 import { AssetDonutChart, type AssetTypeData } from '@/components/ui/asset-donut-chart'
@@ -17,10 +17,22 @@ import { AccountDrawer } from '@/components/ui/account-drawer'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDashboardActions } from '@/components/layout/DashboardShell'
-import { getNetWorthHistory, type NetWorthSnapshotData } from '@/lib/actions/networth'
+import { getNetWorthHistory, createSnapshotFromCurrentBalances, type NetWorthSnapshotData } from '@/lib/actions/networth'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
+
+// ── 유틸 ──────────────────────────────────────────────────────────────────────
+
+function getCurrentYearMonth(): string {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+}
+
+/** 대시보드용: 10만원 미만이면서 비중 1% 미만인 자산은 표시하지 않음 */
+function filterDashboardAssets(data: AssetTypeData[]): AssetTypeData[] {
+  return data.filter(d => d.isLiability || d.balance >= 100_000 || d.percentage >= 1)
+}
 
 // ── 타입 ──────────────────────────────────────────────────────────────────────
 
@@ -322,44 +334,120 @@ function MonthPicker({ value, onChange }: { value: string; onChange: (m: string)
 }
 
 function KpiCard({
-  icon, label, value, sub, subColor = 'text-muted-foreground',
+  icon, label, value, sub, subColor = 'text-muted-foreground', onClick, active, accentColor,
 }: {
   icon: React.ReactNode
   label: string
   value: string
   sub?: string
   subColor?: string
+  onClick?: () => void
+  active?: boolean
+  accentColor?: string  // 하단 인디케이터 라인 색상
 }) {
+  const Tag = onClick ? 'button' : 'div'
   return (
-    <div className="bg-card rounded-2xl p-4 border border-border flex flex-col gap-2">
-      <div className="flex items-center gap-1.5">
-        {icon}
-        <span className="text-xs text-muted-foreground font-medium">{label}</span>
+    <Tag
+      onClick={onClick}
+      className={cn(
+        'relative rounded-2xl p-4 border flex flex-col gap-2 text-left transition-all duration-150 overflow-hidden',
+        onClick ? 'cursor-pointer active:scale-[0.97]' : '',
+        active
+          ? 'border-ring bg-muted/60'
+          : 'bg-card border-border',
+      )}
+    >
+      {/* 하단 컬러 인디케이터 — 클릭 가능한 카드에만 표시 */}
+      {accentColor && (
+        <div
+          className={cn('absolute bottom-0 left-0 right-0 h-0.5 transition-opacity duration-150', active ? 'opacity-100' : 'opacity-30')}
+          style={{ backgroundColor: accentColor }}
+        />
+      )}
+      <div className="flex items-center justify-between gap-1.5">
+        <div className="flex items-center gap-1.5">
+          {icon}
+          <span className="text-xs text-muted-foreground font-medium">{label}</span>
+        </div>
+        {active
+          ? <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md" style={{ color: accentColor, backgroundColor: accentColor + '20' }}>필터 중</span>
+          : onClick && <span className="text-[10px] text-muted-foreground/40">탭하여 필터</span>
+        }
       </div>
       <p className="text-xl font-bold text-foreground tabular-nums leading-tight font-serif tracking-tight">{value}</p>
       {sub && <p className={cn('text-xs tabular-nums', subColor)}>{sub}</p>}
+    </Tag>
+  )
+}
+
+const CF_COLORS = { income: '#059669', expense: '#f97316', rate: '#3b82f6' }
+
+function CashflowTooltip({ active, payload, label }: any) {
+  if (!active || !payload?.length) return null
+  const income  = payload.find((p: any) => p.dataKey === 'income')?.value  ?? 0
+  const expense = payload.find((p: any) => p.dataKey === 'expense')?.value ?? 0
+  const rate    = payload.find((p: any) => p.dataKey === 'rate')?.value
+  const surplus = income - expense
+  return (
+    <div className="rounded-xl border border-border bg-card shadow-lg p-3 text-xs space-y-1 min-w-[140px]">
+      <p className="font-semibold text-foreground mb-1.5">{label}</p>
+      <div className="flex justify-between gap-4">
+        <span className="text-muted-foreground">수입</span>
+        <span className="font-medium text-emerald-500 tabular-nums">{formatLargeNumber(income)}</span>
+      </div>
+      <div className="flex justify-between gap-4">
+        <span className="text-muted-foreground">지출</span>
+        <span className="font-medium text-orange-400 tabular-nums">{formatLargeNumber(expense)}</span>
+      </div>
+      <div className="flex justify-between gap-4 border-t border-border/60 pt-1 mt-1">
+        <span className="text-muted-foreground">흑자액</span>
+        <span className={cn('font-semibold tabular-nums', surplus >= 0 ? 'text-foreground' : 'text-red-400')}>
+          {surplus >= 0 ? '' : '-'}{formatLargeNumber(Math.abs(surplus))}
+        </span>
+      </div>
+      {rate != null && (
+        <div className="flex justify-between gap-4">
+          <span className="text-muted-foreground">저축률</span>
+          <span className="font-medium text-blue-400 tabular-nums">{rate.toFixed(1)}%</span>
+        </div>
+      )}
     </div>
   )
 }
 
-const CF_COLORS = { income: '#10b981', expense: '#ef4444', net: '#3b82f6' }
-
 function CashflowChart({ months }: { months: { label: string; income: number; expense: number }[] }) {
   if (months.length === 0) {
     return (
-      <div className="flex items-center justify-center h-[200px] text-sm text-muted-foreground/60">
+      <div className="flex items-center justify-center h-[220px] text-sm text-muted-foreground/60">
         거래 내역이 없습니다
       </div>
     )
   }
 
-  const data = months.map(m => ({ ...m, net: m.income - m.expense }))
+  const data = months.map(m => ({
+    ...m,
+    rate: m.income > 0 ? Math.round(((m.income - m.expense) / m.income) * 100 * 10) / 10 : 0,
+  }))
+
+  const gradientId = 'savingsRateGradient'
 
   return (
-    <ResponsiveContainer width="100%" height={200}>
-      <ComposedChart data={data} barGap={2}>
+    <ResponsiveContainer width="100%" height={220}>
+      <ComposedChart data={data} barCategoryGap="20%" barGap={4}>
+        <defs>
+          <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="5%"  stopColor={CF_COLORS.rate} stopOpacity={0.25} />
+            <stop offset="95%" stopColor={CF_COLORS.rate} stopOpacity={0} />
+          </linearGradient>
+        </defs>
         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-        <XAxis dataKey="label" stroke="hsl(var(--muted-foreground))" style={{ fontSize: 11 }} tickLine={false} axisLine={false} />
+        <XAxis
+          dataKey="label"
+          stroke="hsl(var(--muted-foreground))"
+          style={{ fontSize: 11 }}
+          tickLine={false}
+          axisLine={false}
+        />
         <YAxis
           yAxisId="left"
           stroke="hsl(var(--muted-foreground))"
@@ -369,16 +457,39 @@ function CashflowChart({ months }: { months: { label: string; income: number; ex
           tickFormatter={v => v === 0 ? '0' : `${(v / 10000).toFixed(0)}만`}
           width={38}
         />
-        <Tooltip
-          contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 8 }}
-          formatter={(value: number, name: string) => [
-            formatCurrency(value),
-            name === 'income' ? '수입' : name === 'expense' ? '지출' : '순저축',
-          ]}
+        <YAxis
+          yAxisId="right"
+          orientation="right"
+          stroke="hsl(var(--muted-foreground))"
+          style={{ fontSize: 10 }}
+          tickLine={false}
+          axisLine={false}
+          tickFormatter={v => `${v}%`}
+          domain={[-20, 100]}
+          width={36}
         />
-        <Bar yAxisId="left" dataKey="income" fill={CF_COLORS.income} radius={[4, 4, 0, 0]} maxBarSize={28} name="income" />
-        <Bar yAxisId="left" dataKey="expense" fill={CF_COLORS.expense} radius={[4, 4, 0, 0]} maxBarSize={28} name="expense" />
-        <Line yAxisId="left" type="monotone" dataKey="net" stroke={CF_COLORS.net} strokeWidth={2} dot={{ r: 3, fill: CF_COLORS.net }} name="net" />
+        <Tooltip content={<CashflowTooltip />} />
+        <ReferenceLine
+          yAxisId="right"
+          y={50}
+          stroke={CF_COLORS.rate}
+          strokeDasharray="4 3"
+          strokeOpacity={0.5}
+          label={{ value: '목표 50%', position: 'insideTopRight', fontSize: 9, fill: CF_COLORS.rate, opacity: 0.7 }}
+        />
+        <Bar yAxisId="left" dataKey="income"  fill={CF_COLORS.income}  radius={[4, 4, 0, 0]} maxBarSize={60} name="income" />
+        <Bar yAxisId="left" dataKey="expense" fill={CF_COLORS.expense} radius={[4, 4, 0, 0]} maxBarSize={60} name="expense" />
+        <Area
+          yAxisId="right"
+          type="monotone"
+          dataKey="rate"
+          stroke={CF_COLORS.rate}
+          strokeWidth={2}
+          fill={`url(#${gradientId})`}
+          dot={{ r: 3, fill: CF_COLORS.rate, strokeWidth: 0 }}
+          activeDot={{ r: 4 }}
+          name="rate"
+        />
       </ComposedChart>
     </ResponsiveContainer>
   )
@@ -538,6 +649,9 @@ export default function Dashboard() {
   const [insights, setInsights] = useState<Insights | null>(null)
   const [cashflowMonths, setCashflowMonths] = useState<{ label: string; income: number; expense: number }[]>([])
   const [myBudgetFromDB, setMyBudgetFromDB] = useState(0)
+
+  // ── 거래 필터 ───────────────────────────────────────────────────────────────
+  const [txFilter, setTxFilter] = useState<'all' | 'income' | 'expense'>('all')
 
   // ── 인증 상태 ───────────────────────────────────────────────────────────────
   const [viewMode, setViewMode] = useState<'CFO' | 'MEMBER'>('CFO')
@@ -719,6 +833,9 @@ export default function Dashboard() {
                     value={formatLargeNumber(monthlyIncome)}
                     sub={monthlyIncome === 0 ? '거래 없음' : undefined}
                     subColor="text-muted-foreground/60"
+                    onClick={() => setTxFilter(f => f === 'income' ? 'all' : 'income')}
+                    active={txFilter === 'income'}
+                    accentColor="#34d399"
                   />
                   <KpiCard
                     icon={<ArrowDownRight className="w-3.5 h-3.5 text-red-400" />}
@@ -730,6 +847,9 @@ export default function Dashboard() {
                         : `연평균보다 ${Math.abs(insights.expenseVsAvgPercent).toFixed(0)}% 절감`
                       : undefined}
                     subColor={insights && insights.expenseVsAvgPercent > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-emerald-600 dark:text-emerald-400'}
+                    onClick={() => setTxFilter(f => f === 'expense' ? 'all' : 'expense')}
+                    active={txFilter === 'expense'}
+                    accentColor="#f87171"
                   />
                   <KpiCard
                     icon={<PiggyBank className="w-3.5 h-3.5 text-blue-400" />}
@@ -756,10 +876,18 @@ export default function Dashboard() {
               <TabsContent value="networth" className="mt-3">
                 {baseLoading
                   ? <NetWorthChartSkeleton />
-                  : <NetWorthChart data={netWorthHistory} onDataSaved={async () => {
-                      const h = await getNetWorthHistory()
-                      setNetWorthHistory(h)
-                    }} />
+                  : <NetWorthChart
+                      data={netWorthHistory}
+                      onDataSaved={async () => {
+                        const h = await getNetWorthHistory()
+                        setNetWorthHistory(h)
+                      }}
+                      onQuickSnapshot={async () => {
+                        await createSnapshotFromCurrentBalances(getCurrentYearMonth())
+                        const h = await getNetWorthHistory()
+                        setNetWorthHistory(h)
+                      }}
+                    />
                 }
               </TabsContent>
 
@@ -785,7 +913,12 @@ export default function Dashboard() {
               {/* Left: 도넛 차트 */}
               {baseLoading
                 ? <DonutChartSkeleton />
-                : <AssetDonutChart data={assetsByType} totalAssets={totalNetWorth} />
+                : <AssetDonutChart
+                    data={filterDashboardAssets(assetsByType)}
+                    totalAssets={totalNetWorth}
+                    manageLink="/dashboard/assets"
+                    hideZeroAccounts
+                  />
               }
 
               {/* Right: 예산 + 카테고리 Top5 */}
@@ -854,32 +987,51 @@ export default function Dashboard() {
             </div>
 
             {/* ━━ Tier 4: 가족 거래 피드 ━━ */}
-            {monthLoading ? <TransactionFeedSkeleton /> : (
-              <div className="bg-card rounded-2xl border border-border p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-4 h-4 text-muted-foreground" />
-                    <h3 className="text-sm font-semibold text-foreground">최근 가족 거래</h3>
-                    <span className="text-[10px] text-muted-foreground/60 bg-muted px-1.5 py-0.5 rounded-full">
-                      {transactions.length}건
-                    </span>
+            {monthLoading ? <TransactionFeedSkeleton /> : (() => {
+              const filteredTx = transactions.filter(tx =>
+                txFilter === 'income' ? tx.amount > 0 :
+                txFilter === 'expense' ? tx.amount < 0 : true
+              )
+              return (
+                <div className="bg-card rounded-2xl border border-border p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-4 h-4 text-muted-foreground" />
+                      <h3 className="text-sm font-semibold text-foreground">최근 가족 거래</h3>
+                      <span className="text-[10px] text-muted-foreground/60 bg-muted px-1.5 py-0.5 rounded-full">
+                        {filteredTx.length}건
+                        {txFilter !== 'all' && <span className="ml-1 text-ring">({txFilter === 'income' ? '수입' : '지출'})</span>}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {txFilter !== 'all' && (
+                        <button
+                          onClick={() => setTxFilter('all')}
+                          className="text-[10px] text-muted-foreground hover:text-foreground px-2 py-0.5 rounded-md bg-muted transition-colors"
+                        >
+                          필터 해제
+                        </button>
+                      )}
+                      <Link href="/dashboard/transactions" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                        더보기 →
+                      </Link>
+                    </div>
                   </div>
-                  <Link href="/dashboard/transactions" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                    더보기 →
-                  </Link>
+                  {filteredTx.length === 0 ? (
+                    <p className="text-sm text-muted-foreground/60 text-center py-6">
+                      {txFilter !== 'all' ? `${txFilter === 'income' ? '수입' : '지출'} 내역이 없습니다` : '거래 내역이 없습니다'}
+                    </p>
+                  ) : (
+                    <div>
+                      {filteredTx
+                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                        .slice(0, 5)
+                        .map(tx => <TransactionFeedRow key={tx.id} tx={tx} />)}
+                    </div>
+                  )}
                 </div>
-                {transactions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground/60 text-center py-6">거래 내역이 없습니다</p>
-                ) : (
-                  <div>
-                    {transactions
-                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                      .slice(0, 5)
-                      .map(tx => <TransactionFeedRow key={tx.id} tx={tx} />)}
-                  </div>
-                )}
-              </div>
-            )}
+              )
+            })()}
           </motion.div>
 
         ) : (

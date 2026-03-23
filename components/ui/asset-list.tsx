@@ -10,6 +10,7 @@ import { cn, formatCurrency, formatLargeNumber } from '@/lib/utils'
 import type { AccountInitialData } from '@/components/ui/account-drawer'
 import type { ShareLevel } from '@/lib/actions/accounts'
 import { Switch } from '@/components/ui/switch'
+import { useAssetThreshold } from '@/lib/hooks/useAssetThreshold'
 
 const TYPE_META: Record<string, { label: string; Icon: React.ElementType; color: string; bg: string }> = {
   CASH:        { label: '현금 · 예적금', Icon: Banknote,   color: 'text-blue-400',    bg: 'bg-blue-400/10' },
@@ -174,11 +175,12 @@ function LinkedDebtRow({ debt }: { debt: { id: string; name: string; balance: nu
 
 export function AssetList({ accounts, totalAssets, onEdit, onAdd }: AssetListProps) {
   const [excludeZero, setExcludeZero] = useState(true)
+  const { threshold } = useAssetThreshold()
 
   if (accounts.length === 0) return null
 
   const visibleAccounts = excludeZero
-    ? accounts.filter(a => Math.abs(a.balance) > 100000)
+    ? accounts.filter(a => Math.abs(a.balance) >= threshold)
     : accounts
 
   const groups = buildGroups(visibleAccounts)
@@ -191,7 +193,7 @@ export function AssetList({ accounts, totalAssets, onEdit, onAdd }: AssetListPro
         <h3 className="text-sm font-semibold text-foreground">등록된 자산</h3>
         <div className="flex items-center gap-3">
           <label className="flex items-center gap-1.5 cursor-pointer select-none">
-            <span className="text-xs text-muted-foreground">10만원 이하 제외</span>
+            <span className="text-xs text-muted-foreground">{(threshold / 10000).toLocaleString()}만원 이하 제외</span>
             <Switch
               checked={excludeZero}
               onCheckedChange={setExcludeZero}

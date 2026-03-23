@@ -17,6 +17,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { updateUserName, getCurrentUser } from '@/lib/actions/user'
+import { useAssetThreshold } from '@/lib/hooks/useAssetThreshold'
 
 export default function SettingsPage() {
   return <SettingsClient />
@@ -25,6 +26,7 @@ export default function SettingsPage() {
 function SettingsClient() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const { threshold, setThreshold } = useAssetThreshold()
   const [currentName, setCurrentName] = useState<string | null>(null)
   const [currentEmail, setCurrentEmail] = useState('')
   const [isEditingName, setIsEditingName] = useState(false)
@@ -120,6 +122,32 @@ function SettingsClient() {
               </div>
             )}
             <p className="text-xs text-muted-foreground/60 mt-0.5">{currentEmail}</p>
+          </div>
+        </div>
+      </section>
+
+      {/* 자산 필터 기준 */}
+      <section className="rounded-2xl border border-border bg-card/30 p-5 mb-4">
+        <h2 className="text-sm font-semibold text-foreground/70 mb-3">자산 필터 기준</h2>
+        <div className="px-3 py-2">
+          <p className="text-sm font-medium text-foreground mb-1">소액 자산 제외 기준</p>
+          <p className="text-xs text-muted-foreground mb-4">
+            이 금액 미만의 자산은 자산 배분·등록된 자산 목록에서 제외됩니다.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {[10000, 50000, 100000, 500000, 1000000].map(v => (
+              <button
+                key={v}
+                onClick={() => setThreshold(v)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                  threshold === v
+                    ? 'bg-foreground text-background border-foreground'
+                    : 'bg-card border-border text-muted-foreground hover:text-foreground hover:border-ring'
+                }`}
+              >
+                {(v / 10000).toLocaleString()}만원
+              </button>
+            ))}
           </div>
         </div>
       </section>

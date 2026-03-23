@@ -19,6 +19,7 @@ import type { NetWorthSnapshotData } from '@/lib/actions/networth'
 interface NetWorthChartProps {
   data: NetWorthSnapshotData[]
   onDataSaved?: () => void
+  onQuickSnapshot?: () => void | Promise<void>
 }
 
 function formatYearMonth(ym: string): string {
@@ -61,7 +62,7 @@ const formatYAxis = (value: number): string => {
   return String(value)
 }
 
-export function NetWorthChart({ data, onDataSaved }: NetWorthChartProps) {
+export function NetWorthChart({ data, onDataSaved, onQuickSnapshot }: NetWorthChartProps) {
   const [modalOpen, setModalOpen] = useState(false)
 
   const chartData = data.map(d => ({
@@ -95,12 +96,20 @@ export function NetWorthChart({ data, onDataSaved }: NetWorthChartProps) {
         {/* Chart */}
         <div className="px-2 py-4">
           {isEmpty ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="flex flex-col items-center justify-center py-12 text-center px-4">
               <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center mb-3">
                 <TrendingUp className="w-6 h-6 text-muted-foreground/60" />
               </div>
-              <p className="text-sm text-muted-foreground mb-1">아직 기록된 데이터가 없어요</p>
-              <p className="text-xs text-muted-foreground/60">과거 데이터 기록 버튼으로 추가해 보세요</p>
+              <p className="text-sm text-muted-foreground mb-1">매월 말일, 자산 스냅샷을 기록하면</p>
+              <p className="text-xs text-muted-foreground/60 mb-4">순자산 추이 그래프가 완성됩니다!</p>
+              {onQuickSnapshot && (
+                <button
+                  onClick={onQuickSnapshot}
+                  className="flex items-center gap-1.5 text-xs font-medium text-foreground bg-muted hover:bg-accent border border-border px-4 py-2 rounded-xl transition-colors"
+                >
+                  📸 현재 잔액으로 스냅샷 기록하기
+                </button>
+              )}
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
