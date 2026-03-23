@@ -363,7 +363,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
               </button>
             </DrawerClose>
           </div>
-          <p className="text-xs text-muted-foreground mt-1">.xlsx, .xls, .csv 파일을 지원합니다</p>
+          <p className="w-full text-center text-xs text-muted-foreground mt-1">.xlsx, .xls, .csv 파일을 지원합니다</p>
         </DrawerHeader>
 
         <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-4">

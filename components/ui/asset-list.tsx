@@ -121,8 +121,8 @@ function AssetRow({
       onClick={() => onEdit(account)}
       className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-muted/50 transition-colors text-left group"
     >
-      <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0', meta.bg)}>
-        <MetaIcon className={cn('w-4 h-4', meta.color)} />
+      <div className={cn('w-10 h-10 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center flex-shrink-0', meta.bg)}>
+        <MetaIcon className={cn('w-5 h-5 sm:w-4 sm:h-4', meta.color)} />
       </div>
 
       <div className="flex-1 min-w-0">
@@ -297,8 +297,8 @@ export function LiabilityList({ liabilities, totalLiabilities, onEdit, onAdd }: 
               onClick={() => onEdit(account)}
               className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-muted/50 transition-colors text-left group"
             >
-              <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0', meta.bg)}>
-                <MetaIcon className={cn('w-4 h-4', meta.color)} />
+              <div className={cn('w-10 h-10 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center flex-shrink-0', meta.bg)}>
+                <MetaIcon className={cn('w-5 h-5 sm:w-4 sm:h-4', meta.color)} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">

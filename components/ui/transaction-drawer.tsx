@@ -306,8 +306,8 @@ export function TransactionDrawer({
 
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <DrawerContent className="max-h-[92vh]">
-        <div className="overflow-y-auto px-6 pb-8">
+      <DrawerContent className="max-h-[92vh] overflow-x-hidden">
+        <div className="overflow-y-auto overflow-x-hidden px-4 sm:px-6 pb-8">
           {/* Header */}
           <DrawerHeader className="px-0 pt-4 pb-2">
             <DrawerTitle className="text-xl">
@@ -347,9 +347,9 @@ export function TransactionDrawer({
               </button>
             </div>
 
-            <div className="flex items-baseline justify-center gap-1">
+            <div className="flex items-baseline justify-center gap-1 max-w-full overflow-hidden">
               <span className={cn(
-                "text-3xl font-light",
+                "text-3xl font-light flex-shrink-0",
                 isExpense ? "text-red-400/60" : "text-emerald-400/60"
               )}>
                 ₩
@@ -365,7 +365,7 @@ export function TransactionDrawer({
                 placeholder="0"
                 autoFocus
                 className={cn(
-                  "bg-transparent text-center font-bold placeholder-muted-foreground/40 outline-none tabular-nums tracking-tight text-5xl",
+                  "bg-transparent text-center font-bold placeholder-muted-foreground/40 outline-none tabular-nums tracking-tight text-4xl sm:text-5xl min-w-0 max-w-[calc(100vw-6rem)]",
                   isExpense ? "text-foreground" : "text-emerald-400"
                 )}
                 style={{ width: `${Math.max(displayAmount.length, 1) * 1.8 + 1.5}rem` }}

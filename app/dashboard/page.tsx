@@ -346,7 +346,7 @@ function KpiCard({
     <Tag
       onClick={onClick}
       className={cn(
-        'relative rounded-2xl p-4 border flex flex-col gap-2 text-left transition-all duration-150 overflow-hidden',
+        'relative rounded-2xl p-3 sm:p-4 border flex flex-col gap-1.5 sm:gap-2 text-left transition-all duration-150 overflow-hidden',
         onClick ? 'cursor-pointer active:scale-[0.97]' : '',
         active
           ? 'border-ring bg-muted/60'
@@ -360,18 +360,18 @@ function KpiCard({
           style={{ backgroundColor: accentColor }}
         />
       )}
-      <div className="flex items-center justify-between gap-1.5">
-        <div className="flex items-center gap-1.5">
+      <div className="flex items-center justify-between gap-1 min-w-0">
+        <div className="flex items-center gap-1 min-w-0">
           {icon}
-          <span className="text-xs text-muted-foreground font-medium">{label}</span>
+          <span className="text-[11px] sm:text-xs text-muted-foreground font-medium truncate">{label}</span>
         </div>
         {active
-          ? <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md" style={{ color: accentColor, backgroundColor: accentColor + '20' }}>필터 중</span>
-          : onClick && <span className="text-[10px] text-muted-foreground/40">탭하여 필터</span>
+          ? <span className="flex-shrink-0 text-[9px] sm:text-[10px] font-medium px-1 sm:px-1.5 py-0.5 rounded-md" style={{ color: accentColor, backgroundColor: accentColor + '20' }}>필터 중</span>
+          : onClick && <span className="flex-shrink-0 hidden xs:inline text-[10px] text-muted-foreground/40">탭하여 필터</span>
         }
       </div>
-      <p className="text-xl font-bold text-foreground tabular-nums leading-tight font-serif tracking-tight">{value}</p>
-      {sub && <p className={cn('text-xs tabular-nums', subColor)}>{sub}</p>}
+      <p className="text-lg sm:text-xl font-bold text-foreground tabular-nums leading-tight font-serif tracking-tight">{value}</p>
+      {sub && <p className={cn('text-[10px] sm:text-xs tabular-nums leading-snug', subColor)}>{sub}</p>}
     </Tag>
   )
 }
