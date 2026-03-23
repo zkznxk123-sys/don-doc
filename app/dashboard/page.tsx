@@ -508,10 +508,12 @@ function TopExpenseCategories({ transactions, totalExpense }: { transactions: Tr
     return <p className="text-xs text-muted-foreground/60 py-4 text-center">지출 내역이 없습니다</p>
   }
 
+  const top5Total = top5.reduce((sum, c) => sum + c.amount, 0)
+
   return (
     <div className="space-y-2.5">
       {top5.map((cat, i) => {
-        const pct = totalExpense > 0 ? Math.round((cat.amount / totalExpense) * 100) : 0
+        const pct = top5Total > 0 ? Math.round((cat.amount / top5Total) * 100) : 0
         return (
           <div key={cat.category} className="flex items-center gap-3">
             <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: CAT_COLORS[i] }} />
