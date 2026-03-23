@@ -647,7 +647,7 @@ export async function autoDetectAndExcludeTransfers(
 
     const toExclude = new Set<string>()
 
-    for (const dayTxs of byDate.values()) {
+    for (const dayTxs of Array.from(byDate.values())) {
       for (let i = 0; i < dayTxs.length; i++) {
         for (let j = i + 1; j < dayTxs.length; j++) {
           const a = dayTxs[i]
