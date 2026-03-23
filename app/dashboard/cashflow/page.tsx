@@ -71,6 +71,15 @@ export default function CashflowPage() {
   const [saving, setSaving] = useState(false)
   const [hideExcluded, setHideExcluded] = useState(true)
 
+  // ── AI 재분류 모달 state ──
+  const [aiModal, setAiModal] = useState<{
+    progress: number
+    steps: { label: string; done: boolean; active: boolean }[]
+    updated: number
+    done: boolean
+    error: string | null
+  } | null>(null)
+
   const { refreshKey, openTransactionDrawer, shellUser, setPageActions, openExcelDrawer } = useDashboardActions()
 
   const toggleFilter = useCallback((type: TypeFilter) => {
@@ -299,39 +308,65 @@ export default function CashflowPage() {
           </button>
           <button
             onClick={async () => {
-              const toastId = toast.loading('AI 재분류 중...')
+              const monthStr = `${year}-${String(month).padStart(2, '0')}`
+              setAiModal({ progress: 5, steps: [
+                { label: '거래 내역 스캔', done: false, active: true },
+                { label: 'AI 카테고리 매핑', done: false, active: false },
+                { label: '데이터베이스 업데이트', done: false, active: false },
+              ], updated: 0, done: false, error: null })
+
               let totalUpdated = 0
+              let totalCount = 0
+              let processedCount = 0
+
               try {
                 while (true) {
                   const controller = new AbortController()
                   const timer = setTimeout(() => controller.abort(), 90_000)
-                  const res = await fetch(`/api/ai/recategorize?month=${year}-${String(month).padStart(2, '0')}`, {
-                    method: 'POST',
-                    signal: controller.signal,
+                  const res = await fetch(`/api/ai/recategorize?month=${monthStr}`, {
+                    method: 'POST', signal: controller.signal,
                   })
                   clearTimeout(timer)
-                  if (!res.ok) { toast.error(`서버 오류 (${res.status})`, { id: toastId }); break }
+
+                  if (!res.ok) {
+                    setAiModal(p => p ? { ...p, error: `서버 오류 (${res.status})`, done: true } : null)
+                    break
+                  }
                   const data = await res.json()
-                  if (!data.success) { toast.error(data.error ?? '재분류 실패', { id: toastId }); break }
+                  if (!data.success) {
+                    setAiModal(p => p ? { ...p, error: data.error ?? '재분류 실패', done: true } : null)
+                    break
+                  }
+
                   totalUpdated += data.updated ?? 0
+                  if (totalCount === 0) totalCount = (data.updated ?? 0) + (data.remaining ?? 0)
+                  processedCount += data.updated ?? 0
+
+                  const progress = totalCount > 0
+                    ? Math.round(10 + (processedCount / totalCount) * 80)
+                    : 90
+
                   if (data.remaining > 0) {
-                    toast.loading(`AI 재분류 중... ${totalUpdated}건 완료, ${data.remaining}건 남음`, { id: toastId })
+                    setAiModal({ progress, steps: [
+                      { label: '거래 내역 스캔', done: true, active: false },
+                      { label: 'AI 카테고리 매핑', done: false, active: true },
+                      { label: '데이터베이스 업데이트', done: false, active: false },
+                    ], updated: totalUpdated, done: false, error: null })
                   } else {
-                    if (totalUpdated > 0) {
-                      toast.success(`${totalUpdated}건 재분류 완료`, { id: toastId })
-                      router.refresh()
-                    } else {
-                      toast.info(data.message ?? '미분류 항목이 없습니다', { id: toastId })
-                    }
+                    setAiModal({ progress: 100, steps: [
+                      { label: '거래 내역 스캔', done: true, active: false },
+                      { label: 'AI 카테고리 매핑', done: true, active: false },
+                      { label: '데이터베이스 업데이트', done: true, active: false },
+                    ], updated: totalUpdated, done: true, error: null })
+                    if (totalUpdated > 0) router.refresh()
                     break
                   }
                 }
               } catch (e) {
-                if ((e as Error).name === 'AbortError') {
-                  toast.error('시간 초과. 다시 눌러서 이어서 진행하세요.', { id: toastId })
-                } else {
-                  toast.error('재분류 중 오류가 발생했습니다', { id: toastId })
-                }
+                const msg = (e as Error).name === 'AbortError'
+                  ? '시간 초과. 다시 시도해주세요.'
+                  : '오류가 발생했습니다.'
+                setAiModal(p => p ? { ...p, error: msg, done: true } : null)
               }
             }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-ring transition-colors"
@@ -368,6 +403,89 @@ export default function CashflowPage() {
 
   return (
     <div className="max-w-3xl mx-auto">
+      {/* AI 재분류 모달 */}
+      {aiModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-sm mx-4 p-8 flex flex-col items-center gap-6 shadow-2xl">
+            {/* 아이콘 */}
+            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center">
+              <Sparkles className={cn('w-7 h-7', aiModal.done && !aiModal.error ? 'text-emerald-400' : 'text-foreground', !aiModal.done && 'animate-pulse')} />
+            </div>
+
+            {/* 타이틀 */}
+            <div className="text-center space-y-2">
+              <h2 className="text-lg font-bold italic text-foreground">
+                {aiModal.done
+                  ? aiModal.error ? '재분류 실패' : 'AI 재분류 완료'
+                  : 'AI 미분류 항목 재분류 중...'}
+              </h2>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                {aiModal.done && !aiModal.error
+                  ? `${aiModal.updated > 0 ? `${aiModal.updated}건이 새로 분류됐습니다.` : '모든 항목이 이미 분류되어 있습니다.'}`
+                  : aiModal.error
+                  ? aiModal.error
+                  : '거래 내역 패턴을 분석하여 카테고리를 자동 매핑합니다.'}
+              </p>
+            </div>
+
+            {/* 프로그레스 바 */}
+            {!aiModal.done && (
+              <div className="w-full space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                    STATUS: PROCESSING
+                  </span>
+                  <span className="text-xs tabular-nums text-foreground">{aiModal.progress}%</span>
+                </div>
+                <div className="h-0.5 w-full bg-border rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-foreground rounded-full transition-all duration-700"
+                    style={{ width: `${aiModal.progress}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* 스텝 리스트 */}
+            <div className="w-full rounded-xl bg-muted/50 border border-border/50 divide-y divide-border/40">
+              {aiModal.steps.map((step, i) => (
+                <div key={i} className="flex items-center gap-3 px-4 py-2.5">
+                  {step.done ? (
+                    <Check className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                  ) : step.active ? (
+                    <div className="w-3.5 h-3.5 flex items-center justify-center flex-shrink-0">
+                      <div className="w-1.5 h-1.5 rounded-full bg-foreground animate-pulse" />
+                    </div>
+                  ) : (
+                    <div className="w-3.5 h-3.5 flex items-center justify-center flex-shrink-0">
+                      <div className="w-1.5 h-1.5 rounded-full bg-border" />
+                    </div>
+                  )}
+                  <span className={cn(
+                    'text-[11px] font-medium uppercase tracking-wider',
+                    step.active ? 'text-foreground' : step.done ? 'text-muted-foreground' : 'text-muted-foreground/40',
+                  )}>
+                    {step.active ? `${step.label}...` : step.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* 완료 버튼 또는 푸터 */}
+            {aiModal.done ? (
+              <button
+                onClick={() => setAiModal(null)}
+                className="w-full py-2.5 rounded-xl bg-foreground text-background text-sm font-semibold hover:bg-foreground/90 transition-colors"
+              >
+                확인
+              </button>
+            ) : (
+              <p className="text-[10px] text-muted-foreground/40 italic">Powered by GPT-4o-mini</p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 월 선택기 */}
       <div className="flex items-center justify-between mb-6">
         <button
