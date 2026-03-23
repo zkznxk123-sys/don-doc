@@ -47,10 +47,6 @@ interface Transaction {
   isMasked: boolean
 }
 
-interface MonthlyStats {
-  income: number
-  expense: number
-}
 
 interface BudgetData {
   familyBudget: number
@@ -696,23 +692,22 @@ export default function Dashboard() {
     loadBase()
   }, [shellUser])
 
+  // ── 현금흐름 12개월 (selectedMonth 무관) ────────────────────────────────────
+  useEffect(() => {
+    fetch('/api/stats/cashflow?months=12')
+      .then(r => r.json())
+      .then(json => { if (json.success) setCashflowMonths(json.months) })
+  }, [refreshKey])
+
   // ── 월별 데이터 로드 ─────────────────────────────────────────────────────────
   useEffect(() => {
     async function loadMonth() {
       setMonthLoading(true)
       try {
-        const [y, m] = selectedMonth.split('-').map(Number)
-        const prevMonths = [-2, -1].map(offset => {
-          const d = new Date(y, m - 1 + offset, 1)
-          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-        })
-
-        const [txJson, budgetJson, insJson, prevTx1, prevTx2] = await Promise.all([
+        const [txJson, budgetJson, insJson] = await Promise.all([
           fetch(`/api/transactions/list?month=${selectedMonth}`).then(r => r.json()),
           fetch(`/api/budget?month=${selectedMonth}`).then(r => r.json()),
           fetch(`/api/stats/insights?month=${selectedMonth}`).then(r => r.json()),
-          fetch(`/api/transactions/list?month=${prevMonths[0]}`).then(r => r.json()),
-          fetch(`/api/transactions/list?month=${prevMonths[1]}`).then(r => r.json()),
         ])
 
         if (txJson.success) {
@@ -730,18 +725,6 @@ export default function Dashboard() {
         }
 
         if (insJson.success) setInsights(insJson)
-
-        const buildStats = (txs: any[]): MonthlyStats => ({
-          income: (txs ?? []).filter((t: any) => t.amount > 0).reduce((s: number, t: any) => s + t.amount, 0),
-          expense: (txs ?? []).filter((t: any) => t.amount < 0).reduce((s: number, t: any) => s + Math.abs(t.amount), 0),
-        })
-        const fmtLabel = (ym: string) => { const [yy, mm] = ym.split('-'); return `${yy.slice(2)}.${mm}` }
-
-        setCashflowMonths([
-          { label: fmtLabel(prevMonths[0]), ...buildStats(prevTx1.transactions ?? []) },
-          { label: fmtLabel(prevMonths[1]), ...buildStats(prevTx2.transactions ?? []) },
-          { label: fmtLabel(selectedMonth), ...buildStats(txJson.transactions ?? []) },
-        ])
       } finally {
         setMonthLoading(false)
       }
