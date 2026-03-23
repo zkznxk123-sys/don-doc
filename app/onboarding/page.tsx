@@ -79,7 +79,7 @@ function OnboardingContent() {
       <div className="w-full max-w-sm">
         {/* Header */}
         <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold text-white tracking-tight">돈독</h1>
+          <h1 className="text-3xl font-bold text-white tracking-tight">돈Doc/h1>
           <p className="text-sm text-zinc-500 mt-2">시작하기</p>
         </div>
 

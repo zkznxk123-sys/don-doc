@@ -66,7 +66,7 @@ export function LandingPage() {
 
       {/* ── 네비게이션 ────────────────────────────────────────── */}
       <nav className="fixed top-0 inset-x-0 z-50 flex items-center justify-between px-6 md:px-12 h-16 border-b border-border bg-background/80 backdrop-blur-xl transition-colors duration-300">
-        <span className="text-sm font-bold tracking-tight text-foreground font-serif">돈독</span>
+        <span className="text-sm font-bold tracking-tight text-foreground font-serif">돈Doc</span>
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <Link
@@ -259,7 +259,7 @@ export function LandingPage() {
       {/* ── 푸터 ─────────────────────────────────────────────── */}
       <footer className="border-t border-border py-8 px-6 text-center transition-colors duration-300">
         <p className="text-xs text-muted-foreground/50">
-          © 2025 돈독 · 가족 재정관리 플랫폼
+          © 2025 돈Doc · 가족 재정관리 플랫폼
         </p>
       </footer>
     </div>
