@@ -1,9 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Trash2, AlertTriangle, ShieldAlert, ArrowLeft, Tag, ChevronRight } from 'lucide-react'
+import { Trash2, AlertTriangle, ShieldAlert, ArrowLeft, Tag, ChevronRight, User, Pencil, Check, X } from 'lucide-react'
 import Link from 'next/link'
 import {
   AlertDialog,
@@ -16,6 +16,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
+import { updateUserName, getCurrentUser } from '@/lib/actions/user'
 
 export default function SettingsPage() {
   return <SettingsClient />
@@ -24,6 +25,35 @@ export default function SettingsPage() {
 function SettingsClient() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [currentName, setCurrentName] = useState<string | null>(null)
+  const [currentEmail, setCurrentEmail] = useState('')
+  const [isEditingName, setIsEditingName] = useState(false)
+  const [nameInput, setNameInput] = useState('')
+  const [isSavingName, setIsSavingName] = useState(false)
+
+  useEffect(() => {
+    getCurrentUser().then(u => {
+      if (u) {
+        setCurrentName(u.name)
+        setCurrentEmail(u.email)
+        setNameInput(u.name ?? '')
+      }
+    })
+  }, [])
+
+  const handleSaveName = async () => {
+    setIsSavingName(true)
+    const result = await updateUserName(nameInput)
+    setIsSavingName(false)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      setCurrentName(nameInput)
+      setIsEditingName(false)
+      toast.success('이름이 변경되었습니다.')
+      router.refresh()
+    }
+  }
 
   const handleReset = async () => {
     setIsLoading(true)
@@ -53,6 +83,46 @@ function SettingsClient() {
         </Link>
         <h1 className="text-2xl font-bold">설정</h1>
       </div>
+
+      {/* 프로필 */}
+      <section className="rounded-2xl border border-border bg-card/30 p-5 mb-4">
+        <h2 className="text-sm font-semibold text-foreground/70 mb-3">프로필</h2>
+        <div className="flex items-center gap-3 p-3 rounded-xl">
+          <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+            <User className="w-4 h-4 text-muted-foreground" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-muted-foreground mb-1">표시 이름 <span className="text-amber-600 dark:text-amber-400 font-medium">· 이체 필터링에 사용됩니다</span></p>
+            {isEditingName ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={nameInput}
+                  onChange={e => setNameInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setIsEditingName(false) }}
+                  className="text-sm font-medium bg-transparent border-b border-foreground/30 focus:border-foreground outline-none w-40"
+                  autoFocus
+                  maxLength={20}
+                />
+                <button onClick={handleSaveName} disabled={isSavingName} className="p-1 rounded text-green-600 hover:bg-green-50 dark:hover:bg-green-950/30 transition-colors">
+                  <Check className="w-3.5 h-3.5" />
+                </button>
+                <button onClick={() => { setIsEditingName(false); setNameInput(currentName ?? '') }} className="p-1 rounded text-muted-foreground hover:bg-muted transition-colors">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium text-foreground">{currentName || <span className="text-muted-foreground italic">이름 없음</span>}</p>
+                <button onClick={() => { setIsEditingName(true); setNameInput(currentName ?? '') }} className="p-1 rounded text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                  <Pencil className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground/60 mt-0.5">{currentEmail}</p>
+          </div>
+        </div>
+      </section>
 
       {/* 카테고리 관리 */}
       <section className="rounded-2xl border border-border bg-card/30 p-5 mb-4">

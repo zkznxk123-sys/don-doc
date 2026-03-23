@@ -216,7 +216,8 @@ export function parseBanksaladSheet(
     // - 그 외 이체(외부 송금 등)는 포함
     if (타입 === '이체') {
       const isInternal = SKIP_MINOR.has(소분류)
-      const hasFamilyName = familyNames.some(n => n.length >= 2 && content.includes(n))
+      // 한글 이름만 이체 필터링에 사용 (영문 ID/닉네임은 은행 명세서와 매칭 안 됨)
+      const hasFamilyName = familyNames.some(n => n.length >= 2 && /[가-힣]/.test(n) && content.includes(n))
       if (isInternal || hasFamilyName) {
         skippedCount++
         continue

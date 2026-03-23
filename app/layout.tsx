@@ -3,6 +3,9 @@ import { Inter, Noto_Serif } from "next/font/google"
 import { Toaster } from "sonner"
 import { ThemeProvider } from "@/components/ThemeProvider"
 import { ClerkThemeProvider } from "@/components/ClerkThemeProvider"
+import { PostHogProvider } from "@/components/PostHogProvider"
+import { PostHogPageView } from "@/components/PostHogPageView"
+import { Suspense } from "react"
 import "./globals.css"
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" })
@@ -31,8 +34,13 @@ export default function RootLayout({
           enableSystem
         >
           <ClerkThemeProvider>
-            {children}
-            <Toaster theme="system" position="top-center" richColors />
+            <PostHogProvider>
+              <Suspense>
+                <PostHogPageView />
+              </Suspense>
+              {children}
+              <Toaster theme="system" position="top-center" richColors />
+            </PostHogProvider>
           </ClerkThemeProvider>
         </ThemeProvider>
       </body>

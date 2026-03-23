@@ -48,7 +48,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
 
     const displayName =
       [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(' ')
-      || email.split('@')[0]
+      || null
 
     // 이메일로 기존 Prisma User가 있으면 clerkId 연결
     const existingByEmail = await prisma.user.findUnique({ where: { email } })

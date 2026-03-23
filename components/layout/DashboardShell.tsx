@@ -6,6 +6,8 @@ import { AppSidebar } from './AppSidebar'
 import { TopBar } from './TopBar'
 import { TransactionDrawer, type EditTransactionData } from '@/components/ui/transaction-drawer'
 import { ExcelUploadDrawer } from '@/components/ui/excel-upload-drawer'
+import { AlertCircle, X } from 'lucide-react'
+import Link from 'next/link'
 
 export interface ShellUser {
   id: string
@@ -94,6 +96,7 @@ export function DashboardShell({
             onToggleSidebar={() => setSidebarOpen(prev => !prev)}
           />
           <main className="flex-1 overflow-y-auto">
+            <NameWarningBanner name={user.name} />
             <div className="p-4 md:p-6">
               {children}
             </div>
@@ -123,5 +126,36 @@ export function DashboardShell({
         onSuccess={handleDrawerSuccess}
       />
     </DashboardActionsContext.Provider>
+  )
+}
+
+function NameWarningBanner({ name }: { name: string | null }) {
+  const [dismissed, setDismissed] = useState(true)
+
+  useEffect(() => {
+    const isKoreanName = name && /[가-힣]/.test(name)
+    if (isKoreanName) return
+    setDismissed(false)
+  }, [name])
+
+  if (dismissed) return null
+
+  return (
+    <div className="mx-4 md:mx-6 mt-4 flex items-start gap-3 rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/20 px-4 py-3">
+      <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+      <p className="text-sm text-amber-800 dark:text-amber-300 flex-1">
+        실제 이름으로 수정하지 않으면, 가족 간 이체 자동 제외가 작동하지 않을 수 있어요.{' '}
+        <Link
+          href="/dashboard/settings"
+          className="font-semibold underline underline-offset-2 hover:text-amber-900 dark:hover:text-amber-200 transition-colors"
+          onClick={() => setDismissed(true)}
+        >
+          이름 설정하기 →
+        </Link>
+      </p>
+      <button onClick={() => setDismissed(true)} className="text-amber-500 hover:text-amber-700 dark:hover:text-amber-300 transition-colors flex-shrink-0">
+        <X className="w-4 h-4" />
+      </button>
+    </div>
   )
 }

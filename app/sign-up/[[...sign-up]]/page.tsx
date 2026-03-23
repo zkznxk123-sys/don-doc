@@ -35,7 +35,7 @@ export default function SignUpPage({ searchParams }: Props) {
               layout: {
                 logoPlacement: 'none',
                 socialButtonsVariant: 'blockButton',
-                socialButtonsPlacement: 'top',
+                socialButtonsPlacement: 'bottom',
               },
             }}
           />

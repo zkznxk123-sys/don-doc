@@ -43,6 +43,10 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
   const isActive = (item: typeof NAV_ITEMS[number]) =>
     item.exact ? pathname === item.href : pathname.startsWith(item.href)
 
+  const handleNavClick = () => {
+    if (window.innerWidth < 1024) onClose()
+  }
+
   return (
     <aside className={cn(
       'fixed lg:static inset-y-0 left-0 z-50 flex flex-col bg-background border-r border-border/60 transition-all duration-200 flex-shrink-0 overflow-hidden',
@@ -84,6 +88,7 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
             <Link
               key={item.href}
               href={item.href}
+              onClick={handleNavClick}
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors group',
                 active
@@ -102,6 +107,7 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
         {user.role === 'CFO' && (
           <Link
             href="/dashboard/family"
+            onClick={handleNavClick}
             className={cn(
               'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
               pathname.startsWith('/dashboard/family')

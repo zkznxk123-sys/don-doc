@@ -29,7 +29,7 @@ export default function SignInPage() {
               layout: {
                 logoPlacement: 'none',
                 socialButtonsVariant: 'blockButton',
-                socialButtonsPlacement: 'top',
+                socialButtonsPlacement: 'bottom',
               },
             }}
           />
