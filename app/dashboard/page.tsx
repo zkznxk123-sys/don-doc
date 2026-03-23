@@ -45,6 +45,7 @@ interface Transaction {
   userId: string
   userName: string | null
   isMasked: boolean
+  isExcluded: boolean
 }
 
 
@@ -496,7 +497,7 @@ const CAT_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444']
 function TopExpenseCategories({ transactions, totalExpense }: { transactions: Transaction[]; totalExpense: number }) {
   const categoryMap: Record<string, number> = {}
   transactions
-    .filter(tx => tx.amount < 0 && !tx.isMasked)
+    .filter(tx => tx.amount < 0 && !tx.isMasked && !tx.isExcluded)
     .forEach(tx => { categoryMap[tx.category] = (categoryMap[tx.category] || 0) + Math.abs(tx.amount) })
 
   const top5 = Object.entries(categoryMap)
@@ -655,14 +656,15 @@ export default function Dashboard() {
   const [viewMode, setViewMode] = useState<'CFO' | 'MEMBER'>('CFO')
   const [currentUserId, setCurrentUserId] = useState('')
 
-  // ── 파생값 ─────────────────────────────────────────────────────────────────
-  const monthlyExpense = transactions.filter(tx => tx.amount < 0).reduce((s, tx) => s + Math.abs(tx.amount), 0)
-  const monthlyIncome = transactions.filter(tx => tx.amount > 0).reduce((s, tx) => s + tx.amount, 0)
+  // ── 파생값 (제외 항목 제외) ──────────────────────────────────────────────────
+  const activeTx = transactions.filter(tx => !tx.isExcluded)
+  const monthlyExpense = activeTx.filter(tx => tx.amount < 0).reduce((s, tx) => s + Math.abs(tx.amount), 0)
+  const monthlyIncome = activeTx.filter(tx => tx.amount > 0).reduce((s, tx) => s + tx.amount, 0)
   const savingsRate = monthlyIncome > 0 ? Math.round(((monthlyIncome - monthlyExpense) / monthlyIncome) * 100) : 0
 
-  const myExpenses = transactions.filter(tx => tx.userId === currentUserId && tx.amount < 0).reduce((s, tx) => s + Math.abs(tx.amount), 0)
-  const myTxCount = transactions.filter(tx => tx.userId === currentUserId && tx.amount < 0).length
-  const myIncome = transactions.filter(tx => tx.userId === currentUserId && tx.amount > 0).reduce((s, tx) => s + tx.amount, 0)
+  const myExpenses = activeTx.filter(tx => tx.userId === currentUserId && tx.amount < 0).reduce((s, tx) => s + Math.abs(tx.amount), 0)
+  const myTxCount = activeTx.filter(tx => tx.userId === currentUserId && tx.amount < 0).length
+  const myIncome = activeTx.filter(tx => tx.userId === currentUserId && tx.amount > 0).reduce((s, tx) => s + tx.amount, 0)
   const myBudget = myBudgetFromDB || myIncome || 0
 
   const monthLabel = selectedMonth === nowMonth ? '이번 달' : selectedMonth.replace('-', '년 ') + '월'
@@ -717,6 +719,7 @@ export default function Dashboard() {
             id: tx.id, amount: tx.amount, description: tx.description,
             category: tx.category, date: tx.date.split('T')[0],
             userId: tx.userId, userName: tx.userName, isMasked: tx.isMasked,
+            isExcluded: tx.isExcluded ?? false,
           })))
         }
 
