@@ -678,7 +678,7 @@ export async function autoDetectAndExcludeTransfers(
     if (toExclude.size === 0) return { success: true, pairCount: 0 }
 
     await prisma.transaction.updateMany({
-      where: { id: { in: [...toExclude] } },
+      where: { id: { in: Array.from(toExclude) } },
       data: { isExcluded: true },
     })
 
