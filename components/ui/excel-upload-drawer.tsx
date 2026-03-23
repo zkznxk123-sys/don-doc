@@ -14,7 +14,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import { createManyTransactions, type BulkTransactionRow } from '@/lib/actions/transaction'
+import { createManyTransactions, autoDetectAndExcludeTransfers, type BulkTransactionRow } from '@/lib/actions/transaction'
 import { getFamilyCategories, type CategoryOption } from '@/lib/actions/categories'
 import {
   type ColMap, type ExcelPreset,
@@ -339,6 +339,14 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
 
           toast.success(title, { description: description || undefined })
         }
+
+        // 가족 이체 자동 감지
+        autoDetectAndExcludeTransfers(familyId ?? undefined).then(r => {
+          if (r.success && r.pairCount > 0) {
+            toast.info(`이체 내역 ${r.pairCount}쌍 자동 제외 처리됨`)
+          }
+        })
+
         handleClose(); onSuccess()
       } else {
         toast.error(result.error ?? '등록에 실패했습니다.')

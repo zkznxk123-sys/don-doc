@@ -4,13 +4,13 @@ import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import {
   ChevronLeft, ChevronRight, TrendingUp, TrendingDown,
-  PiggyBank, EyeOff, Pencil, Check, X, Save, Loader2,
-  FileSpreadsheet, Plus,
+  PiggyBank, Eye, EyeOff, Pencil, Check, X, Save, Loader2,
+  FileSpreadsheet, Plus, GitMerge, Sparkles,
 } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
 import { useDashboardActions } from '@/components/layout/DashboardShell'
 import { toast } from 'sonner'
-import { bulkUpdateTransactions } from '@/lib/actions/transaction'
+import { bulkUpdateTransactions, autoDetectAndExcludeTransfers } from '@/lib/actions/transaction'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
@@ -69,6 +69,7 @@ export default function CashflowPage() {
   const [isEditing, setIsEditing] = useState(false)
   const [drafts, setDrafts] = useState<Record<string, DraftItem>>({})
   const [saving, setSaving] = useState(false)
+  const [hideExcluded, setHideExcluded] = useState(true)
 
   const { refreshKey, openTransactionDrawer, shellUser, setPageActions, openExcelDrawer } = useDashboardActions()
 
@@ -151,12 +152,14 @@ export default function CashflowPage() {
     ? Math.round((effectiveSummary.savings / effectiveSummary.income) * 100)
     : null
 
-  // 타입 필터 적용
+  // 타입 필터 + 제외 항목 필터 적용
   const visibleTransactions = useMemo(() => {
-    if (!typeFilter) return transactions
-    if (typeFilter === 'INCOME') return transactions.filter(tx => tx.amount > 0)
-    return transactions.filter(tx => tx.amount < 0)
-  }, [transactions, typeFilter])
+    let list = transactions
+    if (hideExcluded) list = list.filter(tx => !(drafts[tx.id]?.isExcluded ?? tx.isExcluded))
+    if (typeFilter === 'INCOME') list = list.filter(tx => tx.amount > 0)
+    else if (typeFilter === 'EXPENSE') list = list.filter(tx => tx.amount < 0)
+    return list
+  }, [transactions, typeFilter, hideExcluded, drafts])
 
   const canEdit = (tx: Transaction) =>
     !tx.isMasked && (tx.userId === shellUser?.id || shellUser?.role === 'CFO')
@@ -260,6 +263,82 @@ export default function CashflowPage() {
     } else {
       setPageActions(
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setHideExcluded(v => !v)}
+            className={cn(
+              'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors',
+              hideExcluded
+                ? 'bg-card border-border text-muted-foreground hover:text-foreground hover:border-ring'
+                : 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400',
+            )}
+          >
+            {hideExcluded
+              ? <EyeOff className="w-3.5 h-3.5" />
+              : <Eye className="w-3.5 h-3.5" />
+            }
+            <span className="hidden sm:inline">{hideExcluded ? '제외 숨김' : '제외 표시'}</span>
+          </button>
+          <button
+            onClick={async () => {
+              const r = await autoDetectAndExcludeTransfers()
+              if (r.success) {
+                if (r.pairCount > 0) {
+                  toast.success(`이체 내역 ${r.pairCount}쌍 자동 제외 처리됨`)
+                  router.refresh()
+                } else {
+                  toast.info('감지된 이체 내역이 없습니다')
+                }
+              } else {
+                toast.error(r.error ?? '처리 중 오류가 발생했습니다')
+              }
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-ring transition-colors"
+          >
+            <GitMerge className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">이체 자동 감지</span>
+          </button>
+          <button
+            onClick={async () => {
+              const toastId = toast.loading('AI 재분류 중...')
+              let totalUpdated = 0
+              try {
+                while (true) {
+                  const controller = new AbortController()
+                  const timer = setTimeout(() => controller.abort(), 90_000)
+                  const res = await fetch(`/api/ai/recategorize?month=${year}-${String(month).padStart(2, '0')}`, {
+                    method: 'POST',
+                    signal: controller.signal,
+                  })
+                  clearTimeout(timer)
+                  if (!res.ok) { toast.error(`서버 오류 (${res.status})`, { id: toastId }); break }
+                  const data = await res.json()
+                  if (!data.success) { toast.error(data.error ?? '재분류 실패', { id: toastId }); break }
+                  totalUpdated += data.updated ?? 0
+                  if (data.remaining > 0) {
+                    toast.loading(`AI 재분류 중... ${totalUpdated}건 완료, ${data.remaining}건 남음`, { id: toastId })
+                  } else {
+                    if (totalUpdated > 0) {
+                      toast.success(`${totalUpdated}건 재분류 완료`, { id: toastId })
+                      router.refresh()
+                    } else {
+                      toast.info(data.message ?? '미분류 항목이 없습니다', { id: toastId })
+                    }
+                    break
+                  }
+                }
+              } catch (e) {
+                if ((e as Error).name === 'AbortError') {
+                  toast.error('시간 초과. 다시 눌러서 이어서 진행하세요.', { id: toastId })
+                } else {
+                  toast.error('재분류 중 오류가 발생했습니다', { id: toastId })
+                }
+              }
+            }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-ring transition-colors"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">AI 재분류</span>
+          </button>
           <button
             onClick={() => openExcelDrawer()}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-ring transition-colors"
@@ -450,10 +529,15 @@ export default function CashflowPage() {
 
       {!loading && transactions.length > 0 && (
         <p className="text-center text-xs text-muted-foreground/60 mt-4">
-          {typeFilter
-            ? `${visibleTransactions.length}건 표시 중 (전체 ${transactions.length}건)`
-            : `총 ${transactions.length}건`
-          }
+          {(() => {
+            const excludedCount = transactions.filter(tx => drafts[tx.id]?.isExcluded ?? tx.isExcluded).length
+            const base = typeFilter
+              ? `${visibleTransactions.length}건 표시 중 (전체 ${transactions.length}건)`
+              : `총 ${transactions.length}건`
+            return hideExcluded && excludedCount > 0
+              ? `${base} · 제외 ${excludedCount}건 숨김`
+              : base
+          })()}
         </p>
       )}
     </div>
