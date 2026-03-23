@@ -136,7 +136,12 @@ function AssetRow({
           }
         </div>
         <div className="flex items-center gap-2 mt-0.5">
-          <p className="text-xs text-muted-foreground">{meta.label} · {allocation}%</p>
+          <p className="text-xs text-muted-foreground">
+            {account.ownerName
+              ? <span className="text-muted-foreground/50">{account.ownerName} · </span>
+              : null}
+            {meta.label} · {allocation}%
+          </p>
           {hasLinkedDebts && netEquity != null && (
             <p className="text-xs text-muted-foreground/60 tabular-nums">
               순자본 {netEquity >= 0
@@ -310,7 +315,12 @@ export function LiabilityList({ liabilities, totalLiabilities, onEdit, onAdd }: 
                     : <User className="w-3 h-3 text-muted-foreground/60 flex-shrink-0" />
                   }
                 </div>
-                <p className="text-xs text-muted-foreground mt-0.5">{meta.label}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {account.ownerName
+                    ? <span className="text-muted-foreground/50">{account.ownerName} · </span>
+                    : null}
+                  {meta.label}
+                </p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <span className="text-sm font-semibold text-red-400 tabular-nums">

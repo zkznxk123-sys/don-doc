@@ -78,6 +78,7 @@ export default function AssetsPage() {
         isMasked: a.isMasked ?? false,
         netEquity: a.netEquity,
         linkedDebts: a.linkedDebts ?? [],
+        ownerName: a.ownerName ?? null,
       })
 
       setAccounts((data.accounts ?? []).map(mapAccount))

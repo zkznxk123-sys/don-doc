@@ -274,10 +274,16 @@ export interface MonthStat {
 async function findOrCreateAccount(
   name: string,
   familyId: string,
-  type: 'CASH' | 'INVESTMENT' | 'REAL_ESTATE' = 'CASH'
+  type: 'CASH' | 'INVESTMENT' | 'REAL_ESTATE' = 'CASH',
+  userId?: string
 ): Promise<string> {
+  // userId가 있으면 해당 유저 소유 계좌 우선 조회
   const existing = await prisma.account.findFirst({
-    where: { familyId, name: { contains: name, mode: 'insensitive' } },
+    where: {
+      familyId,
+      name: { contains: name, mode: 'insensitive' },
+      ...(userId ? { userId } : {}),
+    },
     select: { id: true },
   })
   if (existing) return existing.id
@@ -287,9 +293,10 @@ async function findOrCreateAccount(
       name,
       type,
       balance: 0,
-      isShared: true,
+      isShared: false,
       shareLevel: 'PUBLIC',
       familyId,
+      ...(userId ? { userId } : {}),
     },
   })
   return created.id
@@ -324,7 +331,7 @@ export async function createManyTransactions(
     const uniqueNames = Array.from(new Set(rows.map(r => r.accountName?.trim() || '기본 계좌')))
 
     for (const name of uniqueNames) {
-      const id = await findOrCreateAccount(name, familyId)
+      const id = await findOrCreateAccount(name, familyId, 'CASH', userId)
       accountNameMap.set(name, id)
     }
 
@@ -406,7 +413,7 @@ export async function createManyTransactions(
     let syncedAccountCount = 0
     if (options?.accountBalances && options.accountBalances.length > 0) {
       for (const ab of options.accountBalances) {
-        const id = await findOrCreateAccount(ab.name, familyId, ab.type ?? 'CASH')
+        const id = await findOrCreateAccount(ab.name, familyId, ab.type ?? 'CASH', userId)
         await prisma.account.update({ where: { id }, data: { balance: ab.balance } })
         syncedAccountCount++
       }

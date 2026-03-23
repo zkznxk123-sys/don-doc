@@ -26,6 +26,7 @@ export interface AccountInitialData {
   isMasked?: boolean
   netEquity?: number
   linkedDebts?: { id: string; name: string; balance: number }[]
+  ownerName?: string | null
 }
 
 interface AccountDrawerProps {

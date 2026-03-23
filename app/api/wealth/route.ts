@@ -42,6 +42,7 @@ export async function GET(req: NextRequest) {
       where: { familyId },
       include: {
         linkedDebts: { select: { id: true, name: true, balance: true } },
+        user: { select: { name: true } },
       },
     })
 
@@ -51,7 +52,8 @@ export async function GET(req: NextRequest) {
       type: string; isShared: boolean; shareLevel: string; isMasked: boolean
       linkedDebtTotal: number
       linkedDebts: { id: string; name: string; balance: number }[]
-      linkedAssetId: string | null   // 이 계좌가 종속된 자산
+      linkedAssetId: string | null
+      ownerName: string | null   // 계좌 소유자 이름 (null = 공용)
     }
 
     const accountSummary: AccountSummary[] = []
@@ -67,6 +69,7 @@ export async function GET(req: NextRequest) {
         shareLevel: acc.shareLevel, isMasked: false,
         linkedDebts: acc.linkedDebts.map(d => ({ id: d.id, name: d.name, balance: d.balance })),
         linkedAssetId: acc.linkedAssetId,
+        ownerName: acc.user?.name ?? null,
       }
 
       if (role === 'CFO' || isOwn) {
