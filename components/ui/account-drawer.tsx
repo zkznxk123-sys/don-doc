@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import {
   Banknote, TrendingUp, Bitcoin, Building2, Users, Eye, EyeOff,
-  Loader2, Trash2, CreditCard, HandCoins, ChevronDown,
+  Loader2, Trash2, CreditCard, HandCoins, ChevronDown, PiggyBank,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer'
@@ -39,12 +39,13 @@ interface AccountDrawerProps {
 const ACCOUNT_TYPES: {
   value: AccountType; label: string; desc: string; Icon: React.ElementType; color: string; isLiability?: boolean
 }[] = [
-  { value: 'CASH',        label: '현금 · 예적금', desc: '생활비, 비상금, 저축',      Icon: Banknote,   color: 'text-blue-600 dark:text-blue-400' },
-  { value: 'INVESTMENT',  label: '주식 · 펀드',   desc: '국내외 주식, 펀드, ETF',    Icon: TrendingUp, color: 'text-emerald-600 dark:text-emerald-400' },
-  { value: 'CRYPTO',      label: '가상자산',       desc: '비트코인, 이더리움 등',      Icon: Bitcoin,    color: 'text-amber-600 dark:text-amber-400' },
-  { value: 'REAL_ESTATE', label: '부동산',         desc: '아파트, 토지, 상가',         Icon: Building2,  color: 'text-purple-600 dark:text-purple-400' },
-  { value: 'DEBT',        label: '대출',           desc: '주택담보대출, 신용대출 등',  Icon: HandCoins,  color: 'text-red-600 dark:text-red-400',  isLiability: true },
-  { value: 'CREDIT_CARD', label: '신용카드',       desc: '카드 사용액, 미결제 금액',   Icon: CreditCard, color: 'text-rose-600 dark:text-rose-400', isLiability: true },
+  { value: 'CASH',        label: '현금 · 예적금', desc: '생활비, 비상금, 저축',         Icon: Banknote,   color: 'text-blue-600 dark:text-blue-400' },
+  { value: 'INVESTMENT',  label: '주식 · 펀드',   desc: '국내외 주식, 펀드, ETF',       Icon: TrendingUp, color: 'text-emerald-600 dark:text-emerald-400' },
+  { value: 'PENSION',     label: '연금',           desc: 'IRP, 연금저축, 퇴직연금 등',  Icon: PiggyBank,  color: 'text-teal-600 dark:text-teal-400' },
+  { value: 'CRYPTO',      label: '가상자산',       desc: '비트코인, 이더리움 등',        Icon: Bitcoin,    color: 'text-amber-600 dark:text-amber-400' },
+  { value: 'REAL_ESTATE', label: '부동산',         desc: '아파트, 토지, 상가',           Icon: Building2,  color: 'text-purple-600 dark:text-purple-400' },
+  { value: 'DEBT',        label: '대출',           desc: '주택담보대출, 신용대출 등',    Icon: HandCoins,  color: 'text-red-600 dark:text-red-400',  isLiability: true },
+  { value: 'CREDIT_CARD', label: '신용카드',       desc: '카드 사용액, 미결제 금액',     Icon: CreditCard, color: 'text-rose-600 dark:text-rose-400', isLiability: true },
 ]
 
 const SHARE_LEVELS: {

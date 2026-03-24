@@ -274,7 +274,7 @@ export interface MonthStat {
 async function findOrCreateAccount(
   name: string,
   familyId: string,
-  type: 'CASH' | 'INVESTMENT' | 'REAL_ESTATE' = 'CASH',
+  type: 'CASH' | 'INVESTMENT' | 'PENSION' | 'REAL_ESTATE' | 'DEBT' = 'CASH',
   userId?: string
 ): Promise<string> {
   // userId가 있으면 해당 유저 소유 계좌 우선 조회
@@ -313,7 +313,7 @@ export async function createManyTransactions(
   familyId: string,
   rows: BulkTransactionRow[],
   options?: {
-    accountBalances?: { name: string; balance: number; type?: 'CASH' | 'INVESTMENT' | 'REAL_ESTATE' }[]
+    accountBalances?: { name: string; balance: number; type?: 'CASH' | 'INVESTMENT' | 'PENSION' | 'REAL_ESTATE' | 'DEBT' }[]
   }
 ): Promise<{
   success: boolean

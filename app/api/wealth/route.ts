@@ -7,6 +7,7 @@ import { getAuthUser } from '@/lib/auth'
 const TYPE_LABELS: Record<string, string> = {
   CASH:        '현금 · 예적금',
   INVESTMENT:  '주식 · 펀드',
+  PENSION:     '연금',
   CRYPTO:      '가상자산',
   REAL_ESTATE: '부동산',
   STO:         '토큰증권',
@@ -19,9 +20,10 @@ const LIABILITY_TYPES = new Set(['DEBT', 'CREDIT_CARD'])
 const CATEGORY_ORDER: Record<string, number> = {
   CASH:        0,
   INVESTMENT:  1,
-  REAL_ESTATE: 2,
-  CRYPTO:      3,
-  STO:         4,
+  PENSION:     2,
+  REAL_ESTATE: 3,
+  CRYPTO:      4,
+  STO:         5,
   DEBT:        10,
   CREDIT_CARD: 11,
 }

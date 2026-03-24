@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
 
-export type AccountType = 'CASH' | 'INVESTMENT' | 'CRYPTO' | 'REAL_ESTATE' | 'STO' | 'DEBT' | 'CREDIT_CARD'
+export type AccountType = 'CASH' | 'INVESTMENT' | 'PENSION' | 'CRYPTO' | 'REAL_ESTATE' | 'STO' | 'DEBT' | 'CREDIT_CARD'
 export type ShareLevel = 'PUBLIC' | 'BALANCE_ONLY' | 'PRIVATE'
 export type RepaymentType = 'EQUAL_PRINCIPAL_INTEREST' | 'EQUAL_PRINCIPAL' | 'BULLET' | 'INTEREST_ONLY'
 export type DebtType = 'MORTGAGE' | 'JEONSE_DEPOSIT' | 'CREDIT_LOAN' | 'OVERDRAFT' | 'ETC'

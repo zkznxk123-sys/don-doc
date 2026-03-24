@@ -27,7 +27,7 @@ export interface BanksaladRow extends BulkTransactionRow {
 export interface AccountBalance {
   name: string
   balance: number
-  type: 'CASH' | 'INVESTMENT' | 'REAL_ESTATE'
+  type: 'CASH' | 'INVESTMENT' | 'PENSION' | 'REAL_ESTATE' | 'DEBT'
 }
 
 export interface ParseBanksaladResult {
@@ -250,18 +250,23 @@ export function parseBanksaladSheet(
 }
 
 // ━━ 자산 유형 → AccountType 매핑 ━━
-const ASSET_TYPE_MAP: Record<string, 'CASH' | 'INVESTMENT' | 'REAL_ESTATE'> = {
+type AssetAccountType = 'CASH' | 'INVESTMENT' | 'PENSION' | 'REAL_ESTATE' | 'DEBT'
+
+const ASSET_TYPE_MAP: Record<string, AssetAccountType> = {
   '자유입출금': 'CASH',
   '신탁':       'CASH',
   '현금':       'CASH',
   '저축성':     'CASH',
   '전자금융':   'CASH',
-  '연금':       'CASH',
   '투자성':     'INVESTMENT',
+  '연금':       'PENSION',
   '부동산':     'REAL_ESTATE',
+  '부채':       'DEBT',
+  '대출':       'DEBT',
+  '신용카드':   'DEBT',
 }
 
-function resolveAssetType(label: string): 'CASH' | 'INVESTMENT' | 'REAL_ESTATE' {
+function resolveAssetType(label: string): AssetAccountType {
   for (const [key, val] of Object.entries(ASSET_TYPE_MAP)) {
     if (label.includes(key)) return val
   }
@@ -295,7 +300,7 @@ export function parseBanksaladSummary(wb: XLSX.WorkBook): AccountBalance[] {
   if (headerRow < 0) return []
 
   const result: AccountBalance[] = []
-  let currentType = 'CASH' as 'CASH' | 'INVESTMENT' | 'REAL_ESTATE'
+  let currentType: AssetAccountType = 'CASH'
 
   for (let i = headerRow + 1; i < allRows.length; i++) {
     const row = allRows[i]
@@ -304,17 +309,15 @@ export function parseBanksaladSummary(wb: XLSX.WorkBook): AccountBalance[] {
     const col3 = row[3]
 
     // 종료 시그널
-    if (col0 === '총자산' || col0 === '순자산') break
-    // 섹션 구분선 (빈 행) 또는 부채 섹션 진입
-    if (col0.includes('부채') || col0.includes('대출')) break
+    if (col0 === '총자산' || col0 === '순자산' || col0 === '총부채') break
 
-    // 자산 유형 업데이트
+    // 자산 유형 업데이트 (부채/대출 섹션 포함)
     if (col0 && col0 !== '') currentType = resolveAssetType(col0)
 
     // 계좌명 + 숫자 잔액이 있는 행만 수집
     const balance = typeof col3 === 'number' ? col3 : parseFloat(String(col3 ?? '').replace(/,/g, ''))
-    if (col1 && !isNaN(balance)) {
-      result.push({ name: col1, balance, type: currentType })
+    if (col1 && !isNaN(balance) && balance !== 0) {
+      result.push({ name: col1, balance: Math.abs(balance), type: currentType })
     }
   }
 

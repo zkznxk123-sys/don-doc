@@ -30,6 +30,7 @@ enum Visibility {
 enum AccountType {
   CASH        // 현금/예적금
   INVESTMENT  // 주식/펀드
+  PENSION     // 연금 (IRP, 연금저축 등)
   CRYPTO      // 가상자산
   REAL_ESTATE // 부동산
   STO         // 토큰증권 (장기 확장성)
