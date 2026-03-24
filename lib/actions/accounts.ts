@@ -223,6 +223,79 @@ export async function getRealEstateWithDebts(accountId: string): Promise<RealEst
   }
 }
 
+// ─── 부동산 합산 요약 ──────────────────────────────────────────────────────────
+
+export interface RealEstateSummaryData {
+  propertyCount: number
+  totalCurrentPrice: number    // 시세 합산 (currentPrice, 없으면 balance)
+  totalPurchasePrice: number   // 매수원금 합산
+  hasPurchasePrice: boolean
+  totalDebt: number            // 연결 부채 합산
+  totalNetEquity: number       // totalCurrentPrice - totalDebt
+  totalCapitalGain: number | null  // totalCurrentPrice - totalPurchasePrice
+  totalMonthlyPayment: number  // 연결 부채 월상환액 합산
+  weightedLtv: number | null   // totalDebt / totalCurrentPrice * 100
+}
+
+export async function getFamilyRealEstateSummary(): Promise<RealEstateSummaryData | null> {
+  const user = await getAuthUser()
+  if (!user?.familyId) return null
+
+  const properties = await prisma.account.findMany({
+    where: { familyId: user.familyId, type: 'REAL_ESTATE' },
+    include: {
+      realEstateDetail: true,
+      linkedDebts: { include: { debtDetail: { select: { monthlyPayment: true } } } },
+    },
+  })
+
+  if (properties.length === 0) return null
+
+  let totalCurrentPrice = 0
+  let totalPurchasePrice = 0
+  let hasPurchasePrice = false
+  let totalDebt = 0
+  let totalMonthlyPayment = 0
+
+  for (const prop of properties) {
+    const cp = prop.realEstateDetail?.currentPrice ?? prop.balance
+    const pp = prop.realEstateDetail?.purchasePrice
+
+    totalCurrentPrice += cp
+    if (pp != null) { totalPurchasePrice += pp; hasPurchasePrice = true }
+
+    for (const d of prop.linkedDebts) {
+      totalDebt += d.balance
+      totalMonthlyPayment += d.debtDetail?.monthlyPayment ?? 0
+    }
+  }
+
+  return {
+    propertyCount: properties.length,
+    totalCurrentPrice,
+    totalPurchasePrice,
+    hasPurchasePrice,
+    totalDebt,
+    totalNetEquity: totalCurrentPrice - totalDebt,
+    totalCapitalGain: hasPurchasePrice ? totalCurrentPrice - totalPurchasePrice : null,
+    totalMonthlyPayment,
+    weightedLtv: totalCurrentPrice > 0 ? (totalDebt / totalCurrentPrice) * 100 : null,
+  }
+}
+
+/** 가족 전체 부채(DEBT + CREDIT_CARD) 월 상환액 합산 — DSR 계산용 */
+export async function getFamilyTotalDebtMonthlyPayment(): Promise<number> {
+  const user = await getAuthUser()
+  if (!user?.familyId) return 0
+
+  const debts = await prisma.account.findMany({
+    where: { familyId: user.familyId, type: { in: ['DEBT', 'CREDIT_CARD'] } },
+    include: { debtDetail: { select: { monthlyPayment: true } } },
+  })
+
+  return debts.reduce((s, d) => s + (d.debtDetail?.monthlyPayment ?? 0), 0)
+}
+
 /** 부채 연결 대상 자산 목록 (부채·신용카드 제외) */
 export async function getFamilyAssetsForLinking(): Promise<{ id: string; name: string; type: AccountType }[]> {
   const user = await getAuthUser()

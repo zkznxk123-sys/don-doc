@@ -19,42 +19,11 @@ const REPAYMENT_LABELS: Record<string, string> = {
   INTEREST_ONLY:            '이자만납부',
 }
 
-function MetricBadge({ value, suffix = '%', positive = true }: { value: number; suffix?: string; positive?: boolean }) {
-  const isGood = positive ? value >= 0 : value <= 0
-  return (
-    <span className={cn('text-xs font-semibold tabular-nums', isGood ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400')}>
-      {value >= 0 ? '+' : ''}{value.toFixed(1)}{suffix}
-    </span>
-  )
-}
-
-function LtvBar({ ltv }: { ltv: number }) {
-  const pct = Math.min(ltv, 100)
-  const color = ltv < 40 ? 'bg-emerald-500' : ltv < 60 ? 'bg-amber-500' : ltv < 80 ? 'bg-orange-500' : 'bg-red-500'
-  const textColor = ltv < 40 ? 'text-emerald-600 dark:text-emerald-400' : ltv < 60 ? 'text-amber-600 dark:text-amber-400' : ltv < 80 ? 'text-orange-600 dark:text-orange-400' : 'text-red-600 dark:text-red-400'
-
-  return (
-    <div className="space-y-1.5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <span className="text-xs text-muted-foreground">LTV</span>
-          {ltv >= 80 && <AlertTriangle className="w-3 h-3 text-red-600 dark:text-red-400" />}
-        </div>
-        <span className={cn('text-sm font-bold tabular-nums', textColor)}>{ltv.toFixed(1)}%</span>
-      </div>
-      <div className="w-full bg-muted rounded-full h-1.5">
-        <div
-          className={cn('h-1.5 rounded-full transition-all duration-700', color)}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-      <div className="flex justify-between text-[10px] text-muted-foreground/40">
-        <span>0%</span>
-        <span className="text-muted-foreground/60">60%</span>
-        <span>100%</span>
-      </div>
-    </div>
-  )
+function ltvStyle(ltv: number) {
+  if (ltv < 40) return { bar: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-800/40', bg: 'bg-emerald-50 dark:bg-emerald-900/15' }
+  if (ltv < 60) return { bar: 'bg-amber-500',   text: 'text-amber-600 dark:text-amber-400',     border: 'border-amber-200 dark:border-amber-800/40',   bg: 'bg-amber-50 dark:bg-amber-900/15'   }
+  if (ltv < 80) return { bar: 'bg-orange-500',  text: 'text-orange-600 dark:text-orange-400',   border: 'border-orange-200 dark:border-orange-800/40', bg: 'bg-orange-50 dark:bg-orange-900/15' }
+  return              { bar: 'bg-red-500',      text: 'text-red-600 dark:text-red-400',         border: 'border-red-200 dark:border-red-800/40',       bg: 'bg-red-50 dark:bg-red-900/15'       }
 }
 
 function DebtRow({ debt, onToggleLtv }: { debt: LinkedDebt; onToggleLtv: (id: string, val: boolean) => void }) {
@@ -65,7 +34,7 @@ function DebtRow({ debt, onToggleLtv }: { debt: LinkedDebt; onToggleLtv: (id: st
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs font-medium text-foreground/70 truncate">{debt.name}</p>
-        <div className="flex items-center gap-2 mt-0.5">
+        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
           {debt.interestRate != null && (
             <span className="text-[10px] text-muted-foreground/60">{debt.interestRate}%</span>
           )}
@@ -111,7 +80,6 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
 
   async function handleToggleLtv(debtId: string, val: boolean) {
     if (!data) return
-    // 낙관적 업데이트
     const updatedDebts = data.linkedDebts.map(d =>
       d.id === debtId ? { ...d, includeInLtv: val } : d
     )
@@ -125,8 +93,8 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
 
   const hasCurrentPrice = data?.currentPrice != null
   const hasPurchasePrice = data?.purchasePrice != null
-
-  // 현재가 없으면 잔액을 fallback으로 사용
+  const hasGain = hasCurrentPrice && hasPurchasePrice
+  const capitalGain = hasGain ? data!.currentPrice! - data!.purchasePrice! : null
   const displayPrice = data?.currentPrice ?? account.balance
 
   return (
@@ -159,13 +127,13 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
         </button>
       </div>
 
-      <div className="px-5 py-4 space-y-5">
+      <div className="px-5 py-4 space-y-4">
         {loading ? (
           <div className="py-4 text-center text-xs text-muted-foreground/60">불러오는 중...</div>
         ) : (
           <>
-            {/* 핵심 금액 3열 */}
-            <div className="grid grid-cols-3 gap-3">
+            {/* ① 핵심 금액 3열 */}
+            <div className="grid grid-cols-3 gap-2.5">
               <div className="bg-muted/50 rounded-xl p-3">
                 <p className="text-[10px] text-muted-foreground/60 mb-1">매수 원금</p>
                 <p className="text-sm font-semibold text-foreground tabular-nums">
@@ -174,14 +142,9 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
               </div>
               <div className="bg-muted/50 rounded-xl p-3">
                 <p className="text-[10px] text-muted-foreground/60 mb-1">현재 시세</p>
-                <div className="flex items-baseline gap-1">
-                  <p className="text-sm font-semibold text-foreground tabular-nums">
-                    {hasCurrentPrice ? formatLargeNumber(data!.currentPrice!) : '—'}
-                  </p>
-                  {data?.roi != null && (
-                    <MetricBadge value={data.roi} />
-                  )}
-                </div>
+                <p className="text-sm font-semibold text-foreground tabular-nums">
+                  {hasCurrentPrice ? formatLargeNumber(data!.currentPrice!) : '—'}
+                </p>
               </div>
               <div className="bg-muted/50 rounded-xl p-3">
                 <p className="text-[10px] text-muted-foreground/60 mb-1">목표가</p>
@@ -191,62 +154,116 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
               </div>
             </div>
 
-            {/* 순자본 + ROI */}
-            {(data?.netEquity != null || data?.roi != null) && (
-              <div className="grid grid-cols-2 gap-3">
-                {data?.netEquity != null && (
-                  <div className={cn(
-                    'rounded-xl p-3 border',
-                    data.netEquity >= 0
-                      ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-900/50'
-                      : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/50'
+            {/* ② 시세차익 강조 배너 */}
+            {hasGain && (
+              <div className={cn(
+                'rounded-xl px-4 py-3 border flex items-center justify-between',
+                capitalGain! >= 0
+                  ? 'bg-emerald-50 dark:bg-emerald-900/15 border-emerald-200 dark:border-emerald-800/40'
+                  : 'bg-red-50 dark:bg-red-900/15 border-red-200 dark:border-red-800/40'
+              )}>
+                <div>
+                  <p className="text-[10px] text-muted-foreground/70 mb-0.5">시세차익</p>
+                  <p className={cn(
+                    'text-base font-bold tabular-nums leading-none',
+                    capitalGain! >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
                   )}>
-                    <p className="text-[10px] text-muted-foreground mb-1">순자본 (Net Equity)</p>
-                    <p className={cn('text-base font-bold tabular-nums', data.netEquity >= 0 ? 'text-emerald-400' : 'text-red-400')}>
-                      {data.netEquity >= 0 ? '' : '-'}{formatLargeNumber(Math.abs(data.netEquity))}
-                    </p>
-                    <p className="text-[10px] text-muted-foreground/60 mt-0.5">시세 − 총 부채</p>
-                  </div>
-                )}
-                {data?.roi != null && (
-                  <div className={cn(
-                    'rounded-xl p-3 border',
-                    data.roi >= 0
-                      ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-900/50'
-                      : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/50'
-                  )}>
-                    <p className="text-[10px] text-muted-foreground mb-1">수익률 (ROI)</p>
-                    <div className="flex items-center gap-1">
-                      {data.roi >= 0
-                        ? <TrendingUp className="w-4 h-4 text-emerald-400" />
-                        : <TrendingDown className="w-4 h-4 text-red-400" />
-                      }
-                      <p className={cn('text-base font-bold tabular-nums', data.roi >= 0 ? 'text-emerald-400' : 'text-red-400')}>
-                        {data.roi >= 0 ? '+' : ''}{data.roi.toFixed(1)}%
-                      </p>
-                    </div>
-                    <p className="text-[10px] text-muted-foreground/60 mt-0.5">
-                      {hasPurchasePrice && hasCurrentPrice
-                        ? `${formatLargeNumber(data.currentPrice! - data.purchasePrice!)} 차익`
-                        : '매수원금 / 현재가 필요'}
+                    {capitalGain! >= 0 ? '+' : ''}{formatLargeNumber(capitalGain!)}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-[10px] text-muted-foreground/70 mb-0.5">수익률 (ROI)</p>
+                  <div className="flex items-center gap-1 justify-end">
+                    {data!.roi! >= 0
+                      ? <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+                      : <TrendingDown className="w-3.5 h-3.5 text-red-500" />
+                    }
+                    <p className={cn(
+                      'text-base font-bold tabular-nums leading-none',
+                      data!.roi! >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+                    )}>
+                      {data!.roi! >= 0 ? '+' : ''}{data!.roi!.toFixed(1)}%
                     </p>
                   </div>
-                )}
-              </div>
-            )}
-
-            {/* LTV 바 */}
-            {data?.ltv != null && (
-              <div className="bg-muted/40 rounded-xl px-4 py-3">
-                <LtvBar ltv={data.ltv} />
-                <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground/60">
-                  <span>총 부채 {formatLargeNumber(data.totalDebt)}</span>
-                  <span>시세 {formatLargeNumber(displayPrice)}</span>
                 </div>
               </div>
             )}
 
-            {/* 연결된 부채 목록 */}
+            {/* ③ 순자본 / ROI / LTV — 3열 */}
+            {(data?.netEquity != null || data?.ltv != null) && (() => {
+              const ltv = data?.ltv
+              const st = ltv != null ? ltvStyle(ltv) : null
+              return (
+                <div className={cn('grid gap-2.5', data?.ltv != null ? 'grid-cols-3' : 'grid-cols-2')}>
+                  {/* 순자본 */}
+                  {data?.netEquity != null && (
+                    <div className={cn(
+                      'rounded-xl p-3 border',
+                      data.netEquity >= 0
+                        ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-900/50'
+                        : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/50'
+                    )}>
+                      <p className="text-[10px] text-muted-foreground mb-1">순자본</p>
+                      <p className={cn('text-sm font-bold tabular-nums', data.netEquity >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-400')}>
+                        {data.netEquity >= 0 ? '' : '-'}{formatLargeNumber(Math.abs(data.netEquity))}
+                      </p>
+                      <p className="text-[9px] text-muted-foreground/50 mt-0.5">시세 − 총부채</p>
+                    </div>
+                  )}
+
+                  {/* ROI (시세차익 배너 없을 때만 표시) */}
+                  {data?.roi != null && !hasGain && (
+                    <div className={cn(
+                      'rounded-xl p-3 border',
+                      data.roi >= 0
+                        ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-900/50'
+                        : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/50'
+                    )}>
+                      <p className="text-[10px] text-muted-foreground mb-1">수익률</p>
+                      <div className="flex items-center gap-1">
+                        {data.roi >= 0
+                          ? <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+                          : <TrendingDown className="w-3.5 h-3.5 text-red-400" />
+                        }
+                        <p className={cn('text-sm font-bold tabular-nums', data.roi >= 0 ? 'text-emerald-400' : 'text-red-400')}>
+                          {data.roi >= 0 ? '+' : ''}{data.roi.toFixed(1)}%
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* LTV — 색상 프로그레스 바 */}
+                  {data?.ltv != null && st && (
+                    <div className={cn('rounded-xl p-3 border col-span-1', st.bg, st.border)}>
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="text-[10px] text-muted-foreground">LTV</p>
+                        {data.ltv >= 80 && <AlertTriangle className="w-3 h-3 text-red-500" />}
+                      </div>
+                      <p className={cn('text-sm font-bold tabular-nums', st.text)}>{data.ltv.toFixed(1)}%</p>
+                      <div className="mt-2 w-full bg-muted/70 rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className={cn('h-full rounded-full transition-all duration-700', st.bar)}
+                          style={{ width: `${Math.min(data.ltv, 100)}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-[9px] text-muted-foreground/40 mt-0.5">
+                        <span>0</span><span>60%</span><span>100%</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )
+            })()}
+
+            {/* LTV 부채 / 시세 표기 */}
+            {data?.ltv != null && (
+              <div className="flex items-center justify-between px-1 text-[10px] text-muted-foreground/50">
+                <span>LTV 대상 부채 {formatLargeNumber(data.linkedDebts.filter(d => d.includeInLtv).reduce((s, d) => s + d.balance, 0))}</span>
+                <span>시세 {formatLargeNumber(displayPrice)}</span>
+              </div>
+            )}
+
+            {/* ④ 연결된 부채 목록 */}
             {data && data.linkedDebts.length > 0 && (
               <div className="bg-muted/30 rounded-xl overflow-hidden">
                 <button
@@ -278,7 +295,6 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
               </div>
             )}
 
-            {/* 부채 없고 현재가도 없을 때 안내 */}
             {!hasCurrentPrice && !hasPurchasePrice && data?.linkedDebts.length === 0 && (
               <p className="text-xs text-muted-foreground/60 text-center py-2">
                 자산 수정에서 상세 정보를 입력하면 인사이트를 확인할 수 있습니다.

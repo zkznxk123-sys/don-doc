@@ -26,11 +26,17 @@ import {
   createSnapshotFromCurrentBalances,
   type NetWorthSnapshotData,
 } from '@/lib/actions/networth'
-import { TrendingUp, TrendingDown, Wallet, Building2, Landmark, CreditCard, Camera, Plus } from 'lucide-react'
+import {
+  getFamilyRealEstateSummary,
+  getFamilyTotalDebtMonthlyPayment,
+  type RealEstateSummaryData,
+} from '@/lib/actions/accounts'
+import { TrendingUp, TrendingDown, Wallet, Building2, Landmark, CreditCard, Camera, Plus, PiggyBank, Pencil, ChevronRight, AlertTriangle, ShieldCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const REAL_ESTATE_TYPES = new Set(['REAL_ESTATE'])
-const FINANCIAL_TYPES = new Set(['CASH', 'INVESTMENT', 'CRYPTO', 'STO'])
+const FINANCIAL_TYPES = new Set(['CASH', 'INVESTMENT', 'CRYPTO', 'STO', 'PENSION'])
+const PENSION_TYPES = new Set(['PENSION'])
 
 function getCurrentYearMonth(): string {
   const now = new Date()
@@ -48,6 +54,9 @@ export default function AssetsPage() {
   const [totalNetEquity, setTotalNetEquity] = useState(0)
   const [loading, setLoading] = useState(true)
   const [selectedAccount, setSelectedAccount] = useState<AccountInitialData | undefined>()
+  const [reSummary, setReSummary] = useState<RealEstateSummaryData | null>(null)
+  const [totalDebtMonthlyPayment, setTotalDebtMonthlyPayment] = useState(0)
+  const [avgMonthlyIncome, setAvgMonthlyIncome] = useState<number | null>(null)
   const [isAccountDrawerOpen, setIsAccountDrawerOpen] = useState(false)
   const [netWorthHistory, setNetWorthHistory] = useState<NetWorthSnapshotData[]>([])
 
@@ -101,7 +110,19 @@ export default function AssetsPage() {
   const loadData = useCallback(async () => {
     setLoading(true)
     try {
-      await Promise.all([loadAccounts(), loadNetWorthHistory(), checkSnapshot()])
+      await Promise.all([
+        loadAccounts(),
+        loadNetWorthHistory(),
+        checkSnapshot(),
+        getFamilyRealEstateSummary().then(d => setReSummary(d)),
+        getFamilyTotalDebtMonthlyPayment().then(v => setTotalDebtMonthlyPayment(v)),
+        fetch('/api/stats/cashflow?months=6').then(r => r.json()).then(d => {
+          if (d.success && d.months?.length) {
+            const avg = d.months.reduce((s: number, m: { income: number }) => s + m.income, 0) / d.months.length
+            setAvgMonthlyIncome(avg)
+          }
+        }).catch(() => {}),
+      ])
     } finally {
       setLoading(false)
     }
@@ -152,8 +173,10 @@ export default function AssetsPage() {
 
   const realEstateAccounts = accounts.filter(a => REAL_ESTATE_TYPES.has(a.type))
   const financialAccounts = accounts.filter(a => FINANCIAL_TYPES.has(a.type))
+  const pensionAccounts = accounts.filter(a => PENSION_TYPES.has(a.type))
   const realEstateTotalAssets = realEstateAccounts.reduce((s, a) => s + a.balance, 0)
   const financialTotalAssets = financialAccounts.reduce((s, a) => s + a.balance, 0)
+  const pensionTotalBalance = pensionAccounts.reduce((s, a) => s + a.balance, 0)
 
   const showBanner = !!missingYearMonth && !bannerDismissed
 
@@ -219,18 +242,24 @@ export default function AssetsPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="summary">
-        <TabsList className="w-full grid grid-cols-4">
-          <TabsTrigger value="summary">요약</TabsTrigger>
-          <TabsTrigger value="realestate">
-            <Building2 className="w-3.5 h-3.5 mr-1 opacity-70" />
+        <TabsList className="w-full grid grid-cols-5">
+          <TabsTrigger value="summary" className="text-[11px] px-1.5 py-1.5 sm:text-sm sm:px-3">
+            요약
+          </TabsTrigger>
+          <TabsTrigger value="realestate" className="text-[11px] px-1.5 py-1.5 sm:text-sm sm:px-3">
+            <Building2 className="w-3 h-3 mr-0.5 opacity-70 hidden sm:block sm:mr-1 sm:w-3.5 sm:h-3.5" />
             부동산
           </TabsTrigger>
-          <TabsTrigger value="financial">
-            <Landmark className="w-3.5 h-3.5 mr-1 opacity-70" />
+          <TabsTrigger value="financial" className="text-[11px] px-1.5 py-1.5 sm:text-sm sm:px-3">
+            <Landmark className="w-3 h-3 mr-0.5 opacity-70 hidden sm:block sm:mr-1 sm:w-3.5 sm:h-3.5" />
             금융자산
           </TabsTrigger>
-          <TabsTrigger value="debt">
-            <CreditCard className="w-3.5 h-3.5 mr-1 opacity-70" />
+          <TabsTrigger value="pension" className="text-[11px] px-1.5 py-1.5 sm:text-sm sm:px-3">
+            <PiggyBank className="w-3 h-3 mr-0.5 opacity-70 hidden sm:block sm:mr-1 sm:w-3.5 sm:h-3.5" />
+            연금
+          </TabsTrigger>
+          <TabsTrigger value="debt" className="text-[11px] px-1.5 py-1.5 sm:text-sm sm:px-3">
+            <CreditCard className="w-3 h-3 mr-0.5 opacity-70 hidden sm:block sm:mr-1 sm:w-3.5 sm:h-3.5" />
             부채
           </TabsTrigger>
         </TabsList>
@@ -270,11 +299,14 @@ export default function AssetsPage() {
             />
           ) : (
             <>
-              {/* 총계 요약 바 */}
-              <div className="flex items-center justify-between px-4 py-2.5 bg-card border border-border rounded-xl">
-                <span className="text-xs text-muted-foreground">부동산 {realEstateAccounts.length}건</span>
-                <span className="text-sm font-bold text-foreground tabular-nums">{formatCurrency(realEstateTotalAssets)}</span>
-              </div>
+              {/* 합산 요약 + DSR/DTI 패널 */}
+              {reSummary && (
+                <RealEstateAggregatePanel
+                  summary={reSummary}
+                  totalDebtMonthlyPayment={totalDebtMonthlyPayment}
+                  avgMonthlyIncome={avgMonthlyIncome}
+                />
+              )}
               {realEstateAccounts.map(account => (
                 <RealEstateCard
                   key={account.id}
@@ -320,6 +352,60 @@ export default function AssetsPage() {
             onAdd={openAdd}
           />
         </TabsContent>
+
+        {/* 연금 탭 */}
+        <TabsContent value="pension" className="space-y-4">
+          {/* 핵심 지표 요약 카드 */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-card border border-border rounded-2xl p-4">
+              <p className="text-xs text-muted-foreground font-medium mb-2">총 납입 원금</p>
+              <p className="text-xl font-bold tabular-nums text-foreground">
+                {pensionAccounts.length > 0 ? formatLargeNumber(pensionTotalBalance) : '—'}
+              </p>
+              <p className="text-[10px] text-muted-foreground/60 mt-1.5">누적 납입 금액</p>
+            </div>
+            <div className="bg-teal-50 dark:bg-teal-900/15 border border-teal-200 dark:border-teal-800/40 rounded-2xl p-4">
+              <p className="text-xs text-muted-foreground font-medium mb-2">예상 수령액</p>
+              <p className="text-xl font-bold tabular-nums text-teal-600 dark:text-teal-400">—</p>
+              <p className="text-[10px] text-muted-foreground/60 mt-1.5">월 예상 수령 기준</p>
+            </div>
+          </div>
+
+          {pensionAccounts.length === 0 ? (
+            <EmptyTab
+              icon={<PiggyBank className="w-6 h-6 text-muted-foreground/60" />}
+              message="등록된 연금이 없습니다"
+              onAdd={openAdd}
+            />
+          ) : (
+            <div className="bg-card border border-border rounded-2xl overflow-hidden">
+              {/* 헤더 */}
+              <div className="px-4 py-2.5 bg-muted/40 border-b border-border grid grid-cols-[1fr_120px_120px_36px] text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                <span>연금명</span>
+                <span className="text-right">납입 원금</span>
+                <span className="text-right">예상 수령액/월</span>
+                <span />
+              </div>
+              {/* 리스트 */}
+              <div className="divide-y divide-border/60">
+                {pensionAccounts.map(account => (
+                  <PensionItem
+                    key={account.id}
+                    account={account}
+                    onEdit={() => openEdit(account)}
+                  />
+                ))}
+              </div>
+              {/* 추가 버튼 */}
+              <button
+                onClick={openAdd}
+                className="w-full py-3 border-t border-dashed border-border text-xs text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted/30 transition-colors"
+              >
+                + 연금 추가
+              </button>
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
 
       {/* 계좌 추가/수정 드로어 */}
@@ -363,6 +449,209 @@ export default function AssetsPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </div>
+  )
+}
+
+// ─── DSR/LTV 공통 유틸 ──────────────────────────────────────────────────────
+function regulationStyle(pct: number, limits: [number, number]) {
+  if (pct <= limits[0]) return { bar: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', label: '양호' }
+  if (pct <= limits[1]) return { bar: 'bg-amber-500',   text: 'text-amber-600 dark:text-amber-400',     label: '주의' }
+  return                        { bar: 'bg-red-500',    text: 'text-red-600 dark:text-red-400',         label: '위험' }
+}
+
+function RegulationBar({ label, value, limits, desc }: { label: string; value: number; limits: [number, number]; desc?: string }) {
+  const st = regulationStyle(value, limits)
+  return (
+    <div className="flex-1 min-w-0">
+      <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-semibold text-foreground">{label}</span>
+          <span className={cn('text-[10px] px-1.5 py-0.5 rounded-md font-medium', st.text,
+            value <= limits[0] ? 'bg-emerald-500/10' : value <= limits[1] ? 'bg-amber-500/10' : 'bg-red-500/10'
+          )}>{st.label}</span>
+        </div>
+        <span className={cn('text-sm font-bold tabular-nums', st.text)}>{value.toFixed(1)}%</span>
+      </div>
+      <div className="w-full bg-muted rounded-full h-2 overflow-hidden">
+        <div className={cn('h-full rounded-full transition-all duration-700', st.bar)} style={{ width: `${Math.min(value, 100)}%` }} />
+      </div>
+      {desc && <p className="text-[10px] text-muted-foreground/50 mt-0.5">{desc}</p>}
+    </div>
+  )
+}
+
+function RealEstateAggregatePanel({
+  summary,
+  totalDebtMonthlyPayment,
+  avgMonthlyIncome,
+}: {
+  summary: RealEstateSummaryData
+  totalDebtMonthlyPayment: number
+  avgMonthlyIncome: number | null
+}) {
+  const dsr = avgMonthlyIncome && avgMonthlyIncome > 0
+    ? (totalDebtMonthlyPayment / avgMonthlyIncome) * 100
+    : null
+  const dti = avgMonthlyIncome && avgMonthlyIncome > 0
+    ? (summary.totalMonthlyPayment / avgMonthlyIncome) * 100
+    : null
+
+  const multiProperty = summary.propertyCount > 1
+
+  return (
+    <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      {/* 헤더 */}
+      <div className="px-5 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Building2 className="w-4 h-4 text-purple-400" />
+          <span className="text-sm font-semibold text-foreground">
+            {multiProperty ? '전체 부동산 합산 요약' : '부동산 현황'}
+          </span>
+          <span className="text-[10px] text-muted-foreground/60 bg-muted px-2 py-0.5 rounded-full">
+            {summary.propertyCount}건
+          </span>
+        </div>
+      </div>
+
+      <div className="px-5 py-4 space-y-4">
+        {/* 합산 지표 그리드 */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <div className="bg-muted/40 rounded-xl p-3">
+            <p className="text-[10px] text-muted-foreground/60 mb-1">총 시세</p>
+            <p className="text-sm font-bold text-foreground tabular-nums">{formatLargeNumber(summary.totalCurrentPrice)}</p>
+          </div>
+          <div className="bg-muted/40 rounded-xl p-3">
+            <p className="text-[10px] text-muted-foreground/60 mb-1">총 부채</p>
+            <p className="text-sm font-bold text-red-400 tabular-nums">-{formatLargeNumber(summary.totalDebt)}</p>
+          </div>
+          <div className={cn('rounded-xl p-3 border', summary.totalNetEquity >= 0
+            ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-900/50'
+            : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/50')}>
+            <p className="text-[10px] text-muted-foreground/60 mb-1">총 순자산</p>
+            <p className={cn('text-sm font-bold tabular-nums', summary.totalNetEquity >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-400')}>
+              {summary.totalNetEquity >= 0 ? '' : '-'}{formatLargeNumber(Math.abs(summary.totalNetEquity))}
+            </p>
+          </div>
+          {summary.totalCapitalGain != null ? (
+            <div className={cn('rounded-xl p-3 border', summary.totalCapitalGain >= 0
+              ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-900/50'
+              : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/50')}>
+              <p className="text-[10px] text-muted-foreground/60 mb-1">시세차익</p>
+              <p className={cn('text-sm font-bold tabular-nums', summary.totalCapitalGain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-400')}>
+                {summary.totalCapitalGain >= 0 ? '+' : '-'}{formatLargeNumber(Math.abs(summary.totalCapitalGain))}
+              </p>
+            </div>
+          ) : (
+            <div className="bg-muted/40 rounded-xl p-3">
+              <p className="text-[10px] text-muted-foreground/60 mb-1">평균 LTV</p>
+              <p className="text-sm font-bold text-foreground tabular-nums">
+                {summary.weightedLtv != null ? `${summary.weightedLtv.toFixed(1)}%` : '—'}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* DSR / DTI 섹션 */}
+        <div className="border border-border/60 rounded-xl px-4 py-3 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-muted-foreground/60" />
+              <span className="text-xs font-semibold text-foreground">대출 규제 지표</span>
+            </div>
+            {avgMonthlyIncome == null && (
+              <span className="text-[10px] text-amber-600 dark:text-amber-400">소득 데이터 필요 (현금흐름 등록)</span>
+            )}
+          </div>
+
+          {avgMonthlyIncome != null ? (
+            <div className="space-y-3">
+              <div className="flex gap-4">
+                {dsr != null && (
+                  <RegulationBar
+                    label="DSR"
+                    value={dsr}
+                    limits={[30, 40]}
+                    desc={`전체 부채 월상환 ${formatLargeNumber(totalDebtMonthlyPayment)} / 월소득 ${formatLargeNumber(avgMonthlyIncome)} · 규제한도 40%`}
+                  />
+                )}
+                {dti != null && (
+                  <RegulationBar
+                    label="DTI"
+                    value={dti}
+                    limits={[40, 60]}
+                    desc={`부동산 부채 월상환 ${formatLargeNumber(summary.totalMonthlyPayment)} / 월소득 ${formatLargeNumber(avgMonthlyIncome)} · 규제한도 60%`}
+                  />
+                )}
+              </div>
+              <p className="text-[10px] text-muted-foreground/40">
+                * 최근 6개월 평균 수입 기준 · 실제 심사 기준과 다를 수 있음
+              </p>
+            </div>
+          ) : (
+            <div className="flex gap-4">
+              <div className="flex-1 opacity-40">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-semibold">DSR</span>
+                  <span className="text-sm font-bold">—</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2" />
+              </div>
+              <div className="flex-1 opacity-40">
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-semibold">DTI</span>
+                  <span className="text-sm font-bold">—</span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2" />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function PensionItem({
+  account,
+  onEdit,
+}: {
+  account: AccountInitialData
+  onEdit: () => void
+}) {
+  return (
+    <div className="grid grid-cols-[1fr_120px_120px_36px] items-center px-4 py-3.5 group hover:bg-muted/30 transition-colors">
+      {/* 연금명 */}
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center flex-shrink-0">
+            <PiggyBank className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-foreground truncate">{account.name}</p>
+            {account.ownerName && (
+              <p className="text-[10px] text-muted-foreground/60">{account.ownerName}</p>
+            )}
+          </div>
+        </div>
+      </div>
+      {/* 납입 원금 (현재 잔액) */}
+      <p className="text-sm font-semibold tabular-nums text-right text-foreground">
+        {formatLargeNumber(account.balance)}
+      </p>
+      {/* 예상 수령액/월 */}
+      <p className="text-sm tabular-nums text-right text-muted-foreground/50">
+        —
+      </p>
+      {/* 편집 버튼 */}
+      <div className="flex justify-end">
+        <button
+          onClick={onEdit}
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground/40 hover:text-foreground hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
+        >
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
     </div>
   )
 }

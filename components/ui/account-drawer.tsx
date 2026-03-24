@@ -506,7 +506,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
                 )}>
                   연결된 자산 (담보 등)
                   {needsLinkedAsset && (
-                    <span className="text-[10px] bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded-md">
+                    <span className="text-[10px] bg-amber-200 dark:bg-amber-400/40 text-amber-800 dark:text-amber-100 border border-amber-300 dark:border-amber-400/60 px-1.5 py-0.5 rounded-md font-semibold">
                       {dDebtType === 'MORTGAGE' ? '주담대 담보 자산' : '전세 대상 자산'} 연결 권장
                     </span>
                   )}
