@@ -28,11 +28,16 @@ export async function GET(req: NextRequest) {
     const transactions = await prisma.transaction.findMany({
       where: {
         user: { familyId },
+        parentId: null,  // 최상위 거래만 (분할 항목은 subItems로 포함)
         ...(dateFilter ? { date: dateFilter } : {}),
       },
       include: {
         user: { select: { name: true } },
         account: { select: { shareLevel: true } },
+        subItems: {
+          select: { id: true, description: true, amount: true, category: true, categoryId: true, isExcluded: true, excludeFromBudget: true },
+          orderBy: { amount: 'asc' },
+        },
       },
       orderBy: { date: 'desc' },
     })
@@ -43,6 +48,7 @@ export async function GET(req: NextRequest) {
     const masked = transactions.map((tx) => {
       const isOwner = tx.userId === userId
       const shareLevel = tx.account.shareLevel
+      const hasSubItems = tx.subItems.length > 0
 
       // PRIVATE 계좌 → 타인에게 완전 제외 (null 반환 후 filter)
       if (!isOwner && shareLevel === 'PRIVATE') return null
@@ -50,10 +56,15 @@ export async function GET(req: NextRequest) {
       const shouldMask =
         !isOwner && (shareLevel === 'BALANCE_ONLY' || tx.visibility === 'PRIVATE')
 
-      // 요약 집계 (마스킹 여부 무관하게 금액 포함, 단 isExcluded 제외)
+      // 요약 집계: 분할 항목 있으면 sub-items 합산, 없으면 parent 금액
       if (!tx.isExcluded) {
-        if (tx.amount > 0) totalIncome += tx.amount
-        else totalExpense += Math.abs(tx.amount)
+        const amounts = hasSubItems
+          ? tx.subItems.filter(s => !s.isExcluded).map(s => s.amount)
+          : [tx.amount]
+        for (const amt of amounts) {
+          if (amt > 0) totalIncome += amt
+          else totalExpense += Math.abs(amt)
+        }
       }
 
       return {
@@ -66,10 +77,12 @@ export async function GET(req: NextRequest) {
         category: shouldMask ? '개인' : tx.category,
         visibility: tx.visibility,
         isExcluded: tx.isExcluded,
+        excludeFromBudget: tx.excludeFromBudget,
         userId: tx.userId,
         userName: shouldMask ? null : tx.user.name,
         isMasked: shouldMask,
         accountId: tx.accountId,
+        subItems: shouldMask ? [] : tx.subItems,
       }
     }).filter(Boolean)
 

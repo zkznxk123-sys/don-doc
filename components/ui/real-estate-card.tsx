@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import { Building2, TrendingUp, TrendingDown, Edit2, HandCoins, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react'
 import { cn, formatCurrency, formatLargeNumber } from '@/lib/utils'
-import { getRealEstateWithDebts, type RealEstateWithDebts, type LinkedDebt } from '@/lib/actions/accounts'
+import { getRealEstateWithDebts, updateDebtLtvInclusion, type RealEstateWithDebts, type LinkedDebt } from '@/lib/actions/accounts'
+import { Switch } from '@/components/ui/switch'
 import type { AccountInitialData } from '@/components/ui/account-drawer'
 
 interface RealEstateCardProps {
@@ -56,7 +57,7 @@ function LtvBar({ ltv }: { ltv: number }) {
   )
 }
 
-function DebtRow({ debt }: { debt: LinkedDebt }) {
+function DebtRow({ debt, onToggleLtv }: { debt: LinkedDebt; onToggleLtv: (id: string, val: boolean) => void }) {
   return (
     <div className="flex items-center gap-3 py-2.5 border-b border-border/60 last:border-0">
       <div className="w-7 h-7 rounded-lg bg-red-400/10 flex items-center justify-center flex-shrink-0">
@@ -76,11 +77,21 @@ function DebtRow({ debt }: { debt: LinkedDebt }) {
           )}
         </div>
       </div>
-      <div className="text-right flex-shrink-0">
-        <p className="text-xs font-semibold text-red-600 dark:text-red-400 tabular-nums">-{formatCurrency(debt.balance)}</p>
-        {debt.monthlyPayment != null && (
-          <p className="text-[10px] text-muted-foreground/60 tabular-nums">월 {formatLargeNumber(debt.monthlyPayment)}</p>
-        )}
+      <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="text-right">
+          <p className="text-xs font-semibold text-red-600 dark:text-red-400 tabular-nums">-{formatLargeNumber(debt.balance)}</p>
+          {debt.monthlyPayment != null && (
+            <p className="text-[10px] text-muted-foreground/60 tabular-nums">월 {formatLargeNumber(debt.monthlyPayment)}</p>
+          )}
+        </div>
+        <div className="flex flex-col items-center gap-0.5">
+          <Switch
+            checked={debt.includeInLtv}
+            onCheckedChange={val => onToggleLtv(debt.id, val)}
+            className="scale-75 origin-center"
+          />
+          <span className="text-[9px] text-muted-foreground/50">LTV</span>
+        </div>
       </div>
     </div>
   )
@@ -97,6 +108,20 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
       setLoading(false)
     })
   }, [account.id])
+
+  async function handleToggleLtv(debtId: string, val: boolean) {
+    if (!data) return
+    // 낙관적 업데이트
+    const updatedDebts = data.linkedDebts.map(d =>
+      d.id === debtId ? { ...d, includeInLtv: val } : d
+    )
+    const ltvDebt = updatedDebts.filter(d => d.includeInLtv).reduce((s, d) => s + d.balance, 0)
+    const newLtv = data.currentPrice && data.currentPrice > 0 && ltvDebt > 0
+      ? (ltvDebt / data.currentPrice) * 100
+      : null
+    setData({ ...data, linkedDebts: updatedDebts, ltv: newLtv })
+    await updateDebtLtvInclusion(debtId, val)
+  }
 
   const hasCurrentPrice = data?.currentPrice != null
   const hasPurchasePrice = data?.purchasePrice != null
@@ -173,12 +198,12 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
                   <div className={cn(
                     'rounded-xl p-3 border',
                     data.netEquity >= 0
-                      ? 'bg-emerald-950/30 border-emerald-900/50'
-                      : 'bg-red-950/30 border-red-900/50'
+                      ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-900/50'
+                      : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/50'
                   )}>
                     <p className="text-[10px] text-muted-foreground mb-1">순자본 (Net Equity)</p>
                     <p className={cn('text-base font-bold tabular-nums', data.netEquity >= 0 ? 'text-emerald-400' : 'text-red-400')}>
-                      {data.netEquity >= 0 ? '' : '-'}{formatCurrency(Math.abs(data.netEquity))}
+                      {data.netEquity >= 0 ? '' : '-'}{formatLargeNumber(Math.abs(data.netEquity))}
                     </p>
                     <p className="text-[10px] text-muted-foreground/60 mt-0.5">시세 − 총 부채</p>
                   </div>
@@ -187,8 +212,8 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
                   <div className={cn(
                     'rounded-xl p-3 border',
                     data.roi >= 0
-                      ? 'bg-emerald-950/30 border-emerald-900/50'
-                      : 'bg-red-950/30 border-red-900/50'
+                      ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-900/50'
+                      : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/50'
                   )}>
                     <p className="text-[10px] text-muted-foreground mb-1">수익률 (ROI)</p>
                     <div className="flex items-center gap-1">
@@ -235,7 +260,7 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-semibold text-red-400 tabular-nums">
-                      -{formatCurrency(data.totalDebt)}
+                      -{formatLargeNumber(data.totalDebt)}
                     </span>
                     {debtExpanded
                       ? <ChevronUp className="w-3.5 h-3.5 text-muted-foreground/60" />
@@ -246,7 +271,7 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
                 {debtExpanded && (
                   <div className="px-4 pb-2">
                     {data.linkedDebts.map(debt => (
-                      <DebtRow key={debt.id} debt={debt} />
+                      <DebtRow key={debt.id} debt={debt} onToggleLtv={handleToggleLtv} />
                     ))}
                   </div>
                 )}

@@ -5,9 +5,9 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import {
   ChevronLeft, ChevronRight, TrendingUp, TrendingDown,
   PiggyBank, Eye, EyeOff, Pencil, Check, X, Save, Loader2,
-  FileSpreadsheet, Plus, GitMerge, Sparkles,
+  FileSpreadsheet, Plus, GitMerge, Sparkles, ArrowUpDown, ArrowDownUp,
 } from 'lucide-react'
-import { cn, formatCurrency } from '@/lib/utils'
+import { cn, formatCurrency, formatLargeNumber } from '@/lib/utils'
 import { useDashboardActions } from '@/components/layout/DashboardShell'
 import { toast } from 'sonner'
 import { bulkUpdateTransactions, autoDetectAndExcludeTransfers } from '@/lib/actions/transaction'
@@ -18,6 +18,16 @@ import { InputGuide } from '@/components/dashboard/InputGuide'
 
 type TypeFilter = 'INCOME' | 'EXPENSE'
 
+interface SubItem {
+  id: string
+  description: string
+  amount: number
+  category: string
+  categoryId: string | null
+  isExcluded: boolean
+  excludeFromBudget: boolean
+}
+
 interface Transaction {
   id: string
   amount: number
@@ -26,10 +36,12 @@ interface Transaction {
   category: string
   visibility: 'SHARED' | 'PRIVATE'
   isExcluded: boolean
+  excludeFromBudget?: boolean
   userId: string
   userName: string | null
   isMasked: boolean
   accountId?: string
+  subItems?: SubItem[]
 }
 
 interface Summary { income: number; expense: number; savings: number }
@@ -47,6 +59,24 @@ const EXPENSE_CATEGORIES = [
   '문화/여가', '교육', '구독/통신', '저축/투자', '기타',
 ]
 const INCOME_CATEGORIES = ['급여', '부업', '이자/배당', '기타 수입']
+
+const CAT_COLORS: Record<string, string> = {
+  '식비': '#f97316',
+  '카페/간식': '#f59e0b',
+  '쇼핑': '#ec4899',
+  '교통': '#3b82f6',
+  '주거/관리비': '#6366f1',
+  '의료/건강': '#10b981',
+  '문화/여가': '#8b5cf6',
+  '교육': '#06b6d4',
+  '구독/통신': '#64748b',
+  '저축/투자': '#0ea5e9',
+  '기타': '#94a3b8',
+  '급여': '#22c55e',
+  '부업': '#84cc16',
+  '이자/배당': '#a3e635',
+  '기타 수입': '#cbd5e1',
+}
 
 function toMonthParam(y: number, m: number) {
   return `${y}-${String(m).padStart(2, '0')}`
@@ -70,6 +100,8 @@ export default function CashflowPage() {
   const [drafts, setDrafts] = useState<Record<string, DraftItem>>({})
   const [saving, setSaving] = useState(false)
   const [hideExcluded, setHideExcluded] = useState(true)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
+  const [sortOrder, setSortOrder] = useState<'date' | 'amount'>('date')
 
   // ── AI 재분류 모달 state ──
   const [aiModal, setAiModal] = useState<{
@@ -120,6 +152,7 @@ export default function CashflowPage() {
   useEffect(() => {
     setIsEditing(false)
     setDrafts({})
+    setSelectedCategory(null)
     fetchData(year, month)
     fetchGoal(year, month)
   }, [year, month, fetchData, fetchGoal, refreshKey])
@@ -161,14 +194,30 @@ export default function CashflowPage() {
     ? Math.round((effectiveSummary.savings / effectiveSummary.income) * 100)
     : null
 
-  // 타입 필터 + 제외 항목 필터 적용
-  const visibleTransactions = useMemo(() => {
+  // 타입 필터 + 제외 항목 필터 적용 (바 차트용 기준 목록)
+  const baseTransactions = useMemo(() => {
     let list = transactions
     if (hideExcluded) list = list.filter(tx => !(drafts[tx.id]?.isExcluded ?? tx.isExcluded))
     if (typeFilter === 'INCOME') list = list.filter(tx => tx.amount > 0)
     else if (typeFilter === 'EXPENSE') list = list.filter(tx => tx.amount < 0)
     return list
   }, [transactions, typeFilter, hideExcluded, drafts])
+
+  // 카테고리 필터 + 정렬 적용
+  const visibleTransactions = useMemo(() => {
+    let list = baseTransactions
+    if (selectedCategory) {
+      list = list.filter(tx => {
+        const activeSubs = (tx.subItems ?? []).filter(s => !s.isExcluded)
+        if (activeSubs.length > 0) return activeSubs.some(s => s.category === selectedCategory)
+        return (drafts[tx.id]?.category ?? tx.category) === selectedCategory
+      })
+    }
+    if (sortOrder === 'amount') {
+      list = [...list].sort((a, b) => Math.abs(b.amount) - Math.abs(a.amount))
+    }
+    return list
+  }, [baseTransactions, selectedCategory, sortOrder, drafts])
 
   const canEdit = (tx: Transaction) =>
     !tx.isMasked && (tx.userId === shellUser?.id || shellUser?.role === 'CFO')
@@ -552,6 +601,16 @@ export default function CashflowPage() {
         </div>
       )}
 
+      {/* 카테고리 바 차트 */}
+      {!loading && baseTransactions.length > 0 && (
+        <CategoryBar
+          transactions={baseTransactions}
+          typeFilter={typeFilter}
+          selectedCategory={selectedCategory}
+          onSelect={cat => setSelectedCategory(prev => prev === cat ? null : cat)}
+        />
+      )}
+
       {/* 내역 테이블 */}
       <div className="rounded-2xl border border-border overflow-visible">
 
@@ -582,8 +641,25 @@ export default function CashflowPage() {
                     </button>
                   </span>
                 )}
+                {selectedCategory && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-semibold normal-case tracking-normal bg-violet-100 text-violet-700 border border-violet-300 dark:bg-violet-500/15 dark:text-violet-400 dark:border-violet-500/30">
+                    {selectedCategory}
+                    <button onClick={() => setSelectedCategory(null)} className="hover:opacity-70 transition-opacity">
+                      <X className="w-2.5 h-2.5" />
+                    </button>
+                  </span>
+                )}
               </span>
-              <span>금액</span>
+              <button
+                onClick={() => setSortOrder(s => s === 'amount' ? 'date' : 'amount')}
+                className={cn('flex items-center gap-1 transition-colors hover:text-foreground', sortOrder === 'amount' ? 'text-foreground' : '')}
+              >
+                금액
+                {sortOrder === 'amount'
+                  ? <ArrowDownUp className="w-2.5 h-2.5" />
+                  : <ArrowUpDown className="w-2.5 h-2.5 opacity-40" />
+                }
+              </button>
               <span>카테고리</span>
               <span />
             </>
@@ -636,8 +712,11 @@ export default function CashflowPage() {
                     userId: tx.userId,
                     accountId: tx.accountId ?? '',
                     isMasked: tx.isMasked,
+                    excludeFromBudget: tx.excludeFromBudget,
+                    subItems: tx.subItems,
                   })}
                   onDraftChange={(patch) => setDraft(tx.id, patch, tx)}
+                  subItems={tx.subItems}
                 />
               )
             })}
@@ -743,9 +822,121 @@ function InsightCard({ label, icon, actual, target, type, suffix, isRate = false
   )
 }
 
+function CategoryBar({
+  transactions,
+  typeFilter,
+  selectedCategory,
+  onSelect,
+}: {
+  transactions: Transaction[]
+  typeFilter: TypeFilter | null
+  selectedCategory: string | null
+  onSelect: (cat: string) => void
+}) {
+  // 수입이면 수입 트랜잭션, 그 외엔 지출 트랜잭션 기준
+  const showIncome = typeFilter === 'INCOME'
+  const filtered = showIncome
+    ? transactions.filter(tx => tx.amount > 0)
+    : transactions.filter(tx => tx.amount < 0)
+
+  const catMap: Record<string, number> = {}
+  for (const tx of filtered) {
+    const activeSubs = (tx.subItems ?? []).filter(s => !s.isExcluded && (showIncome ? s.amount > 0 : s.amount < 0))
+    if (activeSubs.length > 0) {
+      for (const s of activeSubs) {
+        const cat = s.category || '기타'
+        catMap[cat] = (catMap[cat] ?? 0) + Math.abs(s.amount)
+      }
+    } else {
+      const cat = tx.category || '기타'
+      catMap[cat] = (catMap[cat] ?? 0) + Math.abs(tx.amount)
+    }
+  }
+
+  const total = Object.values(catMap).reduce((s, v) => s + v, 0)
+  if (total === 0) return null
+
+  const sorted = Object.entries(catMap).sort((a, b) => b[1] - a[1])
+
+  return (
+    <div className="mb-4 bg-card border border-border rounded-2xl p-4">
+      {/* 누적 막대 */}
+      <div className="flex h-7 rounded-xl overflow-hidden gap-px mb-3">
+        {sorted.map(([cat, amt]) => {
+          const pct = (amt / total) * 100
+          const color = CAT_COLORS[cat] ?? '#94a3b8'
+          const isSelected = selectedCategory === cat
+          const isDimmed = selectedCategory !== null && !isSelected
+          return (
+            <button
+              key={cat}
+              style={{ width: `${pct}%`, backgroundColor: color, opacity: isDimmed ? 0.2 : 1 }}
+              className="transition-opacity hover:opacity-80 active:opacity-60 relative group"
+              onClick={() => onSelect(cat)}
+              title={`${cat}: ${formatLargeNumber(amt)}`}
+            >
+              {isSelected && (
+                <div className="absolute inset-0 ring-2 ring-white/60 ring-inset rounded-[3px] pointer-events-none" />
+              )}
+            </button>
+          )
+        })}
+      </div>
+      {/* 범례 */}
+      <div className="flex flex-wrap gap-x-3 gap-y-1.5">
+        {sorted.map(([cat, amt]) => {
+          const color = CAT_COLORS[cat] ?? '#94a3b8'
+          const isSelected = selectedCategory === cat
+          const isDimmed = selectedCategory !== null && !isSelected
+          return (
+            <button
+              key={cat}
+              onClick={() => onSelect(cat)}
+              className={cn(
+                'flex items-center gap-1.5 text-[11px] transition-opacity',
+                isDimmed ? 'opacity-30' : '',
+                isSelected ? 'font-semibold' : '',
+              )}
+            >
+              <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
+              <span className="text-muted-foreground">{cat}</span>
+              <span className="tabular-nums text-foreground/70">{formatLargeNumber(amt)}</span>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function SubItemRow({ item }: { item: SubItem }) {
+  return (
+    <div className={cn(
+      'grid grid-cols-[72px_1fr_96px_80px_36px] px-4 py-1.5 bg-muted/30 border-t border-border/40',
+      item.isExcluded && 'opacity-40',
+    )}>
+      <div className="flex items-center pl-3">
+        <span className="text-muted-foreground/40 text-xs">↳</span>
+      </div>
+      <div className="min-w-0 pr-2 flex items-center">
+        <p className="text-xs text-muted-foreground truncate">{item.description}</p>
+      </div>
+      <p className={cn('text-xs tabular-nums text-right font-medium self-center', item.amount > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground/70')}>
+        {item.amount > 0 ? '+' : ''}{formatCurrency(item.amount)}
+      </p>
+      <div className="pl-2 self-center">
+        <span className="inline-block text-[10px] px-1.5 py-0.5 rounded-md truncate max-w-full bg-muted text-muted-foreground/60">
+          {item.category}
+        </span>
+      </div>
+      <div />
+    </div>
+  )
+}
+
 function TransactionRow({
   tx, isEditing, isDirty, effectiveCategory, effectiveExcluded, effectiveAmount, effectiveDescription,
-  canEdit, onEdit, onDraftChange,
+  canEdit, onEdit, onDraftChange, subItems,
 }: {
   tx: Transaction
   isEditing: boolean
@@ -757,7 +948,9 @@ function TransactionRow({
   canEdit: boolean
   onEdit: () => void
   onDraftChange: (patch: Partial<DraftItem>) => void
+  subItems?: SubItem[]
 }) {
+  const hasSubItems = (subItems?.length ?? 0) > 0
   const date = new Date(tx.date)
   const dateStr = `${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
   const categories = tx.amount > 0 ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
@@ -841,6 +1034,7 @@ function TransactionRow({
 
   // 일반 모드 (편집 모드가 아니거나 canEdit 아닐 때)
   return (
+    <>
     <div
       className={cn(
         'grid grid-cols-[72px_1fr_96px_80px_36px] px-4 py-3 transition-colors group',
@@ -885,5 +1079,10 @@ function TransactionRow({
         )}
       </div>
     </div>
+    {/* 분할 항목 */}
+    {hasSubItems && subItems!.map(item => (
+      <SubItemRow key={item.id} item={item} />
+    ))}
+  </>
   )
 }

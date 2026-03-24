@@ -46,6 +46,8 @@ interface Transaction {
   userName: string | null
   isMasked: boolean
   isExcluded: boolean
+  excludeFromBudget?: boolean
+  subItems?: { id: string; description: string; amount: number; category: string; isExcluded: boolean; excludeFromBudget: boolean }[]
 }
 
 
@@ -494,14 +496,32 @@ function CashflowChart({ months }: { months: { label: string; income: number; ex
 
 const CAT_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444']
 
-function TopExpenseCategories({ transactions, totalExpense }: { transactions: Transaction[]; totalExpense: number }) {
-  const categoryMap: Record<string, number> = {}
+function TopExpenseCategories({ transactions }: { transactions: Transaction[] }) {
+  const [expanded, setExpanded] = useState<string | null>(null)
+
+  // 카테고리별 집계: sub-items 있으면 sub-items 기준
+  const categoryMap: Record<string, { amount: number; items: { description: string; amount: number }[] }> = {}
+
   transactions
-    .filter(tx => tx.amount < 0 && !tx.isMasked && !tx.isExcluded)
-    .forEach(tx => { categoryMap[tx.category] = (categoryMap[tx.category] || 0) + Math.abs(tx.amount) })
+    .filter(tx => tx.amount < 0 && !tx.isMasked && !tx.isExcluded && !tx.excludeFromBudget)
+    .forEach(tx => {
+      const activeSubItems = (tx.subItems ?? []).filter(s => !s.isExcluded && !s.excludeFromBudget && s.amount < 0)
+      if (activeSubItems.length > 0) {
+        // sub-items별 카테고리로 분산
+        activeSubItems.forEach(s => {
+          if (!categoryMap[s.category]) categoryMap[s.category] = { amount: 0, items: [] }
+          categoryMap[s.category].amount += Math.abs(s.amount)
+          categoryMap[s.category].items.push({ description: s.description, amount: Math.abs(s.amount) })
+        })
+      } else {
+        if (!categoryMap[tx.category]) categoryMap[tx.category] = { amount: 0, items: [] }
+        categoryMap[tx.category].amount += Math.abs(tx.amount)
+        categoryMap[tx.category].items.push({ description: tx.description, amount: Math.abs(tx.amount) })
+      }
+    })
 
   const top5 = Object.entries(categoryMap)
-    .map(([category, amount]) => ({ category, amount }))
+    .map(([category, data]) => ({ category, amount: data.amount, items: data.items.sort((a, b) => b.amount - a.amount).slice(0, 5) }))
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 5)
 
@@ -512,17 +532,33 @@ function TopExpenseCategories({ transactions, totalExpense }: { transactions: Tr
   const top5Total = top5.reduce((sum, c) => sum + c.amount, 0)
 
   return (
-    <div className="space-y-2.5">
+    <div className="space-y-1">
       {top5.map((cat, i) => {
         const pct = top5Total > 0 ? Math.round((cat.amount / top5Total) * 100) : 0
+        const isOpen = expanded === cat.category
         return (
-          <div key={cat.category} className="flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: CAT_COLORS[i] }} />
-            <span className="text-xs text-muted-foreground flex-1 truncate">{cat.category}</span>
-            <span className="text-xs text-muted-foreground tabular-nums w-6 text-right">{pct}%</span>
-            <span className="text-xs font-medium text-foreground tabular-nums w-20 text-right">
-              {formatLargeNumber(cat.amount)}
-            </span>
+          <div key={cat.category}>
+            <button
+              onClick={() => setExpanded(isOpen ? null : cat.category)}
+              className="w-full flex items-center gap-3 py-1.5 hover:bg-muted/40 rounded-lg px-1 transition-colors"
+            >
+              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: CAT_COLORS[i] }} />
+              <span className="text-xs text-muted-foreground flex-1 truncate text-left">{cat.category}</span>
+              <span className="text-xs text-muted-foreground tabular-nums w-6 text-right">{pct}%</span>
+              <span className="text-xs font-medium text-foreground tabular-nums w-20 text-right">
+                {formatLargeNumber(cat.amount)}
+              </span>
+            </button>
+            {isOpen && (
+              <div className="ml-5 mb-1 space-y-0.5">
+                {cat.items.map((item, j) => (
+                  <div key={j} className="flex items-center gap-2 py-1 pl-2">
+                    <span className="text-[10px] text-muted-foreground/60 flex-1 truncate">↳ {item.description}</span>
+                    <span className="text-[10px] tabular-nums text-muted-foreground/80">{formatLargeNumber(item.amount)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )
       })}
@@ -720,6 +756,8 @@ export default function Dashboard() {
             category: tx.category, date: tx.date.split('T')[0],
             userId: tx.userId, userName: tx.userName, isMasked: tx.isMasked,
             isExcluded: tx.isExcluded ?? false,
+            excludeFromBudget: tx.excludeFromBudget ?? false,
+            subItems: tx.subItems ?? [],
           })))
         }
 
@@ -968,7 +1006,7 @@ export default function Dashboard() {
 
                   <div>
                     <h3 className="text-sm font-semibold text-foreground mb-3">지출 Top 5</h3>
-                    <TopExpenseCategories transactions={transactions} totalExpense={monthlyExpense} />
+                    <TopExpenseCategories transactions={transactions} />
                   </div>
                 </div>
               )}
@@ -1041,7 +1079,7 @@ export default function Dashboard() {
                 <h3 className="text-sm font-semibold text-foreground mb-4">내 카테고리별 지출</h3>
                 <TopExpenseCategories
                   transactions={transactions.filter(tx => tx.userId === currentUserId)}
-                  totalExpense={myExpenses}
+                  
                 />
               </div>
             )}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { Minus, Plus, Globe, Lock, Trash2, Sparkles, Loader2, PlusCircle, X } from 'lucide-react'
+import { Minus, Plus, Globe, Lock, Trash2, Sparkles, Loader2, PlusCircle, X, Scissors, ChevronDown, ChevronUp } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle,
@@ -10,6 +10,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { getFamilyCategories, addCustomCategory, type CategoryOption } from '@/lib/actions/categories'
+import { upsertSubTransactions, type SubTransactionInput } from '@/lib/actions/transaction'
 
 export interface EditTransactionData {
   id: string
@@ -21,6 +22,16 @@ export interface EditTransactionData {
   userId: string
   accountId: string
   isMasked: boolean
+  excludeFromBudget?: boolean
+  subItems?: { id: string; description: string; amount: number; category: string; categoryId: string | null; isExcluded: boolean; excludeFromBudget: boolean }[]
+}
+
+interface SubItemDraft {
+  id?: string
+  description: string
+  amount: string   // 입력용 string
+  category: string
+  excludeFromBudget: boolean
 }
 
 interface TransactionDrawerProps {
@@ -101,6 +112,7 @@ export function TransactionDrawer({
   const [isExpense, setIsExpense] = useState(true)
 
   // UI state
+  const [excludeFromBudget, setExcludeFromBudget] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -113,6 +125,11 @@ export function TransactionDrawer({
   const [newCatIcon, setNewCatIcon] = useState('')
   const [isAddingCategory, setIsAddingCategory] = useState(false)
   const [addCatError, setAddCatError] = useState('')
+
+  // 분할 항목 state
+  const [showSplit, setShowSplit] = useState(false)
+  const [subItems, setSubItems] = useState<SubItemDraft[]>([])
+  const [isSavingSplit, setIsSavingSplit] = useState(false)
 
   const handleAddCategory = async () => {
     if (!newCatName.trim()) return
@@ -197,6 +214,21 @@ export function TransactionDrawer({
       setCategory(editTransaction.category)
       setDescription(editTransaction.description)
       setIsShared(editTransaction.visibility === 'SHARED')
+      setExcludeFromBudget(editTransaction.excludeFromBudget ?? false)
+      const existing = editTransaction.subItems ?? []
+      if (existing.length > 0) {
+        setShowSplit(true)
+        setSubItems(existing.map(s => ({
+          id: s.id,
+          description: s.description,
+          amount: String(Math.abs(s.amount)),
+          category: s.category,
+          excludeFromBudget: s.excludeFromBudget ?? false,
+        })))
+      } else {
+        setShowSplit(false)
+        setSubItems([])
+      }
     }
     setShowDeleteConfirm(false)
     setError('')
@@ -212,6 +244,8 @@ export function TransactionDrawer({
     setError('')
     setAutoSuggestedCategory(null)
     setShowDeleteConfirm(false)
+    setShowSplit(false)
+    setSubItems([])
   }, [])
 
   const handleOpenChange = (open: boolean) => {
@@ -243,6 +277,7 @@ export function TransactionDrawer({
             category,
             description: description || category,
             visibility: isShared ? 'SHARED' : 'PRIVATE',
+            excludeFromBudget,
           }),
         })
         const result = await res.json()
@@ -300,6 +335,31 @@ export function TransactionDrawer({
     } finally {
       setIsDeleting(false)
     }
+  }
+
+  const handleSaveSplit = async () => {
+    if (!editTransaction) return
+    const validItems = subItems.filter(s => s.description.trim() && s.amount && s.category)
+    if (validItems.length === 0) {
+      // 항목 없으면 분할 전체 삭제
+      setIsSavingSplit(true)
+      await upsertSubTransactions(currentUserId, userRole, editTransaction.id, [])
+      setIsSavingSplit(false)
+      onSuccess()
+      return
+    }
+    setIsSavingSplit(true)
+    const inputs: SubTransactionInput[] = validItems.map(s => ({
+      id: s.id,
+      description: s.description.trim(),
+      amount: isExpense ? -Math.abs(Number(s.amount)) : Math.abs(Number(s.amount)),
+      category: s.category,
+      excludeFromBudget: s.excludeFromBudget ?? false,
+    }))
+    const res = await upsertSubTransactions(currentUserId, userRole, editTransaction.id, inputs)
+    setIsSavingSplit(false)
+    if (!res.success) { setError(res.error ?? '분할 저장 실패'); return }
+    onSuccess()
   }
 
   const displayAmount = amount ? Number(amount).toLocaleString('ko-KR') : ''
@@ -549,6 +609,38 @@ export function TransactionDrawer({
               <Switch checked={isShared} onCheckedChange={setIsShared} />
             </div>
 
+            {/* 예산 제외 — 수정 모드 + 지출 + 분할 항목 없을 때만 */}
+            {isEditMode && canEdit && isExpense && !(showSplit && subItems.length > 0) && (
+              <button
+                onClick={() => setExcludeFromBudget(v => !v)}
+                className={cn(
+                  'flex items-center justify-between w-full rounded-xl px-4 py-3 border transition-colors text-left',
+                  excludeFromBudget
+                    ? 'bg-orange-50 dark:bg-orange-900/20 border-orange-200 dark:border-orange-800/40'
+                    : 'bg-muted/30 border-border/50 hover:border-border'
+                )}
+              >
+                <div>
+                  <p className={cn('text-sm font-medium', excludeFromBudget ? 'text-orange-700 dark:text-orange-300' : 'text-foreground')}>
+                    이번 달 예산에서 제외
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {excludeFromBudget ? '예산 집계에 포함되지 않습니다' : '예산 집계에 포함됩니다'}
+                  </p>
+                </div>
+                <div className={cn(
+                  'w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0',
+                  excludeFromBudget ? 'bg-orange-500 border-orange-500' : 'border-muted-foreground/30'
+                )}>
+                  {excludeFromBudget && (
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                      <path d="M2 5.5L4 7.5L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                </div>
+              </button>
+            )}
+
             {!isShared && (
               <div className="flex items-start gap-2.5 rounded-xl px-4 py-3 bg-amber-500/5 border border-amber-500/15">
                 <Lock className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
@@ -556,6 +648,155 @@ export function TransactionDrawer({
                   이 지출의 상세 내역은 가족에게 공개되지 않습니다.<br />
                   <span className="text-amber-400/50">가족 대시보드에는 금액과 &lsquo;🔒 개인 지출&rsquo;만 표시됩니다.</span>
                 </p>
+              </div>
+            )}
+
+            {/* 분할 항목 — 수정 모드 + 권한 있을 때만 */}
+            {isEditMode && canEdit && (
+              <div className="rounded-xl border border-border overflow-hidden">
+                <button
+                  onClick={() => {
+                    if (!showSplit) {
+                      setShowSplit(true)
+                      if (subItems.length === 0) setSubItems([{ description: '', amount: '', category: '', excludeFromBudget: false }])
+                    } else {
+                      setShowSplit(false)
+                    }
+                  }}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-muted/30 hover:bg-muted/50 transition-colors text-left"
+                >
+                  <div className="flex items-center gap-2">
+                    <Scissors className="w-3.5 h-3.5 text-muted-foreground" />
+                    <span className="text-sm font-medium text-foreground">분할 입력</span>
+                    {subItems.length > 0 && showSplit && (
+                      <span className="text-[10px] bg-violet-500/20 text-violet-400 px-1.5 py-0.5 rounded-md">{subItems.length}개</span>
+                    )}
+                  </div>
+                  {showSplit ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
+                </button>
+
+                {showSplit && (
+                  <div className="px-4 py-3 space-y-2.5">
+                    <p className="text-[11px] text-muted-foreground/70">
+                      통째로 잡힌 거래를 세부 항목으로 분할하면 해당 항목으로 통계가 계산됩니다.
+                    </p>
+
+                    {subItems.map((item, idx) => {
+                      const currentType = isExpense ? 'EXPENSE' : 'INCOME'
+                      const cats = allCategories.filter(c => c.type === currentType)
+                      return (
+                        <div key={idx} className="flex items-start gap-2 p-2.5 bg-muted/40 rounded-xl">
+                          <div className="flex-1 space-y-1.5">
+                            <input
+                              type="text"
+                              value={item.description}
+                              onChange={e => setSubItems(prev => prev.map((s, i) => i === idx ? { ...s, description: e.target.value } : s))}
+                              placeholder="항목명 (예: 소득세)"
+                              className="w-full h-8 bg-background border border-border rounded-lg px-2.5 text-xs outline-none focus:border-ring"
+                            />
+                            <div className="flex gap-1.5">
+                              <div className="relative">
+                                <input
+                                  type="text"
+                                  inputMode="numeric"
+                                  value={item.amount ? Number(item.amount).toLocaleString() : ''}
+                                  onChange={e => {
+                                    const raw = e.target.value.replace(/[^0-9]/g, '')
+                                    setSubItems(prev => prev.map((s, i) => i === idx ? { ...s, amount: raw } : s))
+                                  }}
+                                  placeholder="금액"
+                                  className="w-28 h-8 bg-background border border-border rounded-lg px-2.5 text-xs tabular-nums outline-none focus:border-ring"
+                                />
+                                {(() => {
+                                  const total = Number(amount)
+                                  const allocated = subItems.reduce((s, i) => s + (Number(i.amount) || 0), 0)
+                                  const remaining = total - allocated + (Number(item.amount) || 0)
+                                  return remaining > 0 && (
+                                    <button
+                                      onClick={() => setSubItems(prev => prev.map((s, i) => i === idx ? { ...s, amount: String(remaining) } : s))}
+                                      className="absolute -top-2 -right-1 text-[9px] bg-violet-500/20 text-violet-400 hover:bg-violet-500/30 px-1 py-0.5 rounded whitespace-nowrap transition-colors"
+                                    >
+                                      {remaining.toLocaleString()}
+                                    </button>
+                                  )
+                                })()}
+                              </div>
+                              <select
+                                value={item.category}
+                                onChange={e => setSubItems(prev => prev.map((s, i) => i === idx ? { ...s, category: e.target.value } : s))}
+                                className="flex-1 h-8 bg-background border border-border rounded-lg px-2 text-xs outline-none focus:border-ring appearance-none"
+                              >
+                                <option value="">카테고리</option>
+                                {cats.map(c => <option key={c.id} value={c.name}>{c.icon} {c.name}</option>)}
+                              </select>
+                            </div>
+                            {isExpense && (
+                              <button
+                                onClick={() => setSubItems(prev => prev.map((s, i) => i === idx ? { ...s, excludeFromBudget: !s.excludeFromBudget } : s))}
+                                className={cn(
+                                  'flex items-center gap-1.5 text-[10px] rounded-md px-2 py-1 transition-colors w-fit',
+                                  item.excludeFromBudget
+                                    ? 'bg-orange-500/15 text-orange-400'
+                                    : 'text-muted-foreground/50 hover:text-muted-foreground'
+                                )}
+                              >
+                                <div className={cn(
+                                  'w-3 h-3 rounded border flex items-center justify-center flex-shrink-0',
+                                  item.excludeFromBudget ? 'bg-orange-500 border-orange-500' : 'border-muted-foreground/30'
+                                )}>
+                                  {item.excludeFromBudget && (
+                                    <svg width="7" height="7" viewBox="0 0 10 10" fill="none">
+                                      <path d="M2 5.5L4 7.5L8 3" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+                                    </svg>
+                                  )}
+                                </div>
+                                예산 제외
+                              </button>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => setSubItems(prev => prev.filter((_, i) => i !== idx))}
+                            className="mt-1 p-1 rounded-lg text-muted-foreground/40 hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      )
+                    })}
+
+                    {/* 잔여 금액 표시 */}
+                    {subItems.length > 0 && amount && (
+                      (() => {
+                        const total = Number(amount)
+                        const allocated = subItems.reduce((s, i) => s + (Number(i.amount) || 0), 0)
+                        const remaining = total - allocated
+                        return (
+                          <p className={cn('text-[11px] tabular-nums', remaining === 0 ? 'text-emerald-500' : remaining < 0 ? 'text-red-400' : 'text-muted-foreground/60')}>
+                            배분 {allocated.toLocaleString()}원 / 전체 {total.toLocaleString()}원
+                            {remaining !== 0 && ` (${remaining > 0 ? '미배분' : '초과'} ${Math.abs(remaining).toLocaleString()}원)`}
+                          </p>
+                        )
+                      })()
+                    )}
+
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setSubItems(prev => [...prev, { description: '', amount: '', category: '', excludeFromBudget: false }])}
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <Plus className="w-3 h-3" />항목 추가
+                      </button>
+                      <button
+                        onClick={handleSaveSplit}
+                        disabled={isSavingSplit}
+                        className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-medium disabled:opacity-50"
+                      >
+                        {isSavingSplit ? <Loader2 className="w-3 h-3 animate-spin" /> : <Scissors className="w-3 h-3" />}
+                        분할 저장
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -142,12 +142,17 @@ model Transaction {
   categoryId   String?    // Category 모델 FK (선택)
   categoryRef  Category?  @relation(fields: [categoryId], references: [id])
   visibility   Visibility @default(SHARED)
-  isExcluded   Boolean    @default(false) // 통계 제외 여부
+  isExcluded        Boolean    @default(false) // 통계 제외 여부
+  excludeFromBudget Boolean    @default(false) // 예산 집계 제외 여부
   originalHash String?    @unique        // 엑셀 원본 Row 식별자 SHA-256 (userId|date|amount|desc|accountName)
   userId       String
   user         User       @relation(fields: [userId], references: [id])
   accountId    String
   account      Account    @relation(fields: [accountId], references: [id])
+  // 분할 항목 (self-relation)
+  parentId     String?
+  parent       Transaction?  @relation("SubTransactions", fields: [parentId], references: [id], onDelete: Cascade)
+  subItems     Transaction[] @relation("SubTransactions")
 }
 
 model RealEstateDetail {
@@ -183,6 +188,7 @@ model DebtDetail {
   maturityDate   DateTime?      // 대출 만기일
   repaymentType  RepaymentType? // 상환 방식
   monthlyPayment Float?         // 월 상환액
+  includeInLtv   Boolean        @default(true) // LTV 계산 포함 여부
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 }

@@ -35,15 +35,21 @@ export async function GET(req: NextRequest) {
           date: { gte: monthStart, lt: monthEnd },
           amount: { lt: 0 },
           isExcluded: false,
+          excludeFromBudget: false,
+          parentId: null,
         },
-        select: { userId: true, amount: true },
+        select: { userId: true, amount: true, subItems: { select: { amount: true, isExcluded: true, excludeFromBudget: true } } },
       }),
     ])
 
-    // 멤버별 이번 달 지출 합산
+    // 멤버별 이번 달 지출 합산 (sub-items 있으면 sub-items 기준)
     const spentByUser: Record<string, number> = {}
     for (const tx of transactions) {
-      spentByUser[tx.userId] = (spentByUser[tx.userId] || 0) + Math.abs(tx.amount)
+      const activeSubItems = (tx.subItems ?? []).filter(s => !s.isExcluded && !s.excludeFromBudget && s.amount < 0)
+      const amt = activeSubItems.length > 0
+        ? activeSubItems.reduce((s, i) => s + Math.abs(i.amount), 0)
+        : Math.abs(tx.amount)
+      spentByUser[tx.userId] = (spentByUser[tx.userId] || 0) + amt
     }
 
     const familyBudgetEntry = budgets.find(b => b.userId === null)

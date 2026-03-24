@@ -497,16 +497,16 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
               <div className={cn(
                 'rounded-xl p-3 -mx-1 transition-all',
                 needsLinkedAsset
-                  ? 'bg-amber-500/8 border border-amber-500/30'
+                  ? 'bg-amber-50 dark:bg-amber-500/8 border border-amber-200 dark:border-amber-500/30'
                   : 'bg-transparent border border-transparent'
               )}>
                 <Label className={cn(
                   'text-xs mb-1.5 flex items-center gap-1.5',
-                  needsLinkedAsset ? 'text-amber-400 font-medium' : 'text-muted-foreground'
+                  needsLinkedAsset ? 'text-amber-600 dark:text-amber-400 font-medium' : 'text-muted-foreground'
                 )}>
                   연결된 자산 (담보 등)
                   {needsLinkedAsset && (
-                    <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded-md">
+                    <span className="text-[10px] bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded-md">
                       {dDebtType === 'MORTGAGE' ? '주담대 담보 자산' : '전세 대상 자산'} 연결 권장
                     </span>
                   )}
@@ -523,16 +523,19 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
                     )}
                   >
                     <option value="">없음</option>
-                    {linkableAssets.map(a => (
+                    {(needsLinkedAsset
+                      ? linkableAssets.filter(a => a.type === 'REAL_ESTATE')
+                      : linkableAssets
+                    ).map(a => (
                       <option key={a.id} value={a.id}>{a.name}</option>
                     ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
                 </div>
-                {linkableAssets.length === 0 ? (
-                  <p className="text-xs text-muted-foreground/60 mt-1">등록된 자산이 없습니다.</p>
+                {(needsLinkedAsset ? linkableAssets.filter(a => a.type === 'REAL_ESTATE') : linkableAssets).length === 0 ? (
+                  <p className="text-xs text-muted-foreground/60 mt-1">{needsLinkedAsset ? '등록된 부동산이 없습니다.' : '등록된 자산이 없습니다.'}</p>
                 ) : needsLinkedAsset && !linkedAssetId ? (
-                  <p className="text-xs text-amber-500/70 mt-1">LTV 분석을 위해 연결 자산을 선택하면 좋아요.</p>
+                  <p className="text-xs text-amber-600 dark:text-amber-500/70 mt-1">LTV 분석을 위해 연결 자산을 선택하면 좋아요.</p>
                 ) : null}
               </div>
 

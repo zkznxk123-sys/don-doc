@@ -30,7 +30,8 @@ export async function PATCH(
     if (body.category  !== undefined) data.category    = body.category
     if (body.description !== undefined) data.description = body.description || body.category
     if (body.visibility  !== undefined) data.visibility  = body.visibility
-    if (body.isExcluded  !== undefined) data.isExcluded  = body.isExcluded
+    if (body.isExcluded        !== undefined) data.isExcluded        = body.isExcluded
+    if (body.excludeFromBudget !== undefined) data.excludeFromBudget = body.excludeFromBudget
     if (body.categoryId  !== undefined) data.categoryId  = body.categoryId ?? null
     // accountId: 전달된 경우만 변경, 미전달 시 기존 값 유지 (잔액 건드리지 않음)
     if (body.accountId !== undefined) data.accountId = body.accountId

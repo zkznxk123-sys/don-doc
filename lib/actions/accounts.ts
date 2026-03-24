@@ -140,6 +140,7 @@ export interface LinkedDebt {
   maturityDate: string | null
   repaymentType: RepaymentType | null
   monthlyPayment: number | null
+  includeInLtv: boolean
 }
 
 export interface RealEstateWithDebts {
@@ -186,9 +187,11 @@ export async function getRealEstateWithDebts(accountId: string): Promise<RealEst
     maturityDate: toDateStr(d.debtDetail?.maturityDate),
     repaymentType: (d.debtDetail?.repaymentType as RepaymentType) ?? null,
     monthlyPayment: d.debtDetail?.monthlyPayment ?? null,
+    includeInLtv: d.debtDetail?.includeInLtv ?? true,
   }))
 
   const totalDebt = linkedDebts.reduce((s, d) => s + d.balance, 0)
+  const ltvDebt   = linkedDebts.filter(d => d.includeInLtv).reduce((s, d) => s + d.balance, 0)
   const detail = account.realEstateDetail
   const currentPrice = detail?.currentPrice ?? null
   const purchasePrice = detail?.purchasePrice ?? null
@@ -198,8 +201,8 @@ export async function getRealEstateWithDebts(accountId: string): Promise<RealEst
     : null
 
   const netEquity = currentPrice != null ? currentPrice - totalDebt : null
-  const ltv = currentPrice != null && currentPrice > 0 && totalDebt > 0
-    ? (totalDebt / currentPrice) * 100
+  const ltv = currentPrice != null && currentPrice > 0 && ltvDebt > 0
+    ? (ltvDebt / currentPrice) * 100
     : null
 
   return {
@@ -391,4 +394,26 @@ function buildDebtData(d: DebtDetailInput) {
     repaymentType: d.repaymentType ?? null,
     monthlyPayment: d.monthlyPayment ?? null,
   }
+}
+
+export async function updateDebtLtvInclusion(
+  debtId: string,
+  includeInLtv: boolean,
+): Promise<{ success: boolean; error?: string }> {
+  const user = await getAuthUser()
+  if (!user) return { success: false, error: '인증이 필요합니다.' }
+
+  const account = await prisma.account.findFirst({
+    where: { id: debtId, familyId: user.familyId ?? undefined },
+  })
+  if (!account) return { success: false, error: '계좌를 찾을 수 없습니다.' }
+
+  await prisma.debtDetail.upsert({
+    where: { accountId: debtId },
+    update: { includeInLtv },
+    create: { accountId: debtId, includeInLtv },
+  })
+
+  revalidatePath('/dashboard')
+  return { success: true }
 }

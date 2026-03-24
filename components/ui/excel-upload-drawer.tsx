@@ -99,6 +99,7 @@ const PREVIEW_LIMIT = 50
 
 export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId }: ExcelUploadDrawerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const aiAbortRef   = useRef<AbortController | null>(null)
   const [isDragging, setIsDragging] = useState(false)
   const [fileName, setFileName] = useState<string | null>(null)
 
@@ -147,6 +148,8 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
   // ── AI 카테고리 매핑 ──
   const runAiMapping = useCallback(async (parsedRows: ParsedRow[]) => {
     setAiStatus('loading')
+    const abort = new AbortController()
+    aiAbortRef.current = abort
     try {
       // 고유한 (description, banksaladCategory) 쌍만 추출 — 토큰 절약
       const seen = new Set<string>()
@@ -169,6 +172,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items: uniqueItems }),
+        signal: abort.signal,
       })
       const data = await res.json()
 
@@ -191,8 +195,12 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
 
       setAiMappedCount(data.mappings.length)
       setAiStatus('done')
-    } catch {
-      setAiStatus('error')
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'AbortError') {
+        setAiStatus('skipped')
+      } else {
+        setAiStatus('error')
+      }
     }
   }, [])
 
@@ -551,19 +559,35 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
 
         {/* ── 등록 버튼 ── */}
         {hasFile && (
-          <DrawerFooter className="flex-shrink-0 pt-0 px-4 pb-6">
+          <DrawerFooter className="flex-shrink-0 pt-0 px-4 pb-6 space-y-2">
+            {aiStatus === 'loading' && (
+              <div className="flex items-center justify-between px-1">
+                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
+                  <Loader2 className="w-3 h-3 animate-spin text-violet-500" />
+                  AI 분류 완료 후 등록할 수 있어요
+                </p>
+                <button
+                  onClick={() => { aiAbortRef.current?.abort() }}
+                  className="text-xs text-muted-foreground/60 hover:text-foreground underline underline-offset-2 transition-colors"
+                >
+                  분류 중단하고 지금 등록
+                </button>
+              </div>
+            )}
             <button
               onClick={handleSubmit}
-              disabled={isLoading || validRows.length === 0}
+              disabled={isLoading || validRows.length === 0 || aiStatus === 'loading'}
               className={cn(
                 'w-full h-12 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2',
-                isLoading || validRows.length === 0
+                isLoading || validRows.length === 0 || aiStatus === 'loading'
                   ? 'bg-muted text-muted-foreground cursor-not-allowed'
                   : 'bg-foreground text-background hover:bg-foreground/90 active:scale-[0.98]'
               )}
             >
               {isLoading
                 ? <><Loader2 className="w-4 h-4 animate-spin" />등록 중...</>
+                : aiStatus === 'loading'
+                ? <><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />AI 분류 중...</>
                 : `${validRows.length}건 등록하기`}
             </button>
           </DrawerFooter>
