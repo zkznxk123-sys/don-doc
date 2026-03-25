@@ -14,9 +14,7 @@ export function InputGuide() {
           <AccordionContent>
             <ul className="space-y-1.5 text-xs leading-relaxed">
               <li>• <span className="text-foreground">매월 1일</span>에 지난달 전체 내역을 추출하는 것을 권장해요.</li>
-              <li>• 뱅크샐러드 앱 → 가계부 탭 → 우측 상단 <span className="text-foreground">내보내기(↑)</span> 버튼</li>
-              <li>• 기간: <span className="text-foreground">지난달 1일 ~ 말일</span> 기준으로 설정</li>
-              <li>• 파일 형식: <span className="text-foreground">엑셀(.xlsx)</span> 선택 후 저장</li>
+              <li>• 뱅크샐러드 앱 → 가계부 탭 → 우측 상단 <span className="text-foreground">설정 버튼</span> → 파일로 받기</li>
             </ul>
           </AccordionContent>
         </AccordionItem>
