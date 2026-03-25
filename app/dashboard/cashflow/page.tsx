@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import {
   ChevronLeft, ChevronRight, TrendingUp, TrendingDown,
@@ -109,10 +109,12 @@ export default function CashflowPage() {
     steps: { label: string; done: boolean; active: boolean }[]
     updated: number
     done: boolean
+    cancelled?: boolean
     error: string | null
     forceMode?: boolean
   } | null>(null)
   const [aiModeModal, setAiModeModal] = useState(false)
+  const aiAbortRef = useRef<AbortController | null>(null)
 
   const { refreshKey, openTransactionDrawer, shellUser, setPageActions, openExcelDrawer } = useDashboardActions()
 
@@ -264,6 +266,7 @@ export default function CashflowPage() {
     try {
       while (true) {
         const controller = new AbortController()
+        aiAbortRef.current = controller
         const timer = setTimeout(() => controller.abort(), 90_000)
         const res = await fetch(url, { method: 'POST', signal: controller.signal })
         clearTimeout(timer)
@@ -303,10 +306,14 @@ export default function CashflowPage() {
         }
       }
     } catch (e) {
-      const msg = (e as Error).name === 'AbortError'
-        ? '시간 초과. 다시 시도해주세요.'
-        : '오류가 발생했습니다.'
-      setAiModal(p => p ? { ...p, error: msg, done: true } : null)
+      if ((e as Error).name === 'AbortError') {
+        setAiModal(p => p ? { ...p, done: true, cancelled: true } : null)
+        if (totalUpdated > 0) router.refresh()
+      } else {
+        setAiModal(p => p ? { ...p, error: '오류가 발생했습니다.', done: true } : null)
+      }
+    } finally {
+      aiAbortRef.current = null
     }
   }, [year, month, router])
 
@@ -469,7 +476,7 @@ export default function CashflowPage() {
             <div className="text-center space-y-2">
               <h2 className="text-lg font-bold italic text-foreground">
                 {aiModal.done
-                  ? aiModal.error ? '재분류 실패' : 'AI 재분류 완료'
+                  ? aiModal.error ? '재분류 실패' : aiModal.cancelled ? '재분류 중지됨' : 'AI 재분류 완료'
                   : 'AI 미분류 항목 재분류 중...'}
               </h2>
               <p className="text-xs text-muted-foreground leading-relaxed">
@@ -524,7 +531,7 @@ export default function CashflowPage() {
               ))}
             </div>
 
-            {/* 완료 버튼 또는 푸터 */}
+            {/* 완료 버튼 또는 중지 버튼 */}
             {aiModal.done ? (
               <button
                 onClick={() => setAiModal(null)}
@@ -533,7 +540,17 @@ export default function CashflowPage() {
                 확인
               </button>
             ) : (
-              <p className="text-[10px] text-muted-foreground/40 italic">Powered by GPT-4o-mini</p>
+              <div className="flex flex-col items-center gap-2 w-full">
+                <button
+                  onClick={() => {
+                    aiAbortRef.current?.abort()
+                  }}
+                  className="px-4 py-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:text-foreground hover:border-ring transition-colors"
+                >
+                  중지
+                </button>
+                <p className="text-[10px] text-muted-foreground/40 italic">Powered by GPT-4o-mini</p>
+              </div>
             )}
           </div>
         </div>
