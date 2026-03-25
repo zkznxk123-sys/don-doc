@@ -59,6 +59,15 @@ enum DebtType {
   ETC             // 기타
 }
 
+enum PensionType {
+  PUBLIC_PENSION   // 공적연금 (국민연금, 공무원연금 등)
+  RETIREMENT_DB    // 퇴직연금 DB형 (확정급여형)
+  RETIREMENT_DC    // 퇴직연금 DC형 (확정기여형)
+  IRP              // 개인형 퇴직연금 (IRP)
+  PERSONAL_PENSION // 개인연금 (연금저축펀드/보험)
+  HOME_PENSION     // 주택연금
+}
+
 model FamilyGroup {
   id                String             @id @default(cuid())
   name              String             // 예: "우리집 패밀리오피스"
@@ -110,6 +119,22 @@ model User {
   categoryPreferences    UserCategoryPreference[]
 }
 
+model PensionDetail {
+  id                     String      @id @default(cuid())
+  accountId              String      @unique
+  account                Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  pensionType            PensionType @default(PERSONAL_PENSION)
+  institutionName        String?     // 기관명 (예: 국민연금공단, 삼성생명)
+  expectedMonthlyPension Float?      // 예상 월 수령액
+  taxDeductible          Boolean     @default(false) // 세액공제 대상 (IRP/개인연금)
+  accumulatedMonths      Int?        // 누적 납입 개월 수
+  pensionStartAge        Int?        // 연금 개시 예정 나이
+  monthlyPayment         Float?      // 월 납입액
+  ownerBirthYear         Int?        // 가입자 출생연도 (수령까지 남은 기간 계산)
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+}
+
 model UserCategoryPreference {
   id         String   @id @default(cuid())
   userId     String
@@ -144,6 +169,7 @@ model Account {
   realEstateDetail    RealEstateDetail?
   financialAssetDetail FinancialAssetDetail?
   debtDetail          DebtDetail?
+  pensionDetail       PensionDetail?
 }
 
 model Transaction {

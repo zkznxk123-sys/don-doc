@@ -8,6 +8,7 @@ export type AccountType = 'CASH' | 'INVESTMENT' | 'PENSION' | 'CRYPTO' | 'REAL_E
 export type ShareLevel = 'PUBLIC' | 'BALANCE_ONLY' | 'PRIVATE'
 export type RepaymentType = 'EQUAL_PRINCIPAL_INTEREST' | 'EQUAL_PRINCIPAL' | 'BULLET' | 'INTEREST_ONLY'
 export type DebtType = 'MORTGAGE' | 'JEONSE_DEPOSIT' | 'CREDIT_LOAN' | 'OVERDRAFT' | 'ETC'
+export type PensionType = 'PUBLIC_PENSION' | 'RETIREMENT_DB' | 'RETIREMENT_DC' | 'IRP' | 'PERSONAL_PENSION' | 'HOME_PENSION'
 
 const LIABILITY_TYPES: AccountType[] = ['DEBT', 'CREDIT_CARD']
 
@@ -35,6 +36,17 @@ export interface DebtDetailInput {
   monthlyPayment?: number | null
 }
 
+export interface PensionDetailInput {
+  pensionType?: PensionType
+  institutionName?: string | null
+  expectedMonthlyPension?: number | null
+  taxDeductible?: boolean
+  accumulatedMonths?: number | null
+  pensionStartAge?: number | null
+  monthlyPayment?: number | null
+  ownerBirthYear?: number | null
+}
+
 export interface CreateAccountInput {
   name: string
   type: AccountType
@@ -44,6 +56,7 @@ export interface CreateAccountInput {
   realEstateDetail?: RealEstateDetailInput
   financialAssetDetail?: FinancialAssetDetailInput
   debtDetail?: DebtDetailInput
+  pensionDetail?: PensionDetailInput
 }
 
 // ─── 계좌 + 상세 조회 ──────────────────────────────────────────────────────────
@@ -75,6 +88,16 @@ export interface AccountWithDetail {
     repaymentType: RepaymentType | null
     monthlyPayment: number | null
   } | null
+  pensionDetail: {
+    pensionType: PensionType
+    institutionName: string | null
+    expectedMonthlyPension: number | null
+    taxDeductible: boolean
+    accumulatedMonths: number | null
+    pensionStartAge: number | null
+    monthlyPayment: number | null
+    ownerBirthYear: number | null
+  } | null
 }
 
 export async function getAccountWithDetail(id: string): Promise<AccountWithDetail | null> {
@@ -87,6 +110,7 @@ export async function getAccountWithDetail(id: string): Promise<AccountWithDetai
       realEstateDetail: true,
       financialAssetDetail: true,
       debtDetail: true,
+      pensionDetail: true,
     },
   })
   if (!account) return null
@@ -124,6 +148,18 @@ export async function getAccountWithDetail(id: string): Promise<AccountWithDetai
           maturityDate: toDateStr(account.debtDetail.maturityDate),
           repaymentType: account.debtDetail.repaymentType as RepaymentType | null,
           monthlyPayment: account.debtDetail.monthlyPayment,
+        }
+      : null,
+    pensionDetail: account.pensionDetail
+      ? {
+          pensionType: account.pensionDetail.pensionType as PensionType,
+          institutionName: account.pensionDetail.institutionName,
+          expectedMonthlyPension: account.pensionDetail.expectedMonthlyPension,
+          taxDeductible: account.pensionDetail.taxDeductible,
+          accumulatedMonths: account.pensionDetail.accumulatedMonths,
+          pensionStartAge: account.pensionDetail.pensionStartAge,
+          monthlyPayment: account.pensionDetail.monthlyPayment,
+          ownerBirthYear: account.pensionDetail.ownerBirthYear,
         }
       : null,
   }
@@ -349,6 +385,9 @@ export async function createAccount(
       ...(input.type === 'DEBT' && input.debtDetail
         ? { debtDetail: { create: buildDebtData(input.debtDetail) } }
         : {}),
+      ...(input.type === 'PENSION' && input.pensionDetail
+        ? { pensionDetail: { create: buildPensionData(input.pensionDetail) } }
+        : {}),
     },
   })
 
@@ -418,6 +457,15 @@ export async function updateAccount(
     })
   }
 
+  if (type === 'PENSION' && input.pensionDetail !== undefined) {
+    const data = buildPensionData(input.pensionDetail!)
+    await prisma.pensionDetail.upsert({
+      where: { accountId: id },
+      update: data,
+      create: { accountId: id, ...data },
+    })
+  }
+
   revalidatePath('/dashboard')
   return { success: true }
 }
@@ -466,6 +514,81 @@ function buildDebtData(d: DebtDetailInput) {
     maturityDate: d.maturityDate ? new Date(d.maturityDate) : null,
     repaymentType: d.repaymentType ?? null,
     monthlyPayment: d.monthlyPayment ?? null,
+  }
+}
+
+function buildPensionData(d: PensionDetailInput) {
+  return {
+    pensionType: d.pensionType ?? 'PERSONAL_PENSION',
+    institutionName: d.institutionName ?? null,
+    expectedMonthlyPension: d.expectedMonthlyPension ?? null,
+    taxDeductible: d.taxDeductible ?? false,
+    accumulatedMonths: d.accumulatedMonths ?? null,
+    pensionStartAge: d.pensionStartAge ?? null,
+    monthlyPayment: d.monthlyPayment ?? null,
+    ownerBirthYear: d.ownerBirthYear ?? null,
+  }
+}
+
+// ─── 연금 계좌 목록 (상세 포함) ───────────────────────────────────────────────
+
+export interface PensionAccountData {
+  id: string
+  name: string
+  balance: number
+  shareLevel: ShareLevel
+  ownerName: string | null
+  pensionType: PensionType
+  institutionName: string | null
+  expectedMonthlyPension: number | null
+  taxDeductible: boolean
+  accumulatedMonths: number | null
+  pensionStartAge: number | null
+  monthlyPayment: number | null
+  ownerBirthYear: number | null
+}
+
+export interface PensionSummaryData {
+  accounts: PensionAccountData[]
+  totalBalance: number
+  totalExpectedMonthlyPension: number
+  totalMonthlyPayment: number
+}
+
+export async function getFamilyPensionAccounts(): Promise<PensionSummaryData | null> {
+  const user = await getAuthUser()
+  if (!user?.familyId) return null
+
+  const raw = await prisma.account.findMany({
+    where: { familyId: user.familyId, type: 'PENSION' },
+    include: {
+      pensionDetail: true,
+      user: { select: { name: true } },
+    },
+    orderBy: { name: 'asc' },
+  })
+
+  const accounts: PensionAccountData[] = raw.map(a => ({
+    id: a.id,
+    name: a.name,
+    balance: a.balance,
+    shareLevel: a.shareLevel as ShareLevel,
+    ownerName: a.user?.name ?? null,
+    pensionType: (a.pensionDetail?.pensionType as PensionType) ?? 'PERSONAL_PENSION',
+    institutionName: a.pensionDetail?.institutionName ?? null,
+    expectedMonthlyPension: a.pensionDetail?.expectedMonthlyPension ?? null,
+    taxDeductible: a.pensionDetail?.taxDeductible ?? false,
+    accumulatedMonths: a.pensionDetail?.accumulatedMonths ?? null,
+    pensionStartAge: a.pensionDetail?.pensionStartAge ?? null,
+    monthlyPayment: a.pensionDetail?.monthlyPayment ?? null,
+    ownerBirthYear: a.pensionDetail?.ownerBirthYear ?? null,
+  }))
+
+  return {
+    accounts,
+    totalBalance: accounts.reduce((s, a) => s + a.balance, 0),
+    totalExpectedMonthlyPension: accounts.reduce((s, a) => s + (a.expectedMonthlyPension ?? 0), 0),
+    totalMonthlyPayment: accounts.reduce((s, a) => s + (a.monthlyPayment ?? 0), 0),
   }
 }
 

@@ -11,8 +11,8 @@ import { Label } from '@/components/ui/label'
 import {
   createAccount, updateAccount, deleteAccount,
   getAccountWithDetail, getFamilyAssetsForLinking,
-  type AccountType, type ShareLevel, type RepaymentType, type DebtType,
-  type RealEstateDetailInput, type FinancialAssetDetailInput, type DebtDetailInput,
+  type AccountType, type ShareLevel, type RepaymentType, type DebtType, type PensionType,
+  type RealEstateDetailInput, type FinancialAssetDetailInput, type DebtDetailInput, type PensionDetailInput,
 } from '@/lib/actions/accounts'
 import { toast } from 'sonner'
 
@@ -76,6 +76,15 @@ const DEBT_TYPES_NEEDING_ASSET: DebtType[] = ['MORTGAGE', 'JEONSE_DEPOSIT']
 const PROPERTY_TYPES = ['아파트', '빌라', '오피스텔', '단독주택', '상가', '토지', '기타']
 
 const FINANCIAL_TYPES: AccountType[] = ['CASH', 'INVESTMENT', 'CRYPTO', 'STO']
+
+const PENSION_TYPES_LIST: { value: PensionType; label: string; taxDeductible: boolean }[] = [
+  { value: 'PUBLIC_PENSION',   label: '공적연금 (국민/공무원)',    taxDeductible: false },
+  { value: 'RETIREMENT_DB',    label: '퇴직연금 DB형',            taxDeductible: false },
+  { value: 'RETIREMENT_DC',    label: '퇴직연금 DC형',            taxDeductible: false },
+  { value: 'IRP',              label: 'IRP (개인형 퇴직연금)',     taxDeductible: true  },
+  { value: 'PERSONAL_PENSION', label: '개인연금 (연금저축/보험)',   taxDeductible: true  },
+  { value: 'HOME_PENSION',     label: '주택연금',                  taxDeductible: false },
+]
 
 // ─── 헬퍼 ─────────────────────────────────────────────────────────────────────
 
@@ -204,12 +213,22 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
   const [dRepaymentType, setDRepaymentType]   = useState<RepaymentType | ''>('')
   const [dMonthlyPayment, setDMonthlyPayment] = useState('')
 
+  // 연금 상세
+  const [pPensionType, setPPensionType]                     = useState<PensionType>('PERSONAL_PENSION')
+  const [pInstitutionName, setPInstitutionName]             = useState('')
+  const [pExpectedMonthlyPension, setPExpectedMonthlyPension] = useState('')
+  const [pAccumulatedMonths, setPAccumulatedMonths]         = useState('')
+  const [pPensionStartAge, setPPensionStartAge]             = useState('')
+  const [pMonthlyPayment, setPMonthlyPayment]               = useState('')
+  const [pOwnerBirthYear, setPOwnerBirthYear]               = useState('')
+
   const needsLinkedAsset = DEBT_TYPES_NEEDING_ASSET.includes(dDebtType)
 
   const isLiabilityType = type === 'DEBT' || type === 'CREDIT_CARD'
   const isFinancialType  = FINANCIAL_TYPES.includes(type)
   const isRealEstate     = type === 'REAL_ESTATE'
   const isDebt           = type === 'DEBT'
+  const isPension        = type === 'PENSION'
 
   // 드로어 열릴 때: 기본값 세팅 + (수정 모드) 상세 데이터 로드
   useEffect(() => {
@@ -248,6 +267,16 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
           setDRepaymentType(d.repaymentType ?? '')
           setDMonthlyPayment(d.monthlyPayment?.toLocaleString() ?? '')
         }
+        if (detail.pensionDetail) {
+          const p = detail.pensionDetail
+          setPPensionType(p.pensionType ?? 'PERSONAL_PENSION')
+          setPInstitutionName(p.institutionName ?? '')
+          setPExpectedMonthlyPension(p.expectedMonthlyPension?.toLocaleString() ?? '')
+          setPAccumulatedMonths(p.accumulatedMonths != null ? String(p.accumulatedMonths) : '')
+          setPPensionStartAge(p.pensionStartAge != null ? String(p.pensionStartAge) : '')
+          setPMonthlyPayment(p.monthlyPayment?.toLocaleString() ?? '')
+          setPOwnerBirthYear(p.ownerBirthYear != null ? String(p.ownerBirthYear) : '')
+        }
       })
     } else {
       resetForm()
@@ -269,6 +298,8 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
     setRePropertyType(''); setRePurchasePrice(''); setRePurchaseDate(''); setReCurrentPrice(''); setReTargetPrice('')
     setFaInterestRate(''); setFaMaturityDate(''); setFaMonthlyPayment('')
     setDDebtType('ETC'); setDInterestRate(''); setDMaturityDate(''); setDRepaymentType(''); setDMonthlyPayment('')
+    setPPensionType('PERSONAL_PENSION'); setPInstitutionName(''); setPExpectedMonthlyPension('')
+    setPAccumulatedMonths(''); setPPensionStartAge(''); setPMonthlyPayment(''); setPOwnerBirthYear('')
   }
 
   const handleClose = () => { setConfirmDelete(false); onClose() }
@@ -296,7 +327,19 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
       monthlyPayment: parseNum(dMonthlyPayment),
     } : undefined
 
-    return { realEstateDetail, financialAssetDetail, debtDetail }
+    const pensionTypeObj = PENSION_TYPES_LIST.find(p => p.value === pPensionType)
+    const pensionDetail: PensionDetailInput | undefined = isPension ? {
+      pensionType: pPensionType,
+      institutionName: pInstitutionName || null,
+      expectedMonthlyPension: parseNum(pExpectedMonthlyPension),
+      taxDeductible: pensionTypeObj?.taxDeductible ?? false,
+      accumulatedMonths: pAccumulatedMonths ? parseInt(pAccumulatedMonths) : null,
+      pensionStartAge: pPensionStartAge ? parseInt(pPensionStartAge) : null,
+      monthlyPayment: parseNum(pMonthlyPayment),
+      ownerBirthYear: pOwnerBirthYear ? parseInt(pOwnerBirthYear) : null,
+    } : undefined
+
+    return { realEstateDetail, financialAssetDetail, debtDetail, pensionDetail }
   }
 
   const handleSubmit = async () => {
@@ -468,6 +511,82 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
                 <NumberField label="월 납입액"        value={faMonthlyPayment} onChange={setFaMonthlyPayment} />
               </div>
               <DateField label="만기일" value={faMaturityDate} onChange={setFaMaturityDate} />
+            </>
+          )}
+
+          {/* ── 연금 상세 ────────────────────────────────────────────── */}
+          {isPension && (
+            <>
+              <SectionDivider label="연금 상세" />
+
+              {/* 연금 종류 */}
+              <div>
+                <Label className="text-muted-foreground text-xs mb-1.5 block">연금 종류</Label>
+                <div className="relative">
+                  <select
+                    value={pPensionType}
+                    onChange={e => setPPensionType(e.target.value as PensionType)}
+                    className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-9 text-sm text-foreground outline-none focus:border-ring transition-colors appearance-none"
+                  >
+                    {PENSION_TYPES_LIST.map(pt => (
+                      <option key={pt.value} value={pt.value}>{pt.label}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                </div>
+              </div>
+
+              {/* 기관명 */}
+              <div>
+                <Label className="text-muted-foreground text-xs mb-1.5 block">기관명</Label>
+                <input
+                  type="text"
+                  value={pInstitutionName}
+                  onChange={e => setPInstitutionName(e.target.value)}
+                  placeholder="예: 국민연금공단, 삼성생명"
+                  className="w-full h-10 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <NumberField label="월 납입액"      value={pMonthlyPayment}           onChange={setPMonthlyPayment} />
+                <NumberField label="예상 월 수령액"  value={pExpectedMonthlyPension}    onChange={setPExpectedMonthlyPension} />
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label className="text-muted-foreground text-xs mb-1.5 block">개시 예정 나이</Label>
+                  <div className="relative">
+                    <input
+                      type="number" min="50" max="80" value={pPensionStartAge}
+                      onChange={e => setPPensionStartAge(e.target.value)}
+                      placeholder="65"
+                      className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-10 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/60">세</span>
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-xs mb-1.5 block">출생연도</Label>
+                  <input
+                    type="number" min="1940" max="2010" value={pOwnerBirthYear}
+                    onChange={e => setPOwnerBirthYear(e.target.value)}
+                    placeholder="1990"
+                    className="w-full h-10 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors"
+                  />
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-xs mb-1.5 block">납입 개월 수</Label>
+                  <div className="relative">
+                    <input
+                      type="number" min="0" value={pAccumulatedMonths}
+                      onChange={e => setPAccumulatedMonths(e.target.value)}
+                      placeholder="0"
+                      className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-12 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/60">개월</span>
+                  </div>
+                </div>
+              </div>
             </>
           )}
 

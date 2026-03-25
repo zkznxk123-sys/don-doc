@@ -29,9 +29,12 @@ import {
 import {
   getFamilyRealEstateSummary,
   getFamilyTotalDebtMonthlyPayment,
+  getFamilyPensionAccounts,
   type RealEstateSummaryData,
+  type PensionSummaryData,
+  type PensionAccountData,
 } from '@/lib/actions/accounts'
-import { TrendingUp, TrendingDown, Wallet, Building2, Landmark, CreditCard, Camera, Plus, PiggyBank, Pencil, ChevronRight, AlertTriangle, ShieldCheck } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, Building2, Landmark, CreditCard, Camera, Plus, PiggyBank, Pencil, ChevronRight, AlertTriangle, ShieldCheck, Clock, BadgePercent, Banknote } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const REAL_ESTATE_TYPES = new Set(['REAL_ESTATE'])
@@ -55,6 +58,7 @@ export default function AssetsPage() {
   const [loading, setLoading] = useState(true)
   const [selectedAccount, setSelectedAccount] = useState<AccountInitialData | undefined>()
   const [reSummary, setReSummary] = useState<RealEstateSummaryData | null>(null)
+  const [pensionSummary, setPensionSummary] = useState<PensionSummaryData | null>(null)
   const [totalDebtMonthlyPayment, setTotalDebtMonthlyPayment] = useState(0)
   const [avgMonthlyIncome, setAvgMonthlyIncome] = useState<number | null>(null)
   const [isAccountDrawerOpen, setIsAccountDrawerOpen] = useState(false)
@@ -115,6 +119,7 @@ export default function AssetsPage() {
         loadNetWorthHistory(),
         checkSnapshot(),
         getFamilyRealEstateSummary().then(d => setReSummary(d)),
+        getFamilyPensionAccounts().then(d => setPensionSummary(d)),
         getFamilyTotalDebtMonthlyPayment().then(v => setTotalDebtMonthlyPayment(v)),
         fetch('/api/stats/cashflow?months=6').then(r => r.json()).then(d => {
           if (d.success && d.months?.length) {
@@ -355,56 +360,11 @@ export default function AssetsPage() {
 
         {/* 연금 탭 */}
         <TabsContent value="pension" className="space-y-4">
-          {/* 핵심 지표 요약 카드 */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-card border border-border rounded-2xl p-4">
-              <p className="text-xs text-muted-foreground font-medium mb-2">총 납입 원금</p>
-              <p className="text-xl font-bold tabular-nums text-foreground">
-                {pensionAccounts.length > 0 ? formatLargeNumber(pensionTotalBalance) : '—'}
-              </p>
-              <p className="text-[10px] text-muted-foreground/60 mt-1.5">누적 납입 금액</p>
-            </div>
-            <div className="bg-teal-50 dark:bg-teal-900/15 border border-teal-200 dark:border-teal-800/40 rounded-2xl p-4">
-              <p className="text-xs text-muted-foreground font-medium mb-2">예상 수령액</p>
-              <p className="text-xl font-bold tabular-nums text-teal-600 dark:text-teal-400">—</p>
-              <p className="text-[10px] text-muted-foreground/60 mt-1.5">월 예상 수령 기준</p>
-            </div>
-          </div>
-
-          {pensionAccounts.length === 0 ? (
-            <EmptyTab
-              icon={<PiggyBank className="w-6 h-6 text-muted-foreground/60" />}
-              message="등록된 연금이 없습니다"
-              onAdd={openAdd}
-            />
-          ) : (
-            <div className="bg-card border border-border rounded-2xl overflow-hidden">
-              {/* 헤더 */}
-              <div className="px-4 py-2.5 bg-muted/40 border-b border-border grid grid-cols-[1fr_120px_120px_36px] text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                <span>연금명</span>
-                <span className="text-right">납입 원금</span>
-                <span className="text-right">예상 수령액/월</span>
-                <span />
-              </div>
-              {/* 리스트 */}
-              <div className="divide-y divide-border/60">
-                {pensionAccounts.map(account => (
-                  <PensionItem
-                    key={account.id}
-                    account={account}
-                    onEdit={() => openEdit(account)}
-                  />
-                ))}
-              </div>
-              {/* 추가 버튼 */}
-              <button
-                onClick={openAdd}
-                className="w-full py-3 border-t border-dashed border-border text-xs text-muted-foreground/60 hover:text-muted-foreground hover:bg-muted/30 transition-colors"
-              >
-                + 연금 추가
-              </button>
-            </div>
-          )}
+          <PensionTab
+            summary={pensionSummary}
+            onAdd={openAdd}
+            onEdit={openEdit}
+          />
         </TabsContent>
       </Tabs>
 
@@ -612,50 +572,6 @@ function RealEstateAggregatePanel({
   )
 }
 
-function PensionItem({
-  account,
-  onEdit,
-}: {
-  account: AccountInitialData
-  onEdit: () => void
-}) {
-  return (
-    <div className="grid grid-cols-[1fr_120px_120px_36px] items-center px-4 py-3.5 group hover:bg-muted/30 transition-colors">
-      {/* 연금명 */}
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center flex-shrink-0">
-            <PiggyBank className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">{account.name}</p>
-            {account.ownerName && (
-              <p className="text-[10px] text-muted-foreground/60">{account.ownerName}</p>
-            )}
-          </div>
-        </div>
-      </div>
-      {/* 납입 원금 (현재 잔액) */}
-      <p className="text-sm font-semibold tabular-nums text-right text-foreground">
-        {formatLargeNumber(account.balance)}
-      </p>
-      {/* 예상 수령액/월 */}
-      <p className="text-sm tabular-nums text-right text-muted-foreground/50">
-        —
-      </p>
-      {/* 편집 버튼 */}
-      <div className="flex justify-end">
-        <button
-          onClick={onEdit}
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground/40 hover:text-foreground hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
-  )
-}
-
 function EmptyTab({
   icon,
   message,
@@ -677,6 +593,229 @@ function EmptyTab({
       >
         + 자산 추가
       </button>
+    </div>
+  )
+}
+
+// ─── 연금 탭 ─────────────────────────────────────────────────────────────────
+
+const PENSION_TYPE_META: Record<string, { label: string; color: string; bg: string }> = {
+  PUBLIC_PENSION:   { label: '공적연금',   color: 'text-blue-600 dark:text-blue-400',    bg: 'bg-blue-500/10' },
+  RETIREMENT_DB:    { label: '퇴직DB',     color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-500/10' },
+  RETIREMENT_DC:    { label: '퇴직DC',     color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500/10' },
+  IRP:              { label: 'IRP',        color: 'text-teal-600 dark:text-teal-400',     bg: 'bg-teal-500/10' },
+  PERSONAL_PENSION: { label: '개인연금',   color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10' },
+  HOME_PENSION:     { label: '주택연금',   color: 'text-amber-600 dark:text-amber-400',  bg: 'bg-amber-500/10' },
+}
+
+// IRP/개인연금 세액공제 한도 (2024)
+const TAX_DEDUCTION_LIMIT: Record<string, number> = {
+  IRP: 9_000_000,
+  PERSONAL_PENSION: 6_000_000,
+}
+
+function PensionTab({
+  summary,
+  onAdd,
+  onEdit,
+}: {
+  summary: PensionSummaryData | null
+  onAdd: () => void
+  onEdit: (account: AccountInitialData) => void
+}) {
+  const accounts = summary?.accounts ?? []
+  const hasPensions = accounts.length > 0
+
+  return (
+    <div className="space-y-4">
+      {/* 상단 요약 카드 3종 */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="bg-card border border-border rounded-2xl p-4">
+          <div className="flex items-center gap-1.5 mb-2">
+            <Banknote className="w-3.5 h-3.5 text-muted-foreground/60" />
+            <p className="text-[11px] text-muted-foreground font-medium">총 연금 자산</p>
+          </div>
+          <p className="text-lg font-bold tabular-nums text-foreground">
+            {hasPensions ? formatLargeNumber(summary!.totalBalance) : '—'}
+          </p>
+          <p className="text-[10px] text-muted-foreground/50 mt-1">{accounts.length}개 계좌</p>
+        </div>
+        <div className="bg-teal-50 dark:bg-teal-900/15 border border-teal-200 dark:border-teal-800/40 rounded-2xl p-4">
+          <div className="flex items-center gap-1.5 mb-2">
+            <PiggyBank className="w-3.5 h-3.5 text-teal-500" />
+            <p className="text-[11px] text-muted-foreground font-medium">예상 월 수령액</p>
+          </div>
+          <p className="text-lg font-bold tabular-nums text-teal-600 dark:text-teal-400">
+            {summary && summary.totalExpectedMonthlyPension > 0
+              ? formatLargeNumber(summary.totalExpectedMonthlyPension)
+              : '—'}
+          </p>
+          <p className="text-[10px] text-muted-foreground/50 mt-1">전체 합산 기준</p>
+        </div>
+        <div className="bg-card border border-border rounded-2xl p-4">
+          <div className="flex items-center gap-1.5 mb-2">
+            <TrendingUp className="w-3.5 h-3.5 text-muted-foreground/60" />
+            <p className="text-[11px] text-muted-foreground font-medium">월 납입액</p>
+          </div>
+          <p className="text-lg font-bold tabular-nums text-foreground">
+            {summary && summary.totalMonthlyPayment > 0
+              ? formatLargeNumber(summary.totalMonthlyPayment)
+              : '—'}
+          </p>
+          <p className="text-[10px] text-muted-foreground/50 mt-1">연간 {summary && summary.totalMonthlyPayment > 0 ? formatLargeNumber(summary.totalMonthlyPayment * 12) : '—'}</p>
+        </div>
+      </div>
+
+      {/* 연금 목록 */}
+      {!hasPensions ? (
+        <EmptyTab
+          icon={<PiggyBank className="w-6 h-6 text-muted-foreground/60" />}
+          message="등록된 연금이 없습니다"
+          onAdd={onAdd}
+        />
+      ) : (
+        <div className="space-y-3">
+          {accounts.map(acc => (
+            <PensionCard
+              key={acc.id}
+              account={acc}
+              onEdit={() => onEdit({
+                id: acc.id, name: acc.name, type: 'PENSION',
+                balance: acc.balance, isShared: acc.shareLevel !== 'PRIVATE',
+                shareLevel: acc.shareLevel, ownerName: acc.ownerName,
+              })}
+            />
+          ))}
+          <button
+            onClick={onAdd}
+            className="w-full py-3 border border-dashed border-border rounded-2xl text-xs text-muted-foreground/60 hover:text-muted-foreground hover:border-border/80 transition-colors"
+          >
+            + 연금 추가
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function PensionCard({
+  account,
+  onEdit,
+}: {
+  account: PensionAccountData
+  onEdit: () => void
+}) {
+  const meta = PENSION_TYPE_META[account.pensionType] ?? PENSION_TYPE_META.PERSONAL_PENSION
+  const currentYear = new Date().getFullYear()
+
+  // 수령 시작까지 남은 기간
+  const remainingYears = (account.ownerBirthYear && account.pensionStartAge)
+    ? (account.ownerBirthYear + account.pensionStartAge) - currentYear
+    : null
+
+  // 세액공제 달성률 (IRP / 개인연금)
+  const taxLimit = TAX_DEDUCTION_LIMIT[account.pensionType] ?? null
+  const annualContribution = account.monthlyPayment ? account.monthlyPayment * 12 : null
+  const taxAchievement = (taxLimit && annualContribution)
+    ? Math.min((annualContribution / taxLimit) * 100, 100)
+    : null
+
+  return (
+    <div className="bg-card border border-border rounded-2xl p-4 group hover:border-ring/50 transition-colors">
+      {/* 헤더 */}
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="w-9 h-9 rounded-xl bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center flex-shrink-0">
+            <PiggyBank className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-sm font-semibold text-foreground truncate">{account.name}</p>
+              <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-md', meta.color, meta.bg)}>
+                {meta.label}
+              </span>
+              {account.taxDeductible && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md text-amber-600 dark:text-amber-400 bg-amber-500/10">
+                  세액공제
+                </span>
+              )}
+            </div>
+            {account.institutionName && (
+              <p className="text-[11px] text-muted-foreground/60 mt-0.5">{account.institutionName}</p>
+            )}
+          </div>
+        </div>
+        <button
+          onClick={onEdit}
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground/40 hover:text-foreground hover:bg-muted transition-colors flex-shrink-0"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {/* 지표 그리드 */}
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="bg-muted/40 rounded-xl p-2.5">
+          <p className="text-[10px] text-muted-foreground/60 mb-0.5">현재 잔액</p>
+          <p className="text-sm font-bold tabular-nums text-foreground">{formatLargeNumber(account.balance)}</p>
+        </div>
+        <div className={cn('rounded-xl p-2.5', account.expectedMonthlyPension
+          ? 'bg-teal-50 dark:bg-teal-900/20 border border-teal-200/50 dark:border-teal-800/30'
+          : 'bg-muted/40')}>
+          <p className="text-[10px] text-muted-foreground/60 mb-0.5">예상 월 수령</p>
+          <p className={cn('text-sm font-bold tabular-nums', account.expectedMonthlyPension
+            ? 'text-teal-600 dark:text-teal-400' : 'text-muted-foreground/40')}>
+            {account.expectedMonthlyPension ? formatLargeNumber(account.expectedMonthlyPension) : '—'}
+          </p>
+        </div>
+        <div className="bg-muted/40 rounded-xl p-2.5">
+          <p className="text-[10px] text-muted-foreground/60 mb-0.5">월 납입</p>
+          <p className="text-sm font-bold tabular-nums text-foreground">
+            {account.monthlyPayment ? formatLargeNumber(account.monthlyPayment) : '—'}
+          </p>
+        </div>
+      </div>
+
+      {/* 수령 시작까지 남은 기간 */}
+      {remainingYears != null && (
+        <div className={cn('flex items-center gap-2 px-3 py-2 rounded-xl mb-2.5 text-xs',
+          remainingYears <= 0
+            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+            : 'bg-muted/50 text-muted-foreground')}>
+          <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+          {remainingYears <= 0
+            ? '수령 가능 연령 도달'
+            : `수령 시작까지 약 ${remainingYears}년 남음 (${account.ownerBirthYear! + account.pensionStartAge!}년 예정)`}
+          {account.accumulatedMonths != null && (
+            <span className="ml-auto text-[10px] text-muted-foreground/50">납입 {account.accumulatedMonths}개월</span>
+          )}
+        </div>
+      )}
+
+      {/* 세액공제 달성률 */}
+      {taxAchievement != null && taxLimit != null && annualContribution != null && (
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <BadgePercent className="w-3.5 h-3.5 text-amber-500" />
+              <span className="text-[11px] font-medium text-foreground">올해 세액공제 납입 예상</span>
+            </div>
+            <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">
+              {formatLargeNumber(Math.min(annualContribution, taxLimit))} / {formatLargeNumber(taxLimit)}
+            </span>
+          </div>
+          <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
+            <div
+              className={cn('h-full rounded-full transition-all duration-700',
+                taxAchievement >= 100 ? 'bg-emerald-500' : 'bg-amber-500')}
+              style={{ width: `${taxAchievement}%` }}
+            />
+          </div>
+          <p className="text-[10px] text-muted-foreground/50">
+            월 {formatLargeNumber(account.monthlyPayment!)} × 12 = 연 {formatLargeNumber(annualContribution)} · 한도 {taxAchievement >= 100 ? '100% 달성' : `${taxAchievement.toFixed(0)}%`}
+          </p>
+        </div>
+      )}
     </div>
   )
 }
