@@ -39,7 +39,7 @@ export default function RootLayout({
                 <PostHogPageView />
               </Suspense>
               {children}
-              <Toaster theme="system" position="top-center" richColors />
+              <Toaster theme="system" position="top-center" richColors closeButton />
             </PostHogProvider>
           </ClerkThemeProvider>
         </ThemeProvider>
