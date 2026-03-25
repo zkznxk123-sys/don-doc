@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth'
 import { deleteTransaction } from '@/lib/actions/transaction'
+import { upsertCategoryPreference } from '@/lib/actions/preferences'
 import { prisma } from '@/lib/prisma'
 
 export async function PATCH(
@@ -37,6 +38,12 @@ export async function PATCH(
     if (body.accountId !== undefined) data.accountId = body.accountId
 
     const updated = await prisma.transaction.update({ where: { id: params.id }, data })
+
+    // 사용자가 직접 categoryId를 설정한 경우 선호도로 저장
+    if (body.categoryId && updated.description) {
+      await upsertCategoryPreference(authUser.id, updated.description, body.categoryId).catch(() => {})
+    }
+
     return NextResponse.json({ success: true, transaction: updated })
   } catch (e) {
     console.error('[PATCH /api/transactions/[id]] ERROR:', e)

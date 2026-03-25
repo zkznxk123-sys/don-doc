@@ -6,6 +6,7 @@ import { generateObject } from 'ai'
 import { z } from 'zod'
 import { getAuthUser } from '@/lib/auth'
 import { getCategories } from '@/lib/actions/categories'
+import { getUserCategoryPreferences } from '@/lib/actions/preferences'
 
 export interface MappingItem {
   description: string
@@ -74,29 +75,52 @@ export async function POST(req: Request) {
       return NextResponse.json({ mappings: [] })
     }
 
-    const categories = await getCategories(user.familyId)
+    const [categories, prefMap] = await Promise.all([
+      getCategories(user.familyId),
+      getUserCategoryPreferences(user.id),
+    ])
     if (categories.length === 0) {
       return NextResponse.json({ mappings: [], warning: '카테고리가 없습니다.' })
     }
 
-    const categoryList = categories
-      .map(c => `${c.id}|${c.name}|${c.type}`)
-      .join('\n')
+    const catById = new Map(categories.map(c => [c.id, c]))
+    const categoryList = categories.map(c => `${c.id}|${c.name}|${c.type}`).join('\n')
 
-    const batches = chunk(items, 50)
-    const allRaw: { description: string; categoryId: string }[] = []
+    // 1단계: 개인화 선호도로 먼저 매핑
+    const prefMatched: MappingResult[] = []
+    const needsAi: MappingItem[] = []
 
-    for (const batch of batches) {
-      try {
-        const batchResult = await callAiBatch(batch, categoryList)
-        allRaw.push(...batchResult)
-      } catch (batchErr) {
-        console.error('[map-categories] batch error:', batchErr)
+    for (const item of items) {
+      const keyword = item.description.toLowerCase().trim()
+      const prefCategoryId = prefMap.get(keyword)
+      const cat = prefCategoryId ? catById.get(prefCategoryId) : undefined
+      if (cat) {
+        prefMatched.push({
+          description: item.description,
+          categoryId: cat.id,
+          categoryName: cat.name,
+          categoryIcon: cat.icon,
+        })
+      } else {
+        needsAi.push(item)
       }
     }
 
-    const catById = new Map(categories.map(c => [c.id, c]))
-    const mappings: MappingResult[] = allRaw
+    // 2단계: 나머지 항목만 AI로 분류
+    const allRaw: { description: string; categoryId: string }[] = []
+    if (needsAi.length > 0) {
+      const batches = chunk(needsAi, 50)
+      for (const batch of batches) {
+        try {
+          const batchResult = await callAiBatch(batch, categoryList)
+          allRaw.push(...batchResult)
+        } catch (batchErr) {
+          console.error('[map-categories] batch error:', batchErr)
+        }
+      }
+    }
+
+    const aiMappings: MappingResult[] = allRaw
       .map(raw => {
         const cat = catById.get(raw.categoryId)
         if (!cat) return null
@@ -109,6 +133,7 @@ export async function POST(req: Request) {
       })
       .filter((m): m is MappingResult => m !== null)
 
+    const mappings = [...prefMatched, ...aiMappings]
     return NextResponse.json({ mappings })
   } catch (error) {
     console.error('[map-categories] error:', error)

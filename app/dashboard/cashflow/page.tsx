@@ -110,7 +110,9 @@ export default function CashflowPage() {
     updated: number
     done: boolean
     error: string | null
+    forceMode?: boolean
   } | null>(null)
+  const [aiModeModal, setAiModeModal] = useState(false)
 
   const { refreshKey, openTransactionDrawer, shellUser, setPageActions, openExcelDrawer } = useDashboardActions()
 
@@ -245,6 +247,69 @@ export default function CashflowPage() {
     })
   }, [])
 
+  const runRecategorize = useCallback(async (forceMode: boolean) => {
+    const monthStr = `${year}-${String(month).padStart(2, '0')}`
+    setAiModeModal(false)
+    setAiModal({ progress: 5, steps: [
+      { label: '거래 내역 스캔', done: false, active: true },
+      { label: forceMode ? '전체 재분류 (개인화 + AI)' : '미분류 항목 분류 (개인화 + AI)', done: false, active: false },
+      { label: '데이터베이스 업데이트', done: false, active: false },
+    ], updated: 0, done: false, error: null, forceMode })
+
+    let totalUpdated = 0
+    let totalCount = 0
+    let processedCount = 0
+    const url = `/api/ai/recategorize?month=${monthStr}${forceMode ? '&force=true' : ''}`
+
+    try {
+      while (true) {
+        const controller = new AbortController()
+        const timer = setTimeout(() => controller.abort(), 90_000)
+        const res = await fetch(url, { method: 'POST', signal: controller.signal })
+        clearTimeout(timer)
+
+        if (!res.ok) {
+          setAiModal(p => p ? { ...p, error: `서버 오류 (${res.status})`, done: true } : null)
+          break
+        }
+        const data = await res.json()
+        if (!data.success) {
+          setAiModal(p => p ? { ...p, error: data.error ?? '재분류 실패', done: true } : null)
+          break
+        }
+
+        totalUpdated += data.updated ?? 0
+        if (totalCount === 0) totalCount = (data.updated ?? 0) + (data.remaining ?? 0)
+        processedCount += data.updated ?? 0
+
+        const progress = totalCount > 0
+          ? Math.round(10 + (processedCount / totalCount) * 80)
+          : 90
+
+        if (data.remaining > 0) {
+          setAiModal(p => p ? { ...p, progress, steps: [
+            { label: '거래 내역 스캔', done: true, active: false },
+            { label: forceMode ? '전체 재분류 (개인화 + AI)' : '미분류 항목 분류 (개인화 + AI)', done: false, active: true },
+            { label: '데이터베이스 업데이트', done: false, active: false },
+          ], updated: totalUpdated } : null)
+        } else {
+          setAiModal(p => p ? { ...p, progress: 100, steps: [
+            { label: '거래 내역 스캔', done: true, active: false },
+            { label: forceMode ? '전체 재분류 (개인화 + AI)' : '미분류 항목 분류 (개인화 + AI)', done: true, active: false },
+            { label: '데이터베이스 업데이트', done: true, active: false },
+          ], updated: totalUpdated, done: true } : null)
+          if (totalUpdated > 0) router.refresh()
+          break
+        }
+      }
+    } catch (e) {
+      const msg = (e as Error).name === 'AbortError'
+        ? '시간 초과. 다시 시도해주세요.'
+        : '오류가 발생했습니다.'
+      setAiModal(p => p ? { ...p, error: msg, done: true } : null)
+    }
+  }, [year, month, router])
+
   const startEdit = useCallback(() => setIsEditing(true), [])
 
   const cancelEdit = useCallback(() => {
@@ -356,68 +421,7 @@ export default function CashflowPage() {
             <span className="hidden sm:inline">이체 자동 감지</span>
           </button>
           <button
-            onClick={async () => {
-              const monthStr = `${year}-${String(month).padStart(2, '0')}`
-              setAiModal({ progress: 5, steps: [
-                { label: '거래 내역 스캔', done: false, active: true },
-                { label: 'AI 카테고리 매핑', done: false, active: false },
-                { label: '데이터베이스 업데이트', done: false, active: false },
-              ], updated: 0, done: false, error: null })
-
-              let totalUpdated = 0
-              let totalCount = 0
-              let processedCount = 0
-
-              try {
-                while (true) {
-                  const controller = new AbortController()
-                  const timer = setTimeout(() => controller.abort(), 90_000)
-                  const res = await fetch(`/api/ai/recategorize?month=${monthStr}`, {
-                    method: 'POST', signal: controller.signal,
-                  })
-                  clearTimeout(timer)
-
-                  if (!res.ok) {
-                    setAiModal(p => p ? { ...p, error: `서버 오류 (${res.status})`, done: true } : null)
-                    break
-                  }
-                  const data = await res.json()
-                  if (!data.success) {
-                    setAiModal(p => p ? { ...p, error: data.error ?? '재분류 실패', done: true } : null)
-                    break
-                  }
-
-                  totalUpdated += data.updated ?? 0
-                  if (totalCount === 0) totalCount = (data.updated ?? 0) + (data.remaining ?? 0)
-                  processedCount += data.updated ?? 0
-
-                  const progress = totalCount > 0
-                    ? Math.round(10 + (processedCount / totalCount) * 80)
-                    : 90
-
-                  if (data.remaining > 0) {
-                    setAiModal({ progress, steps: [
-                      { label: '거래 내역 스캔', done: true, active: false },
-                      { label: 'AI 카테고리 매핑', done: false, active: true },
-                      { label: '데이터베이스 업데이트', done: false, active: false },
-                    ], updated: totalUpdated, done: false, error: null })
-                  } else {
-                    setAiModal({ progress: 100, steps: [
-                      { label: '거래 내역 스캔', done: true, active: false },
-                      { label: 'AI 카테고리 매핑', done: true, active: false },
-                      { label: '데이터베이스 업데이트', done: true, active: false },
-                    ], updated: totalUpdated, done: true, error: null })
-                    if (totalUpdated > 0) router.refresh()
-                    break
-                  }
-                }
-              } catch (e) {
-                const msg = (e as Error).name === 'AbortError'
-                  ? '시간 초과. 다시 시도해주세요.'
-                  : '오류가 발생했습니다.'
-                setAiModal(p => p ? { ...p, error: msg, done: true } : null)
-              }
-            }}
+            onClick={() => setAiModeModal(true)}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-ring transition-colors"
           >
             <Sparkles className="w-3.5 h-3.5" />
@@ -531,6 +535,45 @@ export default function CashflowPage() {
             ) : (
               <p className="text-[10px] text-muted-foreground/40 italic">Powered by GPT-4o-mini</p>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* AI 재분류 모드 선택 모달 */}
+      {aiModeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-card border border-border rounded-2xl w-full max-w-sm mx-4 p-6 flex flex-col gap-5 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
+                <Sparkles className="w-5 h-5 text-foreground" />
+              </div>
+              <div>
+                <h2 className="text-sm font-bold text-foreground">AI 재분류</h2>
+                <p className="text-[11px] text-muted-foreground">분류 방식을 선택하세요</p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => runRecategorize(false)}
+                className="w-full flex flex-col items-start gap-1 px-4 py-3 rounded-xl bg-muted hover:bg-muted/80 border border-border text-left transition-colors"
+              >
+                <span className="text-sm font-semibold text-foreground">미분류 항목만</span>
+                <span className="text-[11px] text-muted-foreground">카테고리가 없는 항목만 개인화 규칙 + AI로 분류</span>
+              </button>
+              <button
+                onClick={() => runRecategorize(true)}
+                className="w-full flex flex-col items-start gap-1 px-4 py-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/30 text-left transition-colors"
+              >
+                <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">전체 강제 재분류</span>
+                <span className="text-[11px] text-muted-foreground">기존 분류 포함 전체 항목을 개인화 규칙 + AI로 재분류</span>
+              </button>
+            </div>
+            <button
+              onClick={() => setAiModeModal(false)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              취소
+            </button>
           </div>
         </div>
       )}

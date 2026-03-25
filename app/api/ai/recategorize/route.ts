@@ -7,6 +7,7 @@ import { generateObject } from 'ai'
 import { z } from 'zod'
 import { getAuthUser } from '@/lib/auth'
 import { getCategories } from '@/lib/actions/categories'
+import { getUserCategoryPreferences } from '@/lib/actions/preferences'
 import { prisma } from '@/lib/prisma'
 
 const mappingSchema = z.object({
@@ -57,9 +58,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: '인증 필요' }, { status: 401 })
     }
 
-    // ?month=YYYY-MM 파라미터로 월 범위 필터
+    // ?month=YYYY-MM, ?force=true 파라미터
     const { searchParams } = new URL(req.url)
     const monthParam = searchParams.get('month')
+    const forceMode = searchParams.get('force') === 'true'
+
     let dateFilter: { gte: Date; lt: Date } | undefined
     if (monthParam && /^\d{4}-\d{2}$/.test(monthParam)) {
       const [y, m] = monthParam.split('-').map(Number)
@@ -69,17 +72,17 @@ export async function POST(req: Request) {
       }
     }
 
+    // force=true: 전체 거래 대상 / 기본: 미분류(categoryId=null)만
     const where = {
       user: { familyId: user.familyId },
-      categoryId: null,
+      ...(forceMode ? {} : { categoryId: null }),
       ...(dateFilter ? { date: dateFilter } : {}),
     }
 
-    // 전체 미분류 건수 파악
-    const totalUncategorized = await prisma.transaction.count({ where })
+    const totalCount = await prisma.transaction.count({ where })
 
-    if (totalUncategorized === 0) {
-      return NextResponse.json({ success: true, updated: 0, remaining: 0, message: '미분류 항목이 없습니다' })
+    if (totalCount === 0) {
+      return NextResponse.json({ success: true, updated: 0, remaining: 0, message: forceMode ? '처리할 항목이 없습니다' : '미분류 항목이 없습니다' })
     }
 
     // 1회 최대 300건 처리
@@ -91,7 +94,10 @@ export async function POST(req: Request) {
       orderBy: { date: 'desc' },
     })
 
-    const categories = await getCategories(user.familyId)
+    const [categories, prefMap] = await Promise.all([
+      getCategories(user.familyId),
+      getUserCategoryPreferences(user.id),
+    ])
     if (categories.length === 0) {
       return NextResponse.json({ error: '카테고리가 없습니다' }, { status: 400 })
     }
@@ -99,10 +105,24 @@ export async function POST(req: Request) {
     const categoryList = categories.map(c => `${c.id}|${c.name}|${c.type}`).join('\n')
     const catById = new Map(categories.map(c => [c.id, c]))
 
-    // 고유 description + category 쌍으로 dedup
+    // 1단계: 선호도 매핑
+    const prefMappingMap = new Map<string, string>()
+    const needsAiTxs: typeof txs = []
+
+    for (const tx of txs) {
+      const keyword = tx.description.toLowerCase().trim()
+      const prefCategoryId = prefMap.get(keyword)
+      if (prefCategoryId && catById.has(prefCategoryId)) {
+        prefMappingMap.set(tx.description, prefCategoryId)
+      } else {
+        needsAiTxs.push(tx)
+      }
+    }
+
+    // 2단계: 선호도 미매핑 항목만 AI로 분류
     const seen = new Set<string>()
     const uniqueItems: { description: string; category: string }[] = []
-    for (const tx of txs) {
+    for (const tx of needsAiTxs) {
       const key = `${tx.description}||${tx.category}`
       if (!seen.has(key)) {
         seen.add(key)
@@ -110,25 +130,26 @@ export async function POST(req: Request) {
       }
     }
 
-    // AI 배치 호출 (50건씩)
-    const batches = chunk(uniqueItems, 50)
     const allRaw: { description: string; categoryId: string }[] = []
-    for (const batch of batches) {
-      try {
-        const result = await callAiBatch(batch, categoryList)
-        allRaw.push(...result)
-      } catch (e) {
-        console.error('[recategorize] batch error:', e)
+    if (uniqueItems.length > 0) {
+      const batches = chunk(uniqueItems, 50)
+      for (const batch of batches) {
+        try {
+          const result = await callAiBatch(batch, categoryList)
+          allRaw.push(...result)
+        } catch (e) {
+          console.error('[recategorize] batch error:', e)
+        }
       }
     }
 
-    // description → categoryId 맵
-    const mappingMap = new Map(allRaw.map(r => [r.description, r.categoryId]))
+    // description → categoryId 맵 (선호도 + AI 합산)
+    const aiMappingMap = new Map(allRaw.map(r => [r.description, r.categoryId]))
 
     // 거래별 업데이트
     let updated = 0
     const updateOps = txs.flatMap(tx => {
-      const categoryId = mappingMap.get(tx.description)
+      const categoryId = prefMappingMap.get(tx.description) ?? aiMappingMap.get(tx.description)
       if (!categoryId || !catById.has(categoryId)) return []
       return [
         prisma.transaction.update({
@@ -145,7 +166,7 @@ export async function POST(req: Request) {
       updated += batch.length
     }
 
-    const remaining = totalUncategorized - txs.length
+    const remaining = totalCount - txs.length
 
     return NextResponse.json({ success: true, updated, remaining })
   } catch (e) {
