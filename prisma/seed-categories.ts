@@ -23,6 +23,7 @@ const SYSTEM_CATEGORIES = [
   { name: '보험',     icon: '🛡️', type: 'EXPENSE' as const },
   { name: '미용',     icon: '💇',  type: 'EXPENSE' as const },
   { name: '경조사',   icon: '🎁',  type: 'EXPENSE' as const },
+  { name: '용돈',     icon: '💸',  type: 'EXPENSE' as const },
   { name: '기타',     icon: '📋',  type: 'EXPENSE' as const },
   // 수입
   { name: '급여',     icon: '💰',  type: 'INCOME' as const },

@@ -22,6 +22,7 @@ export interface EditTransactionData {
   userId: string
   accountId: string
   isMasked: boolean
+  isExcluded?: boolean
   excludeFromBudget?: boolean
   subItems?: { id: string; description: string; amount: number; category: string; categoryId: string | null; isExcluded: boolean; excludeFromBudget: boolean }[]
 }
@@ -112,6 +113,7 @@ export function TransactionDrawer({
   const [isExpense, setIsExpense] = useState(true)
 
   // UI state
+  const [isExcluded, setIsExcluded] = useState(false)
   const [excludeFromBudget, setExcludeFromBudget] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -214,6 +216,7 @@ export function TransactionDrawer({
       setCategory(editTransaction.category)
       setDescription(editTransaction.description)
       setIsShared(editTransaction.visibility === 'SHARED')
+      setIsExcluded(editTransaction.isExcluded ?? false)
       setExcludeFromBudget(editTransaction.excludeFromBudget ?? false)
       const existing = editTransaction.subItems ?? []
       if (existing.length > 0) {
@@ -277,6 +280,7 @@ export function TransactionDrawer({
             category,
             description: description || category,
             visibility: isShared ? 'SHARED' : 'PRIVATE',
+            isExcluded,
             excludeFromBudget,
           }),
         })
@@ -367,7 +371,7 @@ export function TransactionDrawer({
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
       <DrawerContent className="max-h-[92vh] overflow-x-hidden">
-        <div className="overflow-y-auto overflow-x-hidden px-4 sm:px-6 pb-8">
+        <div className="overflow-y-auto overflow-x-hidden px-4 sm:px-6 pb-0">
           {/* Header */}
           <DrawerHeader className="px-0 pt-4 pb-2">
             <DrawerTitle className="text-xl">
@@ -609,6 +613,38 @@ export function TransactionDrawer({
               <Switch checked={isShared} onCheckedChange={setIsShared} />
             </div>
 
+            {/* 항목 제외 — 수정 모드 + 권한 있을 때 */}
+            {isEditMode && canEdit && (
+              <button
+                onClick={() => setIsExcluded(v => !v)}
+                className={cn(
+                  'flex items-center justify-between w-full rounded-xl px-4 py-3 border transition-colors text-left',
+                  isExcluded
+                    ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800/40'
+                    : 'bg-muted/30 border-border/50 hover:border-border'
+                )}
+              >
+                <div>
+                  <p className={cn('text-sm font-medium', isExcluded ? 'text-red-700 dark:text-red-300' : 'text-foreground')}>
+                    이 내역 제외
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {isExcluded ? '수입/지출 집계에서 제외됩니다' : '수입/지출 집계에 포함됩니다'}
+                  </p>
+                </div>
+                <div className={cn(
+                  'w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0',
+                  isExcluded ? 'bg-red-500 border-red-500' : 'border-muted-foreground/30'
+                )}>
+                  {isExcluded && (
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                      <path d="M2 5.5L4 7.5L8 3" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
+                </div>
+              </button>
+            )}
+
             {/* 예산 제외 — 수정 모드 + 지출 + 분할 항목 없을 때만 */}
             {isEditMode && canEdit && isExpense && !(showSplit && subItems.length > 0) && (
               <button
@@ -808,8 +844,8 @@ export function TransactionDrawer({
             </div>
           )}
 
-          {/* Footer */}
-          <DrawerFooter className="px-0 pt-6">
+          {/* Footer — sticky at bottom */}
+          <DrawerFooter className="sticky bottom-0 pt-3 pb-6 border-t border-border bg-card -mx-4 sm:-mx-6 px-4 sm:px-6">
             <button
               onClick={handleSubmit}
               disabled={!amount || !category || isSubmitting}

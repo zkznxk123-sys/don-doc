@@ -15,6 +15,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { InputGuide } from '@/components/dashboard/InputGuide'
+import { getFamilyCategories, type CategoryOption } from '@/lib/actions/categories'
 
 type TypeFilter = 'INCOME' | 'EXPENSE'
 
@@ -53,12 +54,6 @@ interface MonthlyGoal {
 }
 
 type DraftItem = { category: string; isExcluded: boolean; amount: number; description: string }
-
-const EXPENSE_CATEGORIES = [
-  '식비', '카페/간식', '쇼핑', '교통', '주거/관리비', '의료/건강',
-  '문화/여가', '교육', '구독/통신', '저축/투자', '기타',
-]
-const INCOME_CATEGORIES = ['급여', '부업', '이자/배당', '기타 수입']
 
 const CAT_COLORS: Record<string, string> = {
   '식비': '#f97316',
@@ -102,6 +97,7 @@ export default function CashflowPage() {
   const [hideExcluded, setHideExcluded] = useState(true)
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
   const [sortOrder, setSortOrder] = useState<'date' | 'amount'>('date')
+  const [allCategories, setAllCategories] = useState<CategoryOption[]>([])
 
   // ── AI 재분류 모달 state ──
   const [aiModal, setAiModal] = useState<{
@@ -159,6 +155,7 @@ export default function CashflowPage() {
     setSelectedCategory(null)
     fetchData(year, month)
     fetchGoal(year, month)
+    getFamilyCategories().then(setAllCategories).catch(() => {})
   }, [year, month, fetchData, fetchGoal, refreshKey])
 
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
@@ -761,6 +758,7 @@ export default function CashflowPage() {
                   effectiveExcluded={effectiveExcluded}
                   effectiveAmount={effectiveAmount}
                   effectiveDescription={effectiveDescription}
+                  allCategories={allCategories}
                   canEdit={canEdit(tx)}
                   onEdit={() => openTransactionDrawer({
                     id: tx.id,
@@ -772,6 +770,7 @@ export default function CashflowPage() {
                     userId: tx.userId,
                     accountId: tx.accountId ?? '',
                     isMasked: tx.isMasked,
+                    isExcluded: tx.isExcluded,
                     excludeFromBudget: tx.excludeFromBudget,
                     subItems: tx.subItems,
                   })}
@@ -996,7 +995,7 @@ function SubItemRow({ item }: { item: SubItem }) {
 
 function TransactionRow({
   tx, isEditing, isDirty, effectiveCategory, effectiveExcluded, effectiveAmount, effectiveDescription,
-  canEdit, onEdit, onDraftChange, subItems,
+  allCategories, canEdit, onEdit, onDraftChange, subItems,
 }: {
   tx: Transaction
   isEditing: boolean
@@ -1005,6 +1004,7 @@ function TransactionRow({
   effectiveExcluded: boolean
   effectiveAmount: number
   effectiveDescription: string
+  allCategories: CategoryOption[]
   canEdit: boolean
   onEdit: () => void
   onDraftChange: (patch: Partial<DraftItem>) => void
@@ -1013,7 +1013,8 @@ function TransactionRow({
   const hasSubItems = (subItems?.length ?? 0) > 0
   const date = new Date(tx.date)
   const dateStr = `${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
-  const categories = tx.amount > 0 ? INCOME_CATEGORIES : EXPENSE_CATEGORIES
+  const txType = tx.amount > 0 ? 'INCOME' : 'EXPENSE'
+  const categories = allCategories.filter(c => c.type === txType).map(c => c.name)
   const sign = tx.amount >= 0 ? 1 : -1
 
   const handleAmountChange = (val: string) => {
@@ -1067,7 +1068,9 @@ function TransactionRow({
               {!categories.includes(effectiveCategory) && (
                 <SelectItem value={effectiveCategory}>{effectiveCategory}</SelectItem>
               )}
-              {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+              {allCategories.filter(c => c.type === txType).map(c => (
+                <SelectItem key={c.id} value={c.name}>{c.icon} {c.name}</SelectItem>
+              ))}
             </SelectContent>
           </Select>
           <button
