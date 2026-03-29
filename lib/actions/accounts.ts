@@ -491,15 +491,26 @@ export async function deleteZeroBalanceAccounts(): Promise<{ success: boolean; d
   const user = await getAuthUser()
   if (!user?.familyId) return { success: false, deleted: 0, error: '인증이 필요합니다.' }
 
-  const result = await prisma.account.deleteMany({
-    where: {
-      familyId: user.familyId,
-      balance: 0,
-    },
+  const targets = await prisma.account.findMany({
+    where: { familyId: user.familyId, balance: 0 },
+    select: { id: true },
+  })
+  if (targets.length === 0) return { success: true, deleted: 0 }
+
+  const ids = targets.map(a => a.id)
+
+  // FK 제약 해제: 해당 계좌를 참조하는 거래의 accountId를 null로
+  await prisma.transaction.updateMany({
+    where: { accountId: { in: ids } },
+    data: { accountId: null },
+  })
+
+  await prisma.account.deleteMany({
+    where: { id: { in: ids } },
   })
 
   revalidatePath('/dashboard')
-  return { success: true, deleted: result.count }
+  return { success: true, deleted: ids.length }
 }
 
 // ─── 헬퍼 ────────────────────────────────────────────────────────────────────
