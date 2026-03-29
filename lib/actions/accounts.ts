@@ -499,15 +499,16 @@ export async function deleteZeroBalanceAccounts(): Promise<{ success: boolean; d
 
   const ids = targets.map(a => a.id)
 
-  // FK 제약 해제: 해당 계좌를 참조하는 거래의 accountId를 null로
-  await prisma.transaction.updateMany({
-    where: { accountId: { in: ids } },
-    data: { accountId: null },
-  })
-
-  await prisma.account.deleteMany({
-    where: { id: { in: ids } },
-  })
+  // FK 제약 해제 후 삭제를 단일 트랜잭션으로 처리
+  await prisma.$transaction([
+    prisma.transaction.updateMany({
+      where: { accountId: { in: ids } },
+      data: { accountId: null },
+    }),
+    prisma.account.deleteMany({
+      where: { id: { in: ids } },
+    }),
+  ])
 
   revalidatePath('/dashboard')
   return { success: true, deleted: ids.length }
