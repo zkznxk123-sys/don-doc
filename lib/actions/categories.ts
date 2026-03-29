@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
 import type { CategoryType, AccountType } from '@prisma/client'
 import { DEFAULT_ACCOUNT_TYPE_LABELS } from '@/lib/utils/account-type-labels'
+import { BANKSALAD_CATEGORY_DEFS } from '@/utils/banksalad-defs'
 
 export interface CategoryItem {
   id: string
@@ -215,6 +216,35 @@ export async function upsertAccountTypeLabel(
     create: { type: type as AccountType, label: trimmed, familyId: authUser.familyId },
   })
   return { success: true }
+}
+
+/**
+ * 뱅크샐러드 엑셀에서 발견된 대분류를 앱 카테고리로 자동 동기화
+ * - DB에 없는 카테고리만 생성 (시스템 카테고리 포함 검사)
+ * - 가족별 커스텀 카테고리로 생성
+ */
+export async function syncBanksaladCategories(majorCategories: string[]): Promise<{ created: string[] }> {
+  const user = await getAuthUser()
+  if (!user?.familyId) return { created: [] }
+
+  const existing = await prisma.category.findMany({
+    where: { OR: [{ familyId: null }, { familyId: user.familyId }] },
+    select: { name: true },
+  })
+  const existingNames = new Set(existing.map(c => c.name))
+
+  const created: string[] = []
+  for (const 대분류 of majorCategories) {
+    const def = BANKSALAD_CATEGORY_DEFS[대분류]
+    if (!def || existingNames.has(def.name)) continue
+
+    await prisma.category.create({
+      data: { name: def.name, icon: def.icon, type: def.type as CategoryType, familyId: user.familyId },
+    })
+    created.push(def.name)
+  }
+
+  return { created }
 }
 
 /**

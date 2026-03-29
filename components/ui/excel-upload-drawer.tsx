@@ -5,7 +5,7 @@ import * as XLSX from 'xlsx'
 import { toast } from 'sonner'
 import {
   Upload, X, FileSpreadsheet, Loader2, AlertCircle,
-  CheckCircle2, Sparkles, SkipForward, Globe, Lock, Wand2, Link2,
+  CheckCircle2, Sparkles, SkipForward, Wand2, Link2,
 } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
 import {
@@ -14,8 +14,8 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import { createManyTransactions, autoDetectAndExcludeTransfers, type BulkTransactionRow } from '@/lib/actions/transaction'
-import { getFamilyCategories, type CategoryOption } from '@/lib/actions/categories'
+import { createManyTransactions, syncAccountBalancesOnly, checkTransactionDuplicates, autoDetectAndExcludeTransfers, type BulkTransactionRow } from '@/lib/actions/transaction'
+import { getFamilyCategories, syncBanksaladCategories, type CategoryOption } from '@/lib/actions/categories'
 import {
   type ColMap, type ExcelPreset,
   detectPreset, buildColMap,
@@ -37,9 +37,12 @@ interface ParsedRow extends BulkTransactionRow {
   categoryId?: string
   categoryName?: string
   categoryIcon?: string
+  // 중복 체크 결과
+  _isDuplicate?: boolean
 }
 
-type AiStatus = 'idle' | 'loading' | 'done' | 'error' | 'skipped'
+type AiStatus = 'idle' | 'pending' | 'loading' | 'done' | 'error' | 'skipped'
+type UploadMode = 'both' | 'cashflow' | 'assets'
 
 // ━━ 범용 파서 유틸 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -119,9 +122,18 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
 
   // 뱅샐현황 계좌 잔액 목록
   const [accountBalances, setAccountBalances] = useState<AccountBalance[]>([])
+  // DB 현재 계좌 잔액 (자산 diff 미리보기용)
+  const [dbAccounts, setDbAccounts] = useState<{ name: string; balance: number }[]>([])
 
-  // 설정
-  const [visibility, setVisibility] = useState<'SHARED' | 'PRIVATE'>('SHARED')
+  // 월 필터 (뱅크샐러드 전용)
+  const [availableMonths, setAvailableMonths] = useState<string[]>([])
+  const [selectedMonths, setSelectedMonths] = useState<Set<string>>(new Set())
+
+  // 업로드 모드 (뱅크샐러드 + 계좌 잔액 있을 때)
+  const [uploadMode, setUploadMode] = useState<UploadMode>('both')
+
+  // 가시성: 일괄 업로드는 SHARED 고정 (업로드 후 개별 수정)
+  const visibility = 'SHARED' as const
   const [isLoading, setIsLoading] = useState(false)
 
   // 가족 구성원 이름 (이체 필터링용)
@@ -145,16 +157,39 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
       .catch(() => {})
   }, [isOpen])
 
-  // ── AI 카테고리 매핑 ──
+  // ── AI 카테고리 매핑 (중복 체크 선행) ──
   const runAiMapping = useCallback(async (parsedRows: ParsedRow[]) => {
     setAiStatus('loading')
     const abort = new AbortController()
     aiAbortRef.current = abort
     try {
+      // ── 중복 체크 먼저 ──
+      const dupResults = await checkTransactionDuplicates(
+        userId,
+        parsedRows.map(r => ({
+          date: r.date,
+          amount: r.amount,
+          description: r.description,
+          accountName: r.accountName || r._paymentMethod || '기본 계좌',
+        }))
+      )
+      // parsedRows 기준 중복 키 세트 구성 → 전체 rows에 반영
+      const dupKeySet = new Set<string>()
+      parsedRows.forEach((r, i) => {
+        if (dupResults[i]) dupKeySet.add(`${r.date}|${r.amount}|${r.description}`)
+      })
+      setRows(prev => prev.map(r => ({
+        ...r,
+        _isDuplicate: dupKeySet.has(`${r.date}|${r.amount}|${r.description}`),
+      })))
+
+      // 새 항목만 AI 분류
+      const newRows = parsedRows.filter((_, i) => !dupResults[i])
+
       // 고유한 (description, banksaladCategory) 쌍만 추출 — 토큰 절약
       const seen = new Set<string>()
       const uniqueItems: { description: string; banksaladCategory: string }[] = []
-      for (const row of parsedRows) {
+      for (const row of newRows) {
         if (!row.description || row._error) continue
         const key = `${row.description}||${row._banksaladCategory ?? ''}`
         if (!seen.has(key)) {
@@ -186,8 +221,9 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         (data.mappings as MappingResult[]).map(m => [m.description, m])
       )
 
-      // 원본 rows에 categoryId / categoryName / categoryIcon 병합
+      // 원본 rows에 categoryId / categoryName / categoryIcon 병합 (중복 아닌 것만)
       setRows(prev => prev.map(row => {
+        if (row._isDuplicate) return row
         const m = mappingMap.get(row.description)
         if (!m) return row
         return { ...row, categoryId: m.categoryId, categoryName: m.categoryName, categoryIcon: m.categoryIcon }
@@ -227,16 +263,38 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
             _paymentMethod: r.paymentMethod,
             _time: r.time,
           }))
+          const months = Array.from(new Set(parsed.map(r => r.date.slice(0, 7)))).sort()
+          setAvailableMonths(months)
+          setSelectedMonths(new Set(months))
+
           setIsBanksalad(true)
           setBanksaladMeta({ skipped: banksaladResult.skippedCount, sheet: banksaladResult.sheetName })
           setAccountBalances(banksaladResult.accountBalances)
           setRows(parsed)
+
+          // DB 계좌 잔액 로드 (자산 diff 미리보기용)
+          if (banksaladResult.accountBalances.length > 0) {
+            fetch('/api/accounts')
+              .then(r => r.json())
+              .then(d => {
+                if (d.success && d.accounts) {
+                  setDbAccounts(d.accounts.map((a: { name: string; balance: number }) => ({ name: a.name, balance: a.balance })))
+                }
+              })
+              .catch(() => {})
+          }
           setRawHeaders([]); setColMap(null); setRawData([])
 
           toast.success('뱅크샐러드 양식이 감지되었습니다.', {
-            description: `${banksaladResult.rows.length}건 파싱 · 이체 ${banksaladResult.skippedCount}건 제외 · AI 분류 시작...`,
+            description: `${banksaladResult.rows.length}건 파싱 완료 · 이체 ${banksaladResult.skippedCount}건 제외`,
           })
-          runAiMapping(parsed)
+
+          // 발견된 대분류를 DB 카테고리로 자동 동기화 (없는 것만 생성)
+          if (banksaladResult.uniqueMajorCategories.length > 0) {
+            await syncBanksaladCategories(banksaladResult.uniqueMajorCategories)
+          }
+
+          setAiStatus('pending')  // 월/모드 선택 후 수동 시작
           return
         }
 
@@ -284,19 +342,77 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
     setFileName(null); setDetectedPreset(null); setIsBanksalad(false)
     setBanksaladMeta(null); setColMap(null); setRawData([])
     setRows([]); setRawHeaders([]); setAiStatus('idle'); setAiMappedCount(0)
-    setAccountBalances([])
+    setAccountBalances([]); setDbAccounts([])
+    setAvailableMonths([]); setSelectedMonths(new Set())
+    setUploadMode('both')
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
   const handleClose = () => { handleReset(); onClose() }
 
-  const validRows = rows.filter(r => !r._error)
-  const errorRows = rows.filter(r => r._error)
+  const filteredRows = isBanksalad && selectedMonths.size > 0
+    ? rows.filter(r => selectedMonths.has(r.date.slice(0, 7)))
+    : rows
+
+  // 월 선택 변경 시 분류 결과 초기화 (pending으로 되돌림)
+  const resetAiForReselection = () => {
+    if (aiStatus === 'done' || aiStatus === 'skipped' || aiStatus === 'error') {
+      setAiStatus('pending')
+      setAiMappedCount(0)
+      setRows(prev => prev.map(r => ({ ...r, _isDuplicate: undefined })))
+    }
+  }
+
+  const toggleMonth = (month: string) => {
+    setSelectedMonths(prev => {
+      const next = new Set(prev)
+      if (next.has(month)) {
+        if (next.size === 1) return prev // 최소 1개 유지
+        next.delete(month)
+      } else {
+        next.add(month)
+      }
+      return next
+    })
+    resetAiForReselection()
+  }
+
+  const validRows = filteredRows.filter(r => !r._error && !r._isDuplicate)
+  const errorRows = filteredRows.filter(r => r._error)
+  const duplicateRows = filteredRows.filter(r => r._isDuplicate)
 
   const handleSubmit = async () => {
-    if (validRows.length === 0) { toast.error('등록 가능한 내역이 없습니다.'); return }
     setIsLoading(true)
     try {
+      // ── 자산만 업데이트 모드 ──
+      if (uploadMode === 'assets') {
+        const result = await syncAccountBalancesOnly(familyId, userId, accountBalances)
+        if (result.success) {
+          toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료`)
+          handleClose(); onSuccess()
+        } else {
+          toast.error(result.error ?? '잔액 업데이트에 실패했습니다.')
+        }
+        return
+      }
+
+      // ── 현금흐름 포함 모드 ──
+      if (validRows.length === 0) {
+        // 신규 거래 없어도 both 모드에서 자산 잔액은 업데이트
+        if (uploadMode === 'both' && accountBalances.length > 0) {
+          const result = await syncAccountBalancesOnly(familyId, userId, accountBalances)
+          if (result.success) {
+            toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료`, { description: '새로 등록할 거래 내역이 없습니다.' })
+            handleClose(); onSuccess()
+          } else {
+            toast.error(result.error ?? '잔액 업데이트에 실패했습니다.')
+          }
+          return
+        }
+        toast.error('등록 가능한 내역이 없습니다.')
+        return
+      }
+
       const submitRows: BulkTransactionRow[] = validRows.map(r => ({
         amount: r.amount,
         date: r.date,
@@ -306,12 +422,11 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         visibility,
         accountName: r.accountName || r._paymentMethod || '기본 계좌',
       }))
-      const result = await createManyTransactions(
-        userId,
-        familyId,
-        submitRows,
-        accountBalances.length > 0 ? { accountBalances } : undefined
-      )
+      const balancesForSync = uploadMode === 'both' && accountBalances.length > 0
+        ? { accountBalances }
+        : undefined
+      const result = await createManyTransactions(userId, familyId, submitRows, balancesForSync)
+
       if (result.success) {
         const total = validRows.length
         const saved = result.count ?? 0
@@ -320,15 +435,12 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
           ? `${result.syncedAccountCount}개 계좌 잔액 동기화`
           : null
 
-        // 중복 스킵 메시지 구성
         const dupDesc = skipped > 0
           ? `총 ${total}건 중 ${skipped}건은 이미 존재하여 무시됨`
           : null
 
         if (saved === 0) {
-          toast.info('모든 내역이 이미 등록되어 있습니다.', {
-            description: dupDesc ?? undefined,
-          })
+          toast.info('모든 내역이 이미 등록되어 있습니다.', { description: dupDesc ?? undefined })
         } else {
           const stats = result.monthStats ?? []
           let title = ''
@@ -348,7 +460,6 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
           toast.success(title, { description: description || undefined })
         }
 
-        // 가족 이체 자동 감지
         autoDetectAndExcludeTransfers(familyId ?? undefined).then(r => {
           if (r.success && r.pairCount > 0) {
             toast.info(`이체 내역 ${r.pairCount}쌍 자동 제외 처리됨`)
@@ -460,60 +571,114 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                 </div>
               )}
 
-              {/* ── AI 매핑 상태 ── */}
-              <AiMappingStatus status={aiStatus} mappedCount={aiMappedCount} totalUnique={rows.filter(r => !r._error && r.description).length} onRetry={() => runAiMapping(rows)} />
+              {/* ── 업로드 설정 (월 선택 + 업데이트 범위) ── */}
+              {isBanksalad && (availableMonths.length > 1 || accountBalances.length > 0) && (
+                <div className="rounded-xl border border-border overflow-hidden divide-y divide-border">
 
-              {/* ── 공개 범위 (전체 적용) ── */}
-              <div
-                onClick={() => setVisibility(v => v === 'SHARED' ? 'PRIVATE' : 'SHARED')}
-                className={cn(
-                  'flex items-center justify-between rounded-xl p-3.5 border cursor-pointer transition-colors select-none',
-                  visibility === 'SHARED'
-                    ? 'bg-emerald-500/5 border-emerald-500/20'
-                    : 'bg-amber-500/5 border-amber-500/20'
-                )}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={cn(
-                    'w-8 h-8 rounded-lg flex items-center justify-center',
-                    visibility === 'SHARED' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'
-                  )}>
-                    {visibility === 'SHARED' ? <Globe className="w-4 h-4" /> : <Lock className="w-4 h-4" />}
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">
-                      {visibility === 'SHARED' ? '전체 공개' : '금액만 공개'}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      {visibility === 'SHARED' ? '가족 모두가 상세 내용을 확인할 수 있어요' : '가족에게는 금액만 노출됩니다 🔒'}
-                    </p>
-                  </div>
-                </div>
-                <p className="text-[10px] text-muted-foreground/60">탭하여 변경</p>
-              </div>
+                  {/* 월 선택 */}
+                  {availableMonths.length > 1 && (
+                    <div className="p-3 space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-foreground/70">
+                          업로드할 월
+                          <span className="ml-1.5 font-normal text-muted-foreground/60">
+                            ({selectedMonths.size}/{availableMonths.length}개월)
+                          </span>
+                        </p>
+                        <button
+                          onClick={() => {
+                            setSelectedMonths(
+                              selectedMonths.size === availableMonths.length
+                                ? new Set([availableMonths[availableMonths.length - 1]])
+                                : new Set(availableMonths)
+                            )
+                            resetAiForReselection()
+                          }}
+                          className="text-[10px] text-muted-foreground/60 hover:text-foreground transition-colors"
+                        >
+                          {selectedMonths.size === availableMonths.length ? '전체 해제' : '전체 선택'}
+                        </button>
+                      </div>
+                      <div className="flex flex-wrap gap-1.5">
+                        {availableMonths.map(month => {
+                          const [y, m] = month.split('-')
+                          const label = `${y}년 ${parseInt(m)}월`
+                          const active = selectedMonths.has(month)
+                          return (
+                            <button
+                              key={month}
+                              onClick={() => toggleMonth(month)}
+                              className={cn(
+                                'px-2.5 py-1 rounded-lg text-xs font-medium transition-colors border',
+                                active
+                                  ? 'bg-foreground text-background border-foreground'
+                                  : 'bg-muted text-muted-foreground border-border hover:border-foreground/40'
+                              )}
+                            >
+                              {label}
+                            </button>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
 
-              {/* ── 계좌 자동 매칭 안내 ── */}
-              <div className="flex items-start gap-2.5 p-3 rounded-xl bg-card border border-border">
-                <Link2 className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-xs font-medium text-foreground/70">계좌 자동 매칭</p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    엑셀 내역에 포함된 결제수단 정보로 계좌가 자동 매칭됩니다.
-                    {accountBalances.length > 0 && (
-                      <span className="text-emerald-500 ml-1">
-                        · 잔액 동기화 대상 {accountBalances.length}개 계좌 감지됨
-                      </span>
-                    )}
-                  </p>
+                  {/* 업데이트 범위 */}
+                  {accountBalances.length > 0 && (
+                    <div className="p-3 space-y-2">
+                      <p className="text-xs font-semibold text-foreground/70">업데이트 범위</p>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {([
+                          { value: 'both',     label: '전체',      desc: '거래 + 자산' },
+                          { value: 'cashflow', label: '현금흐름만', desc: '거래 내역만' },
+                          { value: 'assets',   label: '자산만',    desc: `잔액 ${accountBalances.length}개` },
+                        ] as { value: UploadMode; label: string; desc: string }[]).map(opt => (
+                          <button
+                            key={opt.value}
+                            onClick={() => setUploadMode(opt.value)}
+                            className={cn(
+                              'flex flex-col items-center py-2 px-1 rounded-lg border text-center transition-colors',
+                              uploadMode === opt.value
+                                ? 'bg-foreground text-background border-foreground'
+                                : 'bg-muted/50 text-muted-foreground border-border hover:border-foreground/30'
+                            )}
+                          >
+                            <span className="text-xs font-semibold">{opt.label}</span>
+                            <span className={cn('text-[10px] mt-0.5', uploadMode === opt.value ? 'text-background/70' : 'text-muted-foreground/60')}>{opt.desc}</span>
+                          </button>
+                        ))}
+                      </div>
+
+                      {/* 자산 잔액 diff 미리보기 */}
+                      {uploadMode !== 'cashflow' && (
+                        <AccountBalanceDiff accountBalances={accountBalances} dbAccounts={dbAccounts} />
+                      )}
+                    </div>
+                  )}
                 </div>
-              </div>
+              )}
+
+              {/* ── AI 매핑 상태 (자산만 모드에선 불필요) ── */}
+              {uploadMode !== 'assets' && (
+                <AiMappingStatus
+                  status={aiStatus}
+                  mappedCount={aiMappedCount}
+                  totalUnique={filteredRows.filter(r => !r._error && r.description).length}
+                  onStart={() => runAiMapping(filteredRows)}
+                  onAbort={() => aiAbortRef.current?.abort()}
+                  onRetry={() => runAiMapping(filteredRows)}
+                />
+              )}
 
               {/* ── 미리보기 테이블 ── */}
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-xs font-semibold text-muted-foreground">미리보기</p>
                   <p className="text-xs text-muted-foreground/60">
-                    {rows.length > PREVIEW_LIMIT ? `상위 ${PREVIEW_LIMIT}행 / 전체 ${rows.length}행` : `${rows.length}행`}
+                    {duplicateRows.length > 0
+                      ? <>신규 <span className="text-foreground font-medium">{validRows.length}</span>건 · 이미 등록 <span className="text-muted-foreground/50">{duplicateRows.length}</span>건</>
+                      : filteredRows.length > PREVIEW_LIMIT ? `상위 ${PREVIEW_LIMIT}행 / 전체 ${filteredRows.length}행` : `${filteredRows.length}행`
+                    }
                   </p>
                 </div>
                 <div className="rounded-xl border border-border overflow-hidden">
@@ -533,9 +698,12 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                     </div>
                   ) : null}
 
-                  {/* 바디 */}
+                  {/* 바디 — 신규 항목 먼저, 중복 항목 뒤로 */}
                   <div className="divide-y divide-border/60 max-h-[300px] overflow-y-auto">
-                    {rows.slice(0, PREVIEW_LIMIT).map((row, i) =>
+                    {[...filteredRows]
+                      .sort((a, b) => (a._isDuplicate ? 1 : 0) - (b._isDuplicate ? 1 : 0))
+                      .slice(0, PREVIEW_LIMIT)
+                      .map((row, i) =>
                       isBanksalad
                         ? <BanksaladPreviewRow key={i} row={row} aiStatus={aiStatus} />
                         : <GenericPreviewRow key={i} row={row} aiStatus={aiStatus} />
@@ -560,34 +728,24 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         {/* ── 등록 버튼 ── */}
         {hasFile && (
           <DrawerFooter className="flex-shrink-0 pt-0 px-4 pb-6 space-y-2">
-            {aiStatus === 'loading' && (
-              <div className="flex items-center justify-between px-1">
-                <p className="text-xs text-muted-foreground flex items-center gap-1.5">
-                  <Loader2 className="w-3 h-3 animate-spin text-violet-500" />
-                  AI 분류 완료 후 등록할 수 있어요
-                </p>
-                <button
-                  onClick={() => { aiAbortRef.current?.abort() }}
-                  className="text-xs text-muted-foreground/60 hover:text-foreground underline underline-offset-2 transition-colors"
-                >
-                  분류 중단하고 지금 등록
-                </button>
-              </div>
-            )}
             <button
               onClick={handleSubmit}
-              disabled={isLoading || validRows.length === 0 || aiStatus === 'loading'}
+              disabled={isLoading || (uploadMode === 'assets' ? false : uploadMode === 'both' && accountBalances.length > 0 ? false : validRows.length === 0)}
               className={cn(
                 'w-full h-12 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2',
-                isLoading || validRows.length === 0 || aiStatus === 'loading'
+                isLoading || (uploadMode !== 'assets' && validRows.length === 0)
                   ? 'bg-muted text-muted-foreground cursor-not-allowed'
                   : 'bg-foreground text-background hover:bg-foreground/90 active:scale-[0.98]'
               )}
             >
               {isLoading
-                ? <><Loader2 className="w-4 h-4 animate-spin" />등록 중...</>
-                : aiStatus === 'loading'
-                ? <><Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />AI 분류 중...</>
+                ? <><Loader2 className="w-4 h-4 animate-spin" />{uploadMode === 'assets' ? '업데이트 중...' : '등록 중...'}</>
+                : uploadMode === 'assets'
+                ? `계좌 잔액 ${accountBalances.length}개 업데이트`
+                : validRows.length === 0 && uploadMode === 'both' && accountBalances.length > 0
+                ? `계좌 잔액 ${accountBalances.length}개 업데이트`
+                : aiStatus === 'pending'
+                ? `${validRows.length}건 등록하기 (분류 생략)`
                 : `${validRows.length}건 등록하기`}
             </button>
           </DrawerFooter>
@@ -600,17 +758,40 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
 // ━━ AI 매핑 상태 배너 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function AiMappingStatus({
-  status, mappedCount, totalUnique, onRetry,
-}: { status: AiStatus; mappedCount: number; totalUnique: number; onRetry: () => void }) {
+  status, mappedCount, totalUnique, onStart, onAbort, onRetry,
+}: { status: AiStatus; mappedCount: number; totalUnique: number; onStart: () => void; onAbort: () => void; onRetry: () => void }) {
   if (status === 'idle') return null
 
-  if (status === 'loading') return (
-    <div className="flex items-center gap-2.5 p-3 rounded-xl bg-card border border-border">
-      <Loader2 className="w-4 h-4 text-violet-500 dark:text-violet-400 animate-spin flex-shrink-0" />
-      <div>
-        <p className="text-xs font-semibold text-violet-700 dark:text-violet-300">AI 카테고리 분류 중...</p>
-        <p className="text-[11px] text-muted-foreground mt-0.5">고유 내역 {totalUnique}건을 분류하고 있어요</p>
+  if (status === 'pending') return (
+    <div className="flex items-center justify-between p-3 rounded-xl bg-card border border-border">
+      <div className="flex items-center gap-2">
+        <Wand2 className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        <div>
+          <p className="text-xs font-medium text-foreground/70">AI 카테고리 분류</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">월 · 범위 선택 후 분류를 시작하세요</p>
+        </div>
       </div>
+      <button
+        onClick={onStart}
+        className="px-3 py-1.5 rounded-lg bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 text-xs font-semibold transition-colors border border-violet-500/20"
+      >
+        분류 시작
+      </button>
+    </div>
+  )
+
+  if (status === 'loading') return (
+    <div className="flex items-center justify-between p-3 rounded-xl bg-card border border-border">
+      <div className="flex items-center gap-2.5">
+        <Loader2 className="w-4 h-4 text-violet-500 dark:text-violet-400 animate-spin flex-shrink-0" />
+        <div>
+          <p className="text-xs font-semibold text-violet-700 dark:text-violet-300">AI 카테고리 분류 중...</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">고유 내역 {totalUnique}건을 분류하고 있어요</p>
+        </div>
+      </div>
+      <button onClick={onAbort} className="text-[11px] text-muted-foreground/60 hover:text-foreground transition-colors">
+        중단
+      </button>
     </div>
   )
 
@@ -642,8 +823,12 @@ function AiMappingStatus({
 // ━━ 뱅크샐러드 미리보기 행 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 function BanksaladPreviewRow({ row, aiStatus }: { row: ParsedRow; aiStatus: AiStatus }) {
+  const isDup = row._isDuplicate
   return (
-    <div className={cn('grid grid-cols-[86px_1fr_76px_100px] px-3 py-2.5', row._error && 'bg-red-950/20')}>
+    <div className={cn(
+      'grid grid-cols-[86px_1fr_76px_100px] px-3 py-2.5',
+      row._error ? 'bg-red-950/20' : isDup ? 'opacity-40' : ''
+    )}>
       <div>
         <p className={cn('text-xs tabular-nums', row._error ? 'text-red-400' : 'text-muted-foreground')}>{row.date || '—'}</p>
         {row._time && <p className="text-[10px] text-muted-foreground/60">{row._time}</p>}
@@ -658,6 +843,8 @@ function BanksaladPreviewRow({ row, aiStatus }: { row: ParsedRow; aiStatus: AiSt
       <div className="pl-1 min-w-0">
         {row._error ? (
           <span className="text-red-400 text-[10px]">{row._error}</span>
+        ) : isDup ? (
+          <span className="text-[10px] text-muted-foreground/50">이미 등록됨</span>
         ) : row.categoryId ? (
           <>
             <p className="text-xs text-foreground truncate">{row.categoryIcon} {row.categoryName}</p>
@@ -696,6 +883,78 @@ function GenericPreviewRow({ row, aiStatus }: { row: ParsedRow; aiStatus: AiStat
         ) : (
           <span className="text-xs text-muted-foreground">{row.category}</span>
         )}
+      </div>
+    </div>
+  )
+}
+
+// ━━ 자산 잔액 Diff 미리보기 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+function normalizeAccountName(s: string) {
+  return s.toLowerCase().replace(/\s+/g, '')
+}
+
+function matchDbAccount(excelName: string, dbAccounts: { name: string; balance: number }[]): { name: string; balance: number } | null {
+  const norm = normalizeAccountName(excelName)
+  return dbAccounts.find(a => {
+    const aNorm = normalizeAccountName(a.name)
+    return aNorm.includes(norm) || norm.includes(aNorm)
+  }) ?? null
+}
+
+function AccountBalanceDiff({
+  accountBalances,
+  dbAccounts,
+}: {
+  accountBalances: AccountBalance[]
+  dbAccounts: { name: string; balance: number }[]
+}) {
+  if (accountBalances.length === 0) return null
+
+  const diffs = accountBalances.map(ab => {
+    const matched = matchDbAccount(ab.name, dbAccounts)
+    return { name: ab.name, newBalance: ab.balance, currentBalance: matched?.balance ?? null }
+  })
+
+  return (
+    <div className="mt-1 rounded-lg border border-border overflow-hidden">
+      <div className="grid grid-cols-[1fr_auto] bg-muted/40 px-2.5 py-1.5 border-b border-border">
+        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">계좌명</span>
+        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide text-right">잔액 변경</span>
+      </div>
+      <div className="divide-y divide-border/60 max-h-[160px] overflow-y-auto">
+        {diffs.map((d, i) => {
+          const isNew = d.currentBalance === null
+          const diff = isNew ? 0 : d.newBalance - d.currentBalance!
+          const diffAbs = Math.abs(diff)
+          return (
+            <div key={i} className="grid grid-cols-[1fr_auto] items-center px-2.5 py-1.5">
+              <div className="min-w-0">
+                <p className="text-xs text-foreground truncate">{d.name}</p>
+                {isNew && (
+                  <span className="text-[10px] text-violet-400">신규 계좌</span>
+                )}
+              </div>
+              <div className="text-right pl-2 flex-shrink-0">
+                {isNew ? (
+                  <p className="text-xs text-foreground tabular-nums">{formatCurrency(d.newBalance)}</p>
+                ) : (
+                  <>
+                    <p className="text-xs text-foreground tabular-nums">{formatCurrency(d.newBalance)}</p>
+                    {diff !== 0 && (
+                      <p className={cn('text-[10px] tabular-nums', diff > 0 ? 'text-emerald-400' : 'text-rose-400')}>
+                        {diff > 0 ? '+' : '-'}{formatCurrency(diffAbs)}
+                      </p>
+                    )}
+                    {diff === 0 && (
+                      <p className="text-[10px] text-muted-foreground/50">변동 없음</p>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          )
+        })}
       </div>
     </div>
   )

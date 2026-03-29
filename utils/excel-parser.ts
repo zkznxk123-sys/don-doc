@@ -40,6 +40,8 @@ export interface ParseBanksaladResult {
   sheetName: string
   /** 뱅샐현황 시트에서 파싱한 계좌 잔액 목록 */
   accountBalances: AccountBalance[]
+  /** 이 파일에서 발견된 고유 대분류 목록 */
+  uniqueMajorCategories: string[]
 }
 
 // ━━ 상수 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -53,27 +55,13 @@ const BANKSALAD_HEADER_SIGNATURE = ['날짜', '시간', '타입', '내용', '금
 /** 항상 skip할 소분류 */
 const SKIP_MINOR = new Set(['내계좌이체'])
 
-/** 뱅크샐러드 대분류 → 앱 카테고리 매핑 */
-const CATEGORY_MAP: Record<string, string> = {
-  '식비':         '식비',
-  '카페/간식':    '식비',
-  '주거/통신':    '주거',
-  '교통/차량':    '교통',
-  '의류/미용':    '쇼핑',
-  '쇼핑':         '쇼핑',
-  '의료/건강':    '건강',
-  '문화/여가':    '여가',
-  '여행/숙박':    '여가',
-  '생활':         '생활',
-  '교육/학습':    '교육',
-  '급여':         '수입',
-  '사업수입':     '수입',
-  '금융수입':     '수입',
-  '기타수입':     '수입',
-  '보험금':       '기타',
-  '금융':         '기타',
-  '용돈':         '용돈',
-}
+export { BANKSALAD_CATEGORY_DEFS } from '@/utils/banksalad-defs'
+import { BANKSALAD_CATEGORY_DEFS } from '@/utils/banksalad-defs'
+
+/** 뱅크샐러드 대분류 → 앱 카테고리명 (BANKSALAD_CATEGORY_DEFS에서 파생) */
+const CATEGORY_MAP: Record<string, string> = Object.fromEntries(
+  Object.entries(BANKSALAD_CATEGORY_DEFS).map(([k, v]) => [k, v.name])
+)
 
 // ━━ 내부 유틸 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -204,6 +192,7 @@ export function parseBanksaladSheet(
 
   let skippedCount = 0
   const rows: BanksaladRow[] = []
+  const majorCatSet = new Set<string>()
 
   for (const raw of dataRows) {
     const 타입 = String(IDX.type >= 0 ? raw[IDX.type] : '').trim()
@@ -233,6 +222,8 @@ export function parseBanksaladSheet(
     const 대분류 = String(IDX.major >= 0 ? raw[IDX.major] : '').trim()
     const banksaladCategory = [대분류, 소분류].filter(Boolean).join(' > ')
 
+    if (대분류) majorCatSet.add(대분류)
+
     rows.push({
       date:               dateStr,
       time,
@@ -246,7 +237,7 @@ export function parseBanksaladSheet(
     })
   }
 
-  return { rows, skippedCount, totalCount: dataRows.length }
+  return { rows, skippedCount, totalCount: dataRows.length, uniqueMajorCategories: Array.from(majorCatSet) }
 }
 
 // ━━ 자산 유형 → AccountType 매핑 ━━
@@ -299,25 +290,52 @@ export function parseBanksaladSummary(wb: XLSX.WorkBook): AccountBalance[] {
   }
   if (headerRow < 0) return []
 
+  // 헤더 행에서 컬럼 인덱스 파악 (자산·부채 좌우 배치 구조 대응)
+  const headerCells = (allRows[headerRow] as unknown[]).map(c => String(c ?? '').trim())
+  const L_TYPE = headerCells.indexOf('항목')
+  const L_NAME = headerCells.indexOf('상품명')
+  const L_BAL  = headerCells.indexOf('금액')
+  // 우측(부채) 컬럼 — 두 번째 출현
+  const R_TYPE = L_TYPE >= 0 ? headerCells.indexOf('항목', L_TYPE + 1) : -1
+  const R_NAME = L_NAME >= 0 ? headerCells.indexOf('상품명', L_NAME + 1) : -1
+  const R_BAL  = L_BAL  >= 0 ? headerCells.indexOf('금액', L_BAL + 1) : -1
+
   const result: AccountBalance[] = []
-  let currentType: AssetAccountType = 'CASH'
+  let lType: AssetAccountType = 'CASH'
+  let rType: AssetAccountType = 'DEBT'
+
+  const parseBal = (v: unknown) =>
+    typeof v === 'number' ? v : parseFloat(String(v ?? '').replace(/,/g, ''))
 
   for (let i = headerRow + 1; i < allRows.length; i++) {
     const row = allRows[i]
-    const col0 = String(row[0] ?? '').trim()
-    const col1 = String(row[1] ?? '').trim()
-    const col3 = row[3]
+    const lCol0 = L_TYPE >= 0 ? String(row[L_TYPE] ?? '').trim() : ''
 
     // 종료 시그널
-    if (col0 === '총자산' || col0 === '순자산' || col0 === '총부채') break
+    if (lCol0 === '순자산') break
+    // 소계 행 skip (계좌명·잔액 없음)
+    if (lCol0 === '총자산') continue
 
-    // 자산 유형 업데이트 (부채/대출 섹션 포함)
-    if (col0 && col0 !== '') currentType = resolveAssetType(col0)
+    // ── 좌측: 자산 ──
+    if (lCol0) lType = resolveAssetType(lCol0)
+    const lName = L_NAME >= 0 ? String(row[L_NAME] ?? '').trim() : ''
+    const lBal  = L_BAL  >= 0 ? parseBal(row[L_BAL]) : NaN
+    if (lName && !isNaN(lBal) && lBal !== 0) {
+      result.push({ name: lName, balance: Math.abs(lBal), type: lType })
+    }
 
-    // 계좌명 + 숫자 잔액이 있는 행만 수집
-    const balance = typeof col3 === 'number' ? col3 : parseFloat(String(col3 ?? '').replace(/,/g, ''))
-    if (col1 && !isNaN(balance) && balance !== 0) {
-      result.push({ name: col1, balance: Math.abs(balance), type: currentType })
+    // ── 우측: 부채 (좌우 나란히 배치된 경우) ──
+    if (R_TYPE >= 0) {
+      const rCol0 = String(row[R_TYPE] ?? '').trim()
+      if (rCol0 && rCol0 !== '총부채') {
+        const resolved = resolveAssetType(rCol0)
+        rType = resolved !== 'CASH' ? resolved : 'DEBT'
+      }
+      const rName = R_NAME >= 0 ? String(row[R_NAME] ?? '').trim() : ''
+      const rBal  = R_BAL  >= 0 ? parseBal(row[R_BAL]) : NaN
+      if (rName && !isNaN(rBal) && rBal !== 0) {
+        result.push({ name: rName, balance: Math.abs(rBal), type: rType })
+      }
     }
   }
 

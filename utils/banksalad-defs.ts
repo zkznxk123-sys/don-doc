@@ -1,0 +1,21 @@
+/** 뱅크샐러드 대분류 → { 앱 카테고리명, 아이콘, 타입 } 정의 테이블 */
+export const BANKSALAD_CATEGORY_DEFS: Record<string, { name: string; icon: string; type: 'EXPENSE' | 'INCOME' }> = {
+  '식비':       { name: '식비',       icon: '🍽️', type: 'EXPENSE' },
+  '카페/간식':  { name: '카페/간식',  icon: '☕',  type: 'EXPENSE' },
+  '주거/통신':  { name: '주거/통신',  icon: '🏠',  type: 'EXPENSE' },
+  '교통/차량':  { name: '교통',       icon: '🚇',  type: 'EXPENSE' },
+  '의류/미용':  { name: '의류/미용',  icon: '👗',  type: 'EXPENSE' },
+  '쇼핑':       { name: '쇼핑',       icon: '🛍️', type: 'EXPENSE' },
+  '의료/건강':  { name: '의료/건강',  icon: '🏥',  type: 'EXPENSE' },
+  '문화/여가':  { name: '문화/여가',  icon: '🎬',  type: 'EXPENSE' },
+  '여행/숙박':  { name: '여행/숙박',  icon: '✈️', type: 'EXPENSE' },
+  '생활':       { name: '생활',       icon: '🧹',  type: 'EXPENSE' },
+  '교육/학습':  { name: '교육',       icon: '📚',  type: 'EXPENSE' },
+  '급여':       { name: '급여',       icon: '💰',  type: 'INCOME' },
+  '사업수입':   { name: '사업수입',   icon: '💼',  type: 'INCOME' },
+  '금융수입':   { name: '투자수익',   icon: '📈',  type: 'INCOME' },
+  '기타수입':   { name: '기타수입',   icon: '🪙',  type: 'INCOME' },
+  '보험금':     { name: '보험금',     icon: '🛡️', type: 'INCOME' },
+  '금융':       { name: '기타',       icon: '📋',  type: 'EXPENSE' },
+  '용돈':       { name: '용돈',       icon: '💸',  type: 'EXPENSE' },
+}

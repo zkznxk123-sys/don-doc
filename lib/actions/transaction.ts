@@ -279,16 +279,34 @@ async function findOrCreateAccount(
   type: 'CASH' | 'INVESTMENT' | 'PENSION' | 'REAL_ESTATE' | 'DEBT' = 'CASH',
   userId?: string
 ): Promise<string> {
-  // userId가 있으면 해당 유저 소유 계좌 우선 조회
+  // 1. 유저 소유 계좌 우선 조회
+  if (userId) {
+    const userOwned = await prisma.account.findFirst({
+      where: { familyId, name: { contains: name, mode: 'insensitive' }, userId },
+      select: { id: true },
+    })
+    if (userOwned) return userOwned.id
+  }
+
+  // 2. 공유 계좌 포함 가족 전체 검색 (부채·공유 계좌가 userId 없이 생성된 경우 대응)
   const existing = await prisma.account.findFirst({
-    where: {
-      familyId,
-      name: { contains: name, mode: 'insensitive' },
-      ...(userId ? { userId } : {}),
-    },
+    where: { familyId, name: { contains: name, mode: 'insensitive' } },
     select: { id: true },
   })
   if (existing) return existing.id
+
+  // 3. 공백 정규화 후 유연한 매칭 (예: "마이너스통장" ↔ "카카오뱅크 마이너스 통장")
+  const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, '')
+  const normalized = normalize(name)
+  const allFamilyAccounts = await prisma.account.findMany({
+    where: { familyId },
+    select: { id: true, name: true },
+  })
+  const fuzzyMatch = allFamilyAccounts.find(a => {
+    const aNorm = normalize(a.name)
+    return aNorm.includes(normalized) || normalized.includes(aNorm)
+  })
+  if (fuzzyMatch) return fuzzyMatch.id
 
   const created = await prisma.account.create({
     data: {
@@ -443,6 +461,54 @@ export async function createManyTransactions(
   } catch (e) {
     console.error('[createManyTransactions] ERROR:', e)
     return { success: false, error: '저장 중 오류가 발생했습니다.' }
+  }
+}
+
+/**
+ * 업로드 전 중복 여부 사전 확인
+ * - rows 순서와 동일한 boolean[] 반환 (true = 이미 DB에 존재)
+ * - originalHash 기반 체크
+ */
+export async function checkTransactionDuplicates(
+  userId: string,
+  rows: Array<{ date: string; amount: number; description: string; accountName?: string }>
+): Promise<boolean[]> {
+  const hashes = rows.map(r =>
+    generateOriginalHash(userId, r.date, r.amount, r.description, r.accountName?.trim() || '기본 계좌')
+  )
+  const existing = await prisma.transaction.findMany({
+    where: { originalHash: { in: hashes } },
+    select: { originalHash: true },
+  })
+  const existingSet = new Set(existing.map(t => t.originalHash!))
+  return hashes.map(h => existingSet.has(h))
+}
+
+/**
+ * 계좌 잔액만 강제 동기화 (거래 저장 없음)
+ * - 뱅샐현황 데이터로 자산 잔액만 업데이트할 때 사용
+ */
+export async function syncAccountBalancesOnly(
+  familyId: string,
+  userId: string,
+  accountBalances: { name: string; balance: number; type?: 'CASH' | 'INVESTMENT' | 'PENSION' | 'REAL_ESTATE' | 'DEBT' }[]
+): Promise<{ success: boolean; syncedCount?: number; error?: string }> {
+  const user = await getAuthUser()
+  if (!user) return { success: false, error: 'Unauthorized' }
+
+  try {
+    let syncedCount = 0
+    for (const ab of accountBalances) {
+      const id = await findOrCreateAccount(ab.name, familyId, ab.type ?? 'CASH', userId)
+      await prisma.account.update({ where: { id }, data: { balance: ab.balance } })
+      syncedCount++
+    }
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/assets')
+    return { success: true, syncedCount }
+  } catch (e) {
+    console.error('[syncAccountBalancesOnly] ERROR:', e)
+    return { success: false, error: '잔액 동기화 중 오류가 발생했습니다.' }
   }
 }
 
