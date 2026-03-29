@@ -57,7 +57,7 @@ function groupSuggestions(suggestions: PreviewSuggestion[]): PreviewGroup[] {
       })
     }
   }
-  return [...map.values()].sort((a, b) => (b.changed ? 1 : 0) - (a.changed ? 1 : 0))
+  return Array.from(map.values()).sort((a, b) => (b.changed ? 1 : 0) - (a.changed ? 1 : 0))
 }
 
 interface SubItem {
