@@ -17,6 +17,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import { updateUserName, getCurrentUser } from '@/lib/actions/user'
+import { deleteZeroBalanceAccounts } from '@/lib/actions/accounts'
 import { useAssetThreshold } from '@/lib/hooks/useAssetThreshold'
 
 export default function SettingsPage() {
@@ -26,6 +27,7 @@ export default function SettingsPage() {
 function SettingsClient() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  const [isDeletingZero, setIsDeletingZero] = useState(false)
   const { threshold, setThreshold } = useAssetThreshold()
   const [currentName, setCurrentName] = useState<string | null>(null)
   const [currentEmail, setCurrentEmail] = useState('')
@@ -54,6 +56,17 @@ function SettingsClient() {
       setIsEditingName(false)
       toast.success('이름이 변경되었습니다.')
       router.refresh()
+    }
+  }
+
+  const handleDeleteZero = async () => {
+    setIsDeletingZero(true)
+    const result = await deleteZeroBalanceAccounts()
+    setIsDeletingZero(false)
+    if (result.success) {
+      toast.success(result.deleted > 0 ? `0원 계좌 ${result.deleted}개 삭제 완료` : '삭제할 0원 계좌가 없습니다')
+    } else {
+      toast.error(result.error ?? '삭제 실패')
     }
   }
 
@@ -170,6 +183,49 @@ function SettingsClient() {
           </div>
           <ChevronRight className="w-4 h-4 text-muted-foreground/60 group-hover:text-muted-foreground transition-colors" />
         </Link>
+
+        <div className="border-t border-border/50 mt-2 pt-2">
+          <div className="flex items-center justify-between p-3 rounded-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+                <Trash2 className="w-4 h-4 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">0원 계좌 일괄 삭제</p>
+                <p className="text-xs text-muted-foreground mt-0.5">잔액이 0원인 자산 계좌를 한번에 삭제</p>
+              </div>
+            </div>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button
+                  disabled={isDeletingZero}
+                  className="flex-shrink-0 flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-medium bg-card border border-border text-muted-foreground hover:text-foreground hover:border-ring transition-colors disabled:opacity-50"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  삭제
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="max-w-sm">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>0원 계좌 일괄 삭제</AlertDialogTitle>
+                  <AlertDialogDescription className="space-y-1.5">
+                    <span className="block">잔액이 ₩0인 자산 계좌를 모두 삭제합니다.</span>
+                    <span className="block text-amber-400/80">삭제된 계좌는 복구할 수 없습니다.</span>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>취소</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteZero}
+                    className="bg-red-600 hover:bg-red-500 text-white"
+                  >
+                    {isDeletingZero ? '삭제 중...' : '삭제'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
       </section>
 
       {/* Danger Zone */}
