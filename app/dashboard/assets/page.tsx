@@ -19,6 +19,7 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog'
 import { formatCurrency, formatLargeNumber } from '@/lib/utils'
+import { toast } from 'sonner'
 import { useDashboardActions } from '@/components/layout/DashboardShell'
 import {
   getNetWorthHistory,
@@ -30,11 +31,12 @@ import {
   getFamilyRealEstateSummary,
   getFamilyTotalDebtMonthlyPayment,
   getFamilyPensionAccounts,
+  deleteZeroBalanceAccounts,
   type RealEstateSummaryData,
   type PensionSummaryData,
   type PensionAccountData,
 } from '@/lib/actions/accounts'
-import { TrendingUp, TrendingDown, Wallet, Building2, Landmark, CreditCard, Camera, Plus, PiggyBank, Pencil, ChevronRight, AlertTriangle, ShieldCheck, Clock, BadgePercent, Banknote } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, Building2, Landmark, CreditCard, Camera, Plus, PiggyBank, Pencil, ChevronRight, AlertTriangle, ShieldCheck, Clock, BadgePercent, Banknote, Trash2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const REAL_ESTATE_TYPES = new Set(['REAL_ESTATE'])
@@ -71,6 +73,10 @@ export default function AssetsPage() {
   // 수동 저장 다이얼로그
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [manualSaving, setManualSaving] = useState(false)
+
+  // 0원 계좌 일괄 삭제
+  const [deleteZeroOpen, setDeleteZeroOpen] = useState(false)
+  const [deletingZero, setDeletingZero] = useState(false)
 
   const loadAccounts = async () => {
     const res = await fetch('/api/wealth')
@@ -138,13 +144,22 @@ export default function AssetsPage() {
   // TopBar에 자산 추가 버튼 등록
   useEffect(() => {
     setPageActions(
-      <button
-        onClick={openAdd}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-semibold hover:bg-foreground/90 transition-colors active:scale-[0.97]"
-      >
-        <Plus className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline">자산 추가</span>
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setDeleteZeroOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-ring transition-colors"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">0원 계좌 삭제</span>
+        </button>
+        <button
+          onClick={openAdd}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-semibold hover:bg-foreground/90 transition-colors active:scale-[0.97]"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">자산 추가</span>
+        </button>
+      </div>
     )
     return () => setPageActions(null)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -174,6 +189,19 @@ export default function AssetsPage() {
     setManualSaving(false)
     setConfirmOpen(false)
     await loadNetWorthHistory()
+  }
+
+  const handleDeleteZero = async () => {
+    setDeletingZero(true)
+    const result = await deleteZeroBalanceAccounts()
+    setDeletingZero(false)
+    setDeleteZeroOpen(false)
+    if (result.success) {
+      toast.success(`0원 계좌 ${result.deleted}개 삭제 완료`)
+      await loadData()
+    } else {
+      toast.error(result.error ?? '삭제 실패')
+    }
   }
 
   const realEstateAccounts = accounts.filter(a => REAL_ESTATE_TYPES.has(a.type))
@@ -380,6 +408,39 @@ export default function AssetsPage() {
       />
 
       {/* 수동 스냅샷 저장 확인 다이얼로그 */}
+      {/* 0원 계좌 일괄 삭제 확인 */}
+      <AlertDialog open={deleteZeroOpen} onOpenChange={setDeleteZeroOpen}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>0원 계좌 일괄 삭제</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>
+                  잔액이 <strong className="text-foreground">₩0</strong>인 계좌{' '}
+                  <strong className="text-foreground">
+                    {[...accounts, ...liabilities].filter(a => a.balance === 0).length}개
+                  </strong>
+                  를 삭제합니다.
+                </p>
+                <p className="text-amber-400/80">
+                  삭제된 계좌는 복구할 수 없습니다. 계속하시겠습니까?
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingZero}>취소</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteZero}
+              disabled={deletingZero || [...accounts, ...liabilities].filter(a => a.balance === 0).length === 0}
+              className="bg-red-600 hover:bg-red-500 text-white"
+            >
+              {deletingZero ? '삭제 중...' : '삭제'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>

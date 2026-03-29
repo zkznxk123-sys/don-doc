@@ -487,6 +487,21 @@ export async function deleteAccount(
   return { success: true }
 }
 
+export async function deleteZeroBalanceAccounts(): Promise<{ success: boolean; deleted: number; error?: string }> {
+  const user = await getAuthUser()
+  if (!user?.familyId) return { success: false, deleted: 0, error: '인증이 필요합니다.' }
+
+  const result = await prisma.account.deleteMany({
+    where: {
+      familyId: user.familyId,
+      balance: 0,
+    },
+  })
+
+  revalidatePath('/dashboard')
+  return { success: true, deleted: result.count }
+}
+
 // ─── 헬퍼 ────────────────────────────────────────────────────────────────────
 
 function buildRealEstateData(d: RealEstateDetailInput) {
