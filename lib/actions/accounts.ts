@@ -491,24 +491,22 @@ export async function deleteZeroBalanceAccounts(): Promise<{ success: boolean; d
   const user = await getAuthUser()
   if (!user?.familyId) return { success: false, deleted: 0, error: '인증이 필요합니다.' }
 
+  // 거래 내역이 없는 0원 계좌만 대상 (accountId가 NOT NULL이라 거래 있으면 삭제 불가)
   const targets = await prisma.account.findMany({
-    where: { familyId: user.familyId, balance: 0 },
+    where: {
+      familyId: user.familyId,
+      balance: 0,
+      transactions: { none: {} },
+    },
     select: { id: true },
   })
   if (targets.length === 0) return { success: true, deleted: 0 }
 
   const ids = targets.map(a => a.id)
 
-  // FK 제약 해제 후 삭제를 단일 트랜잭션으로 처리
-  await prisma.$transaction([
-    prisma.transaction.updateMany({
-      where: { accountId: { in: ids } },
-      data: { accountId: null },
-    }),
-    prisma.account.deleteMany({
-      where: { id: { in: ids } },
-    }),
-  ])
+  await prisma.account.deleteMany({
+    where: { id: { in: ids } },
+  })
 
   revalidatePath('/dashboard')
   return { success: true, deleted: ids.length }
