@@ -57,9 +57,10 @@ export async function GET(req: NextRequest) {
         !isOwner && (shareLevel === 'BALANCE_ONLY' || tx.visibility === 'PRIVATE')
 
       // 요약 집계: 분할 항목 있으면 sub-items 합산, 없으면 parent 금액
-      if (!tx.isExcluded) {
+      // isExcluded(완전 제외) + excludeFromBudget(예산 제외) 모두 집계에서 제외
+      if (!tx.isExcluded && !tx.excludeFromBudget) {
         const amounts = hasSubItems
-          ? tx.subItems.filter(s => !s.isExcluded).map(s => s.amount)
+          ? tx.subItems.filter(s => !s.isExcluded && !s.excludeFromBudget).map(s => s.amount)
           : [tx.amount]
         for (const amt of amounts) {
           if (amt > 0) totalIncome += amt

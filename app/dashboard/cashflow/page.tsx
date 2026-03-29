@@ -19,6 +19,47 @@ import { getFamilyCategories, type CategoryOption } from '@/lib/actions/categori
 
 type TypeFilter = 'INCOME' | 'EXPENSE'
 
+type PreviewSuggestion = {
+  id: string
+  description: string
+  oldCategory: string
+  oldCategoryId: string | null
+  newCategory: string
+  newCategoryId: string
+  changed: boolean
+}
+
+type PreviewGroup = {
+  key: string
+  description: string
+  oldCategory: string
+  newCategory: string
+  newCategoryId: string
+  ids: string[]
+  changed: boolean
+}
+
+function groupSuggestions(suggestions: PreviewSuggestion[]): PreviewGroup[] {
+  const map = new Map<string, PreviewGroup>()
+  for (const s of suggestions) {
+    const key = `${s.description}||${s.newCategoryId}`
+    if (map.has(key)) {
+      map.get(key)!.ids.push(s.id)
+    } else {
+      map.set(key, {
+        key,
+        description: s.description,
+        oldCategory: s.oldCategory,
+        newCategory: s.newCategory,
+        newCategoryId: s.newCategoryId,
+        ids: [s.id],
+        changed: s.changed,
+      })
+    }
+  }
+  return [...map.values()].sort((a, b) => (b.changed ? 1 : 0) - (a.changed ? 1 : 0))
+}
+
 interface SubItem {
   id: string
   description: string
@@ -110,6 +151,13 @@ export default function CashflowPage() {
     forceMode?: boolean
   } | null>(null)
   const [aiModeModal, setAiModeModal] = useState(false)
+  const [previewModal, setPreviewModal] = useState<{
+    groups: PreviewGroup[]
+    remaining: number
+    uncheckedKeys: Set<string>
+    showUnchanged: boolean
+    applying: boolean
+  } | null>(null)
   const aiAbortRef = useRef<AbortController | null>(null)
 
   const { refreshKey, openTransactionDrawer, shellUser, setPageActions, openExcelDrawer } = useDashboardActions()
@@ -184,7 +232,7 @@ export default function CashflowPage() {
       const d = drafts[tx.id]
       const excluded = d ? d.isExcluded : tx.isExcluded
       const amount = d ? d.amount : tx.amount
-      if (excluded || tx.isMasked) continue
+      if (excluded || tx.excludeFromBudget || tx.isMasked) continue
       if (amount > 0) income += amount
       else expense += Math.abs(amount)
     }
@@ -249,70 +297,100 @@ export default function CashflowPage() {
   const runRecategorize = useCallback(async (forceMode: boolean) => {
     const monthStr = `${year}-${String(month).padStart(2, '0')}`
     setAiModeModal(false)
-    setAiModal({ progress: 5, steps: [
+    setAiModal({ progress: 20, steps: [
       { label: '거래 내역 스캔', done: false, active: true },
       { label: forceMode ? '전체 재분류 (개인화 + AI)' : '미분류 항목 분류 (개인화 + AI)', done: false, active: false },
-      { label: '데이터베이스 업데이트', done: false, active: false },
     ], updated: 0, done: false, error: null, forceMode })
 
-    let totalUpdated = 0
-    let totalCount = 0
-    let processedCount = 0
-    const url = `/api/ai/recategorize?month=${monthStr}${forceMode ? '&force=true' : ''}`
+    const url = `/api/ai/recategorize?preview=true&month=${monthStr}${forceMode ? '&force=true' : ''}`
 
     try {
-      while (true) {
-        const controller = new AbortController()
-        aiAbortRef.current = controller
-        const timer = setTimeout(() => controller.abort(), 90_000)
-        const res = await fetch(url, { method: 'POST', signal: controller.signal })
-        clearTimeout(timer)
+      const controller = new AbortController()
+      aiAbortRef.current = controller
+      const timer = setTimeout(() => controller.abort(), 90_000)
 
-        if (!res.ok) {
-          setAiModal(p => p ? { ...p, error: `서버 오류 (${res.status})`, done: true } : null)
-          break
-        }
-        const data = await res.json()
-        if (!data.success) {
-          setAiModal(p => p ? { ...p, error: data.error ?? '재분류 실패', done: true } : null)
-          break
-        }
+      setAiModal(p => p ? { ...p, progress: 40, steps: [
+        { label: '거래 내역 스캔', done: true, active: false },
+        { label: forceMode ? '전체 재분류 (개인화 + AI)' : '미분류 항목 분류 (개인화 + AI)', done: false, active: true },
+      ] } : null)
 
-        totalUpdated += data.updated ?? 0
-        if (totalCount === 0) totalCount = (data.updated ?? 0) + (data.remaining ?? 0)
-        processedCount += data.updated ?? 0
+      const res = await fetch(url, { method: 'POST', signal: controller.signal })
+      clearTimeout(timer)
 
-        const progress = totalCount > 0
-          ? Math.round(10 + (processedCount / totalCount) * 80)
-          : 90
-
-        if (data.remaining > 0) {
-          setAiModal(p => p ? { ...p, progress, steps: [
-            { label: '거래 내역 스캔', done: true, active: false },
-            { label: forceMode ? '전체 재분류 (개인화 + AI)' : '미분류 항목 분류 (개인화 + AI)', done: false, active: true },
-            { label: '데이터베이스 업데이트', done: false, active: false },
-          ], updated: totalUpdated } : null)
-        } else {
-          setAiModal(p => p ? { ...p, progress: 100, steps: [
-            { label: '거래 내역 스캔', done: true, active: false },
-            { label: forceMode ? '전체 재분류 (개인화 + AI)' : '미분류 항목 분류 (개인화 + AI)', done: true, active: false },
-            { label: '데이터베이스 업데이트', done: true, active: false },
-          ], updated: totalUpdated, done: true } : null)
-          if (totalUpdated > 0) router.refresh()
-          break
-        }
+      if (!res.ok) {
+        setAiModal(p => p ? { ...p, error: `서버 오류 (${res.status})`, done: true } : null)
+        return
       }
+      const data = await res.json()
+      if (!data.success) {
+        setAiModal(p => p ? { ...p, error: data.error ?? '재분류 실패', done: true } : null)
+        return
+      }
+
+      if (!data.suggestions || data.suggestions.length === 0) {
+        setAiModal(null)
+        toast.info(data.message ?? '재분류할 항목이 없습니다')
+        return
+      }
+
+      const groups = groupSuggestions(data.suggestions as PreviewSuggestion[])
+      setAiModal(null)
+      setPreviewModal({
+        groups,
+        remaining: data.remaining ?? 0,
+        uncheckedKeys: new Set(),
+        showUnchanged: false,
+        applying: false,
+      })
     } catch (e) {
       if ((e as Error).name === 'AbortError') {
         setAiModal(p => p ? { ...p, done: true, cancelled: true } : null)
-        if (totalUpdated > 0) router.refresh()
       } else {
         setAiModal(p => p ? { ...p, error: '오류가 발생했습니다.', done: true } : null)
       }
     } finally {
       aiAbortRef.current = null
     }
-  }, [year, month, router])
+  }, [year, month])
+
+  const applyPreview = useCallback(async () => {
+    if (!previewModal) return
+    setPreviewModal(p => p ? { ...p, applying: true } : null)
+
+    const mappings: { id: string; categoryId: string; categoryName: string }[] = []
+    for (const group of previewModal.groups) {
+      if (!group.changed) continue
+      if (previewModal.uncheckedKeys.has(group.key)) continue
+      for (const id of group.ids) {
+        mappings.push({ id, categoryId: group.newCategoryId, categoryName: group.newCategory })
+      }
+    }
+
+    if (mappings.length === 0) {
+      setPreviewModal(null)
+      return
+    }
+
+    try {
+      const res = await fetch('/api/ai/recategorize/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mappings }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        toast.success(`${data.updated}건 카테고리 업데이트 완료`)
+        router.refresh()
+        setPreviewModal(null)
+      } else {
+        toast.error(data.error ?? '적용 실패')
+        setPreviewModal(p => p ? { ...p, applying: false } : null)
+      }
+    } catch {
+      toast.error('오류가 발생했습니다')
+      setPreviewModal(p => p ? { ...p, applying: false } : null)
+    }
+  }, [previewModal, router])
 
   const startEdit = useCallback(() => setIsEditing(true), [])
 
@@ -591,6 +669,162 @@ export default function CashflowPage() {
           </div>
         </div>
       )}
+
+      {/* AI 재분류 결과 확인 모달 */}
+      {previewModal && (() => {
+        const visibleGroups = previewModal.showUnchanged
+          ? previewModal.groups
+          : previewModal.groups.filter(g => g.changed)
+        const unchangedCount = previewModal.groups.filter(g => !g.changed).length
+        const selectedCount = previewModal.groups
+          .filter(g => g.changed && !previewModal.uncheckedKeys.has(g.key))
+          .reduce((s, g) => s + g.ids.length, 0)
+        const changedGroupCount = previewModal.groups.filter(g => g.changed).length
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="bg-card border border-border rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg mx-0 sm:mx-4 flex flex-col shadow-2xl max-h-[90vh]">
+              {/* 헤더 */}
+              <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="w-4 h-4 text-foreground" />
+                  <h2 className="text-sm font-bold text-foreground">AI 재분류 결과</h2>
+                </div>
+                <button
+                  onClick={() => setPreviewModal(null)}
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* 서브 헤더 */}
+              <div className="px-5 pb-3 flex items-center justify-between flex-shrink-0 border-b border-border">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setPreviewModal(p => p ? { ...p, uncheckedKeys: new Set() } : null)}
+                    className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    전체 선택
+                  </button>
+                  <span className="text-muted-foreground/40 text-xs">·</span>
+                  <button
+                    onClick={() => setPreviewModal(p => p ? {
+                      ...p,
+                      uncheckedKeys: new Set(p.groups.filter(g => g.changed).map(g => g.key)),
+                    } : null)}
+                    className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    전체 해제
+                  </button>
+                  <span className="text-[11px] text-muted-foreground/60">
+                    ({changedGroupCount}그룹 · {selectedCount}건 선택됨)
+                  </span>
+                </div>
+                {unchangedCount > 0 && (
+                  <button
+                    onClick={() => setPreviewModal(p => p ? { ...p, showUnchanged: !p.showUnchanged } : null)}
+                    className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    {previewModal.showUnchanged ? '변경 항목만 보기' : `변경 없는 ${unchangedCount}건 보기`}
+                  </button>
+                )}
+              </div>
+
+              {/* 목록 */}
+              <div className="overflow-y-auto flex-1 divide-y divide-border/50">
+                {visibleGroups.length === 0 ? (
+                  <div className="py-10 text-center text-sm text-muted-foreground/60">
+                    변경될 항목이 없습니다
+                  </div>
+                ) : visibleGroups.map(group => {
+                  const isChecked = !previewModal.uncheckedKeys.has(group.key)
+                  const toggle = () => setPreviewModal(p => {
+                    if (!p) return null
+                    const next = new Set(p.uncheckedKeys)
+                    if (next.has(group.key)) next.delete(group.key)
+                    else next.add(group.key)
+                    return { ...p, uncheckedKeys: next }
+                  })
+                  return (
+                    <div
+                      key={group.key}
+                      onClick={group.changed ? toggle : undefined}
+                      className={cn(
+                        'flex items-center gap-3 px-5 py-3 transition-colors',
+                        group.changed ? 'cursor-pointer hover:bg-muted/40' : 'opacity-50',
+                      )}
+                    >
+                      {/* 체크박스 */}
+                      <div className={cn(
+                        'w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors',
+                        group.changed
+                          ? isChecked
+                            ? 'bg-foreground border-foreground'
+                            : 'border-border bg-transparent'
+                          : 'border-border/40 bg-transparent',
+                      )}>
+                        {group.changed && isChecked && <Check className="w-2.5 h-2.5 text-background" />}
+                      </div>
+
+                      {/* 내용 */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-sm font-medium text-foreground truncate">{group.description}</span>
+                          {group.ids.length > 1 && (
+                            <span className="text-[11px] text-muted-foreground flex-shrink-0">({group.ids.length}건)</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <span className="text-[11px] text-muted-foreground">{group.oldCategory || '미분류'}</span>
+                          {group.changed && (
+                            <>
+                              <span className="text-muted-foreground/40 text-[10px]">→</span>
+                              <span className="text-[11px] text-foreground font-medium">{group.newCategory}</span>
+                            </>
+                          )}
+                          {!group.changed && (
+                            <span className="text-[10px] text-muted-foreground/50 ml-1">변경 없음</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* 잔여 항목 알림 */}
+              {previewModal.remaining > 0 && (
+                <div className="px-5 py-2 flex-shrink-0 bg-amber-500/5 border-t border-amber-500/20">
+                  <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                    150건 초과로 나머지 {previewModal.remaining}건은 적용 후 다시 실행하세요
+                  </p>
+                </div>
+              )}
+
+              {/* 하단 버튼 */}
+              <div className="flex items-center gap-3 px-5 py-4 flex-shrink-0 border-t border-border">
+                <button
+                  onClick={() => setPreviewModal(null)}
+                  disabled={previewModal.applying}
+                  className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-ring transition-colors disabled:opacity-50"
+                >
+                  취소
+                </button>
+                <button
+                  onClick={applyPreview}
+                  disabled={previewModal.applying || selectedCount === 0}
+                  className="flex-1 py-2.5 rounded-xl bg-foreground text-background text-sm font-semibold hover:bg-foreground/90 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
+                >
+                  {previewModal.applying
+                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />적용 중...</>
+                    : `적용하기 (${selectedCount}건)`}
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
 
       {/* 월 선택기 */}
       <div className="flex items-center justify-between mb-6">

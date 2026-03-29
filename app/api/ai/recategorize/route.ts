@@ -58,10 +58,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: '인증 필요' }, { status: 401 })
     }
 
-    // ?month=YYYY-MM, ?force=true 파라미터
+    // ?month=YYYY-MM, ?force=true, ?preview=true 파라미터
     const { searchParams } = new URL(req.url)
     const monthParam = searchParams.get('month')
     const forceMode = searchParams.get('force') === 'true'
+    const previewMode = searchParams.get('preview') === 'true'
 
     let dateFilter: { gte: Date; lt: Date } | undefined
     if (monthParam && /^\d{4}-\d{2}$/.test(monthParam)) {
@@ -85,11 +86,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, updated: 0, remaining: 0, message: forceMode ? '처리할 항목이 없습니다' : '미분류 항목이 없습니다' })
     }
 
-    // 1회 최대 300건 처리
-    const BATCH_LIMIT = 300
+    // 1회 최대 150건 처리
+    const BATCH_LIMIT = 150
     const txs = await prisma.transaction.findMany({
       where,
-      select: { id: true, description: true, category: true, amount: true },
+      select: { id: true, description: true, category: true, amount: true, categoryId: true },
       take: BATCH_LIMIT,
       orderBy: { date: 'desc' },
     })
@@ -133,18 +134,45 @@ export async function POST(req: Request) {
     const allRaw: { description: string; categoryId: string }[] = []
     if (uniqueItems.length > 0) {
       const batches = chunk(uniqueItems, 50)
-      for (const batch of batches) {
-        try {
-          const result = await callAiBatch(batch, categoryList)
-          allRaw.push(...result)
-        } catch (e) {
-          console.error('[recategorize] batch error:', e)
-        }
+      const results = await Promise.allSettled(batches.map(batch => callAiBatch(batch, categoryList)))
+      for (const res of results) {
+        if (res.status === 'fulfilled') allRaw.push(...res.value)
+        else console.error('[recategorize] batch error:', res.reason)
       }
     }
 
     // description → categoryId 맵 (선호도 + AI 합산)
     const aiMappingMap = new Map(allRaw.map(r => [r.description, r.categoryId]))
+
+    // preview 모드: DB 저장 없이 suggestions 반환
+    if (previewMode) {
+      const suggestions = txs.map(tx => {
+        const newCategoryId = prefMappingMap.get(tx.description) ?? aiMappingMap.get(tx.description)
+        if (!newCategoryId || !catById.has(newCategoryId)) {
+          return {
+            id: tx.id,
+            description: tx.description,
+            oldCategory: tx.category,
+            oldCategoryId: tx.categoryId,
+            newCategory: tx.category || '미분류',
+            newCategoryId: tx.categoryId ?? '',
+            changed: false,
+          }
+        }
+        const newCat = catById.get(newCategoryId)!
+        return {
+          id: tx.id,
+          description: tx.description,
+          oldCategory: tx.category,
+          oldCategoryId: tx.categoryId,
+          newCategory: newCat.name,
+          newCategoryId,
+          changed: newCategoryId !== tx.categoryId,
+        }
+      })
+      const remaining = totalCount - txs.length
+      return NextResponse.json({ success: true, suggestions, total: totalCount, remaining })
+    }
 
     // 거래별 업데이트
     let updated = 0
@@ -159,12 +187,10 @@ export async function POST(req: Request) {
       ]
     })
 
-    // 50개씩 트랜잭션 배치 처리
+    // 병렬 트랜잭션 배치 처리
     const updateBatches = chunk(updateOps, 50)
-    for (const batch of updateBatches) {
-      await prisma.$transaction(batch)
-      updated += batch.length
-    }
+    await Promise.all(updateBatches.map(batch => prisma.$transaction(batch)))
+    updated = updateOps.length
 
     const remaining = totalCount - txs.length
 
