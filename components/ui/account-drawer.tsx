@@ -322,7 +322,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
   // 드로어 열릴 때 상위 계좌 후보 로드
   useEffect(() => {
     if (isOpen) {
-      getEligibleParentAccounts(initialData?.id).then(setEligibleParents)
+      getEligibleParentAccounts(initialData?.id).then(r => setEligibleParents(r ?? []))
     }
   }, [isOpen, initialData?.id])
 
@@ -514,7 +514,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
           </div>
 
           {/* 상위 계좌 (계층 구조) — 상품 모드에서는 숨김 */}
-          {!isProductMode && !isLiabilityType && !isRealEstate && eligibleParents.length > 0 && (
+          {!isProductMode && !isLiabilityType && !isRealEstate && (eligibleParents?.length ?? 0) > 0 && (
             <div>
               <Label className="text-muted-foreground text-xs mb-1.5 block">상위 계좌</Label>
               <div className="relative">
