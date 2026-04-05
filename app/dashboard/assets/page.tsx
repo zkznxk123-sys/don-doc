@@ -47,7 +47,7 @@ function getCurrentYearMonth(): string {
 }
 
 export default function AssetsPage() {
-  const { refreshKey, setPageActions } = useDashboardActions()
+  const { refreshKey, setPageActions, shellUser } = useDashboardActions()
   const [accounts, setAccounts] = useState<AccountInitialData[]>([])
   const [liabilities, setLiabilities] = useState<AccountInitialData[]>([])
   const [assetsByType, setAssetsByType] = useState<AssetTypeData[]>([])
@@ -363,6 +363,7 @@ export default function AssetsPage() {
         <TabsContent value="pension" className="space-y-4">
           <PensionTab
             summary={pensionSummary}
+            currentUserId={shellUser?.id}
             onAdd={openAdd}
             onEdit={openEdit}
           />
@@ -617,10 +618,12 @@ const TAX_DEDUCTION_LIMIT: Record<string, number> = {
 
 function PensionTab({
   summary,
+  currentUserId,
   onAdd,
   onEdit,
 }: {
   summary: PensionSummaryData | null
+  currentUserId?: string
   onAdd: () => void
   onEdit: (account: AccountInitialData) => void
 }) {
@@ -680,6 +683,7 @@ function PensionTab({
             <PensionCard
               key={acc.id}
               account={acc}
+              currentUserId={currentUserId}
               onEdit={() => onEdit({
                 id: acc.id, name: acc.name, type: 'PENSION',
                 balance: acc.balance, isShared: acc.shareLevel !== 'PRIVATE',
@@ -701,9 +705,11 @@ function PensionTab({
 
 function PensionCard({
   account,
+  currentUserId,
   onEdit,
 }: {
   account: PensionAccountData
+  currentUserId?: string
   onEdit: () => void
 }) {
   const meta = PENSION_TYPE_META[account.pensionType] ?? PENSION_TYPE_META.PERSONAL_PENSION
@@ -735,11 +741,14 @@ function PensionCard({
               <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-md', meta.color, meta.bg)}>
                 {meta.label}
               </span>
-              {account.ownerName && (
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md text-muted-foreground bg-muted">
-                  {account.ownerName}
-                </span>
-              )}
+              {(() => {
+                const name = account.ownerName ?? (account.userId === currentUserId ? '나' : null)
+                return name ? (
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md text-muted-foreground bg-muted">
+                    {name}
+                  </span>
+                ) : null
+              })()}
               {account.taxDeductible && (
                 <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md text-amber-600 dark:text-amber-400 bg-amber-500/10">
                   세액공제

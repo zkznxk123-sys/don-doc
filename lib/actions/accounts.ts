@@ -562,6 +562,7 @@ export interface PensionAccountData {
   name: string
   balance: number
   shareLevel: ShareLevel
+  userId: string
   ownerName: string | null
   pensionType: PensionType
   institutionName: string | null
@@ -598,6 +599,7 @@ export async function getFamilyPensionAccounts(): Promise<PensionSummaryData | n
     name: a.name,
     balance: a.balance,
     shareLevel: a.shareLevel as ShareLevel,
+    userId: a.userId,
     ownerName: a.user?.name ?? null,
     pensionType: (a.pensionDetail?.pensionType as PensionType) ?? 'PERSONAL_PENSION',
     institutionName: a.pensionDetail?.institutionName ?? null,
