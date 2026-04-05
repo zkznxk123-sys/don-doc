@@ -562,7 +562,7 @@ export interface PensionAccountData {
   name: string
   balance: number
   shareLevel: ShareLevel
-  userId: string
+  userId: string | null
   ownerName: string | null
   pensionType: PensionType
   institutionName: string | null
