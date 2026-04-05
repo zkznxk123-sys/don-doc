@@ -735,6 +735,11 @@ function PensionCard({
               <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-md', meta.color, meta.bg)}>
                 {meta.label}
               </span>
+              {account.ownerName && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md text-muted-foreground bg-muted">
+                  {account.ownerName}
+                </span>
+              )}
               {account.taxDeductible && (
                 <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md text-amber-600 dark:text-amber-400 bg-amber-500/10">
                   세액공제
