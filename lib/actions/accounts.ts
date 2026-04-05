@@ -54,6 +54,7 @@ export interface CreateAccountInput {
   shareLevel: ShareLevel
   ownerId?: string | null   // 명의자 (미설정=null, 공동=null+isJoint)
   isJoint?: boolean         // 공동 명의
+  parentAccountId?: string | null
   linkedAssetId?: string | null
   realEstateDetail?: RealEstateDetailInput
   financialAssetDetail?: FinancialAssetDetailInput
@@ -351,6 +352,27 @@ export async function getFamilyAssetsForLinking(): Promise<{ id: string; name: s
   return accounts.map(a => ({ id: a.id, name: a.name, type: a.type as AccountType }))
 }
 
+/** 상위 계좌 후보 — INVESTMENT/PENSION 중 자식이 아닌 계좌 */
+export async function getEligibleParentAccounts(
+  excludeId?: string
+): Promise<{ id: string; name: string; type: AccountType }[]> {
+  const user = await getAuthUser()
+  if (!user?.familyId) return []
+
+  const accounts = await prisma.account.findMany({
+    where: {
+      familyId: user.familyId,
+      type: { in: ['INVESTMENT', 'PENSION'] },
+      parentAccountId: null,
+      ...(excludeId && { id: { not: excludeId } }),
+    },
+    select: { id: true, name: true, type: true },
+    orderBy: { name: 'asc' },
+  })
+
+  return accounts.map(a => ({ id: a.id, name: a.name, type: a.type as AccountType }))
+}
+
 // ─── CRUD ─────────────────────────────────────────────────────────────────────
 
 export async function createAccount(
@@ -379,6 +401,7 @@ export async function createAccount(
       isJoint: input.isJoint ?? false,
       familyId: user.familyId,
       userId: resolvedUserId,
+      parentAccountId: input.parentAccountId ?? null,
       linkedAssetId: input.linkedAssetId ?? null,
       ...(input.type === 'REAL_ESTATE' && input.realEstateDetail
         ? { realEstateDetail: { create: buildRealEstateData(input.realEstateDetail) } }
@@ -436,6 +459,7 @@ export async function updateAccount(
       ...(shareLevel !== undefined && { shareLevel, isShared: isShared! }),
       ...(newUserId !== undefined && { userId: newUserId }),
       ...(input.isJoint !== undefined && { isJoint: input.isJoint }),
+      ...('parentAccountId' in input && { parentAccountId: input.parentAccountId ?? null }),
     },
   })
 
@@ -567,14 +591,21 @@ function buildPensionData(d: PensionDetailInput) {
 
 // ─── 연금 계좌 목록 (상세 포함) ───────────────────────────────────────────────
 
-export interface PensionAccountData {
+export interface PensionSubAccount {
   id: string
   name: string
   balance: number
+}
+
+export interface PensionAccountData {
+  id: string
+  name: string
+  balance: number          // 자식 없으면 직접값, 있으면 합산
   shareLevel: ShareLevel
   userId: string | null
   isJoint: boolean
   ownerName: string | null
+  subAccounts: PensionSubAccount[]
   pensionType: PensionType
   institutionName: string | null
   expectedMonthlyPension: number | null
@@ -601,6 +632,7 @@ export async function getFamilyPensionAccounts(): Promise<PensionSummaryData | n
     include: {
       pensionDetail: true,
       user: { select: { name: true } },
+      subAccounts: { select: { id: true, name: true, balance: true }, orderBy: { name: 'asc' } },
     },
     orderBy: { name: 'asc' },
   })
@@ -608,11 +640,14 @@ export async function getFamilyPensionAccounts(): Promise<PensionSummaryData | n
   const accounts: PensionAccountData[] = raw.map(a => ({
     id: a.id,
     name: a.name,
-    balance: a.balance,
+    balance: a.subAccounts.length > 0
+      ? a.subAccounts.reduce((s, c) => s + c.balance, 0)
+      : a.balance,
     shareLevel: a.shareLevel as ShareLevel,
     userId: a.userId,
     isJoint: a.isJoint,
     ownerName: a.user?.name ?? null,
+    subAccounts: a.subAccounts,
     pensionType: (a.pensionDetail?.pensionType as PensionType) ?? 'PERSONAL_PENSION',
     institutionName: a.pensionDetail?.institutionName ?? null,
     expectedMonthlyPension: a.pensionDetail?.expectedMonthlyPension ?? null,

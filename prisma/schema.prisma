@@ -161,6 +161,11 @@ model Account {
   isJoint         Boolean     @default(false) // 공동 명의 여부
   transactions    Transaction[]
 
+  // 계층 구조 — 예: IRP → 채권펀드, 미래에셋계좌 → 국내주식펀드
+  parentAccountId String?
+  parentAccount   Account?    @relation("SubAccounts", fields: [parentAccountId], references: [id])
+  subAccounts     Account[]   @relation("SubAccounts")
+
   // 부채가 종속된 자산 (self-relation) — 예: 주택담보대출 → 아파트
   linkedAssetId   String?
   linkedAsset     Account?    @relation("DebtToAsset", fields: [linkedAssetId], references: [id])

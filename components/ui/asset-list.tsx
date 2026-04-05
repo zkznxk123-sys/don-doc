@@ -184,6 +184,38 @@ function LinkedDebtRow({ debt }: { debt: { id: string; name: string; balance: nu
   )
 }
 
+// ─── 하위 계좌 인라인 행 ──────────────────────────────────────────────────────
+
+function SubAccountRow({
+  sub,
+  onEdit,
+}: {
+  sub: { id: string; name: string; balance: number; type: string }
+  onEdit: (a: AccountInitialData) => void
+}) {
+  const meta = TYPE_META[sub.type] ?? TYPE_META['INVESTMENT']
+  const SubIcon = meta.Icon
+  return (
+    <button
+      onClick={() => onEdit({
+        id: sub.id, name: sub.name, type: sub.type as AccountInitialData['type'],
+        balance: sub.balance, isShared: true, shareLevel: 'PUBLIC' as AccountInitialData['shareLevel'],
+      })}
+      className="w-full flex items-center gap-2 pl-[52px] pr-5 py-2.5 border-t border-border/40 bg-background/30 hover:bg-muted/30 transition-colors text-left group"
+    >
+      <CornerDownRight className="w-3 h-3 text-border flex-shrink-0" />
+      <div className={cn('w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0', meta.bg)}>
+        <SubIcon className={cn('w-3.5 h-3.5', meta.color)} />
+      </div>
+      <span className="text-xs text-foreground flex-1 truncate">{sub.name}</span>
+      <span className="text-xs font-medium text-muted-foreground tabular-nums flex-shrink-0">
+        {formatCurrency(sub.balance)}
+      </span>
+      <ChevronRight className="w-3 h-3 text-border group-hover:text-muted-foreground transition-colors flex-shrink-0" />
+    </button>
+  )
+}
+
 // ─── AssetList ────────────────────────────────────────────────────────────────
 
 export function AssetList({ accounts, totalAssets, onEdit, onAdd, currentUserId }: AssetListProps) {
@@ -242,6 +274,10 @@ export function AssetList({ accounts, totalAssets, onEdit, onAdd, currentUserId 
                     onEdit={onEdit}
                     currentUserId={currentUserId}
                   />
+                  {/* 하위 계좌 인라인 */}
+                  {account.subAccounts?.map(sub => (
+                    <SubAccountRow key={sub.id} sub={sub} onEdit={onEdit} />
+                  ))}
                   {/* 연결된 부채 인라인 */}
                   {account.linkedDebts?.map(debt => (
                     <LinkedDebtRow key={debt.id} debt={debt} />

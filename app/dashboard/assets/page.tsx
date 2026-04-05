@@ -97,6 +97,7 @@ export default function AssetsPage() {
         ownerName: a.ownerName ?? null,
         userId: a.userId ?? null,
         isJoint: a.isJoint ?? false,
+        subAccounts: a.subAccounts ?? [],
       })
 
       setAccounts((data.accounts ?? []).map(mapAccount))

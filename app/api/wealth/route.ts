@@ -41,10 +41,14 @@ export async function GET(req: NextRequest) {
     }
 
     const accounts = await prisma.account.findMany({
-      where: { familyId },
+      where: { familyId, parentAccountId: null },   // 최상위 계좌만
       include: {
         linkedDebts: { select: { id: true, name: true, balance: true } },
         user: { select: { name: true } },
+        subAccounts: {
+          select: { id: true, name: true, balance: true, type: true },
+          orderBy: { name: 'asc' },
+        },
       },
     })
 
@@ -55,20 +59,25 @@ export async function GET(req: NextRequest) {
       linkedDebtTotal: number
       linkedDebts: { id: string; name: string; balance: number }[]
       linkedAssetId: string | null
-      userId: string | null      // 명의자 ID (null = 미설정 or 공동)
-      isJoint: boolean           // 공동 명의
-      ownerName: string | null   // 명의자 이름
+      userId: string | null
+      isJoint: boolean
+      ownerName: string | null
+      subAccounts: { id: string; name: string; balance: number; type: string }[]
     }
 
     const accountSummary: AccountSummary[] = []
     for (const acc of accounts) {
       const isOwn = acc.userId === userId
+      // 자식 계좌가 있으면 잔액을 합산으로 계산
+      const balance = acc.subAccounts.length > 0
+        ? acc.subAccounts.reduce((s, c) => s + c.balance, 0)
+        : acc.balance
       const linkedDebtTotal = acc.linkedDebts.reduce((s, d) => s + d.balance, 0)
-      const netEquity = acc.balance - linkedDebtTotal
+      const netEquity = balance - linkedDebtTotal
 
       const base: AccountSummary = {
         id: acc.id, name: acc.name,
-        balance: acc.balance, netEquity, linkedDebtTotal,
+        balance, netEquity, linkedDebtTotal,
         type: acc.type, isShared: acc.isShared,
         shareLevel: acc.shareLevel, isMasked: false,
         linkedDebts: acc.linkedDebts.map(d => ({ id: d.id, name: d.name, balance: d.balance })),
@@ -76,6 +85,7 @@ export async function GET(req: NextRequest) {
         userId: acc.userId,
         isJoint: acc.isJoint,
         ownerName: acc.user?.name ?? null,
+        subAccounts: acc.subAccounts,
       }
 
       if (role === 'CFO' || isOwn) {

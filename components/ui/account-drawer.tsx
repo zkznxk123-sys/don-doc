@@ -10,7 +10,7 @@ import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerC
 import { Label } from '@/components/ui/label'
 import {
   createAccount, updateAccount, deleteAccount,
-  getAccountWithDetail, getFamilyAssetsForLinking,
+  getAccountWithDetail, getFamilyAssetsForLinking, getEligibleParentAccounts,
   type AccountType, type ShareLevel, type RepaymentType, type DebtType, type PensionType,
   type RealEstateDetailInput, type FinancialAssetDetailInput, type DebtDetailInput, type PensionDetailInput,
 } from '@/lib/actions/accounts'
@@ -29,6 +29,8 @@ export interface AccountInitialData {
   ownerName?: string | null
   userId?: string | null
   isJoint?: boolean
+  parentAccountId?: string | null
+  subAccounts?: { id: string; name: string; balance: number; type: string }[]
 }
 
 export interface FamilyMemberOption {
@@ -198,6 +200,10 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
   const [isDeleting, setIsDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
+  // 상위 계좌
+  const [parentAccountId, setParentAccountId] = useState<string>('')
+  const [eligibleParents, setEligibleParents] = useState<{ id: string; name: string; type: AccountType }[]>([])
+
   // 부채 연결 자산
   const [linkedAssetId, setLinkedAssetId] = useState<string>('')
   const [linkableAssets, setLinkableAssets] = useState<{ id: string; name: string; type: AccountType }[]>([])
@@ -249,6 +255,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
       setBalance(initialData.balance > 0 ? initialData.balance.toLocaleString() : '')
       setShareLevel(initialData.shareLevel ?? (initialData.isShared ? 'PUBLIC' : 'PRIVATE'))
       setPOwnerId(initialData.isJoint ? '__joint__' : (initialData.userId ?? ''))
+      setParentAccountId(initialData.parentAccountId ?? '')
 
       // 상세 데이터 비동기 로드
       getAccountWithDetail(initialData.id).then(detail => {
@@ -295,6 +302,13 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialData, isOpen])
 
+  // 드로어 열릴 때 상위 계좌 후보 로드
+  useEffect(() => {
+    if (isOpen) {
+      getEligibleParentAccounts(initialData?.id).then(setEligibleParents)
+    }
+  }, [isOpen, initialData?.id])
+
   // DEBT 선택 시 연결 가능 자산 목록 로드
   useEffect(() => {
     if (isDebt && isOpen) {
@@ -304,7 +318,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
 
   function resetForm() {
     setName(''); setType('CASH'); setBalance(''); setShareLevel('PUBLIC')
-    setLinkedAssetId('')
+    setParentAccountId(''); setLinkedAssetId('')
     setRePropertyType(''); setRePurchasePrice(''); setRePurchaseDate(''); setReCurrentPrice(''); setReTargetPrice('')
     setFaInterestRate(''); setFaMaturityDate(''); setFaMonthlyPayment('')
     setDDebtType('ETC'); setDInterestRate(''); setDMaturityDate(''); setDRepaymentType(''); setDMonthlyPayment('')
@@ -367,6 +381,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
         const result = await updateAccount(initialData.id, {
           name: name.trim(), type, balance: parsedBalance, shareLevel,
           ownerId: ownerIdInput, isJoint: isJointInput,
+          parentAccountId: parentAccountId || null,
           linkedAssetId: isDebt ? (linkedAssetId || null) : null,
           realEstateDetail, financialAssetDetail, debtDetail, pensionDetail,
         })
@@ -376,6 +391,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
         const result = await createAccount({
           name: name.trim(), type, balance: parsedBalance, shareLevel,
           ownerId: ownerIdInput, isJoint: isJointInput,
+          parentAccountId: parentAccountId || null,
           linkedAssetId: isDebt ? (linkedAssetId || null) : null,
           realEstateDetail, financialAssetDetail, debtDetail, pensionDetail,
         })
@@ -469,6 +485,29 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
               className="w-full h-11 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors"
             />
           </div>
+
+          {/* 상위 계좌 (계층 구조) */}
+          {!isLiabilityType && !isRealEstate && eligibleParents.length > 0 && (
+            <div>
+              <Label className="text-muted-foreground text-xs mb-1.5 block">상위 계좌</Label>
+              <div className="relative">
+                <select
+                  value={parentAccountId}
+                  onChange={e => setParentAccountId(e.target.value)}
+                  className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-9 text-sm text-foreground outline-none focus:border-ring transition-colors appearance-none"
+                >
+                  <option value="">없음 (최상위)</option>
+                  {eligibleParents.map(p => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+              </div>
+              {parentAccountId && (
+                <p className="text-xs text-muted-foreground/60 mt-1">이 계좌의 잔액은 상위 계좌에 자동 합산됩니다.</p>
+              )}
+            </div>
+          )}
 
           {/* 잔액 / 부채 금액 */}
           <div>
