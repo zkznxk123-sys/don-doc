@@ -43,7 +43,7 @@ function ResultTable({ rows }: { rows: FrankrResultRow[] }) {
         >
           <span className="text-muted-foreground shrink-0">{row.적요}</span>
           <div className="text-right">
-            <span className="text-foreground tabular-nums">{(row as Record<string, string>)['값'] ?? (row as Record<string, string>)['금액']}</span>
+            <span className="text-foreground tabular-nums">{row.값 ?? row.금액}</span>
             {row.비고 && row.비고 !== '입력값' && (
               <p className="text-[10px] text-muted-foreground/60 mt-0.5">{row.비고}</p>
             )}

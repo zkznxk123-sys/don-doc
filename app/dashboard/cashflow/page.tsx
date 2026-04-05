@@ -10,12 +10,13 @@ import {
 import { cn, formatCurrency, formatLargeNumber } from '@/lib/utils'
 import { useDashboardActions } from '@/components/layout/DashboardShell'
 import { toast } from 'sonner'
-import { bulkUpdateTransactions, autoDetectAndExcludeTransfers, autoDetectAndExcludeCancellations } from '@/lib/actions/transaction'
+import { bulkUpdateTransactions, detectAutoExcludeItems, type DetectedGroup } from '@/lib/actions/transaction'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
 import { InputGuide } from '@/components/dashboard/InputGuide'
 import { getFamilyCategories, type CategoryOption } from '@/lib/actions/categories'
+import { AutoCleanupDialog } from '@/components/ui/auto-cleanup-dialog'
 
 type TypeFilter = 'INCOME' | 'EXPENSE'
 
@@ -151,6 +152,8 @@ export default function CashflowPage() {
     forceMode?: boolean
   } | null>(null)
   const [aiModeModal, setAiModeModal] = useState(false)
+  const [cleanupDialog, setCleanupDialog] = useState<{ open: boolean; groups: DetectedGroup[] }>({ open: false, groups: [] })
+  const [cleanupLoading, setCleanupLoading] = useState(false)
   const [previewModal, setPreviewModal] = useState<{
     groups: PreviewGroup[]
     remaining: number
@@ -485,30 +488,24 @@ export default function CashflowPage() {
           </button>
           <button
             onClick={async () => {
-              const [r1, r2] = await Promise.all([
-                autoDetectAndExcludeTransfers(),
-                autoDetectAndExcludeCancellations(),
-              ])
-              const ok = r1.success && r2.success
-              const total = (r1.pairCount ?? 0) + (r2.pairCount ?? 0)
-              if (ok) {
-                if (total > 0) {
-                  const parts = []
-                  if (r1.pairCount > 0) parts.push(`이체 ${r1.pairCount}쌍`)
-                  if (r2.pairCount > 0) parts.push(`취소 ${r2.pairCount}쌍`)
-                  toast.success(`${parts.join(', ')} 자동 제외 처리됨`)
-                  router.refresh()
-                } else {
-                  toast.info('감지된 이체·취소 내역이 없습니다')
-                }
-              } else {
-                toast.error(r1.error ?? r2.error ?? '처리 중 오류가 발생했습니다')
+              setCleanupLoading(true)
+              try {
+                const r = await detectAutoExcludeItems()
+                if (!r.success) { toast.error(r.error ?? '감지 중 오류가 발생했습니다'); return }
+                if (r.groups.length === 0) { toast.info('감지된 이체·취소·중복 내역이 없습니다'); return }
+                setCleanupDialog({ open: true, groups: r.groups })
+              } finally {
+                setCleanupLoading(false)
               }
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-ring transition-colors"
+            disabled={cleanupLoading}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-ring transition-colors disabled:opacity-60"
           >
-            <GitMerge className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">이체 자동 감지</span>
+            {cleanupLoading
+              ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              : <GitMerge className="w-3.5 h-3.5" />
+            }
+            <span className="hidden sm:inline">내역 자동 정리</span>
           </button>
           <button
             onClick={() => setAiModeModal(true)}
@@ -638,6 +635,14 @@ export default function CashflowPage() {
           </div>
         </div>
       )}
+
+      {/* 내역 자동 정리 확인 다이얼로그 */}
+      <AutoCleanupDialog
+        open={cleanupDialog.open}
+        groups={cleanupDialog.groups}
+        onClose={() => setCleanupDialog(p => ({ ...p, open: false }))}
+        onDone={() => { setCleanupDialog({ open: false, groups: [] }); router.refresh() }}
+      />
 
       {/* AI 재분류 모드 선택 모달 */}
       {aiModeModal && (
