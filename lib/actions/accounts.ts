@@ -52,6 +52,8 @@ export interface CreateAccountInput {
   type: AccountType
   balance: number
   shareLevel: ShareLevel
+  ownerId?: string | null   // 명의자 (미설정=null, 공동=null+isJoint)
+  isJoint?: boolean         // 공동 명의
   linkedAssetId?: string | null
   realEstateDetail?: RealEstateDetailInput
   financialAssetDetail?: FinancialAssetDetailInput
@@ -365,6 +367,7 @@ export async function createAccount(
     return { success: false, error: '잔액은 0 이상이어야 합니다.' }
 
   const isShared = input.shareLevel !== 'PRIVATE'
+  const resolvedUserId = input.ownerId !== undefined ? input.ownerId : (isShared ? null : user.id)
 
   await prisma.account.create({
     data: {
@@ -373,8 +376,9 @@ export async function createAccount(
       balance: input.balance,
       shareLevel: input.shareLevel,
       isShared,
+      isJoint: input.isJoint ?? false,
       familyId: user.familyId,
-      userId: isShared ? null : user.id,
+      userId: resolvedUserId,
       linkedAssetId: input.linkedAssetId ?? null,
       ...(input.type === 'REAL_ESTATE' && input.realEstateDetail
         ? { realEstateDetail: { create: buildRealEstateData(input.realEstateDetail) } }
@@ -414,6 +418,14 @@ export async function updateAccount(
   const isShared = shareLevel !== undefined ? shareLevel !== 'PRIVATE' : undefined
   const type = input.type ?? account.type
 
+  // userId 결정: ownerId 명시 > shareLevel 변경 > 유지
+  let newUserId: string | null | undefined
+  if (input.ownerId !== undefined) {
+    newUserId = input.ownerId
+  } else if (shareLevel !== undefined) {
+    newUserId = isShared ? null : user.id
+  }
+
   await prisma.account.update({
     where: { id },
     data: {
@@ -421,11 +433,9 @@ export async function updateAccount(
       ...(input.type !== undefined && { type: input.type }),
       ...(input.balance !== undefined && { balance: input.balance }),
       ...('linkedAssetId' in input && { linkedAssetId: input.linkedAssetId ?? null }),
-      ...(shareLevel !== undefined && {
-        shareLevel,
-        isShared: isShared!,
-        userId: isShared ? null : user.id,
-      }),
+      ...(shareLevel !== undefined && { shareLevel, isShared: isShared! }),
+      ...(newUserId !== undefined && { userId: newUserId }),
+      ...(input.isJoint !== undefined && { isJoint: input.isJoint }),
     },
   })
 
@@ -563,6 +573,7 @@ export interface PensionAccountData {
   balance: number
   shareLevel: ShareLevel
   userId: string | null
+  isJoint: boolean
   ownerName: string | null
   pensionType: PensionType
   institutionName: string | null
@@ -600,6 +611,7 @@ export async function getFamilyPensionAccounts(): Promise<PensionSummaryData | n
     balance: a.balance,
     shareLevel: a.shareLevel as ShareLevel,
     userId: a.userId,
+    isJoint: a.isJoint,
     ownerName: a.user?.name ?? null,
     pensionType: (a.pensionDetail?.pensionType as PensionType) ?? 'PERSONAL_PENSION',
     institutionName: a.pensionDetail?.institutionName ?? null,

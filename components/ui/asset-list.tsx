@@ -28,6 +28,7 @@ interface AssetListProps {
   totalAssets: number
   onEdit: (account: AccountInitialData) => void
   onAdd: () => void
+  currentUserId?: string
 }
 
 interface LiabilityListProps {
@@ -35,6 +36,7 @@ interface LiabilityListProps {
   totalLiabilities: number
   onEdit: (account: AccountInitialData) => void
   onAdd: () => void
+  currentUserId?: string
 }
 
 // ─── 카테고리별 그룹핑 ────────────────────────────────────────────────────────
@@ -89,10 +91,12 @@ function AssetRow({
   account,
   totalAssets,
   onEdit,
+  currentUserId,
 }: {
   account: AccountInitialData
   totalAssets: number
   onEdit: (a: AccountInitialData) => void
+  currentUserId?: string
 }) {
   const meta = TYPE_META[account.type] ?? TYPE_META['CASH']
   const MetaIcon = meta.Icon
@@ -138,9 +142,12 @@ function AssetRow({
         </div>
         <div className="flex items-center gap-2 mt-0.5">
           <p className="text-xs text-muted-foreground">
-            {account.ownerName
-              ? <span className="text-muted-foreground/50">{account.ownerName} · </span>
-              : null}
+            {(() => {
+              if (account.isJoint) return <span className="text-muted-foreground/50">공동 · </span>
+              const name = account.ownerName ?? (account.userId === currentUserId ? '나' : null)
+              if (name) return <span className="text-muted-foreground/50">{name} · </span>
+              return null
+            })()}
             {meta.label} · {allocation}%
           </p>
           {hasLinkedDebts && netEquity != null && (
@@ -179,7 +186,7 @@ function LinkedDebtRow({ debt }: { debt: { id: string; name: string; balance: nu
 
 // ─── AssetList ────────────────────────────────────────────────────────────────
 
-export function AssetList({ accounts, totalAssets, onEdit, onAdd }: AssetListProps) {
+export function AssetList({ accounts, totalAssets, onEdit, onAdd, currentUserId }: AssetListProps) {
   const [excludeZero, setExcludeZero] = useState(true)
   const { threshold } = useAssetThreshold()
 
@@ -233,6 +240,7 @@ export function AssetList({ accounts, totalAssets, onEdit, onAdd }: AssetListPro
                     account={account}
                     totalAssets={totalAssets}
                     onEdit={onEdit}
+                    currentUserId={currentUserId}
                   />
                   {/* 연결된 부채 인라인 */}
                   {account.linkedDebts?.map(debt => (
@@ -256,7 +264,7 @@ export function AssetList({ accounts, totalAssets, onEdit, onAdd }: AssetListPro
 
 // ─── LiabilityList ────────────────────────────────────────────────────────────
 
-export function LiabilityList({ liabilities, totalLiabilities, onEdit, onAdd }: LiabilityListProps) {
+export function LiabilityList({ liabilities, totalLiabilities, onEdit, onAdd, currentUserId }: LiabilityListProps) {
   if (liabilities.length === 0) {
     return (
       <div className="bg-card rounded-2xl border border-border">
@@ -317,9 +325,12 @@ export function LiabilityList({ liabilities, totalLiabilities, onEdit, onAdd }: 
                   }
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {account.ownerName
-                    ? <span className="text-muted-foreground/50">{account.ownerName} · </span>
-                    : null}
+                  {(() => {
+                    if (account.isJoint) return <span className="text-muted-foreground/50">공동 · </span>
+                    const name = account.ownerName ?? (account.userId === currentUserId ? '나' : null)
+                    if (name) return <span className="text-muted-foreground/50">{name} · </span>
+                    return null
+                  })()}
                   {meta.label}
                 </p>
               </div>

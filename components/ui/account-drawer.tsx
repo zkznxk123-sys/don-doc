@@ -27,6 +27,13 @@ export interface AccountInitialData {
   netEquity?: number
   linkedDebts?: { id: string; name: string; balance: number }[]
   ownerName?: string | null
+  userId?: string | null
+  isJoint?: boolean
+}
+
+export interface FamilyMemberOption {
+  id: string
+  name: string | null
 }
 
 interface AccountDrawerProps {
@@ -34,6 +41,7 @@ interface AccountDrawerProps {
   onClose: () => void
   onSuccess: () => void
   initialData?: AccountInitialData
+  familyMembers?: FamilyMemberOption[]
 }
 
 const ACCOUNT_TYPES: {
@@ -178,7 +186,7 @@ function DateField({
 
 // ─── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
 
-export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: AccountDrawerProps) {
+export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyMembers = [] }: AccountDrawerProps) {
   const isEditMode = !!initialData
 
   // 기본 필드
@@ -221,6 +229,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
   const [pPensionStartAge, setPPensionStartAge]             = useState('')
   const [pMonthlyPayment, setPMonthlyPayment]               = useState('')
   const [pOwnerBirthYear, setPOwnerBirthYear]               = useState('')
+  const [pOwnerId, setPOwnerId]                             = useState<string>('')  // '' = 공유(소유자 없음)
 
   const needsLinkedAsset = DEBT_TYPES_NEEDING_ASSET.includes(dDebtType)
 
@@ -239,6 +248,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
       setType(initialData.type)
       setBalance(initialData.balance > 0 ? initialData.balance.toLocaleString() : '')
       setShareLevel(initialData.shareLevel ?? (initialData.isShared ? 'PUBLIC' : 'PRIVATE'))
+      setPOwnerId(initialData.isJoint ? '__joint__' : (initialData.userId ?? ''))
 
       // 상세 데이터 비동기 로드
       getAccountWithDetail(initialData.id).then(detail => {
@@ -300,6 +310,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
     setDDebtType('ETC'); setDInterestRate(''); setDMaturityDate(''); setDRepaymentType(''); setDMonthlyPayment('')
     setPPensionType('PERSONAL_PENSION'); setPInstitutionName(''); setPExpectedMonthlyPension('')
     setPAccumulatedMonths(''); setPPensionStartAge(''); setPMonthlyPayment(''); setPOwnerBirthYear('')
+    setPOwnerId('')
   }
 
   const handleClose = () => { setConfirmDelete(false); onClose() }
@@ -344,23 +355,29 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
 
   const handleSubmit = async () => {
     const parsedBalance = parseFloat(balance.replace(/,/g, '')) || 0
-    const { realEstateDetail, financialAssetDetail, debtDetail } = buildDetailInput()
+    const { realEstateDetail, financialAssetDetail, debtDetail, pensionDetail } = buildDetailInput()
+    const ownerIdInput = familyMembers.length > 0
+      ? (pOwnerId === '' || pOwnerId === '__joint__' ? null : pOwnerId)
+      : undefined
+    const isJointInput = familyMembers.length > 0 ? pOwnerId === '__joint__' : undefined
 
     setIsLoading(true)
     try {
       if (isEditMode) {
         const result = await updateAccount(initialData.id, {
           name: name.trim(), type, balance: parsedBalance, shareLevel,
+          ownerId: ownerIdInput, isJoint: isJointInput,
           linkedAssetId: isDebt ? (linkedAssetId || null) : null,
-          realEstateDetail, financialAssetDetail, debtDetail,
+          realEstateDetail, financialAssetDetail, debtDetail, pensionDetail,
         })
         if (!result.success) { toast.error(result.error || '수정에 실패했습니다.'); return }
         toast.success(`"${name.trim()}" 계좌가 수정되었습니다.`)
       } else {
         const result = await createAccount({
           name: name.trim(), type, balance: parsedBalance, shareLevel,
+          ownerId: ownerIdInput, isJoint: isJointInput,
           linkedAssetId: isDebt ? (linkedAssetId || null) : null,
-          realEstateDetail, financialAssetDetail, debtDetail,
+          realEstateDetail, financialAssetDetail, debtDetail, pensionDetail,
         })
         if (!result.success) { toast.error(result.error || '계좌 생성에 실패했습니다.'); return }
         toast.success(`"${name.trim()}" 계좌가 추가되었습니다.`)
@@ -684,6 +701,27 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData }: Accou
                 <DateField label="만기일" value={dMaturityDate} onChange={setDMaturityDate} />
               </div>
             </>
+          )}
+
+          {/* 명의자 */}
+          {familyMembers.length > 0 && (
+            <div>
+              <Label className="text-muted-foreground text-xs mb-1.5 block">명의자</Label>
+              <div className="relative">
+                <select
+                  value={pOwnerId}
+                  onChange={e => setPOwnerId(e.target.value)}
+                  className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-9 text-sm text-foreground outline-none focus:border-ring transition-colors appearance-none"
+                >
+                  <option value="">미설정</option>
+                  <option value="__joint__">공동</option>
+                  {familyMembers.map(m => (
+                    <option key={m.id} value={m.id}>{m.name ?? '(이름 없음)'}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+              </div>
+            </div>
           )}
 
           {/* 가족 공유 설정 */}

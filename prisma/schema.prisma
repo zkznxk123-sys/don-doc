@@ -156,8 +156,9 @@ model Account {
   shareLevel      ShareLevel  @default(PUBLIC) // 공유 수준
   familyId        String
   family          FamilyGroup @relation(fields: [familyId], references: [id])
-  userId          String?     // 개인 계좌일 경우 소유자
+  userId          String?     // 명의자 (null = 미설정 or 공동)
   user            User?       @relation(fields: [userId], references: [id])
+  isJoint         Boolean     @default(false) // 공동 명의 여부
   transactions    Transaction[]
 
   // 부채가 종속된 자산 (self-relation) — 예: 주택담보대출 → 아파트

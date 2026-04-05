@@ -34,6 +34,7 @@ import {
   type PensionSummaryData,
   type PensionAccountData,
 } from '@/lib/actions/accounts'
+import { getFamilyInfo, type FamilyMember } from '@/lib/actions/family'
 import { TrendingUp, TrendingDown, Wallet, Building2, Landmark, CreditCard, Camera, Plus, PiggyBank, Pencil, ChevronRight, AlertTriangle, ShieldCheck, Clock, BadgePercent, Banknote } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -63,6 +64,7 @@ export default function AssetsPage() {
   const [avgMonthlyIncome, setAvgMonthlyIncome] = useState<number | null>(null)
   const [isAccountDrawerOpen, setIsAccountDrawerOpen] = useState(false)
   const [netWorthHistory, setNetWorthHistory] = useState<NetWorthSnapshotData[]>([])
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([])
 
   // 스냅샷 알림 배너
   const [missingYearMonth, setMissingYearMonth] = useState<string | null>(null)
@@ -93,6 +95,8 @@ export default function AssetsPage() {
         netEquity: a.netEquity,
         linkedDebts: a.linkedDebts ?? [],
         ownerName: a.ownerName ?? null,
+        userId: a.userId ?? null,
+        isJoint: a.isJoint ?? false,
       })
 
       setAccounts((data.accounts ?? []).map(mapAccount))
@@ -122,6 +126,7 @@ export default function AssetsPage() {
         getFamilyRealEstateSummary().then(d => setReSummary(d)),
         getFamilyPensionAccounts().then(d => setPensionSummary(d)),
         getFamilyTotalDebtMonthlyPayment().then(v => setTotalDebtMonthlyPayment(v)),
+        getFamilyInfo().then(r => { if (r.data) setFamilyMembers(r.data.members) }),
         fetch('/api/stats/cashflow?months=6').then(r => r.json()).then(d => {
           if (d.success && d.months?.length) {
             const avg = d.months.reduce((s: number, m: { income: number }) => s + m.income, 0) / d.months.length
@@ -284,6 +289,7 @@ export default function AssetsPage() {
               totalAssets={totalAssets}
               onEdit={openEdit}
               onAdd={openAdd}
+              currentUserId={shellUser?.id}
             />
           </div>
 
@@ -292,6 +298,7 @@ export default function AssetsPage() {
             totalLiabilities={totalLiabilities}
             onEdit={openEdit}
             onAdd={openAdd}
+            currentUserId={shellUser?.id}
           />
         </TabsContent>
 
@@ -345,6 +352,7 @@ export default function AssetsPage() {
               totalAssets={financialTotalAssets}
               onEdit={openEdit}
               onAdd={openAdd}
+              currentUserId={shellUser?.id}
             />
           )}
         </TabsContent>
@@ -356,6 +364,7 @@ export default function AssetsPage() {
             totalLiabilities={totalLiabilities}
             onEdit={openEdit}
             onAdd={openAdd}
+            currentUserId={shellUser?.id}
           />
         </TabsContent>
 
@@ -366,6 +375,7 @@ export default function AssetsPage() {
             currentUserId={shellUser?.id}
             onAdd={openAdd}
             onEdit={openEdit}
+            familyMembers={familyMembers}
           />
         </TabsContent>
       </Tabs>
@@ -379,6 +389,7 @@ export default function AssetsPage() {
         }}
         onSuccess={loadData}
         initialData={selectedAccount}
+        familyMembers={familyMembers}
       />
 
       {/* 수동 스냅샷 저장 확인 다이얼로그 */}
@@ -621,11 +632,13 @@ function PensionTab({
   currentUserId,
   onAdd,
   onEdit,
+  familyMembers,
 }: {
   summary: PensionSummaryData | null
   currentUserId?: string
   onAdd: () => void
   onEdit: (account: AccountInitialData) => void
+  familyMembers: FamilyMember[]
 }) {
   const accounts = summary?.accounts ?? []
   const hasPensions = accounts.length > 0
@@ -688,6 +701,7 @@ function PensionTab({
                 id: acc.id, name: acc.name, type: 'PENSION',
                 balance: acc.balance, isShared: acc.shareLevel !== 'PRIVATE',
                 shareLevel: acc.shareLevel, ownerName: acc.ownerName,
+                userId: acc.userId, isJoint: acc.isJoint,
               })}
             />
           ))}
@@ -742,12 +756,18 @@ function PensionCard({
                 {meta.label}
               </span>
               {(() => {
+                if (account.isJoint) return (
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md text-blue-600 dark:text-blue-400 bg-blue-500/10">
+                    공동
+                  </span>
+                )
                 const name = account.ownerName ?? (account.userId === currentUserId ? '나' : null)
-                return name ? (
+                if (name) return (
                   <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md text-muted-foreground bg-muted">
                     {name}
                   </span>
-                ) : null
+                )
+                return null
               })()}
               {account.taxDeductible && (
                 <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md text-amber-600 dark:text-amber-400 bg-amber-500/10">

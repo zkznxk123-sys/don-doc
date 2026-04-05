@@ -55,7 +55,9 @@ export async function GET(req: NextRequest) {
       linkedDebtTotal: number
       linkedDebts: { id: string; name: string; balance: number }[]
       linkedAssetId: string | null
-      ownerName: string | null   // 계좌 소유자 이름 (null = 공용)
+      userId: string | null      // 명의자 ID (null = 미설정 or 공동)
+      isJoint: boolean           // 공동 명의
+      ownerName: string | null   // 명의자 이름
     }
 
     const accountSummary: AccountSummary[] = []
@@ -71,6 +73,8 @@ export async function GET(req: NextRequest) {
         shareLevel: acc.shareLevel, isMasked: false,
         linkedDebts: acc.linkedDebts.map(d => ({ id: d.id, name: d.name, balance: d.balance })),
         linkedAssetId: acc.linkedAssetId,
+        userId: acc.userId,
+        isJoint: acc.isJoint,
         ownerName: acc.user?.name ?? null,
       }
 
