@@ -10,7 +10,7 @@ import {
 import { cn, formatCurrency, formatLargeNumber } from '@/lib/utils'
 import { useDashboardActions } from '@/components/layout/DashboardShell'
 import { toast } from 'sonner'
-import { bulkUpdateTransactions, autoDetectAndExcludeTransfers } from '@/lib/actions/transaction'
+import { bulkUpdateTransactions, autoDetectAndExcludeTransfers, autoDetectAndExcludeCancellations } from '@/lib/actions/transaction'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
@@ -485,16 +485,24 @@ export default function CashflowPage() {
           </button>
           <button
             onClick={async () => {
-              const r = await autoDetectAndExcludeTransfers()
-              if (r.success) {
-                if (r.pairCount > 0) {
-                  toast.success(`이체 내역 ${r.pairCount}쌍 자동 제외 처리됨`)
+              const [r1, r2] = await Promise.all([
+                autoDetectAndExcludeTransfers(),
+                autoDetectAndExcludeCancellations(),
+              ])
+              const ok = r1.success && r2.success
+              const total = (r1.pairCount ?? 0) + (r2.pairCount ?? 0)
+              if (ok) {
+                if (total > 0) {
+                  const parts = []
+                  if (r1.pairCount > 0) parts.push(`이체 ${r1.pairCount}쌍`)
+                  if (r2.pairCount > 0) parts.push(`취소 ${r2.pairCount}쌍`)
+                  toast.success(`${parts.join(', ')} 자동 제외 처리됨`)
                   router.refresh()
                 } else {
-                  toast.info('감지된 이체 내역이 없습니다')
+                  toast.info('감지된 이체·취소 내역이 없습니다')
                 }
               } else {
-                toast.error(r.error ?? '처리 중 오류가 발생했습니다')
+                toast.error(r1.error ?? r2.error ?? '처리 중 오류가 발생했습니다')
               }
             }}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-ring transition-colors"

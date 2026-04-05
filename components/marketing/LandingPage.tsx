@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { TrendingUp, FileSpreadsheet, Target, ArrowRight, Shield, Users, ChevronRight, AlertCircle } from 'lucide-react'
+import { ArrowRight, Shield, Users, ChevronRight, AlertCircle, Eye, Sparkles, BarChart3 } from 'lucide-react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
@@ -18,25 +18,28 @@ const fadeUp = {
 
 const FEATURES = [
   {
-    icon: TrendingUp,
+    icon: Eye,
     color: 'text-emerald-600 dark:text-emerald-400',
     bg: 'bg-emerald-50 border-emerald-200 dark:bg-emerald-500/10 dark:border-emerald-500/20',
-    title: '순자산 실시간 추적',
-    desc: '자산·부채를 한 곳에 등록하고, 월별 순자산 변화를 차트로 한눈에 확인하세요. 부동산 LTV·ROI까지 자동 계산됩니다.',
+    title: '선별적 투명성',
+    subtitle: '내 것은 내가 지킨다',
+    desc: '가족과 재정을 공유하면서도 보여주고 싶은 것만 공개할 수 있습니다. 금액만 노출하거나 완전히 비공개로 — 가족이라도 프라이버시는 있어야 합니다.',
   },
   {
-    icon: FileSpreadsheet,
+    icon: Sparkles,
     color: 'text-blue-600 dark:text-blue-400',
     bg: 'bg-blue-50 border-blue-200 dark:bg-blue-500/10 dark:border-blue-500/20',
-    title: '엑셀 일괄 동기화',
-    desc: '은행 앱에서 내보낸 엑셀 파일을 그대로 업로드하면, 거래 내역이 자동으로 분류·적재됩니다. 중복 걱정 없이.',
+    title: 'AI 자동 분류',
+    subtitle: '가계부 정리, 이제 안 해도 됩니다',
+    desc: '은행 앱 엑셀을 업로드하면 AI가 카테고리를 자동 분류합니다. 내 소비 패턴을 학습해 갈수록 더 정확해집니다.',
   },
   {
-    icon: Target,
+    icon: BarChart3,
     color: 'text-purple-600 dark:text-purple-400',
     bg: 'bg-purple-50 border-purple-200 dark:bg-purple-500/10 dark:border-purple-500/20',
-    title: '가족 예산 관리',
-    desc: '카테고리별 월 예산을 설정하고 지출 현황을 실시간으로 모니터링하세요. 가족 구성원별 프라이버시도 설정 가능합니다.',
+    title: '자산 최적화',
+    subtitle: 'LTV, DSR, 연금까지 한눈에',
+    desc: '부동산 LTV와 레버리지 현황, 연금 예상 수령액까지. 흩어진 자산을 하나의 뷰에서 파악하고 리스크를 관리하세요.',
   },
 ]
 
@@ -55,6 +58,100 @@ function DemoErrorBanner() {
       {err === 'not_seeded'
         ? '데모 데이터가 준비되지 않았습니다. 관리자에게 문의하세요.'
         : '데모 로그인에 실패했습니다. 잠시 후 다시 시도해주세요.'}
+    </div>
+  )
+}
+
+// ── 앱 UI 인라인 목업 컴포넌트들 ─────────────────────────────────
+
+function NetWorthMockup() {
+  const bars = [38, 52, 45, 60, 55, 68, 80]
+  return (
+    <div className="bg-card rounded-2xl p-4 border border-border shadow-sm w-full">
+      <p className="text-[10px] text-muted-foreground/70 mb-0.5">이번 달 순자산</p>
+      <p className="text-2xl font-bold tabular-nums">7.3억</p>
+      <p className="text-[11px] text-emerald-500 mt-0.5 font-medium">↑ +2,300만 전월 대비</p>
+      <div className="mt-3 flex items-end gap-1 h-10">
+        {bars.map((h, i) => (
+          <div
+            key={i}
+            className={`flex-1 rounded-sm transition-all ${i === bars.length - 1 ? 'bg-emerald-500' : 'bg-muted-foreground/15'}`}
+            style={{ height: `${h}%` }}
+          />
+        ))}
+      </div>
+      <div className="flex justify-between mt-1.5">
+        {['1월', '2월', '3월', '4월', '5월', '6월', '7월'].map(m => (
+          <span key={m} className="text-[9px] text-muted-foreground/40 flex-1 text-center">{m}</span>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function RealEstateMockup() {
+  return (
+    <div className="bg-card rounded-2xl p-4 border border-border shadow-sm w-full">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <p className="text-[10px] text-muted-foreground/70">래미안 ○○아파트</p>
+          <p className="text-lg font-bold">9.5억</p>
+        </div>
+        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 font-medium">+26.7%</span>
+      </div>
+      <div className="space-y-2">
+        <div>
+          <div className="flex justify-between text-[10px] mb-1">
+            <span className="text-muted-foreground">LTV</span>
+            <span className="font-semibold text-emerald-600">42%</span>
+          </div>
+          <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+            <div className="h-full w-[42%] bg-emerald-500 rounded-full" />
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-2 pt-1">
+          {[
+            { label: 'DSR', value: '28.4%', ok: true },
+            { label: '수익', value: '+3.4억', ok: true },
+            { label: '대출', value: '-6.3억', ok: false },
+          ].map(item => (
+            <div key={item.label} className="bg-muted/40 rounded-lg px-2 py-1.5 text-center">
+              <p className="text-[9px] text-muted-foreground/60">{item.label}</p>
+              <p className={`text-[11px] font-semibold mt-0.5 ${item.ok ? 'text-emerald-500' : 'text-red-400'}`}>{item.value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function TransactionMockup() {
+  const txs = [
+    { name: '스타벅스 강남점', cat: '카페', amt: '-6,500', color: 'bg-amber-500/15 text-amber-600 dark:text-amber-400', ai: true },
+    { name: 'GS25 편의점', cat: '식비', amt: '-12,300', color: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400', ai: true },
+    { name: '쿠팡 로켓배송', cat: '쇼핑', amt: '-43,200', color: 'bg-blue-500/15 text-blue-600 dark:text-blue-400', ai: true },
+    { name: '월급 입금', cat: '급여', amt: '+4,200,000', color: 'bg-purple-500/15 text-purple-600 dark:text-purple-400', ai: false },
+  ]
+  return (
+    <div className="bg-card rounded-2xl p-4 border border-border shadow-sm w-full">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[10px] text-muted-foreground/70 font-medium">거래 내역</p>
+        <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-500 font-medium">AI 분류 완료</span>
+      </div>
+      <div className="space-y-0.5">
+        {txs.map((tx) => (
+          <div key={tx.name} className="flex items-center justify-between py-1.5">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded-md font-medium ${tx.color}`}>{tx.cat}</span>
+              <span className="text-xs text-foreground truncate">{tx.name}</span>
+            </div>
+            <span className={`text-xs font-medium tabular-nums ml-2 shrink-0 ${tx.amt.startsWith('+') ? 'text-emerald-500' : 'text-foreground/70'}`}>
+              {tx.amt}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
@@ -86,8 +183,6 @@ export function LandingPage() {
 
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="relative flex flex-col items-center justify-center min-h-screen px-6 text-center overflow-hidden pt-16">
-
-        {/* 배경 그라디언트 orb */}
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-secondary/5 rounded-full blur-3xl" />
           <div className="absolute top-1/2 left-1/4 w-[300px] h-[300px] bg-secondary/5 rounded-full blur-3xl" />
@@ -99,13 +194,11 @@ export function LandingPage() {
           initial="hidden"
           animate="visible"
         >
-          {/* 뱃지 */}
           <motion.div variants={fadeUp} custom={0} className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-muted text-xs text-muted-foreground mb-8">
             <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse" />
             패밀리 오피스 · 지금 무료로 시작하세요
           </motion.div>
 
-          {/* 타이틀 */}
           <motion.h1
             variants={fadeUp}
             custom={1}
@@ -118,16 +211,15 @@ export function LandingPage() {
             </span>
           </motion.h1>
 
-          {/* 서브타이틀 */}
           <motion.p
             variants={fadeUp}
             custom={2}
             className="mt-6 text-base sm:text-lg text-muted-foreground leading-relaxed max-w-xl mx-auto"
           >
-            자산·부채·예산·거래 내역을 한 곳에서. 가족 구성원별 권한 설정으로 내 정보는 내가 지킵니다.
+            매달 가계부 정리하다 지치셨나요?<br className="hidden sm:block" />
+            엑셀 업로드 한 번으로 AI가 분류하고, 부동산 LTV부터 연금까지 가족의 재정 전체를 한눈에.
           </motion.p>
 
-          {/* CTA 버튼 */}
           <motion.div
             variants={fadeUp}
             custom={3}
@@ -149,7 +241,6 @@ export function LandingPage() {
             </a>
           </motion.div>
 
-          {/* 신뢰 배지 */}
           <motion.div
             variants={fadeUp}
             custom={4}
@@ -164,7 +255,6 @@ export function LandingPage() {
           </motion.div>
         </motion.div>
 
-        {/* 스크롤 힌트 */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -176,11 +266,9 @@ export function LandingPage() {
         </motion.div>
       </section>
 
-      {/* ── Feature 섹션 ──────────────────────────────────────── */}
+      {/* ── Value Proposition ─────────────────────────────────── */}
       <section className="py-24 px-6 bg-muted/40">
         <div className="max-w-5xl mx-auto">
-
-          {/* 섹션 헤더 */}
           <motion.div
             initial="hidden"
             whileInView="visible"
@@ -188,15 +276,15 @@ export function LandingPage() {
             className="text-center mb-16"
           >
             <motion.p variants={fadeUp} custom={0} className="text-xs text-secondary uppercase tracking-widest mb-3 font-medium">
-              핵심 기능
+              왜 돈독인가
             </motion.p>
             <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-4xl font-bold tracking-tight font-serif">
-              복잡한 가족 재정,<br />
-              <span className="text-muted-foreground">이제 한 화면에서</span>
+              단순한 가계부가 아닙니다
+              <br />
+              <span className="text-muted-foreground">가족 재정 전체를 다룹니다</span>
             </motion.h2>
           </motion.div>
 
-          {/* 기능 카드 그리드 */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {FEATURES.map((feature, i) => {
               const Icon = feature.icon
@@ -210,12 +298,10 @@ export function LandingPage() {
                   custom={i * 1.5}
                   className="group relative p-6 rounded-md bg-card hover:bg-muted/60 transition-all duration-300 shadow-[0_1px_3px_rgba(26,26,26,0.06),0_4px_16px_rgba(26,26,26,0.04)] dark:shadow-none dark:border dark:border-border"
                 >
-                  {/* 아이콘 */}
                   <div className={`w-10 h-10 rounded-md border flex items-center justify-center mb-5 ${feature.bg}`}>
                     <Icon className={`w-5 h-5 ${feature.color}`} />
                   </div>
-
-                  {/* 텍스트 */}
+                  <p className="text-[11px] text-muted-foreground/60 mb-1 font-medium">{feature.subtitle}</p>
                   <h3 className="text-base font-semibold text-foreground mb-2">{feature.title}</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed">{feature.desc}</p>
                 </motion.div>
@@ -225,8 +311,49 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* ── 최종 CTA ─────────────────────────────────────────── */}
+      {/* ── Feature Preview ───────────────────────────────────── */}
       <section className="py-24 px-6">
+        <div className="max-w-5xl mx-auto">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-80px' }}
+            className="text-center mb-16"
+          >
+            <motion.p variants={fadeUp} custom={0} className="text-xs text-secondary uppercase tracking-widest mb-3 font-medium">
+              미리 보기
+            </motion.p>
+            <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-4xl font-bold tracking-tight font-serif">
+              이런 화면들로<br />
+              <span className="text-muted-foreground">가족 재정을 관리합니다</span>
+            </motion.h2>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {([
+              { label: '순자산 트렌드', component: <NetWorthMockup /> },
+              { label: '부동산 LTV 현황', component: <RealEstateMockup /> },
+              { label: 'AI 거래 분류', component: <TransactionMockup /> },
+            ] as const).map((item, i) => (
+              <motion.div
+                key={item.label}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: '-60px' }}
+                variants={fadeUp}
+                custom={i * 1.5}
+                className="flex flex-col gap-3"
+              >
+                <p className="text-xs font-medium text-muted-foreground/60 text-center">{item.label}</p>
+                {item.component}
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── 최종 CTA ─────────────────────────────────────────── */}
+      <section className="py-24 px-6 bg-muted/40">
         <motion.div
           initial="hidden"
           whileInView="visible"

@@ -768,6 +768,82 @@ export async function autoDetectAndExcludeTransfers(
   }
 }
 
+/**
+ * 결제 취소 자동 감지 Server Action
+ *
+ * 동일 작성자(userId) + 동일 내용(description) + 동일 금액(절댓값) + 동일 카테고리인
+ * 수입/지출 쌍을 찾아 isExcluded = true로 표시합니다.
+ *
+ * 이체 감지와의 차이:
+ *   - 날짜 무관 (취소는 며칠 뒤에 올 수 있음)
+ *   - 반드시 동일 userId (같은 사람의 결제/취소)
+ *   - 카테고리까지 일치해야 감지 (오탐 방지)
+ */
+export async function autoDetectAndExcludeCancellations(
+  familyId?: string
+): Promise<{ success: boolean; pairCount: number; error?: string }> {
+  try {
+    const authUser = await getAuthUser()
+    const fid = familyId ?? authUser?.familyId
+    if (!fid) return { success: false, pairCount: 0, error: '인증이 필요합니다.' }
+
+    const txs = await prisma.transaction.findMany({
+      where: { user: { familyId: fid }, isExcluded: false },
+      select: { id: true, amount: true, userId: true, description: true, categoryId: true, category: true },
+    })
+
+    // userId 기준 그룹핑
+    const byUser = new Map<string, typeof txs>()
+    for (const tx of txs) {
+      if (!byUser.has(tx.userId)) byUser.set(tx.userId, [])
+      byUser.get(tx.userId)!.push(tx)
+    }
+
+    const norm = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase()
+    const toExclude = new Set<string>()
+
+    for (const userTxs of Array.from(byUser.values())) {
+      // 지출(음수)과 수입(양수)으로 분리
+      const expenses = userTxs.filter(t => t.amount < 0)
+      const incomes  = userTxs.filter(t => t.amount > 0)
+
+      for (const expense of expenses) {
+        if (toExclude.has(expense.id)) continue
+        const nd = norm(expense.description)
+        if (!nd) continue  // 내용 없으면 스킵 (오탐 방지)
+
+        const match = incomes.find(income =>
+          !toExclude.has(income.id) &&
+          expense.amount + income.amount === 0 &&       // 금액 정확히 상쇄
+          norm(income.description) === nd &&            // 내용 동일
+          income.categoryId === expense.categoryId &&   // 카테고리ID 동일
+          income.category === expense.category          // 카테고리명도 동일 (categoryId null 케이스 대비)
+        )
+
+        if (match) {
+          toExclude.add(expense.id)
+          toExclude.add(match.id)
+        }
+      }
+    }
+
+    if (toExclude.size === 0) return { success: true, pairCount: 0 }
+
+    await prisma.transaction.updateMany({
+      where: { id: { in: Array.from(toExclude) } },
+      data: { isExcluded: true },
+    })
+
+    revalidatePath('/dashboard')
+    revalidatePath('/dashboard/cashflow')
+
+    return { success: true, pairCount: toExclude.size / 2 }
+  } catch (e) {
+    console.error('[autoDetectAndExcludeCancellations] ERROR:', e)
+    return { success: false, pairCount: 0, error: String(e) }
+  }
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 분할 항목 (Sub-transactions)
 // ─────────────────────────────────────────────────────────────────────────────

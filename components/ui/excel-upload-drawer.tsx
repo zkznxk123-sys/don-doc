@@ -14,7 +14,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import { createManyTransactions, syncAccountBalancesOnly, checkTransactionDuplicates, autoDetectAndExcludeTransfers, type BulkTransactionRow } from '@/lib/actions/transaction'
+import { createManyTransactions, syncAccountBalancesOnly, checkTransactionDuplicates, autoDetectAndExcludeTransfers, autoDetectAndExcludeCancellations, type BulkTransactionRow } from '@/lib/actions/transaction'
 import { getFamilyCategories, syncBanksaladCategories, type CategoryOption } from '@/lib/actions/categories'
 import {
   type ColMap, type ExcelPreset,
@@ -460,10 +460,14 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
           toast.success(title, { description: description || undefined })
         }
 
-        autoDetectAndExcludeTransfers(familyId ?? undefined).then(r => {
-          if (r.success && r.pairCount > 0) {
-            toast.info(`이체 내역 ${r.pairCount}쌍 자동 제외 처리됨`)
-          }
+        Promise.all([
+          autoDetectAndExcludeTransfers(familyId ?? undefined),
+          autoDetectAndExcludeCancellations(familyId ?? undefined),
+        ]).then(([r1, r2]) => {
+          const parts = []
+          if (r1.success && r1.pairCount > 0) parts.push(`이체 ${r1.pairCount}쌍`)
+          if (r2.success && r2.pairCount > 0) parts.push(`취소 ${r2.pairCount}쌍`)
+          if (parts.length > 0) toast.info(`${parts.join(', ')} 자동 제외 처리됨`)
         })
 
         handleClose(); onSuccess()

@@ -6,6 +6,7 @@ import { cn, formatCurrency, formatLargeNumber } from '@/lib/utils'
 import { getRealEstateWithDebts, updateDebtLtvInclusion, type RealEstateWithDebts, type LinkedDebt } from '@/lib/actions/accounts'
 import { Switch } from '@/components/ui/switch'
 import type { AccountInitialData } from '@/components/ui/account-drawer'
+import { RealEstateTaxCalc } from '@/components/ui/real-estate-tax-calc'
 
 interface RealEstateCardProps {
   account: AccountInitialData
@@ -303,6 +304,9 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
           </>
         )}
       </div>
+
+      {/* 세금 시뮬레이션 */}
+      {!loading && data && <RealEstateTaxCalc data={data} />}
     </div>
   )
 }
