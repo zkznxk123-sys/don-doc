@@ -38,12 +38,19 @@ export interface FamilyMemberOption {
   name: string | null
 }
 
+export interface ParentInfo {
+  id: string
+  type: AccountType
+  name: string
+}
+
 interface AccountDrawerProps {
   isOpen: boolean
   onClose: () => void
   onSuccess: () => void
   initialData?: AccountInitialData
   familyMembers?: FamilyMemberOption[]
+  parentInfo?: ParentInfo
 }
 
 const ACCOUNT_TYPES: {
@@ -188,8 +195,9 @@ function DateField({
 
 // ─── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
 
-export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyMembers = [] }: AccountDrawerProps) {
+export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyMembers = [], parentInfo }: AccountDrawerProps) {
   const isEditMode = !!initialData
+  const isProductMode = !!(parentInfo || initialData?.parentAccountId)
 
   // 기본 필드
   const [name, setName]           = useState('')
@@ -248,6 +256,15 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
   // 드로어 열릴 때: 기본값 세팅 + (수정 모드) 상세 데이터 로드
   useEffect(() => {
     if (!isOpen) return
+
+    // 상품 추가 모드: 부모 계좌 정보 세팅
+    if (parentInfo && !initialData) {
+      resetForm()
+      setType(parentInfo.type)
+      setParentAccountId(parentInfo.id)
+      setConfirmDelete(false)
+      return
+    }
 
     if (initialData) {
       setName(initialData.name)
@@ -430,14 +447,24 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
       <DrawerContent className="bg-background border-border max-h-[92vh]">
         <DrawerHeader className="px-6 pt-6 pb-2">
           <DrawerTitle className="text-foreground text-lg font-semibold">
-            {isEditMode ? (isLiabilityType ? '부채 수정' : '자산 수정') : '자산 / 부채 추가'}
+            {isProductMode
+              ? (isEditMode ? '상품 수정' : '상품 추가')
+              : (isEditMode ? (isLiabilityType ? '부채 수정' : '자산 수정') : '자산 / 부채 추가')
+            }
           </DrawerTitle>
+          {isProductMode && (
+            <p className="text-xs text-muted-foreground mt-1">
+              소속 계좌: <span className="text-foreground font-medium">
+                {parentInfo?.name ?? eligibleParents.find(p => p.id === parentAccountId)?.name ?? ''}
+              </span>
+            </p>
+          )}
         </DrawerHeader>
 
         <div className="px-6 py-4 space-y-6 overflow-y-auto">
 
-          {/* 계좌 종류 */}
-          <div>
+          {/* 계좌 종류 — 상품 모드에서는 숨김 */}
+          {!isProductMode && <div>
             <Label className="text-muted-foreground text-xs mb-3 block">종류</Label>
             <div className="grid grid-cols-2 gap-2">
               {ACCOUNT_TYPES.map((t) => {
@@ -471,7 +498,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
                 )
               })}
             </div>
-          </div>
+          </div>}
 
           {/* 이름 */}
           <div>
@@ -480,14 +507,14 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
               type="text"
               value={name}
               onChange={e => setName(e.target.value)}
-              placeholder={isRealEstate ? '예: 래미안위브 아파트' : isDebt ? '예: 주택담보대출' : '예: 생활비 통장'}
+              placeholder={isProductMode ? '예: TIGER 200 ETF, 채권형 펀드' : isRealEstate ? '예: 래미안위브 아파트' : isDebt ? '예: 주택담보대출' : '예: 생활비 통장'}
               maxLength={30}
               className="w-full h-11 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors"
             />
           </div>
 
-          {/* 상위 계좌 (계층 구조) */}
-          {!isLiabilityType && !isRealEstate && eligibleParents.length > 0 && (
+          {/* 상위 계좌 (계층 구조) — 상품 모드에서는 숨김 */}
+          {!isProductMode && !isLiabilityType && !isRealEstate && eligibleParents.length > 0 && (
             <div>
               <Label className="text-muted-foreground text-xs mb-1.5 block">상위 계좌</Label>
               <div className="relative">
@@ -527,8 +554,10 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
             </div>
           </div>
 
+          {/* ── 상세 섹션들 — 상품 모드에서는 모두 숨김 ─────────────── */}
+
           {/* ── 부동산 상세 ─────────────────────────────────────────── */}
-          {isRealEstate && (
+          {!isProductMode && isRealEstate && (
             <>
               <SectionDivider label="부동산 상세" />
               <div>
@@ -559,7 +588,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
           )}
 
           {/* ── 금융자산 상세 ────────────────────────────────────────── */}
-          {isFinancialType && (
+          {!isProductMode && isFinancialType && (
             <>
               <SectionDivider label="금융자산 상세" />
               <div className="grid grid-cols-2 gap-3">
@@ -571,7 +600,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
           )}
 
           {/* ── 연금 상세 ────────────────────────────────────────────── */}
-          {isPension && (
+          {!isProductMode && isPension && (
             <>
               <SectionDivider label="연금 상세" />
 
@@ -647,7 +676,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
           )}
 
           {/* ── 부채 상세 ────────────────────────────────────────────── */}
-          {isDebt && (
+          {!isProductMode && isDebt && (
             <>
               <SectionDivider label="부채 상세" />
 
@@ -743,7 +772,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
           )}
 
           {/* 명의자 */}
-          {familyMembers.length > 0 && (
+          {!isProductMode && familyMembers.length > 0 && (
             <div>
               <Label className="text-muted-foreground text-xs mb-1.5 block">명의자</Label>
               <div className="relative">
@@ -764,7 +793,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
           )}
 
           {/* 가족 공유 설정 */}
-          <div>
+          {!isProductMode && <div>
             <Label className="text-muted-foreground text-xs mb-3 block">가족 공유 설정</Label>
             <div className="space-y-2">
               {SHARE_LEVELS.map((s) => {
@@ -795,7 +824,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
                 )
               })}
             </div>
-          </div>
+          </div>}
         </div>
 
         <DrawerFooter className="px-6 pb-8 pt-2 gap-2">

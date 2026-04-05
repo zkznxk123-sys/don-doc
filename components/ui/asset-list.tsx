@@ -4,7 +4,7 @@ import { useState } from 'react'
 import {
   Banknote, TrendingUp, Bitcoin, Building2, Layers,
   Users, User, Eye, EyeOff, ChevronRight, Plus, Lock,
-  CreditCard, HandCoins, CornerDownRight, PiggyBank,
+  CreditCard, HandCoins, CornerDownRight, PiggyBank, PackagePlus,
 } from 'lucide-react'
 import { cn, formatCurrency, formatLargeNumber } from '@/lib/utils'
 import type { AccountInitialData } from '@/components/ui/account-drawer'
@@ -28,6 +28,7 @@ interface AssetListProps {
   totalAssets: number
   onEdit: (account: AccountInitialData) => void
   onAdd: () => void
+  onAddProduct?: (parentId: string, parentType: string, parentName: string) => void
   currentUserId?: string
 }
 
@@ -91,11 +92,13 @@ function AssetRow({
   account,
   totalAssets,
   onEdit,
+  onAddProduct,
   currentUserId,
 }: {
   account: AccountInitialData
   totalAssets: number
   onEdit: (a: AccountInitialData) => void
+  onAddProduct?: (parentId: string, parentType: string, parentName: string) => void
   currentUserId?: string
 }) {
   const meta = TYPE_META[account.type] ?? TYPE_META['CASH']
@@ -103,6 +106,7 @@ function AssetRow({
   const allocation = totalAssets > 0 ? Math.round((account.balance / totalAssets) * 100) : 0
   const hasLinkedDebts = (account.linkedDebts?.length ?? 0) > 0
   const netEquity = account.netEquity
+  const canAddProduct = (account.type === 'INVESTMENT' || account.type === 'PENSION') && !!onAddProduct
 
   if (account.isMasked) {
     return (
@@ -121,15 +125,11 @@ function AssetRow({
     )
   }
 
-  return (
-    <button
-      onClick={() => onEdit(account)}
-      className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-muted/50 transition-colors text-left group"
-    >
+  const infoContent = (
+    <>
       <div className={cn('w-10 h-10 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center flex-shrink-0', meta.bg)}>
         <MetaIcon className={cn('w-5 h-5 sm:w-4 sm:h-4', meta.color)} />
       </div>
-
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <p className="text-sm font-medium text-foreground truncate">{account.name}</p>
@@ -159,7 +159,39 @@ function AssetRow({
           )}
         </div>
       </div>
+    </>
+  )
 
+  // INVESTMENT/PENSION: 계좌 편집 영역과 상품 추가 버튼을 분리
+  if (canAddProduct) {
+    return (
+      <div className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-muted/50 transition-colors group">
+        <button onClick={() => onEdit(account)} className="flex items-center gap-4 flex-1 min-w-0 text-left">
+          {infoContent}
+        </button>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className="text-sm font-semibold text-foreground tabular-nums">
+            {formatCurrency(account.balance)}
+          </span>
+          <button
+            onClick={() => onAddProduct(account.id, account.type, account.name)}
+            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            title="상품 추가"
+          >
+            <PackagePlus className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">상품</span>
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <button
+      onClick={() => onEdit(account)}
+      className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-muted/50 transition-colors text-left group"
+    >
+      {infoContent}
       <div className="flex items-center gap-2 flex-shrink-0">
         <span className="text-sm font-semibold text-foreground tabular-nums">
           {formatCurrency(account.balance)}
@@ -188,9 +220,11 @@ function LinkedDebtRow({ debt }: { debt: { id: string; name: string; balance: nu
 
 function SubAccountRow({
   sub,
+  parentId,
   onEdit,
 }: {
   sub: { id: string; name: string; balance: number; type: string }
+  parentId: string
   onEdit: (a: AccountInitialData) => void
 }) {
   const meta = TYPE_META[sub.type] ?? TYPE_META['INVESTMENT']
@@ -200,6 +234,7 @@ function SubAccountRow({
       onClick={() => onEdit({
         id: sub.id, name: sub.name, type: sub.type as AccountInitialData['type'],
         balance: sub.balance, isShared: true, shareLevel: 'PUBLIC' as AccountInitialData['shareLevel'],
+        parentAccountId: parentId,
       })}
       className="w-full flex items-center gap-2 pl-[52px] pr-5 py-2.5 border-t border-border/40 bg-background/30 hover:bg-muted/30 transition-colors text-left group"
     >
@@ -218,7 +253,7 @@ function SubAccountRow({
 
 // ─── AssetList ────────────────────────────────────────────────────────────────
 
-export function AssetList({ accounts, totalAssets, onEdit, onAdd, currentUserId }: AssetListProps) {
+export function AssetList({ accounts, totalAssets, onEdit, onAdd, onAddProduct, currentUserId }: AssetListProps) {
   const [excludeZero, setExcludeZero] = useState(true)
   const { threshold } = useAssetThreshold()
 
@@ -272,11 +307,12 @@ export function AssetList({ accounts, totalAssets, onEdit, onAdd, currentUserId 
                     account={account}
                     totalAssets={totalAssets}
                     onEdit={onEdit}
+                    onAddProduct={onAddProduct}
                     currentUserId={currentUserId}
                   />
-                  {/* 하위 계좌 인라인 */}
+                  {/* 하위 계좌(상품) 인라인 */}
                   {account.subAccounts?.map(sub => (
-                    <SubAccountRow key={sub.id} sub={sub} onEdit={onEdit} />
+                    <SubAccountRow key={sub.id} sub={sub} parentId={account.id} onEdit={onEdit} />
                   ))}
                   {/* 연결된 부채 인라인 */}
                   {account.linkedDebts?.map(debt => (

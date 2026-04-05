@@ -6,7 +6,7 @@ import { AssetDonutChart, type AssetTypeData } from '@/components/ui/asset-donut
 import { NetWorthChart } from '@/components/ui/networth-chart'
 import { SnapshotAlertBanner } from '@/components/ui/snapshot-alert-banner'
 import { RealEstateCard } from '@/components/ui/real-estate-card'
-import { AccountDrawer, type AccountInitialData } from '@/components/ui/account-drawer'
+import { AccountDrawer, type AccountInitialData, type ParentInfo } from '@/components/ui/account-drawer'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
   AlertDialog,
@@ -63,6 +63,7 @@ export default function AssetsPage() {
   const [totalDebtMonthlyPayment, setTotalDebtMonthlyPayment] = useState(0)
   const [avgMonthlyIncome, setAvgMonthlyIncome] = useState<number | null>(null)
   const [isAccountDrawerOpen, setIsAccountDrawerOpen] = useState(false)
+  const [drawerParentInfo, setDrawerParentInfo] = useState<ParentInfo | undefined>()
   const [netWorthHistory, setNetWorthHistory] = useState<NetWorthSnapshotData[]>([])
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([])
 
@@ -159,12 +160,20 @@ export default function AssetsPage() {
 
   const openAdd = () => {
     setSelectedAccount(undefined)
+    setDrawerParentInfo(undefined)
     setIsAccountDrawerOpen(true)
   }
 
   const openEdit = (account: AccountInitialData) => {
     if (account.isMasked) return
     setSelectedAccount(account)
+    setDrawerParentInfo(undefined)
+    setIsAccountDrawerOpen(true)
+  }
+
+  const openAddProduct = (parentId: string, parentType: string, parentName: string) => {
+    setSelectedAccount(undefined)
+    setDrawerParentInfo({ id: parentId, type: parentType as AccountInitialData['type'], name: parentName })
     setIsAccountDrawerOpen(true)
   }
 
@@ -290,6 +299,7 @@ export default function AssetsPage() {
               totalAssets={totalAssets}
               onEdit={openEdit}
               onAdd={openAdd}
+              onAddProduct={openAddProduct}
               currentUserId={shellUser?.id}
             />
           </div>
@@ -353,6 +363,7 @@ export default function AssetsPage() {
               totalAssets={financialTotalAssets}
               onEdit={openEdit}
               onAdd={openAdd}
+              onAddProduct={openAddProduct}
               currentUserId={shellUser?.id}
             />
           )}
@@ -387,10 +398,12 @@ export default function AssetsPage() {
         onClose={() => {
           setIsAccountDrawerOpen(false)
           setSelectedAccount(undefined)
+          setDrawerParentInfo(undefined)
         }}
         onSuccess={loadData}
         initialData={selectedAccount}
         familyMembers={familyMembers}
+        parentInfo={drawerParentInfo}
       />
 
       {/* 수동 스냅샷 저장 확인 다이얼로그 */}
