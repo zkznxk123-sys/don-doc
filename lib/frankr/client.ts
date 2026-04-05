@@ -5,7 +5,8 @@ import type { FrankrCalcType, FrankrResponse, PropertyTaxParams, AcquisitionTaxP
 // 내부 프록시 API를 통해 Frankr API 호출
 async function callFrankr(
   calcType: FrankrCalcType,
-  params: Record<string, unknown>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  params: any
 ): Promise<FrankrResponse> {
   const res = await fetch('/api/frankr', {
     method: 'POST',
@@ -17,22 +18,9 @@ async function callFrankr(
 
 export const frankr = {
   // 보유세 (재산세 + 종합부동산세)
-  propertyTax: (params: PropertyTaxParams) =>
-    callFrankr('property', params as Record<string, unknown>),
-
-  // 취득세
-  acquisitionTax: (params: AcquisitionTaxParams) =>
-    callFrankr('acquisition', params as Record<string, unknown>),
-
-  // 양도세
-  transferTax: (params: TransferTaxParams) =>
-    callFrankr('transfer', params as Record<string, unknown>),
-
-  // 증여세
-  giftTax: (params: GiftTaxParams) =>
-    callFrankr('give', params as Record<string, unknown>),
-
-  // 상속세
-  inheritanceTax: (params: InheritanceTaxParams) =>
-    callFrankr('inherit', params as Record<string, unknown>),
+  propertyTax: (params: PropertyTaxParams) => callFrankr('property', params),
+  acquisitionTax: (params: AcquisitionTaxParams) => callFrankr('acquisition', params),
+  transferTax: (params: TransferTaxParams) => callFrankr('transfer', params),
+  giftTax: (params: GiftTaxParams) => callFrankr('give', params),
+  inheritanceTax: (params: InheritanceTaxParams) => callFrankr('inherit', params),
 }
