@@ -44,12 +44,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: `지원하지 않는 계산 유형: ${calcType}` }, { status: 400 })
     }
 
-    // 캐시 확인
+    // 캐시 확인 (DEBUG: 임시 비활성화)
     const cacheKey = getCacheKey(calcType, params)
-    const cached = cache.get(cacheKey)
-    if (cached && cached.expiresAt > Date.now()) {
-      return NextResponse.json({ success: true, data: cached.data, basis: cached.basis, cached: true })
-    }
+    // const cached = cache.get(cacheKey)
+    // if (cached && cached.expiresAt > Date.now()) {
+    //   return NextResponse.json({ success: true, data: cached.data, basis: cached.basis, cached: true })
+    // }
 
     // Frankr API 호출 — clientID/clientSecret을 헤더로 전달
     // property(보유세)는 중첩 배열이 있어 JSON, 나머지는 form-urlencoded 필요
@@ -78,6 +78,7 @@ export async function POST(req: NextRequest) {
     }
 
     const frankrRes = await res.json()
+    console.log('[Frankr RAW RESPONSE]', JSON.stringify(frankrRes, null, 2))
 
     // Frankr가 HTTP 200이지만 success: false로 입력값 오류를 반환하는 경우
     if (frankrRes.success === false) {
