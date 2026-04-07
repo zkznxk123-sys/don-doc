@@ -29,6 +29,50 @@ function toManWon(won: number | null | undefined): number | undefined {
   return won / 10000
 }
 
+// ── 재산세 직접 계산 (지방세법 §111, 1세대1주택 특례 포함) ─────────────────
+function calcPropertyTax(gongsiPrice: number, oneHouse: boolean) {
+  const fairRate = oneHouse ? 0.45 : 0.60
+  const taxBase  = Math.round(gongsiPrice * fairRate)
+
+  let propertyTax: number
+  let rateDesc: string
+
+  if (oneHouse) {
+    // 1세대1주택 특례 세율 (한시적 감면, ~2026)
+    if (taxBase <= 60_000_000) {
+      propertyTax = Math.round(taxBase * 0.0005)
+      rateDesc    = '과세표준 × 0.05% (1주택 특례)'
+    } else if (taxBase <= 150_000_000) {
+      propertyTax = Math.round(30_000 + (taxBase - 60_000_000) * 0.001)
+      rateDesc    = '3만원 + 6천만원 초과분 × 0.1% (1주택 특례)'
+    } else if (taxBase <= 300_000_000) {
+      propertyTax = Math.round(120_000 + (taxBase - 150_000_000) * 0.002)
+      rateDesc    = '12만원 + 1.5억 초과분 × 0.2% (1주택 특례)'
+    } else {
+      propertyTax = Math.round(420_000 + (taxBase - 300_000_000) * 0.0035)
+      rateDesc    = '42만원 + 3억 초과분 × 0.35% (1주택 특례)'
+    }
+  } else {
+    // 일반 세율
+    if (taxBase <= 60_000_000) {
+      propertyTax = Math.round(taxBase * 0.001)
+      rateDesc    = '과세표준 × 0.1%'
+    } else if (taxBase <= 150_000_000) {
+      propertyTax = Math.round(60_000 + (taxBase - 60_000_000) * 0.0015)
+      rateDesc    = '6만원 + 6천만원 초과분 × 0.15%'
+    } else if (taxBase <= 300_000_000) {
+      propertyTax = Math.round(195_000 + (taxBase - 150_000_000) * 0.0025)
+      rateDesc    = '19.5만원 + 1.5억 초과분 × 0.25%'
+    } else {
+      propertyTax = Math.round(570_000 + (taxBase - 300_000_000) * 0.004)
+      rateDesc    = '57만원 + 3억 초과분 × 0.4%'
+    }
+  }
+
+  const educationTax = Math.round(propertyTax * 0.2)
+  return { taxBase, fairRate: fairRate * 100, propertyTax, educationTax, subtotal: propertyTax + educationTax, rateDesc }
+}
+
 function ResultTable({ rows }: { rows: FrankrResultRow[] }) {
   return (
     <div className="mt-3 rounded-xl overflow-hidden border border-border">
@@ -118,12 +162,46 @@ export function RealEstateTaxCalc({ data }: Props) {
           firstOfLife: acquisitionForm.firstOfLife,
         })
       } else {
-        res = await frankr.propertyTax({
+        // ── 재산세 직접 계산 ──
+        const pt = calcPropertyTax(propertyForm.amount, propertyForm.oneHouse === 'Y')
+
+        // ── 종부세 Frankr API ──
+        const synthRes = await frankr.propertyTax({
           property: [{ amount: Math.round(propertyForm.amount / 10000), conArea: propertyForm.conArea }],
           oneHouse: propertyForm.oneHouse,
-          // 1세대1주택자는 45%, 그 외 60% (현행 정책 기준)
-          propTaxFairRate: propertyForm.oneHouse === 'Y' ? '45' : '60',
+          propTaxFairRate: String(pt.fairRate),
         })
+
+        // 종부세 총납부액 파악
+        let synthTotal = 0
+        const synthRows: FrankrResultRow[] = []
+        if (synthRes.success && Array.isArray(synthRes.data)) {
+          for (const row of synthRes.data) {
+            const val = parseInt((row.값 ?? '0').replace(/,/g, ''), 10)
+            if (row.적요 === '총 납부액') {
+              synthTotal = isNaN(val) ? 0 : val
+            } else {
+              synthRows.push(row)  // 총납부액 제외한 상세 rows
+            }
+          }
+        }
+
+        // 재산세 rows
+        const rows: FrankrResultRow[] = [
+          { 적요: '공시가격',   값: propertyForm.amount.toLocaleString(),  비고: '입력값' },
+          { 적요: '과세표준',   값: pt.taxBase.toLocaleString(),           비고: `공정시장가액비율 ${pt.fairRate}% 적용` },
+          { 적요: '재산세',     값: pt.propertyTax.toLocaleString(),       비고: pt.rateDesc },
+          { 적요: '지방교육세', 값: pt.educationTax.toLocaleString(),      비고: '재산세액의 20%' },
+          { 적요: '재산세 소계', 값: pt.subtotal.toLocaleString(),          비고: '재산세 + 지방교육세', 옵션: 'font-weight:bold' },
+          // 종부세 상세 rows (종부세 > 0일 때)
+          ...synthRows,
+          // 총 보유세
+          { 적요: '총 납부액', 값: (pt.subtotal + synthTotal).toLocaleString(), 비고: synthTotal > 0 ? '재산세 + 지방교육세 + 종합부동산세' : '재산세 + 지방교육세', 옵션: 'background-color:#eeefff; font-weight:bold' },
+        ]
+
+        setResults(prev => ({ ...prev, property: rows }))
+        setBasis(prev => ({ ...prev, property: synthRes.basis ?? null }))
+        return
       }
 
       if (res.success && Array.isArray(res.data)) {
