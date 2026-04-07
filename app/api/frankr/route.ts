@@ -89,7 +89,9 @@ export async function POST(req: NextRequest) {
 
     const rawData = frankrRes.data ?? frankrRes
     // Frankr 응답 구조에 따라 data가 배열 또는 배열을 감싼 객체일 수 있음
-    const data: unknown[] = Array.isArray(rawData) ? rawData : (Array.isArray(rawData?.data) ? rawData.data : [])
+    // property(보유세)는 [[재산세rows], [종부세rows]] 형태의 중첩 배열로 반환될 수 있으므로 1단계 flatten
+    const rawArr: unknown[] = Array.isArray(rawData) ? rawData : (Array.isArray(rawData?.data) ? rawData.data : [])
+    const data: unknown[] = rawArr.flatMap(item => Array.isArray(item) ? item : [item])
     const basis = frankrRes.basis ?? null     // 비과세 사유 등 HTML 설명
 
     // 1시간 캐싱

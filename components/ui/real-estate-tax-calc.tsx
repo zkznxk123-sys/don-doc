@@ -121,7 +121,8 @@ export function RealEstateTaxCalc({ data }: Props) {
         res = await frankr.propertyTax({
           property: [{ amount: Math.round(propertyForm.amount / 10000), conArea: propertyForm.conArea }],
           oneHouse: propertyForm.oneHouse,
-          propTaxFairRate: '60',
+          // 1세대1주택자는 45%, 그 외 60% (현행 정책 기준)
+          propTaxFairRate: propertyForm.oneHouse === 'Y' ? '45' : '60',
         })
       }
 
