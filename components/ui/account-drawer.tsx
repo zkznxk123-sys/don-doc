@@ -5,7 +5,7 @@ import {
   Banknote, TrendingUp, Bitcoin, Building2, Users, Eye, EyeOff,
   Loader2, Trash2, CreditCard, HandCoins, ChevronDown, PiggyBank,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, toKoreanUnit } from '@/lib/utils'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer'
 import { Label } from '@/components/ui/label'
 import {
@@ -552,6 +552,12 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">원</span>
             </div>
+            {(() => {
+              const n = parseFloat(balance.replace(/,/g, ''))
+              return n > 0 ? (
+                <p className="text-[11px] text-muted-foreground/50 mt-1.5 tabular-nums">{toKoreanUnit(n)}</p>
+              ) : null
+            })()}
           </div>
 
           {/* ── 상세 섹션들 — 상품 모드에서는 모두 숨김 ─────────────── */}

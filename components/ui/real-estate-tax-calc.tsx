@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Calculator, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, toKoreanUnit } from '@/lib/utils'
 import { frankr } from '@/lib/frankr/client'
 import type { FrankrResultRow } from '@/lib/frankr/types'
 import type { RealEstateWithDebts } from '@/lib/actions/accounts'
@@ -281,6 +281,9 @@ export function RealEstateTaxCalc({ data }: Props) {
                   onChange={e => setTransferForm(p => ({ ...p, sellAmt: Number(e.target.value) }))}
                   className="w-full bg-muted/40 rounded-lg px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-purple-400/50"
                 />
+                {transferForm.sellAmt > 0 && (
+                  <p className="text-[11px] text-purple-400/80 mt-1 tabular-nums">{toKoreanUnit(transferForm.sellAmt)}</p>
+                )}
               </div>
               <div className="flex gap-2">
                 <ToggleChip
@@ -348,7 +351,12 @@ export function RealEstateTaxCalc({ data }: Props) {
                   placeholder="공시가격을 입력하세요"
                   className="w-full bg-muted/40 rounded-lg px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-purple-400/50"
                 />
-                <p className="text-[10px] text-muted-foreground/50 mt-1">시세가 아닌 공시가격 기준 · 국토부 부동산공시가격알리미에서 확인</p>
+                <div className="flex items-center justify-between mt-1">
+                  <p className="text-[10px] text-muted-foreground/50">시세가 아닌 공시가격 기준 · 국토부 부동산공시가격알리미에서 확인</p>
+                  {propertyForm.amount > 0 && (
+                    <p className="text-[11px] text-purple-400/80 tabular-nums">{toKoreanUnit(propertyForm.amount)}</p>
+                  )}
+                </div>
               </div>
               <div className="flex gap-2">
                 <ToggleChip
