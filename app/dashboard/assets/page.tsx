@@ -128,7 +128,7 @@ export default function AssetsPage() {
         getFamilyRealEstateSummary().then(d => setReSummary(d)),
         getFamilyPensionAccounts().then(d => setPensionSummary(d)),
         getFamilyTotalDebtMonthlyPayment().then(v => setTotalDebtMonthlyPayment(v)),
-        getFamilyInfo().then(r => { if (r.data) setFamilyMembers(r.data.members) }),
+        getFamilyInfo().then(r => { if (r?.data) setFamilyMembers(r.data.members) }).catch(() => {}),
         fetch('/api/stats/cashflow?months=6').then(r => r.json()).then(d => {
           if (d.success && d.months?.length) {
             const avg = d.months.reduce((s: number, m: { income: number }) => s + m.income, 0) / d.months.length
