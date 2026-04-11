@@ -17,7 +17,7 @@ import { AccountDrawer } from '@/components/ui/account-drawer'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useDashboardActions } from '@/components/layout/DashboardShell'
-import { getNetWorthHistory, createSnapshotFromCurrentBalances, type NetWorthSnapshotData } from '@/lib/actions/networth'
+import { createSnapshotFromCurrentBalances, type NetWorthSnapshotData } from '@/lib/actions/networth'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -705,91 +705,70 @@ export default function Dashboard() {
 
   const monthLabel = selectedMonth === nowMonth ? '이번 달' : selectedMonth.replace('-', '년 ') + '월'
 
-  // ── 기본 데이터 로드 ─────────────────────────────────────────────────────────
+  // ── 통합 대시보드 데이터 로드 (단일 API 호출) ─────────────────────────────────
+  const loadDashboard = useCallback(async (month: string, uid: string) => {
+    setBaseLoading(true)
+    setMonthLoading(true)
+    try {
+      const res = await fetch(`/api/dashboard?month=${month}&cashflowMonths=12`)
+      const json = await res.json()
+      if (!json.success) return
+
+      // wealth
+      const w = json.wealth
+      setTotalNetWorth(w.totalNetWorth ?? w.totalAssets)
+      setTotalAssets(w.totalAssets)
+      if (w.assetsByType) setAssetsByType(w.assetsByType)
+
+      // networth history
+      setNetWorthHistory(json.netWorthHistory ?? [])
+
+      // cashflow
+      if (json.cashflow?.months) setCashflowMonths(json.cashflow.months)
+
+      // transactions
+      const txData = json.transactions
+      if (txData?.list) {
+        setTransactions(txData.list.map((tx: any) => ({
+          id: tx.id, amount: tx.amount, description: tx.description,
+          category: tx.category, date: tx.date.split('T')[0],
+          userId: tx.userId, userName: tx.userName, isMasked: tx.isMasked,
+          isExcluded: tx.isExcluded ?? false,
+          excludeFromBudget: tx.excludeFromBudget ?? false,
+          subItems: tx.subItems ?? [],
+        })))
+      }
+
+      // budget
+      const b = json.budget
+      if (b) {
+        setBudgetData(b)
+        const me = b.members?.find((mem: any) => mem.id === uid)
+        if (me?.budget) setMyBudgetFromDB(me.budget)
+      }
+
+      // insights
+      if (json.insights?.success) setInsights(json.insights)
+    } finally {
+      setBaseLoading(false)
+      setMonthLoading(false)
+    }
+  }, [])
+
+  // ── 초기 로드 + shellUser 변경 ─────────────────────────────────────────────────
   useEffect(() => {
     if (!shellUser) return
     if (!shellUser.familyId) { window.location.href = '/onboarding'; return }
     setCurrentUserId(shellUser.id)
     if (shellUser.role === 'MEMBER') setViewMode('MEMBER')
+    loadDashboard(selectedMonth, shellUser.id)
+  }, [shellUser]) // eslint-disable-line react-hooks/exhaustive-deps
 
-    async function loadBase() {
-      setBaseLoading(true)
-      try {
-        const [wealthRes, history] = await Promise.all([
-          fetch('/api/wealth').then(r => r.json()),
-          getNetWorthHistory(),
-        ])
-        if (wealthRes.success) {
-          setTotalNetWorth(wealthRes.totalNetWorth ?? wealthRes.totalAssets)
-          setTotalAssets(wealthRes.totalAssets)
-          if (wealthRes.assetsByType) setAssetsByType(wealthRes.assetsByType)
-        }
-        setNetWorthHistory(history)
-      } finally {
-        setBaseLoading(false)
-      }
-    }
-    loadBase()
-  }, [shellUser])
-
-  // ── 현금흐름 12개월 (selectedMonth 무관) ────────────────────────────────────
+  // ── 월 변경 시 재로드 ──────────────────────────────────────────────────────────
   useEffect(() => {
-    fetch('/api/stats/cashflow?months=12')
-      .then(r => r.json())
-      .then(json => { if (json.success) setCashflowMonths(json.months) })
-  }, [refreshKey])
-
-  // ── 월별 데이터 로드 ─────────────────────────────────────────────────────────
-  useEffect(() => {
-    async function loadMonth() {
-      setMonthLoading(true)
-      try {
-        const [txJson, budgetJson, insJson] = await Promise.all([
-          fetch(`/api/transactions/list?month=${selectedMonth}`).then(r => r.json()),
-          fetch(`/api/budget?month=${selectedMonth}`).then(r => r.json()),
-          fetch(`/api/stats/insights?month=${selectedMonth}`).then(r => r.json()),
-        ])
-
-        if (txJson.success) {
-          setTransactions((txJson.transactions ?? []).map((tx: any) => ({
-            id: tx.id, amount: tx.amount, description: tx.description,
-            category: tx.category, date: tx.date.split('T')[0],
-            userId: tx.userId, userName: tx.userName, isMasked: tx.isMasked,
-            isExcluded: tx.isExcluded ?? false,
-            excludeFromBudget: tx.excludeFromBudget ?? false,
-            subItems: tx.subItems ?? [],
-          })))
-        }
-
-        if (budgetJson.success) {
-          setBudgetData(budgetJson)
-          const me = budgetJson.members?.find((mem: any) => mem.id === currentUserId)
-          if (me?.budget) setMyBudgetFromDB(me.budget)
-        }
-
-        if (insJson.success) setInsights(insJson)
-      } finally {
-        setMonthLoading(false)
-      }
-    }
-    loadMonth()
-  }, [selectedMonth, refreshKey, currentUserId])
-
-  // refreshKey로 자산 재로드
-  useEffect(() => {
-    if (refreshKey <= 0) return
-    Promise.all([
-      fetch('/api/wealth').then(r => r.json()),
-      getNetWorthHistory(),
-    ]).then(([wealthRes, history]) => {
-      if (wealthRes.success) {
-        setTotalNetWorth(wealthRes.totalNetWorth ?? wealthRes.totalAssets)
-        setTotalAssets(wealthRes.totalAssets)
-        if (wealthRes.assetsByType) setAssetsByType(wealthRes.assetsByType)
-      }
-      setNetWorthHistory(history)
-    }).catch(() => {})
-  }, [refreshKey])
+    if (!currentUserId) return
+    loadDashboard(selectedMonth, currentUserId)
+  }, [selectedMonth, refreshKey]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── 렌더 ───────────────────────────────────────────────────────────────────
 
@@ -905,13 +884,11 @@ export default function Dashboard() {
                   : <NetWorthChart
                       data={netWorthHistory}
                       onDataSaved={async () => {
-                        const h = await getNetWorthHistory()
-                        setNetWorthHistory(h)
+                        await loadDashboard(selectedMonth, currentUserId)
                       }}
                       onQuickSnapshot={async () => {
                         await createSnapshotFromCurrentBalances(getCurrentYearMonth())
-                        const h = await getNetWorthHistory()
-                        setNetWorthHistory(h)
+                        await loadDashboard(selectedMonth, currentUserId)
                       }}
                     />
                 }
@@ -1111,16 +1088,7 @@ export default function Dashboard() {
         isOpen={isAccountDrawerOpen}
         onClose={() => setIsAccountDrawerOpen(false)}
         onSuccess={async () => {
-          const [wRes, h] = await Promise.all([
-            fetch('/api/wealth').then(r => r.json()),
-            getNetWorthHistory(),
-          ])
-          if (wRes.success) {
-            setTotalNetWorth(wRes.totalNetWorth ?? wRes.totalAssets)
-            setTotalAssets(wRes.totalAssets)
-            if (wRes.assetsByType) setAssetsByType(wRes.assetsByType)
-          }
-          setNetWorthHistory(h)
+          await loadDashboard(selectedMonth, currentUserId)
           setIsAccountDrawerOpen(false)
         }}
       />

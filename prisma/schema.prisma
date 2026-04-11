@@ -117,6 +117,8 @@ model User {
   accounts               Account[]
   budgets                Budget[]
   categoryPreferences    UserCategoryPreference[]
+
+  @@index([familyId])
 }
 
 model PensionDetail {
@@ -176,6 +178,9 @@ model Account {
   financialAssetDetail FinancialAssetDetail?
   debtDetail          DebtDetail?
   pensionDetail       PensionDetail?
+
+  @@index([familyId, parentAccountId])
+  @@index([userId])
 }
 
 model Transaction {
@@ -198,6 +203,10 @@ model Transaction {
   parentId     String?
   parent       Transaction?  @relation("SubTransactions", fields: [parentId], references: [id], onDelete: Cascade)
   subItems     Transaction[] @relation("SubTransactions")
+
+  @@index([userId, date])
+  @@index([accountId])
+  @@index([parentId])
 }
 
 model RealEstateDetail {
@@ -248,6 +257,8 @@ model Budget {
   user      User?       @relation(fields: [userId], references: [id])
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
+
+  @@index([familyId, month])
 }
 
 model AccountTypeLabel {
