@@ -64,13 +64,34 @@ export async function GET(req: NextRequest) {
   if (!apiKey) return NextResponse.json({ error: 'KAKAO_REST_API_KEY 미설정' }, { status: 500 })
 
   try {
-    const url = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(query + ' 아파트')}&category_group_code=&size=15`
+    const url = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(query)}&size=15`
     const res = await fetch(url, {
       headers: { Authorization: `KakaoAK ${apiKey}` },
     })
+
+    if (!res.ok) {
+      const errText = await res.text()
+      console.error('[realestate/search] Kakao API 오류', res.status, errText)
+      return NextResponse.json({ error: `Kakao API ${res.status}`, results: [] })
+    }
+
     const data = await res.json()
 
-    const results = (data.documents ?? []).map((doc: any) => {
+    // 아파트 관련 결과만 필터링 (place_name에 아파트/단지/APT 포함)
+    const filtered = (data.documents ?? []).filter((doc: any) => {
+      const name: string = doc.place_name ?? ''
+      const cat: string = doc.category_name ?? ''
+      return (
+        cat.includes('아파트') ||
+        name.includes('아파트') ||
+        name.includes('APT') ||
+        // 단지명은 보통 동/타워/파크/리버/힐/래미안/푸르지오 등 포함
+        /[가-힣]{2,}(힐스테이트|래미안|푸르지오|자이|e편한세상|아이파크|롯데캐슬|더샵|SK뷰|호반베르디움|파크|리버|타워|센트럴|포레|마크|더|파크|센터|스카이)/.test(name) ||
+        true  // 일단 전체 반환 후 프론트에서 보여주기
+      )
+    }).slice(0, 10)
+
+    const results = filtered.map((doc: any) => {
       const address = doc.road_address_name || doc.address_name || ''
       return {
         name: doc.place_name,
@@ -85,6 +106,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ results })
   } catch (e) {
     console.error('[realestate/search]', e)
-    return NextResponse.json({ error: String(e) }, { status: 500 })
+    return NextResponse.json({ error: String(e), results: [] }, { status: 500 })
   }
 }
