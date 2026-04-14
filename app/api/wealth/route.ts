@@ -50,6 +50,9 @@ export async function GET(req: NextRequest) {
           select: { id: true, name: true, balance: true, type: true },
           orderBy: { name: 'asc' },
         },
+        realEstateDetail: {
+          select: { complexName: true, bjdCode: true, area: true, floor: true, propertyType: true },
+        },
       },
     })
 
@@ -64,6 +67,7 @@ export async function GET(req: NextRequest) {
       isJoint: boolean
       ownerName: string | null
       subAccounts: { id: string; name: string; balance: number; type: string }[]
+      realEstateDetail: { complexName: string | null; bjdCode: string | null; area: number | null; floor: number | null; propertyType: string | null } | null
     }
 
     const accountSummary: AccountSummary[] = []
@@ -87,6 +91,7 @@ export async function GET(req: NextRequest) {
         isJoint: acc.isJoint,
         ownerName: acc.user?.name ?? null,
         subAccounts: acc.subAccounts,
+        realEstateDetail: acc.realEstateDetail ?? null,
       }
 
       if (isCFOLevel(role) || isOwn) {

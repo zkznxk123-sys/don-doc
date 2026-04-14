@@ -358,7 +358,9 @@ model RealEstatePriceHistory {
   targetId  String?                                           // 목표 단지
   target    TargetProperty? @relation(fields: [targetId], references: [id], onDelete: Cascade)
   yearMonth String                                            // "YYYY-MM"
-  price     Float                                             // 거래/시세금액 (원)
+  price     Float                                             // 중앙값 (원)
+  priceMin  Float?                                            // 최저 거래가 (원, MOLIT)
+  priceMax  Float?                                            // 최고 거래가 (원, MOLIT)
   area      Float?                                            // 실거래 면적 (㎡), 국토부 조회 시 기록
   source    String   @default("MANUAL")                      // MANUAL | MOLIT
   createdAt DateTime @default(now())

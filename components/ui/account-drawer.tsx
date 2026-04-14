@@ -32,6 +32,13 @@ export interface AccountInitialData {
   isJoint?: boolean
   parentAccountId?: string | null
   subAccounts?: { id: string; name: string; balance: number; type: string }[]
+  realEstateDetail?: {
+    complexName: string | null
+    bjdCode: string | null
+    area: number | null
+    floor: number | null
+    propertyType: string | null
+  } | null
 }
 
 export interface FamilyMemberOption {

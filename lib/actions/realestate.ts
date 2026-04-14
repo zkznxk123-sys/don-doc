@@ -9,6 +9,8 @@ export interface PriceHistoryPoint {
   id: string
   yearMonth: string
   price: number
+  priceMin: number | null
+  priceMax: number | null
   area: number | null
   source: string
 }
@@ -40,6 +42,8 @@ export async function getPriceHistory(accountId: string): Promise<PriceHistoryPo
     id: r.id,
     yearMonth: r.yearMonth,
     price: r.price,
+    priceMin: r.priceMin,
+    priceMax: r.priceMax,
     area: r.area,
     source: r.source,
   }))
@@ -90,23 +94,27 @@ export async function deletePriceHistory(id: string): Promise<{ success: boolean
 // 국토부 API 조회 결과를 DB에 저장
 export async function saveMolitPriceHistory(
   accountId: string,
-  history: { yearMonth: string; price: number; count: number }[],
+  history: { yearMonth: string; price: number; priceMin?: number; priceMax?: number; count: number }[],
 ): Promise<{ success: boolean; saved: number }> {
   const user = await getAuthUser()
   if (!user) return { success: false, saved: 0 }
 
-  let saved = 0
-  for (const h of history) {
-    const existing = await prisma.realEstatePriceHistory.findFirst({
-      where: { accountId, yearMonth: h.yearMonth, source: 'MOLIT' },
-    })
-    if (!existing) {
-      await prisma.realEstatePriceHistory.create({
-        data: { accountId, yearMonth: h.yearMonth, price: h.price, source: 'MOLIT' },
-      })
-      saved++
-    }
-  }
+  // 기존 MOLIT 데이터 전체 삭제 후 새로 저장 (형식 변경 등 재조회 시 완전 교체)
+  await prisma.realEstatePriceHistory.deleteMany({
+    where: { accountId, source: 'MOLIT' },
+  })
+
+  await prisma.realEstatePriceHistory.createMany({
+    data: history.map(h => ({
+      accountId,
+      yearMonth: h.yearMonth,
+      price: h.price,
+      priceMin: h.priceMin ?? null,
+      priceMax: h.priceMax ?? null,
+      source: 'MOLIT',
+    })),
+  })
+  const saved = history.length
 
   // 가장 최신 거래가로 currentPrice 갱신
   if (history.length > 0) {
@@ -148,6 +156,8 @@ export async function getTargetProperties(): Promise<TargetPropertyData[]> {
       id: h.id,
       yearMonth: h.yearMonth,
       price: h.price,
+      priceMin: h.priceMin,
+      priceMax: h.priceMax,
       area: h.area,
       source: h.source,
     })),
@@ -210,23 +220,26 @@ export async function deleteTargetProperty(id: string): Promise<{ success: boole
 
 export async function saveTargetMolitHistory(
   targetId: string,
-  history: { yearMonth: string; price: number }[],
+  history: { yearMonth: string; price: number; priceMin?: number; priceMax?: number }[],
 ): Promise<{ success: boolean; saved: number }> {
   const user = await getAuthUser()
   if (!user) return { success: false, saved: 0 }
 
-  let saved = 0
-  for (const h of history) {
-    const existing = await prisma.realEstatePriceHistory.findFirst({
-      where: { targetId, yearMonth: h.yearMonth, source: 'MOLIT' },
-    })
-    if (!existing) {
-      await prisma.realEstatePriceHistory.create({
-        data: { targetId, yearMonth: h.yearMonth, price: h.price, source: 'MOLIT' },
-      })
-      saved++
-    }
-  }
+  await prisma.realEstatePriceHistory.deleteMany({
+    where: { targetId, source: 'MOLIT' },
+  })
+
+  await prisma.realEstatePriceHistory.createMany({
+    data: history.map(h => ({
+      targetId,
+      yearMonth: h.yearMonth,
+      price: h.price,
+      priceMin: h.priceMin ?? null,
+      priceMax: h.priceMax ?? null,
+      source: 'MOLIT',
+    })),
+  })
+  const saved = history.length
 
   if (history.length > 0) {
     const latest = [...history].sort((a, b) => b.yearMonth.localeCompare(a.yearMonth))[0]

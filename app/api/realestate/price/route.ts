@@ -2,19 +2,8 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 
-// 국토교통부 아파트 매매 실거래가 조회
+// 국토교통부 아파트 매매 실거래가 상세 조회 (RTMSDataSvcAptTradeDev)
 // GET /api/realestate/price?bjdCode=11680&complexName=래미안원베일리&area=84&months=24
-
-interface MolitItem {
-  아파트: string
-  전용면적: string
-  거래금액: string
-  년: string
-  월: string
-  일: string
-  층: string
-  법정동: string
-}
 
 function parsePrice(str: string): number {
   return parseInt(str.replace(/,/g, '').trim(), 10) * 10000 // 만원 → 원
@@ -44,57 +33,74 @@ export async function GET(req: NextRequest) {
     yearMonths.push(`${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`)
   }
 
-  const BASE_URL = 'http://apis.data.go.kr/1613000/RTMSDataSvcAptTrade/getRTMSDataSvcAptTrade'
+  // 상세 자료 엔드포인트 — 영문 태그 사용 (aptNm, excluUseAr, dealAmount, floor)
+  const BASE_URL = 'http://apis.data.go.kr/1613000/RTMSDataSvcAptTradeDev/getRTMSDataSvcAptTradeDev'
+  // 공공데이터포털 키: 디코딩/인코딩 두 형태 모두 안전하게 처리
+  const encodedKey = encodeURIComponent(decodeURIComponent(apiKey))
 
   const results: { yearMonth: string; price: number; area: number; floor: number }[] = []
 
-  // 월별 병렬 조회 (최대 6개월씩 나눠서)
+  // 월별 병렬 조회 (6개월씩 청크)
   const chunks: string[][] = []
   for (let i = 0; i < yearMonths.length; i += 6) {
     chunks.push(yearMonths.slice(i, i + 6))
   }
 
+  const normalize = (s: string) => s.replace(/[\s\-·]/g, '')
+
   for (const chunk of chunks) {
     await Promise.all(chunk.map(async (ym) => {
       const params = new URLSearchParams({
-        serviceKey: apiKey,
-        LAWD_CD:    bjdCode,
-        DEAL_YMD:   ym,
-        numOfRows:  '100',
-        pageNo:     '1',
+        LAWD_CD:   bjdCode,
+        DEAL_YMD:  ym,
+        numOfRows: '100',
+        pageNo:    '1',
       })
+      const url = `${BASE_URL}?serviceKey=${encodedKey}&${params}`
       try {
-        const res = await fetch(`${BASE_URL}?${params}`)
+        const res = await fetch(url)
         const text = await res.text()
 
-        // XML 파싱 (간단 정규식)
+        // resultCode 000 = 정상, 그 외 오류
+        const codeMatch = text.match(/<resultCode>([^<]*)<\/resultCode>/)
+        const resultCode = codeMatch?.[1]?.trim()
+        if (resultCode && resultCode !== '000' && resultCode !== '00') {
+          const msgMatch = text.match(/<resultMsg>([^<]*)<\/resultMsg>/)
+          console.error(`[molit price] ${ym} 오류 code:${resultCode} msg:${msgMatch?.[1]}`)
+          return
+        }
+
         const items = Array.from(text.matchAll(/<item>([\s\S]*?)<\/item>/g))
+
         for (const [, itemXml] of items) {
-          const get = (tag: string) => {
-            const m = itemXml.match(new RegExp(`<${tag}>([^<]*)</${tag}>`))
-            return m ? m[1].trim() : ''
-          }
-          const name = get('아파트')
-          // 단지명 유사 매칭 (공백/특수문자 제거 후 포함 여부)
-          const normalize = (s: string) => s.replace(/[\s\-·]/g, '')
+          const get = (tag: string) =>
+            itemXml.match(new RegExp(`<${tag}>([^<]*)<\/${tag}>`))?.[1]?.trim() ?? ''
+
+          // 상세 API 영문 필드명
+          const name  = get('aptNm')
+          const area  = parseFloat(get('excluUseAr') || '0')
+          const price = parsePrice(get('dealAmount') || '0')
+          const floor = parseInt(get('floor') || '0', 10)
+
+          // 단지명 유사 매칭
           if (!normalize(name).includes(normalize(complexName)) &&
               !normalize(complexName).includes(normalize(name))) continue
-
-          const area  = parseFloat(get('전용면적') || '0')
-          const price = parsePrice(get('거래금액') || '0')
-          const floor = parseInt(get('층') || '0', 10)
 
           // 면적 필터: ±10㎡ 이내
           if (targetArea && Math.abs(area - targetArea) > 10) continue
           if (price <= 0) continue
 
-          results.push({ yearMonth: ym, price, area, floor })
+          // "202305" → "2023-05" 형식으로 변환 (차트/DB 통일 형식)
+          const ymFormatted = `${ym.slice(0, 4)}-${ym.slice(4)}`
+          results.push({ yearMonth: ymFormatted, price, area, floor })
         }
       } catch (e) {
-        console.error(`[molit] ${ym}`, e)
+        console.error(`[molit price] ${ym}`, e)
       }
     }))
   }
+
+  console.log(`[molit price] 최종 rawCount: ${results.length}, complex: ${complexName}`)
 
   // 월별 중앙값 집계
   const byMonth: Record<string, number[]> = {}
@@ -110,7 +116,13 @@ export async function GET(req: NextRequest) {
       const median = prices.length % 2 === 0
         ? (prices[mid - 1] + prices[mid]) / 2
         : prices[mid]
-      return { yearMonth, price: Math.round(median), count: prices.length }
+      return {
+        yearMonth,
+        price:    Math.round(median),
+        priceMin: prices[0],
+        priceMax: prices[prices.length - 1],
+        count:    prices.length,
+      }
     })
     .sort((a, b) => a.yearMonth.localeCompare(b.yearMonth))
 

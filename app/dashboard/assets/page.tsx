@@ -139,11 +139,24 @@ export default function AssetsPage() {
         userId: a.userId ?? null,
         isJoint: a.isJoint ?? false,
         subAccounts: a.subAccounts ?? [],
+        realEstateDetail: a.realEstateDetail ?? null,
       })
 
-      setAccounts((data.accounts ?? []).map(mapAccount))
+      const mappedAccounts = (data.accounts ?? []).map(mapAccount)
+      setAccounts(mappedAccounts)
       setLiabilities((data.liabilities ?? []).map(mapAccount))
       if (data.assetsByType) setAssetsByType(data.assetsByType)
+
+      // 부동산 계좌 시세 이력 자동 로드 (DB에 저장된 것만)
+      const reAccounts = mappedAccounts.filter((a: AccountInitialData) => REAL_ESTATE_TYPES.has(a.type))
+      if (reAccounts.length > 0) {
+        const histories = await Promise.all(
+          reAccounts.map((a: AccountInitialData) => getPriceHistory(a.id).catch(() => [] as PriceHistoryPoint[]))
+        )
+        const histMap: Record<string, PriceHistoryPoint[]> = {}
+        reAccounts.forEach((a: AccountInitialData, i: number) => { histMap[a.id] = histories[i] })
+        setRePriceHistories(histMap)
+      }
     }
   }
 
@@ -582,8 +595,8 @@ function RealEstateTab({
     .map(a => ({
       accountId: a.id,
       name: a.name,
-      complexName: null as string | null,
-      area: null as number | null,
+      complexName: a.realEstateDetail?.complexName ?? null,
+      area: a.realEstateDetail?.area ?? null,
       history: priceHistories[a.id] ?? [],
     }))
   const hasChartData = ownForChart.length > 0 || targetProperties.some(t => t.priceHistory.length > 0)
@@ -609,22 +622,6 @@ function RealEstateTab({
         />
       )}
 
-      {/* 시세 이력 차트 */}
-      {hasChartData && (
-        <div className="bg-card border border-border rounded-2xl overflow-hidden">
-          <div className="px-5 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <BarChart2 className="w-4 h-4 text-indigo-400" />
-              <span className="text-sm font-semibold text-foreground">단지 매매가 비교 그래프</span>
-            </div>
-            <span className="text-[10px] text-muted-foreground/50">국토부 실거래가 기준</span>
-          </div>
-          <div className="px-4 pt-3 pb-4">
-            <PriceHistoryChart ownProperties={ownForChart} targetProperties={targetProperties} />
-          </div>
-        </div>
-      )}
-
       {/* 보유 부동산 카드 */}
       {realEstateAccounts.map(account => (
         <div key={account.id} className="space-y-2">
@@ -642,8 +639,12 @@ function RealEstateTab({
             </div>
             <button
               onClick={async () => {
-                await handleLoadHistory(account.id)
-                // bjdCode/complexName은 detail에서 가져와야 함 → 여기선 단순 버튼
+                const d = account.realEstateDetail
+                if (!d?.bjdCode || !d?.complexName) {
+                  toast.error('단지명과 지역코드를 먼저 설정해주세요')
+                  return
+                }
+                await onFetchPrice(account.id, d.bjdCode, d.complexName, d.area)
               }}
               disabled={fetchingPrice === account.id}
               className="text-[11px] text-indigo-500 dark:text-indigo-400 hover:underline disabled:opacity-50 flex items-center gap-1"
@@ -786,6 +787,22 @@ function RealEstateTab({
           </div>
         )}
       </div>
+
+      {/* 시세 이력 차트 */}
+      {hasChartData && (
+        <div className="bg-card border border-border rounded-2xl overflow-hidden">
+          <div className="px-5 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <BarChart2 className="w-4 h-4 text-indigo-400" />
+              <span className="text-sm font-semibold text-foreground">단지 매매가 비교 그래프</span>
+            </div>
+            <span className="text-[10px] text-muted-foreground/50">국토부 실거래가 기준</span>
+          </div>
+          <div className="px-4 pt-3 pb-4">
+            <PriceHistoryChart ownProperties={ownForChart} targetProperties={targetProperties} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

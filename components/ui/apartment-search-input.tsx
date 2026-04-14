@@ -1,9 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { MapPin, ChevronDown } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { MapPin, ChevronDown, Search, Loader2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Label } from '@/components/ui/label'
 
 export interface ApartmentResult {
   name: string
@@ -102,6 +101,11 @@ const REGION_DATA: Record<string, Record<string, string>> = {
   },
 }
 
+interface Complex {
+  name: string
+  code: string
+}
+
 interface ApartmentSearchInputProps {
   value: string
   bjdCode?: string | null
@@ -112,59 +116,121 @@ interface ApartmentSearchInputProps {
   className?: string
 }
 
+// bjdCode → { sido, sigungu } 역방향 조회
+function reverseLookup(code: string): { sido: string; sigungu: string } | null {
+  for (const [s, gunguMap] of Object.entries(REGION_DATA)) {
+    for (const [g, c] of Object.entries(gunguMap)) {
+      if (c === code) return { sido: s, sigungu: g }
+    }
+  }
+  return null
+}
+
 export function ApartmentSearchInput({
   value,
   bjdCode,
   area,
   onSelect,
   onClear,
-  placeholder = '단지명 입력 (예: 래미안원베일리)',
+  placeholder = '단지명 검색',
   className,
 }: ApartmentSearchInputProps) {
-  const [name, setName]           = useState(value)
-  const [sido, setSido]           = useState('')
-  const [sigungu, setSigungu]     = useState('')
+  const initial = bjdCode ? reverseLookup(bjdCode) : null
+  const [sido, setSido]             = useState(initial?.sido ?? '')
+  const [sigungu, setSigungu]       = useState(initial?.sigungu ?? '')
+  const [query, setQuery]           = useState(value)
+  const [complexes, setComplexes]   = useState<Complex[]>([])
+  const [loading, setLoading]       = useState(false)
+  const [open, setOpen]             = useState(false)
+  const [selected, setSelected]     = useState<Complex | null>(
+    value ? { name: value, code: '' } : null
+  )
+  const wrapperRef = useRef<HTMLDivElement>(null)
 
-  const sigunguList = sido ? Object.keys(REGION_DATA[sido] ?? {}) : []
-  const selectedCode = sido && sigungu ? (REGION_DATA[sido]?.[sigungu] ?? null) : bjdCode ?? null
+  // bjdCode prop이 외부에서 바뀌면 시도/시군구 동기화
+  useEffect(() => {
+    if (bjdCode) {
+      const found = reverseLookup(bjdCode)
+      if (found) {
+        setSido(found.sido)
+        setSigungu(found.sigungu)
+      }
+    }
+  }, [bjdCode])
 
-  const handleConfirm = () => {
-    if (!name.trim()) return
+  const sigunguList   = sido ? Object.keys(REGION_DATA[sido] ?? {}) : []
+  const activeBjdCode = sido && sigungu ? (REGION_DATA[sido]?.[sigungu] ?? null) : null
+
+  // 외부 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  // 시군구 선택 시 단지 목록 로드
+  useEffect(() => {
+    if (!activeBjdCode) {
+      setComplexes([])
+      return
+    }
+    setLoading(true)
+    setComplexes([])
+    fetch(`/api/realestate/complexes?bjdCode=${activeBjdCode}`)
+      .then(r => r.json())
+      .then(data => setComplexes(data.complexes ?? []))
+      .catch(() => setComplexes([]))
+      .finally(() => setLoading(false))
+  }, [activeBjdCode])
+
+  const filtered = query.trim()
+    ? complexes.filter(c => c.name.includes(query.trim()))
+    : complexes.slice(0, 50)
+
+  const handleSelect = (c: Complex) => {
+    setSelected(c)
+    setQuery(c.name)
+    setOpen(false)
     onSelect({
-      name: name.trim(),
+      name: c.name,
       address: sido && sigungu ? `${sido} ${sigungu}` : '',
       roadAddress: '',
-      bjdCode: selectedCode,
+      bjdCode: activeBjdCode,
       x: '',
       y: '',
     })
   }
 
   const handleClear = () => {
-    setName('')
+    setSelected(null)
+    setQuery('')
     setSido('')
     setSigungu('')
+    setComplexes([])
     onClear?.()
   }
 
-  return (
-    <div className={cn('space-y-2', className)}>
-      {/* 단지명 입력 */}
-      <input
-        type="text"
-        value={name}
-        onChange={e => setName(e.target.value)}
-        onBlur={handleConfirm}
-        placeholder={placeholder}
-        className="w-full h-10 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors"
-      />
+  // 지역 미선택이어도 드롭다운을 열어서 안내 메시지 표시
+  const showDropdown = open
 
+  return (
+    <div className={cn('space-y-2', className)} ref={wrapperRef}>
       {/* 지역 선택 */}
       <div className="grid grid-cols-2 gap-2">
         <div className="relative">
           <select
             value={sido}
-            onChange={e => { setSido(e.target.value); setSigungu('') }}
+            onChange={e => {
+              setSido(e.target.value)
+              setSigungu('')
+              setSelected(null)
+              setQuery('')
+              setComplexes([])
+            }}
             className="w-full h-9 bg-card border border-border rounded-xl pl-3 pr-8 text-xs text-foreground outline-none focus:border-ring transition-colors appearance-none"
           >
             <option value="">시/도 선택</option>
@@ -179,17 +245,8 @@ export function ApartmentSearchInput({
             value={sigungu}
             onChange={e => {
               setSigungu(e.target.value)
-              // 시군구 선택 시 자동으로 confirm
-              if (name.trim() && e.target.value) {
-                const code = REGION_DATA[sido]?.[e.target.value] ?? null
-                onSelect({
-                  name: name.trim(),
-                  address: `${sido} ${e.target.value}`,
-                  roadAddress: '',
-                  bjdCode: code,
-                  x: '', y: '',
-                })
-              }
+              setSelected(null)
+              setQuery('')
             }}
             disabled={!sido}
             className="w-full h-9 bg-card border border-border rounded-xl pl-3 pr-8 text-xs text-foreground outline-none focus:border-ring transition-colors appearance-none disabled:opacity-40"
@@ -203,12 +260,97 @@ export function ApartmentSearchInput({
         </div>
       </div>
 
-      {/* 선택 상태 표시 */}
-      {(selectedCode || (value && bjdCode)) && (
+      {/* 단지명 검색 */}
+      <div className="relative">
+        <div className="relative flex items-center">
+          <Search className="absolute left-3 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+          <input
+            type="text"
+            value={query}
+            onChange={e => {
+              setQuery(e.target.value)
+              setOpen(true)
+              if (selected && e.target.value !== selected.name) setSelected(null)
+            }}
+            onFocus={() => setOpen(true)}
+            placeholder={placeholder}
+            disabled={false}
+            className="w-full h-10 bg-card border border-border rounded-xl pl-9 pr-9 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors disabled:opacity-50"
+          />
+          {(query || selected) && (
+            <button
+              type="button"
+              onClick={handleClear}
+              className="absolute right-3 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+
+        {/* 자동완성 드롭다운 */}
+        {showDropdown && (
+          <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-popover border border-border rounded-xl shadow-lg overflow-hidden">
+            {!activeBjdCode ? (
+              <div className="py-3 px-4 text-xs text-muted-foreground flex items-center gap-2">
+                <MapPin className="w-3 h-3 flex-shrink-0" />
+                위에서 시/도와 시군구를 먼저 선택해주세요
+              </div>
+            ) : loading ? (
+              <div className="flex items-center justify-center gap-2 py-4 text-xs text-muted-foreground">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                단지 목록 불러오는 중…
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="py-3 px-4 text-xs text-muted-foreground">
+                {query.trim() ? `'${query}' 검색 결과 없음` : '단지명을 입력하세요'}
+              </div>
+            ) : (
+              <ul className="max-h-52 overflow-y-auto divide-y divide-border/40">
+                {filtered.map(c => (
+                  <li key={c.code || c.name}>
+                    <button
+                      type="button"
+                      onMouseDown={e => { e.preventDefault(); handleSelect(c) }}
+                      className="w-full text-left px-4 py-2.5 text-sm hover:bg-accent transition-colors flex items-center gap-2"
+                    >
+                      <MapPin className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                      <span className="text-foreground">{c.name}</span>
+                    </button>
+                  </li>
+                ))}
+                {filtered.length === 50 && !query.trim() && (
+                  <li className="px-4 py-2 text-[10px] text-muted-foreground text-center bg-muted/30">
+                    단지명을 입력하면 더 정확하게 검색됩니다
+                  </li>
+                )}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 선택 완료 상태 */}
+      {selected && activeBjdCode && (
         <div className="flex items-center gap-2 flex-wrap">
           <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full">
             <MapPin className="w-2.5 h-2.5" />
-            지역코드 {selectedCode ?? bjdCode}
+            {sido} {sigungu} · 지역코드 {activeBjdCode}
+          </span>
+          {area && (
+            <span className="inline-flex items-center gap-1 text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full">
+              {area.toFixed(1)}㎡ ({Math.round(area / 3.305)}평)
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* 기존 bjdCode만 있는 경우 (수정 시) */}
+      {!activeBjdCode && bjdCode && value && (
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full">
+            <MapPin className="w-2.5 h-2.5" />
+            지역코드 {bjdCode}
           </span>
           {area && (
             <span className="inline-flex items-center gap-1 text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full">
