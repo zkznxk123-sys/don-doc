@@ -5,6 +5,7 @@ import {
   Banknote, TrendingUp, Bitcoin, Building2, Users, Eye, EyeOff,
   Loader2, Trash2, CreditCard, HandCoins, ChevronDown, PiggyBank,
 } from 'lucide-react'
+import { ApartmentSearchInput, type ApartmentResult } from '@/components/ui/apartment-search-input'
 import { cn, toKoreanUnit } from '@/lib/utils'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer'
 import { Label } from '@/components/ui/label'
@@ -217,7 +218,11 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
   const [linkableAssets, setLinkableAssets] = useState<{ id: string; name: string; type: AccountType }[]>([])
 
   // 부동산 상세
-  const [rePropertyType, setRePropertyType] = useState('')
+  const [reComplexName, setReComplexName]     = useState('')
+  const [reBjdCode, setReBjdCode]             = useState<string | null>(null)
+  const [reArea, setReArea]                   = useState('')
+  const [reFloor, setReFloor]                 = useState('')
+  const [rePropertyType, setRePropertyType]   = useState('')
   const [rePurchasePrice, setRePurchasePrice] = useState('')
   const [rePurchaseDate, setRePurchaseDate]   = useState('')
   const [reCurrentPrice, setReCurrentPrice]   = useState('')
@@ -281,6 +286,10 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
 
         if (detail.realEstateDetail) {
           const r = detail.realEstateDetail
+          setReComplexName(r.complexName ?? '')
+          setReBjdCode(r.bjdCode ?? null)
+          setReArea(r.area?.toString() ?? '')
+          setReFloor(r.floor?.toString() ?? '')
           setRePropertyType(r.propertyType ?? '')
           setRePurchasePrice(r.purchasePrice?.toLocaleString() ?? '')
           setRePurchaseDate(r.purchaseDate ?? '')
@@ -348,11 +357,15 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
 
   function buildDetailInput() {
     const realEstateDetail: RealEstateDetailInput | undefined = isRealEstate ? {
-      propertyType: rePropertyType || undefined,
+      propertyType:  rePropertyType || undefined,
+      complexName:   reComplexName  || null,
+      bjdCode:       reBjdCode      || null,
+      area:          reArea ? parseFloat(reArea) : null,
+      floor:         reFloor ? parseInt(reFloor, 10) : null,
       purchasePrice: parseNum(rePurchasePrice),
-      purchaseDate: rePurchaseDate || undefined,
-      currentPrice: parseNum(reCurrentPrice),
-      targetPrice: parseNum(reTargetPrice),
+      purchaseDate:  rePurchaseDate || undefined,
+      currentPrice:  parseNum(reCurrentPrice),
+      targetPrice:   parseNum(reTargetPrice),
     } : undefined
 
     const financialAssetDetail: FinancialAssetDetailInput | undefined = isFinancialType ? {
@@ -566,6 +579,27 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
           {!isProductMode && isRealEstate && (
             <>
               <SectionDivider label="부동산 상세" />
+
+              {/* 단지 검색 (아파트만) */}
+              {(rePropertyType === '' || rePropertyType === '아파트') && (
+                <div>
+                  <Label className="text-muted-foreground text-xs mb-1.5 block">단지 검색</Label>
+                  <ApartmentSearchInput
+                    value={reComplexName}
+                    bjdCode={reBjdCode}
+                    area={reArea ? parseFloat(reArea) : null}
+                    onSelect={(r: ApartmentResult) => {
+                      setReComplexName(r.name)
+                      setReBjdCode(r.bjdCode)
+                      setRePropertyType('아파트')
+                      // 이름이 계좌명과 같으면 계좌명도 자동 설정
+                      if (!name) setName(r.name)
+                    }}
+                    onClear={() => { setReComplexName(''); setReBjdCode(null) }}
+                  />
+                </div>
+              )}
+
               <div>
                 <Label className="text-muted-foreground text-xs mb-1.5 block">부동산 유형</Label>
                 <div className="relative">
@@ -580,6 +614,30 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
                     ))}
                   </select>
                   <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-muted-foreground text-xs mb-1.5 block">전용면적 (㎡)</Label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={reArea}
+                    onChange={e => setReArea(e.target.value)}
+                    placeholder="예: 84.98"
+                    className="w-full h-10 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors"
+                  />
+                  {reArea && <p className="text-[10px] text-muted-foreground/50 mt-1">{Math.round(parseFloat(reArea) / 3.305)}평</p>}
+                </div>
+                <div>
+                  <Label className="text-muted-foreground text-xs mb-1.5 block">층</Label>
+                  <input
+                    type="number"
+                    value={reFloor}
+                    onChange={e => setReFloor(e.target.value)}
+                    placeholder="예: 15"
+                    className="w-full h-10 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors"
+                  />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">

@@ -16,6 +16,10 @@ const LIABILITY_TYPES: AccountType[] = ['DEBT', 'CREDIT_CARD']
 
 export interface RealEstateDetailInput {
   propertyType?: string
+  complexName?: string | null
+  bjdCode?: string | null
+  area?: number | null
+  floor?: number | null
   purchasePrice?: number | null
   purchaseDate?: string | null   // "YYYY-MM-DD"
   currentPrice?: number | null
@@ -73,11 +77,15 @@ export interface AccountWithDetail {
   isShared: boolean
   linkedAssetId: string | null
   realEstateDetail: {
-    propertyType: string | null
+    propertyType:  string | null
+    complexName:   string | null
+    bjdCode:       string | null
+    area:          number | null
+    floor:         number | null
     purchasePrice: number | null
-    purchaseDate: string | null
-    currentPrice: number | null
-    targetPrice: number | null
+    purchaseDate:  string | null
+    currentPrice:  number | null
+    targetPrice:   number | null
   } | null
   financialAssetDetail: {
     interestRate: number | null
@@ -130,11 +138,15 @@ export async function getAccountWithDetail(id: string): Promise<AccountWithDetai
     linkedAssetId: account.linkedAssetId,
     realEstateDetail: account.realEstateDetail
       ? {
-          propertyType: account.realEstateDetail.propertyType,
+          propertyType:  account.realEstateDetail.propertyType,
+          complexName:   account.realEstateDetail.complexName,
+          bjdCode:       account.realEstateDetail.bjdCode,
+          area:          account.realEstateDetail.area,
+          floor:         account.realEstateDetail.floor,
           purchasePrice: account.realEstateDetail.purchasePrice,
-          purchaseDate: toDateStr(account.realEstateDetail.purchaseDate),
-          currentPrice: account.realEstateDetail.currentPrice,
-          targetPrice: account.realEstateDetail.targetPrice,
+          purchaseDate:  toDateStr(account.realEstateDetail.purchaseDate),
+          currentPrice:  account.realEstateDetail.currentPrice,
+          targetPrice:   account.realEstateDetail.targetPrice,
         }
       : null,
     financialAssetDetail: account.financialAssetDetail
@@ -617,11 +629,15 @@ export async function deleteZeroBalanceAccounts(): Promise<{ success: boolean; d
 
 function buildRealEstateData(d: RealEstateDetailInput) {
   return {
-    propertyType: d.propertyType ?? null,
+    propertyType:  d.propertyType  ?? null,
+    complexName:   d.complexName   ?? null,
+    bjdCode:       d.bjdCode       ?? null,
+    area:          d.area          ?? null,
+    floor:         d.floor         ?? null,
     purchasePrice: d.purchasePrice ?? null,
-    purchaseDate: d.purchaseDate ? new Date(d.purchaseDate) : null,
-    currentPrice: d.currentPrice ?? null,
-    targetPrice: d.targetPrice ?? null,
+    purchaseDate:  d.purchaseDate ? new Date(d.purchaseDate) : null,
+    currentPrice:  d.currentPrice  ?? null,
+    targetPrice:   d.targetPrice   ?? null,
   }
 }
 

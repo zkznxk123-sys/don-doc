@@ -87,6 +87,7 @@ model FamilyGroup {
   monthlyGoals      MonthlyGoal[]
   accountTypeLabels  AccountTypeLabel[]
   netWorthSnapshots  NetWorthSnapshot[]
+  targetProperties   TargetProperty[]
   createdAt          DateTime           @default(now())
 }
 
@@ -186,7 +187,8 @@ model Account {
   financialAssetDetail FinancialAssetDetail?
   debtDetail           DebtDetail?
   pensionDetail        PensionDetail?
-  holdings             InvestmentHolding[]   // INVESTMENT/CRYPTO 계좌 종목 목록
+  holdings             InvestmentHolding[]         // INVESTMENT/CRYPTO 계좌 종목 목록
+  priceHistory         RealEstatePriceHistory[]    // REAL_ESTATE 시세 이력
 
   @@index([familyId, parentAccountId])
   @@index([userId])
@@ -219,16 +221,21 @@ model Transaction {
 }
 
 model RealEstateDetail {
-  id            String   @id @default(cuid())
-  accountId     String   @unique
-  account       Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  propertyType  String?  // 아파트, 빌라, 오피스텔, 토지 등
-  purchasePrice Float?   // 매수 원금 (취득가)
+  id            String    @id @default(cuid())
+  accountId     String    @unique
+  account       Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  propertyType  String?   // 아파트, 빌라, 오피스텔, 토지 등
+  complexName   String?   // 단지명 (예: 래미안원베일리)
+  bjdCode       String?   // 법정동 코드 5자리 (국토부 API용, 예: 11650)
+  area          Float?    // 전용면적 (㎡)
+  floor         Int?      // 층
+  purchasePrice Float?    // 매수 원금 (취득가)
   purchaseDate  DateTime? // 매수일
-  currentPrice  Float?   // 현재 시세 (사용자 수기 입력)
-  targetPrice   Float?   // 목표 매도가
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  currentPrice  Float?    // 현재 시세 (수기 입력 또는 API 마지막값)
+  priceUpdatedAt DateTime? // 시세 마지막 업데이트
+  targetPrice   Float?    // 목표 매도가
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
 
 model FinancialAssetDetail {
@@ -341,4 +348,40 @@ model TradeRecord {
   createdAt DateTime          @default(now())
 
   @@index([holdingId])
+}
+
+// ── 부동산 시세 이력 ──────────────────────────────────────────────────────────
+model RealEstatePriceHistory {
+  id        String   @id @default(cuid())
+  accountId String?                                           // 보유 부동산 (null이면 target)
+  account   Account? @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  targetId  String?                                           // 목표 단지
+  target    TargetProperty? @relation(fields: [targetId], references: [id], onDelete: Cascade)
+  yearMonth String                                            // "YYYY-MM"
+  price     Float                                             // 거래/시세금액 (원)
+  area      Float?                                            // 실거래 면적 (㎡), 국토부 조회 시 기록
+  source    String   @default("MANUAL")                      // MANUAL | MOLIT
+  createdAt DateTime @default(now())
+
+  @@index([accountId, yearMonth])
+  @@index([targetId, yearMonth])
+}
+
+// ── 갈아타기 목표 단지 ─────────────────────────────────────────────────────────
+model TargetProperty {
+  id           String                   @id @default(cuid())
+  familyId     String
+  family       FamilyGroup              @relation(fields: [familyId], references: [id])
+  name         String                   // 단지명 (예: 래미안원베일리)
+  bjdCode      String?                  // 법정동 코드 5자리
+  area         Float?                   // 목표 전용면적 (㎡)
+  budget       Float?                   // 목표 예산 (원)
+  currentPrice Float?                   // 최근 시세 캐시 (원)
+  lastUpdated  DateTime?                // 시세 마지막 업데이트
+  memo         String?
+  priceHistory RealEstatePriceHistory[]
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
+
+  @@index([familyId])
 }
