@@ -8,12 +8,13 @@ import { TransactionDrawer, type EditTransactionData } from '@/components/ui/tra
 import { ExcelUploadDrawer } from '@/components/ui/excel-upload-drawer'
 import { AlertCircle, X } from 'lucide-react'
 import Link from 'next/link'
+import type { AppRole } from '@/lib/roles'
 
 export interface ShellUser {
   id: string
   email: string
   name: string | null
-  role: 'CFO' | 'MEMBER'
+  role: AppRole
   familyId: string | null
   familyName: string | null
 }

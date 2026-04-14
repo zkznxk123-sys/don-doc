@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
+import { isCFOLevel } from '@/lib/roles'
 import { getFinancialInsights } from '@/lib/actions/stats'
 
 const TYPE_LABELS: Record<string, string> = {
@@ -169,7 +170,7 @@ export async function GET(req: NextRequest) {
         subAccounts: acc.subAccounts,
       }
 
-      if (role === 'CFO' || isOwn) {
+      if (isCFOLevel(role) || isOwn) {
         accountSummary.push(base)
       } else if (acc.shareLevel === 'PRIVATE') {
         // 제외

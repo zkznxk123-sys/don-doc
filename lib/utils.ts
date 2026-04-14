@@ -28,10 +28,9 @@ export function toKoreanUnit(amount: number): string {
 }
 
 export function formatLargeNumber(amount: number): string {
-  if (amount >= 100000000) {
-    return `${(amount / 100000000).toFixed(1)}억`
-  } else if (amount >= 10000) {
-    return `${(amount / 10000).toFixed(1)}만`
-  }
-  return amount.toString()
+  const sign = amount < 0 ? '-' : ''
+  const abs  = Math.abs(amount)
+  if (abs >= 100000000) return `${sign}${(abs / 100000000).toFixed(1)}억`
+  if (abs >= 10000)     return `${sign}${(abs / 10000).toFixed(1)}만`
+  return abs.toLocaleString('ko-KR') === '0' ? '0' : `${sign}${abs.toLocaleString('ko-KR')}`
 }

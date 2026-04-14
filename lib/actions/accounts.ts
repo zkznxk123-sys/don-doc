@@ -335,6 +335,73 @@ export async function getFamilyTotalDebtMonthlyPayment(): Promise<number> {
   return debts.reduce((s, d) => s + (d.debtDetail?.monthlyPayment ?? 0), 0)
 }
 
+export interface DebtAccountDetail {
+  id: string
+  name: string
+  type: AccountType
+  balance: number
+  ownerName: string | null
+  isJoint: boolean
+  debtType: DebtType
+  interestRate: number | null
+  maturityDate: string | null
+  repaymentType: RepaymentType | null
+  monthlyPayment: number | null
+  linkedAssetName: string | null
+}
+
+export interface FamilyDebtSummary {
+  accounts: DebtAccountDetail[]
+  totalBalance: number
+  totalMonthlyPayment: number
+  weightedInterestRate: number | null
+}
+
+/** 가족 전체 부채 상세 — 부채 탭 표시용 */
+export async function getFamilyDebtSummary(): Promise<FamilyDebtSummary> {
+  const user = await getAuthUser()
+  if (!user?.familyId) return { accounts: [], totalBalance: 0, totalMonthlyPayment: 0, weightedInterestRate: null }
+
+  const debts = await prisma.account.findMany({
+    where: { familyId: user.familyId, type: { in: ['DEBT', 'CREDIT_CARD'] } },
+    include: {
+      debtDetail: true,
+      user: { select: { name: true } },
+      linkedAsset: { select: { name: true } },
+    },
+    orderBy: { balance: 'desc' },
+  })
+
+  const accounts: DebtAccountDetail[] = debts.map(d => ({
+    id: d.id,
+    name: d.name,
+    type: d.type as AccountType,
+    balance: d.balance,
+    ownerName: d.user?.name ?? null,
+    isJoint: d.isJoint,
+    debtType: (d.debtDetail?.debtType ?? 'ETC') as DebtType,
+    interestRate: d.debtDetail?.interestRate ?? null,
+    maturityDate: d.debtDetail?.maturityDate ? d.debtDetail.maturityDate.toISOString().slice(0, 10) : null,
+    repaymentType: (d.debtDetail?.repaymentType ?? null) as RepaymentType | null,
+    monthlyPayment: d.debtDetail?.monthlyPayment ?? null,
+    linkedAssetName: d.linkedAsset?.name ?? null,
+  }))
+
+  const totalBalance = accounts.reduce((s, a) => s + a.balance, 0)
+  const totalMonthlyPayment = accounts.reduce((s, a) => s + (a.monthlyPayment ?? 0), 0)
+
+  // 잔액 가중 평균 금리
+  const weightedSum = accounts
+    .filter(a => a.interestRate != null)
+    .reduce((s, a) => s + a.interestRate! * a.balance, 0)
+  const weightedBase = accounts
+    .filter(a => a.interestRate != null)
+    .reduce((s, a) => s + a.balance, 0)
+  const weightedInterestRate = weightedBase > 0 ? weightedSum / weightedBase : null
+
+  return { accounts, totalBalance, totalMonthlyPayment, weightedInterestRate }
+}
+
 /** 부채 연결 대상 자산 목록 (부채·신용카드 제외) */
 export async function getFamilyAssetsForLinking(): Promise<{ id: string; name: string; type: AccountType }[]> {
   const user = await getAuthUser()

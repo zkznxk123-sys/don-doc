@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth'
+import { isCFOLevel } from '@/lib/roles'
 import { deleteTransaction } from '@/lib/actions/transaction'
 import { upsertCategoryPreference } from '@/lib/actions/preferences'
 import { prisma } from '@/lib/prisma'
@@ -20,7 +21,7 @@ export async function PATCH(
 
     const tx = await prisma.transaction.findUnique({ where: { id: params.id } })
     if (!tx) return NextResponse.json({ success: false, error: '내역을 찾을 수 없습니다.' }, { status: 404 })
-    if (tx.userId !== authUser.id && authUser.role !== 'CFO') {
+    if (tx.userId !== authUser.id && !isCFOLevel(authUser.role)) {
       return NextResponse.json({ success: false, error: '권한이 없습니다.' }, { status: 403 })
     }
 
@@ -63,7 +64,7 @@ export async function DELETE(
 
     const result = await deleteTransaction(
       authUser.id,
-      authUser.role as 'CFO' | 'MEMBER',
+      authUser.role,
       params.id
     )
 

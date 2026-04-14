@@ -8,10 +8,12 @@ import { Progress } from '@/components/ui/progress'
 import { formatCurrency, cn } from '@/lib/utils'
 import { useDashboardActions } from '@/components/layout/DashboardShell'
 
+import type { AppRole } from '@/lib/roles'
+
 interface Member {
   id: string
   name: string
-  role: 'CFO' | 'MEMBER'
+  role: AppRole
   budget: number
   spent: number
 }
@@ -46,7 +48,7 @@ export default function BudgetPage() {
 
   const [data, setData] = useState<BudgetPageData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const isCFO = shellUser?.role === 'CFO'
+  const isCFO = shellUser?.role === 'CFO' || shellUser?.role === 'CO_CFO'
 
   // 예산 입력 (지출 한도 배분)
   const [familyInput, setFamilyInput] = useState('')
@@ -78,7 +80,7 @@ export default function BudgetPage() {
       const familyJson = await familyRes.json()
 
       // 가족 구성원은 /api/family/info 에서 확정적으로 로드
-      const familyMembers: { id: string; name: string | null; email: string; role: 'CFO' | 'MEMBER' }[] =
+      const familyMembers: { id: string; name: string | null; email: string; role: AppRole }[] =
         familyJson.success ? (familyJson.family?.members ?? []) : []
 
       if (budgetJson.success) {
@@ -516,6 +518,9 @@ export default function BudgetPage() {
                         <span className="text-sm font-medium text-foreground">{member.name}</span>
                         {member.role === 'CFO' && (
                           <span className="text-xs text-amber-600 dark:text-amber-500 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-md">CFO</span>
+                        )}
+                        {member.role === 'CO_CFO' && (
+                          <span className="text-xs text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/30 px-1.5 py-0.5 rounded-md">공동CFO</span>
                         )}
                       </div>
                       <div className="text-xs text-muted-foreground">

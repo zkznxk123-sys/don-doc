@@ -5,12 +5,15 @@ import {
   Banknote, TrendingUp, Bitcoin, Building2, Layers,
   Users, User, Eye, EyeOff, ChevronRight, Plus, Lock,
   CreditCard, HandCoins, CornerDownRight, PiggyBank, PackagePlus,
+  BookOpen, Pencil, Trash2,
 } from 'lucide-react'
 import { cn, formatCurrency, formatLargeNumber } from '@/lib/utils'
 import type { AccountInitialData } from '@/components/ui/account-drawer'
 import type { ShareLevel } from '@/lib/actions/accounts'
+import type { HoldingData } from '@/lib/actions/investments'
 import { Switch } from '@/components/ui/switch'
 import { useAssetThreshold } from '@/lib/hooks/useAssetThreshold'
+import { toast } from 'sonner'
 
 const TYPE_META: Record<string, { label: string; Icon: React.ElementType; color: string; bg: string }> = {
   CASH:        { label: '현금 · 예적금', Icon: Banknote,   color: 'text-blue-400',    bg: 'bg-blue-400/10' },
@@ -29,6 +32,12 @@ interface AssetListProps {
   onEdit: (account: AccountInitialData) => void
   onAdd: () => void
   onAddProduct?: (parentId: string, parentType: string, parentName: string) => void
+  onAddHolding?: (accountId: string, accountName: string) => void
+  onEditHolding?: (holding: HoldingData, accountName: string) => void
+  onViewTrades?: (holding: HoldingData) => void
+  holdingsByAccount?: Record<string, HoldingData[]>
+  onMigrateSubAccounts?: (accountId: string, accountName: string) => void
+  onReload?: () => void
   currentUserId?: string
 }
 
@@ -88,17 +97,21 @@ function CategoryHeader({ label, total }: { label: string; total: number }) {
 
 // ─── 개별 자산 행 ─────────────────────────────────────────────────────────────
 
+const HOLDING_ACCOUNT_TYPES = new Set(['INVESTMENT', 'PENSION', 'CRYPTO'])
+
 function AssetRow({
   account,
   totalAssets,
   onEdit,
   onAddProduct,
+  onAddHolding,
   currentUserId,
 }: {
   account: AccountInitialData
   totalAssets: number
   onEdit: (a: AccountInitialData) => void
   onAddProduct?: (parentId: string, parentType: string, parentName: string) => void
+  onAddHolding?: (accountId: string, accountName: string) => void
   currentUserId?: string
 }) {
   const meta = TYPE_META[account.type] ?? TYPE_META['CASH']
@@ -106,7 +119,9 @@ function AssetRow({
   const allocation = totalAssets > 0 ? Math.round((account.balance / totalAssets) * 100) : 0
   const hasLinkedDebts = (account.linkedDebts?.length ?? 0) > 0
   const netEquity = account.netEquity
-  const canAddProduct = (account.type === 'INVESTMENT' || account.type === 'PENSION') && !!onAddProduct
+  // holdings 지원 타입: onAddHolding 우선, 없으면 기존 onAddProduct fallback
+  const canAddHolding = HOLDING_ACCOUNT_TYPES.has(account.type) && !!onAddHolding
+  const canAddProduct = HOLDING_ACCOUNT_TYPES.has(account.type) && !!onAddProduct && !onAddHolding
 
   if (account.isMasked) {
     return (
@@ -162,7 +177,31 @@ function AssetRow({
     </>
   )
 
-  // INVESTMENT/PENSION: 계좌 편집 영역과 상품 추가 버튼을 분리
+  // INVESTMENT/PENSION/CRYPTO: holdings API 방식
+  if (canAddHolding) {
+    return (
+      <div className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-muted/50 transition-colors group">
+        <button onClick={() => onEdit(account)} className="flex items-center gap-4 flex-1 min-w-0 text-left">
+          {infoContent}
+        </button>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span className="text-sm font-semibold text-foreground tabular-nums">
+            {formatCurrency(account.balance)}
+          </span>
+          <button
+            onClick={() => onAddHolding!(account.id, account.name)}
+            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
+            title="종목 추가"
+          >
+            <PackagePlus className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">종목</span>
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // 기존 서브계좌 방식 (onAddProduct)
   if (canAddProduct) {
     return (
       <div className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-muted/50 transition-colors group">
@@ -174,8 +213,8 @@ function AssetRow({
             {formatCurrency(account.balance)}
           </span>
           <button
-            onClick={() => onAddProduct(account.id, account.type, account.name)}
-            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+            onClick={() => onAddProduct!(account.id, account.type, account.name)}
+            className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors opacity-0 group-hover:opacity-100"
             title="상품 추가"
           >
             <PackagePlus className="w-3.5 h-3.5" />
@@ -251,9 +290,150 @@ function SubAccountRow({
   )
 }
 
+// ─── InvestmentHolding 인라인 행 ─────────────────────────────────────────────
+
+function HoldingSubRow({
+  holding,
+  onEdit,
+  onViewTrades,
+  onDelete,
+  onReload,
+}: {
+  holding: HoldingData
+  onEdit: (h: HoldingData) => void
+  onViewTrades: (h: HoldingData) => void
+  onDelete: (h: HoldingData) => void
+  onReload?: () => void
+}) {
+  const [editingPrice, setEditingPrice] = useState(false)
+  const [priceInput, setPriceInput] = useState('')
+  const [savingPrice, setSavingPrice] = useState(false)
+
+  const isUSD      = holding.currency === 'USD'
+  const evalAmount = Math.round((holding.quantity * (holding.currentPrice ?? holding.avgPrice)) * (isUSD ? 100 : 1)) / (isUSD ? 100 : 1)
+  const invested   = Math.round((holding.quantity * holding.avgPrice) * (isUSD ? 100 : 1)) / (isUSD ? 100 : 1)
+  const pnl        = holding.currentPrice != null ? Math.round((evalAmount - invested) * (isUSD ? 100 : 1)) / (isUSD ? 100 : 1) : null
+  const pnlPct     = pnl != null && invested > 0 ? (pnl / invested) * 100 : null
+  const cur        = isUSD ? '$' : ''
+
+  const fmtAmount  = (v: number) => isUSD
+    ? `$${v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    : formatLargeNumber(v)
+
+  const savePrice = async () => {
+    const price = Number(priceInput)
+    if (!priceInput || isNaN(price) || price <= 0) { setEditingPrice(false); return }
+    setSavingPrice(true)
+    try {
+      const res = await fetch(`/api/accounts/${holding.accountId}/holdings/${holding.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPrice: price }),
+      })
+      const data = await res.json()
+      if (data.success) { toast.success('현재가 업데이트'); onReload?.() }
+      else toast.error(data.error)
+    } finally {
+      setSavingPrice(false)
+      setEditingPrice(false)
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-2 pl-[52px] pr-3 py-2.5 border-t border-border/40 bg-background/30 hover:bg-muted/30 transition-colors group/holding">
+      <CornerDownRight className="w-3 h-3 text-border flex-shrink-0" />
+      <div className="w-5 h-5 rounded-md bg-emerald-400/10 flex items-center justify-center flex-shrink-0">
+        <TrendingUp className="w-3 h-3 text-emerald-400" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-foreground truncate">{holding.name}</span>
+          {holding.ticker && (
+            <span className="text-[10px] text-muted-foreground/40 font-mono">{holding.ticker}</span>
+          )}
+        </div>
+        <p className="text-[10px] text-muted-foreground/50 mt-0.5">
+          {holding.quantity.toLocaleString()}주 · 평균 {cur}{holding.avgPrice.toLocaleString()}
+          {holding.lastUpdated && (
+            <span className="ml-1 text-muted-foreground/30">
+              · {new Date(holding.lastUpdated).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })} 시세
+            </span>
+          )}
+        </p>
+      </div>
+
+      {/* 현재가 수동 입력 or P&L 표시 */}
+      <div className="text-right flex-shrink-0">
+        {editingPrice ? (
+          <div className="flex items-center gap-1">
+            <input
+              autoFocus
+              type="number"
+              value={priceInput}
+              onChange={e => setPriceInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') savePrice(); if (e.key === 'Escape') setEditingPrice(false) }}
+              placeholder="현재가"
+              className="w-24 px-2 py-0.5 text-xs bg-muted border border-border rounded-lg focus:outline-none text-right tabular-nums"
+            />
+            <button
+              onClick={savePrice}
+              disabled={savingPrice}
+              className="text-[10px] text-emerald-500 hover:text-emerald-400 font-medium disabled:opacity-40"
+            >
+              저장
+            </button>
+            <button onClick={() => setEditingPrice(false)} className="text-[10px] text-muted-foreground hover:text-foreground">취소</button>
+          </div>
+        ) : (
+          <button
+            onClick={() => { setPriceInput(holding.currentPrice != null ? String(holding.currentPrice) : ''); setEditingPrice(true) }}
+            className="text-right group/price"
+            title="현재가 수동 입력"
+          >
+            <p className="text-xs font-medium text-muted-foreground tabular-nums group-hover/price:text-foreground transition-colors">
+              {fmtAmount(evalAmount)}
+            </p>
+            {pnl != null ? (
+              <p className={cn(
+                'text-[10px] tabular-nums',
+                pnl > 0 ? 'text-emerald-500' : pnl < 0 ? 'text-red-400' : 'text-muted-foreground/50'
+              )}>
+                {pnl >= 0 ? '+' : ''}{fmtAmount(Math.abs(pnl))}
+                {pnlPct != null && ` (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%)`}
+              </p>
+            ) : (
+              <p className="text-[10px] text-muted-foreground/30 group-hover/price:text-violet-500/60 transition-colors">
+                시세 입력
+              </p>
+            )}
+          </button>
+        )}
+      </div>
+
+      {/* 액션 (hover) */}
+      <div className="hidden group-hover/holding:flex items-center gap-0.5 flex-shrink-0">
+        <button onClick={() => onEdit(holding)} className="p-1 text-muted-foreground/50 hover:text-foreground rounded transition-colors" title="수정">
+          <Pencil className="w-3 h-3" />
+        </button>
+        <button onClick={() => onViewTrades(holding)} className="p-1 text-muted-foreground/50 hover:text-foreground rounded transition-colors" title="매매일지">
+          <BookOpen className="w-3 h-3" />
+        </button>
+        <button onClick={() => onDelete(holding)} className="p-1 text-muted-foreground/50 hover:text-red-400 rounded transition-colors" title="삭제">
+          <Trash2 className="w-3 h-3" />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 // ─── AssetList ────────────────────────────────────────────────────────────────
 
-export function AssetList({ accounts, totalAssets, onEdit, onAdd, onAddProduct, currentUserId }: AssetListProps) {
+export function AssetList({
+  accounts, totalAssets, onEdit, onAdd, onAddProduct,
+  onAddHolding, onEditHolding, onViewTrades, holdingsByAccount,
+  onMigrateSubAccounts, onReload,
+  currentUserId,
+}: AssetListProps) {
   const [excludeZero, setExcludeZero] = useState(true)
   const { threshold } = useAssetThreshold()
 
@@ -301,25 +481,62 @@ export function AssetList({ accounts, totalAssets, onEdit, onAdd, onAddProduct, 
             )}
 
             <div className={cn('divide-y divide-border/60', gi > 0 && !multiGroup && 'border-t border-border/60')}>
-              {group.accounts.map((account) => (
-                <div key={account.id}>
-                  <AssetRow
-                    account={account}
-                    totalAssets={totalAssets}
-                    onEdit={onEdit}
-                    onAddProduct={onAddProduct}
-                    currentUserId={currentUserId}
-                  />
-                  {/* 하위 계좌(상품) 인라인 */}
-                  {account.subAccounts?.map(sub => (
-                    <SubAccountRow key={sub.id} sub={sub} parentId={account.id} onEdit={onEdit} />
-                  ))}
-                  {/* 연결된 부채 인라인 */}
-                  {account.linkedDebts?.map(debt => (
-                    <LinkedDebtRow key={debt.id} debt={debt} />
-                  ))}
-                </div>
-              ))}
+              {group.accounts.map((account) => {
+                const holdings = holdingsByAccount?.[account.id] ?? []
+                return (
+                  <div key={account.id}>
+                    <AssetRow
+                      account={account}
+                      totalAssets={totalAssets}
+                      onEdit={onEdit}
+                      onAddProduct={onAddProduct}
+                      onAddHolding={onAddHolding}
+                      currentUserId={currentUserId}
+                    />
+                    {/* InvestmentHolding 인라인 (종목) */}
+                    {holdings.map(holding => (
+                      <HoldingSubRow
+                        key={holding.id}
+                        holding={holding}
+                        onEdit={h => onEditHolding?.(h, account.name)}
+                        onViewTrades={h => onViewTrades?.(h)}
+                        onReload={onReload}
+                        onDelete={async h => {
+                          if (!confirm(`'${h.name}' 종목을 삭제할까요?`)) return
+                          const res = await fetch(`/api/accounts/${account.id}/holdings/${h.id}`, { method: 'DELETE' })
+                          const data = await res.json()
+                          if (data.success) { toast.success('삭제되었습니다.'); onReload?.() }
+                          else toast.error(data.error)
+                        }}
+                      />
+                    ))}
+                    {/* 기존 하위 계좌(상품) 인라인 — holdings 없을 때만 표시 */}
+                    {holdings.length === 0 && account.subAccounts && account.subAccounts.length > 0 && (
+                      <>
+                        {account.subAccounts.map(sub => (
+                          <SubAccountRow key={sub.id} sub={sub} parentId={account.id} onEdit={onEdit} />
+                        ))}
+                        {/* 종목으로 변환 버튼 — INVESTMENT/PENSION/CRYPTO 타입에서만 */}
+                        {onMigrateSubAccounts && HOLDING_ACCOUNT_TYPES.has(account.type) && (
+                          <div className="flex items-center justify-end pl-[52px] pr-4 py-1.5 border-t border-border/30 bg-background/20">
+                            <button
+                              onClick={() => onMigrateSubAccounts(account.id, account.name)}
+                              className="flex items-center gap-1 text-[11px] text-violet-500/70 hover:text-violet-500 transition-colors"
+                            >
+                              <TrendingUp className="w-3 h-3" />
+                              종목으로 변환
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {/* 연결된 부채 인라인 */}
+                    {account.linkedDebts?.map(debt => (
+                      <LinkedDebtRow key={debt.id} debt={debt} />
+                    ))}
+                  </div>
+                )
+              })}
             </div>
           </div>
         ))}

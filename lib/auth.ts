@@ -1,11 +1,12 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
+import type { AppRole } from '@/lib/roles'
 
 export interface AuthUser {
   id: string
   email: string
   name: string | null
-  role: 'CFO' | 'MEMBER'
+  role: AppRole
   familyId: string | null
   familyName: string | null
 }
@@ -31,7 +32,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
         id: prismaUser.id,
         email: prismaUser.email,
         name: prismaUser.name,
-        role: prismaUser.role as 'CFO' | 'MEMBER',
+        role: prismaUser.role as AppRole,
         familyId: prismaUser.familyId,
         familyName: prismaUser.family?.name ?? null,
       }
@@ -62,7 +63,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
         id: updated.id,
         email: updated.email,
         name: updated.name,
-        role: updated.role as 'CFO' | 'MEMBER',
+        role: updated.role as AppRole,
         familyId: updated.familyId,
         familyName: updated.family?.name ?? null,
       }
@@ -78,7 +79,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
       id: newUser.id,
       email: newUser.email,
       name: newUser.name,
-      role: newUser.role as 'CFO' | 'MEMBER',
+      role: newUser.role as AppRole,
       familyId: newUser.familyId,
       familyName: null,
     }

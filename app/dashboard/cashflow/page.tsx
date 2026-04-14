@@ -272,7 +272,7 @@ export default function CashflowPage() {
   }, [baseTransactions, selectedCategory, sortOrder, drafts])
 
   const canEdit = (tx: Transaction) =>
-    !tx.isMasked && (tx.userId === shellUser?.id || shellUser?.role === 'CFO')
+    !tx.isMasked && (tx.userId === shellUser?.id || shellUser?.role === 'CFO' || shellUser?.role === 'CO_CFO')
 
   const setDraft = useCallback((id: string, patch: Partial<DraftItem>, original: Transaction) => {
     setDrafts(prev => {

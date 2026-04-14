@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Minus, Plus, Globe, Lock, Trash2, Sparkles, Loader2, PlusCircle, X, Scissors, ChevronDown, ChevronUp } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
+import { isCFOLevel, type AppRole } from '@/lib/roles'
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle,
   DrawerDescription, DrawerFooter, DrawerClose,
@@ -39,7 +40,7 @@ interface TransactionDrawerProps {
   isOpen: boolean
   onClose: () => void
   currentUserId: string
-  userRole: 'CFO' | 'MEMBER'
+  userRole: AppRole
   familyId: string
   onSuccess: () => void
   editTransaction?: EditTransactionData | null
@@ -102,7 +103,7 @@ export function TransactionDrawer({
 
   // 권한: 본인 거래 OR CFO(마스킹 안 된 거래)
   const canEdit = !editTransaction?.isMasked &&
-    (editTransaction?.userId === currentUserId || userRole === 'CFO')
+    (editTransaction?.userId === currentUserId || isCFOLevel(userRole))
 
   // Form state
   const [amount, setAmount] = useState('')

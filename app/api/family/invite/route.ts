@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
+import { isCFOLevel } from '@/lib/roles'
 
 function generateCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -26,7 +27,7 @@ export async function POST() {
       )
     }
 
-    if (user.role !== 'CFO' || !user.familyId) {
+    if (!isCFOLevel(user.role) || !user.familyId) {
       return NextResponse.json(
         { success: false, error: 'CFO만 초대 코드를 생성할 수 있습니다.' },
         { status: 403 }

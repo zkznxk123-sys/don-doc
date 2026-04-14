@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
+import { isCFOLevel, type AppRole } from '@/lib/roles'
 import { revalidatePath } from 'next/cache'
 
 export interface MemberBudgetInput {
@@ -19,7 +20,7 @@ export async function saveFamilyBudgets(
 ): Promise<{ success: boolean; error?: string }> {
   try {
     const authUser = await getAuthUser()
-    if (!authUser || authUser.role !== 'CFO') {
+    if (!authUser || !isCFOLevel(authUser.role)) {
       return { success: false, error: 'CFO 권한이 필요합니다.' }
     }
 
@@ -103,7 +104,7 @@ export async function getFamilyBudgetData(familyId: string, month: string) {
     members: members.map(m => ({
       id: m.id,
       name: m.name || m.email || '이름 없음',
-      role: m.role as 'CFO' | 'MEMBER',
+      role: m.role as AppRole,
       budget: budgets.find(b => b.userId === m.id)?.amount ?? 0,
       spent: spentByUser[m.id] ?? 0,
     })),

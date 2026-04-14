@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
+import { isCFOLevel } from '@/lib/roles'
 
 const TYPE_LABELS: Record<string, string> = {
   CASH:        '현금 · 예적금',
@@ -88,7 +89,7 @@ export async function GET(req: NextRequest) {
         subAccounts: acc.subAccounts,
       }
 
-      if (role === 'CFO' || isOwn) {
+      if (isCFOLevel(role) || isOwn) {
         accountSummary.push(base)
       } else if (acc.shareLevel === 'PRIVATE') {
         // 제외

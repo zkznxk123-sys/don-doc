@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
+import { isCFOLevel } from '@/lib/roles'
 
 export interface NetWorthSnapshotData {
   yearMonth: string   // "YYYY-MM"
@@ -44,7 +45,7 @@ export async function saveNetWorthSnapshot(data: NetWorthSnapshotData): Promise<
   const authUser = await getAuthUser()
   if (!authUser) return { success: false, error: '인증이 필요합니다.' }
   if (!authUser.familyId) return { success: false, error: '가족 그룹이 없습니다.' }
-  if (authUser.role !== 'CFO') return { success: false, error: 'CFO만 스냅샷을 저장할 수 있습니다.' }
+  if (!isCFOLevel(authUser.role)) return { success: false, error: 'CFO만 스냅샷을 저장할 수 있습니다.' }
 
   const { yearMonth, totalAssets, totalLiabilities, netWorth } = data
 

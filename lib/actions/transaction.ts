@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { generateTransactionHash } from '@/lib/utils/transaction-hash'
 import { generateOriginalHash } from '@/lib/utils/original-hash'
 import { getAuthUser } from '@/lib/auth'
+import { isCFOLevel, type AppRole } from '@/lib/roles'
 
 // ━━ Zod 스키마: 거래 입력 유효성 검사 ━━
 const CreateTransactionSchema = z.object({
@@ -155,12 +156,12 @@ export async function getFamilyTransactions(
  */
 function canManageTransaction(
   userId: string,
-  userRole: 'CFO' | 'MEMBER',
+  userRole: AppRole,
   txUserId: string,
   accountIsShared: boolean
 ): boolean {
   if (txUserId === userId) return true
-  if (userRole === 'CFO' && accountIsShared) return true
+  if (isCFOLevel(userRole) && accountIsShared) return true
   return false
 }
 
@@ -171,7 +172,7 @@ function canManageTransaction(
  */
 export async function updateTransaction(
   userId: string,
-  userRole: 'CFO' | 'MEMBER',
+  userRole: AppRole,
   transactionId: string,
   input: {
     amount: number
@@ -225,7 +226,7 @@ export async function updateTransaction(
  */
 export async function deleteTransaction(
   userId: string,
-  userRole: 'CFO' | 'MEMBER',
+  userRole: AppRole,
   transactionId: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
@@ -529,7 +530,7 @@ export interface BulkUpdateItem {
  */
 export async function bulkUpdateTransactions(
   userId: string,
-  userRole: 'CFO' | 'MEMBER',
+  userRole: AppRole,
   updates: BulkUpdateItem[]
 ): Promise<{ success: boolean; error?: string }> {
   if (updates.length === 0) return { success: true }
@@ -1107,7 +1108,7 @@ export interface SubTransactionInput {
  */
 export async function upsertSubTransactions(
   userId: string,
-  userRole: 'CFO' | 'MEMBER',
+  userRole: AppRole,
   parentId: string,
   items: SubTransactionInput[]
 ): Promise<{ success: boolean; error?: string }> {

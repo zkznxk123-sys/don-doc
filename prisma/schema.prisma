@@ -13,8 +13,9 @@ datasource db {
 }
 
 enum Role {
-  CFO    // 관리자: 전체 자산 흐름 파악 및 예산 설정
-  MEMBER // 구성원: 개인 지출 및 공동 지출 기여
+  CFO     // 대표 관리자: 가족 생성자, 전체 접근
+  CO_CFO  // 공동 관리자: CFO와 동일한 접근 권한 (부부 공동 관리 등)
+  MEMBER  // 구성원: 개인 지출 및 공동 지출 기여
 }
 
 enum CategoryType {
@@ -57,6 +58,13 @@ enum DebtType {
   CREDIT_LOAN     // 신용대출
   OVERDRAFT       // 마이너스통장
   ETC             // 기타
+}
+
+enum TradeType {
+  BUY       // 매수
+  SELL      // 매도
+  DIVIDEND  // 배당/분배금
+  SPLIT     // 액면분할
 }
 
 enum PensionType {
@@ -174,10 +182,11 @@ model Account {
   linkedDebts     Account[]   @relation("DebtToAsset")
 
   // 유형별 상세 정보 (1:1)
-  realEstateDetail    RealEstateDetail?
+  realEstateDetail     RealEstateDetail?
   financialAssetDetail FinancialAssetDetail?
-  debtDetail          DebtDetail?
-  pensionDetail       PensionDetail?
+  debtDetail           DebtDetail?
+  pensionDetail        PensionDetail?
+  holdings             InvestmentHolding[]   // INVESTMENT/CRYPTO 계좌 종목 목록
 
   @@index([familyId, parentAccountId])
   @@index([userId])
@@ -297,4 +306,39 @@ model MonthlyGoal {
   updatedAt         DateTime    @updatedAt
 
   @@unique([familyId, month])
+}
+
+model InvestmentHolding {
+  id           String        @id @default(cuid())
+  accountId    String
+  account      Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  ticker       String?       // 티커 심볼 (예: 005930, AAPL, 005930.KS)
+  market       String?       // KRX, NASDAQ, NYSE, CRYPTO, ETF 등
+  name         String        // 종목명 (예: 삼성전자, Apple Inc.)
+  quantity     Float         // 보유 수량
+  avgPrice     Float         // 평균 매수가 (원 또는 달러)
+  currentPrice Float?        // 현재가 (마지막 조회값)
+  currency     String        @default("KRW") // KRW, USD 등
+  lastUpdated  DateTime?     // 현재가 마지막 업데이트
+  memo         String?
+  trades       TradeRecord[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([accountId])
+}
+
+model TradeRecord {
+  id        String            @id @default(cuid())
+  holdingId String
+  holding   InvestmentHolding @relation(fields: [holdingId], references: [id], onDelete: Cascade)
+  type      TradeType         // BUY, SELL, DIVIDEND, SPLIT
+  quantity  Float             // 수량 (DIVIDEND는 금액)
+  price     Float             // 단가 (DIVIDEND는 주당 배당금)
+  fee       Float?            // 수수료/세금
+  date      DateTime
+  memo      String?
+  createdAt DateTime          @default(now())
+
+  @@index([holdingId])
 }

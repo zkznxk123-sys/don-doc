@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
+import { isCFOLevel, type AppRole } from '@/lib/roles'
 
 function generateInviteCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -88,7 +89,7 @@ export interface FamilyMember {
   id: string
   name: string | null
   email: string
-  role: 'CFO' | 'MEMBER'
+  role: AppRole
 }
 
 export interface FamilyInfo {
@@ -123,7 +124,7 @@ export async function getFamilyInfo(): Promise<{ data?: FamilyInfo; error?: stri
           id: u.id,
           name: u.name,
           email: u.email,
-          role: u.role as 'CFO' | 'MEMBER',
+          role: u.role as AppRole,
         })),
         inviteCode: invite?.code ?? null,
       },
@@ -137,7 +138,7 @@ export async function getFamilyInfo(): Promise<{ data?: FamilyInfo; error?: stri
 export async function updateFamilyName(name: string): Promise<{ error?: string }> {
   const user = await getAuthUser()
   if (!user) return { error: '인증이 필요합니다.' }
-  if (user.role !== 'CFO') return { error: 'CFO만 가족 이름을 수정할 수 있습니다.' }
+  if (!isCFOLevel(user.role)) return { error: 'CFO만 가족 이름을 수정할 수 있습니다.' }
   if (!user.familyId) return { error: '가족 그룹이 없습니다.' }
 
   const trimmed = name.trim()
@@ -164,7 +165,7 @@ export async function resetFamilyData(
 ): Promise<{ success: boolean; error?: string }> {
   const user = await getAuthUser()
   if (!user) return { success: false, error: '인증이 필요합니다.' }
-  if (user.role !== 'CFO') return { success: false, error: 'CFO 권한이 필요합니다.' }
+  if (!isCFOLevel(user.role)) return { success: false, error: 'CFO 권한이 필요합니다.' }
   if (user.familyId !== familyId) return { success: false, error: '권한이 없습니다.' }
 
   try {

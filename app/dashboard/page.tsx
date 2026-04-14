@@ -689,7 +689,7 @@ export default function Dashboard() {
   const [txFilter, setTxFilter] = useState<'all' | 'income' | 'expense'>('all')
 
   // ── 인증 상태 ───────────────────────────────────────────────────────────────
-  const [viewMode, setViewMode] = useState<'CFO' | 'MEMBER'>('CFO')
+  const [viewMode, setViewMode] = useState<'CFO' | 'CO_CFO' | 'MEMBER'>('CFO')
   const [currentUserId, setCurrentUserId] = useState('')
 
   // ── 파생값 (제외 항목 제외) ──────────────────────────────────────────────────
@@ -761,6 +761,7 @@ export default function Dashboard() {
     if (!shellUser.familyId) { window.location.href = '/onboarding'; return }
     setCurrentUserId(shellUser.id)
     if (shellUser.role === 'MEMBER') setViewMode('MEMBER')
+    else if (shellUser.role === 'CO_CFO') setViewMode('CO_CFO')
     loadDashboard(selectedMonth, shellUser.id)
   }, [shellUser]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -803,7 +804,7 @@ export default function Dashboard() {
       </div>
 
       <AnimatePresence mode="wait">
-        {viewMode === 'CFO' ? (
+        {viewMode !== 'MEMBER' ? (
           <motion.div
             key="cfo"
             initial={{ opacity: 0, y: 10 }}

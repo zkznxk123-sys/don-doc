@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
+import { isCFOLevel } from '@/lib/roles'
 
 export async function GET(req: NextRequest) {
   try {
@@ -77,7 +78,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const authUser = await getAuthUser()
-    if (!authUser || authUser.role !== 'CFO') {
+    if (!authUser || !isCFOLevel(authUser.role)) {
       return NextResponse.json({ success: false, error: 'CFO 권한이 필요합니다.' }, { status: 403 })
     }
 

@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
+import { isCFOLevel } from '@/lib/roles'
 
 /** GET /api/family/info — 가족 정보 + 초대 코드 조회 */
 export async function GET() {
@@ -51,7 +52,7 @@ export async function PATCH(req: Request) {
   try {
     const user = await getAuthUser()
     if (!user) return NextResponse.json({ success: false, error: '인증이 필요합니다.' }, { status: 401 })
-    if (user.role !== 'CFO') return NextResponse.json({ success: false, error: 'CFO만 수정할 수 있습니다.' }, { status: 403 })
+    if (!isCFOLevel(user.role)) return NextResponse.json({ success: false, error: 'CFO만 수정할 수 있습니다.' }, { status: 403 })
     if (!user.familyId) return NextResponse.json({ success: false, error: '가족 그룹이 없습니다.' }, { status: 403 })
 
     const { name } = await req.json()
