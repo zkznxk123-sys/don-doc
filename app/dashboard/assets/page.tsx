@@ -148,12 +148,12 @@ export default function AssetsPage() {
     setLoading(true)
     try {
       await Promise.all([
-        loadAccounts(),
-        loadNetWorthHistory(),
-        checkSnapshot(),
-        getFamilyRealEstateSummary().then(d => setReSummary(d)),
-        getFamilyPensionAccounts().then(d => setPensionSummary(d)),
-        getFamilyDebtSummary().then(d => { setDebtSummary(d); setTotalDebtMonthlyPayment(d.totalMonthlyPayment) }),
+        loadAccounts().catch(e => console.error('[loadAccounts]', e)),
+        loadNetWorthHistory().catch(e => console.error('[loadNetWorthHistory]', e)),
+        checkSnapshot().catch(e => console.error('[checkSnapshot]', e)),
+        getFamilyRealEstateSummary().then(d => setReSummary(d)).catch(e => console.error('[getRealEstate]', e)),
+        getFamilyPensionAccounts().then(d => setPensionSummary(d)).catch(e => console.error('[getPension]', e)),
+        getFamilyDebtSummary().then(d => { setDebtSummary(d); setTotalDebtMonthlyPayment(d.totalMonthlyPayment) }).catch(e => console.error('[getDebt]', e)),
         getFamilyInfo().then(r => { if (r?.data) setFamilyMembers(r.data.members) }).catch(() => {}),
         getFamilyInvestmentSummary().then(d => setInvestmentSummary(d)).catch(() => {}),
         fetch('/api/stats/cashflow?months=6').then(r => r.json()).then(d => {
