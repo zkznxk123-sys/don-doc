@@ -88,6 +88,8 @@ model FamilyGroup {
   accountTypeLabels  AccountTypeLabel[]
   netWorthSnapshots  NetWorthSnapshot[]
   targetProperties   TargetProperty[]
+  contentSources     ContentSource[]
+  scenarios          Scenario[]
   createdAt          DateTime           @default(now())
 }
 
@@ -384,6 +386,38 @@ model TargetProperty {
   priceHistory RealEstatePriceHistory[]
   createdAt    DateTime                 @default(now())
   updatedAt    DateTime                 @updatedAt
+
+  @@index([familyId])
+}
+
+// ── 시나리오 허브 ──────────────────────────────────────────────────────────────
+
+model ContentSource {
+  id        String      @id @default(cuid())
+  familyId  String
+  family    FamilyGroup @relation(fields: [familyId], references: [id])
+  url       String
+  title     String?     // 페이지 제목 (og:title 등)
+  summary   String?     // AI 요약 핵심 내용
+  createdAt DateTime    @default(now())
+
+  @@index([familyId])
+}
+
+model Scenario {
+  id          String      @id @default(cuid())
+  familyId    String
+  family      FamilyGroup @relation(fields: [familyId], references: [id])
+  title       String
+  rationale   String      // 왜 지금 나에게 관련있는지
+  gap         String?     // 필요조건 vs 현재 갭
+  timeline    String?     // 예상 타임라인
+  risk        String?     // 주요 리스크
+  actions     String[]    // 다음 액션 목록
+  feasibility Int         // 실행 가능성 0~100
+  sourceIds   String[]    // 참조한 ContentSource ids
+  status      String      @default("active") // active | interested | dismissed
+  generatedAt DateTime    @default(now())
 
   @@index([familyId])
 }
