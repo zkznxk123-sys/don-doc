@@ -15,9 +15,26 @@ export interface ContentSourceData {
   createdAt: Date
 }
 
+export interface ScenarioExpansionStep {
+  phase: string
+  title: string
+  actions: string[]
+  duration: string
+  milestone: string
+}
+
+export interface ScenarioExpansion {
+  overview: string
+  steps: ScenarioExpansionStep[]
+  resources: string[]
+  risks: { risk: string; mitigation: string }[]
+  successMetric: string
+}
+
 export interface ScenarioData {
   id: string
   title: string
+  category: string | null
   rationale: string
   gap: string | null
   timeline: string | null
@@ -26,6 +43,7 @@ export interface ScenarioData {
   feasibility: number
   sourceIds: string[]
   status: string
+  expansion: ScenarioExpansion | null
   generatedAt: Date
 }
 
@@ -243,7 +261,7 @@ export async function generateScenarios(): Promise<{ success: boolean; count?: n
     : '추가된 관심 컨텐츠 없음'
 
   const prompt = `당신은 개인 재무 시나리오 어드바이저입니다.
-아래 재무 상태와 관심 컨텐츠를 분석해 실행 가능하고 구체적인 재무/투자 시나리오를 생성하세요.
+아래 재무 상태와 관심 컨텐츠를 분석해 이 가족에게 지금 가장 관련있는 재무/투자 시나리오를 생성하세요.
 
 === 재무 상태 ===
 ${financialContext}
@@ -251,11 +269,20 @@ ${financialContext}
 === 관심 컨텐츠 ===
 ${contentSection}
 
-위 정보를 바탕으로 이 가족에게 지금 가장 관련있고 실행 가능한 시나리오 3~5개를 JSON으로 반환하세요.
-실행 가능성(feasibility)은 현재 여유자금, 자산 규모, 부채 상황을 고려해 0~100으로 정수 표현하세요.
+【중요 규칙】
+- 반드시 아래 5가지 카테고리에서 각각 최대 1개씩, 총 3~5개 시나리오를 생성하세요.
+  - 부동산: 갈아타기, 추가매수, 매도 타이밍 등
+  - 투자: 주식/ETF/펀드 포트폴리오 전략
+  - 부채: 대출 상환 최적화, 금리 절감
+  - 현금흐름: 저축률 개선, 지출 구조 변화
+  - 연금/장기: 노후 준비, 세금 최적화
+- 카테고리 내에서 비슷한 시나리오를 여러 개 만들지 마세요.
+- 각 시나리오는 이 가족의 실제 재무 수치(순자산, 여유자금, 부채)를 근거로 구체적으로 작성하세요.
+- 실행 가능성(feasibility)은 현재 여유자금과 자산 규모 기준 0~100 정수로 표현하세요.
+
 반드시 아래 JSON 형식만 반환하세요 (마크다운 코드블록 없이):
 
-{"scenarios":[{"title":"...","rationale":"...","gap":"...","timeline":"...","risk":"...","actions":["...","..."],"feasibility":75,"sourceIndexes":[0]}]}`
+{"scenarios":[{"category":"부동산","title":"...","rationale":"...","gap":"...","timeline":"...","risk":"...","actions":["...","..."],"feasibility":75,"sourceIndexes":[0]}]}`
 
   let raw = ''
   try {
@@ -264,8 +291,9 @@ ${contentSection}
       { model: AI_MODELS.balanced, maxTokens: 2000, timeoutMs: 60_000 },
     )
   } catch (e) {
-    console.error('[generateScenarios] LLM error:', e)
-    return { success: false, error: 'AI 호출 실패' }
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[generateScenarios] LLM error:', msg)
+    return { success: false, error: `AI 호출 실패: ${msg}` }
   }
 
   // JSON 파싱
@@ -294,6 +322,7 @@ ${contentSection}
     data: scenariosInput.map((s: any) => ({
       familyId: user.familyId!,
       title: String(s.title ?? ''),
+      category: s.category ? String(s.category) : null,
       rationale: String(s.rationale ?? ''),
       gap: s.gap ? String(s.gap) : null,
       timeline: s.timeline ? String(s.timeline) : null,
@@ -324,6 +353,7 @@ export async function getScenarios(): Promise<ScenarioData[]> {
   return rows.map(r => ({
     id: r.id,
     title: r.title,
+    category: r.category,
     rationale: r.rationale,
     gap: r.gap,
     timeline: r.timeline,
@@ -332,6 +362,7 @@ export async function getScenarios(): Promise<ScenarioData[]> {
     feasibility: r.feasibility,
     sourceIds: r.sourceIds,
     status: r.status,
+    expansion: r.expansion ? (r.expansion as ScenarioExpansion) : null,
     generatedAt: r.generatedAt,
   }))
 }
@@ -344,4 +375,69 @@ export async function updateScenarioStatus(
   if (!user) return { success: false }
   await prisma.scenario.update({ where: { id }, data: { status } })
   return { success: true }
+}
+
+// ── 시나리오 확장 (상세 실행 계획) ───────────────────────────────────────────
+
+export async function expandScenario(
+  id: string,
+): Promise<{ success: boolean; expansion?: ScenarioExpansion; error?: string }> {
+  const user = await getAuthUser()
+  if (!user?.familyId) return { success: false, error: 'Unauthorized' }
+
+  const [scenario, financialContext] = await Promise.all([
+    prisma.scenario.findUnique({ where: { id } }),
+    buildFinancialContext(user.familyId),
+  ])
+
+  if (!scenario) return { success: false, error: '시나리오를 찾을 수 없습니다' }
+
+  const prompt = `당신은 개인 재무 실행 계획 전문가입니다.
+아래 시나리오를 실제로 실행할 수 있는 단계별 상세 계획으로 확장하세요.
+
+=== 재무 상태 ===
+${financialContext}
+
+=== 시나리오 ===
+제목: ${scenario.title}
+요약: ${scenario.rationale}
+현재 갭: ${scenario.gap ?? '없음'}
+예상 타임라인: ${scenario.timeline ?? '미정'}
+리스크: ${scenario.risk ?? '없음'}
+
+【지시사항】
+- 실제 재무 수치를 기반으로 구체적인 금액, 기간, 방법을 명시하세요.
+- 단계(phase)는 3~5개로 나누고, 각 단계별 구체적인 액션을 제시하세요.
+- 리스크는 구체적인 대응 방안과 함께 작성하세요.
+- 성공 기준은 측정 가능한 수치로 표현하세요.
+
+반드시 아래 JSON 형식만 반환하세요 (마크다운 코드블록 없이):
+
+{"overview":"...","steps":[{"phase":"1단계","title":"...","actions":["...","..."],"duration":"...","milestone":"..."}],"resources":["..."],"risks":[{"risk":"...","mitigation":"..."}],"successMetric":"..."}`
+
+  let raw = ''
+  try {
+    raw = await chat(
+      [{ role: 'user', content: prompt }],
+      { model: AI_MODELS.smart, maxTokens: 2500, timeoutMs: 90_000 },
+    )
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    return { success: false, error: `AI 호출 실패: ${msg}` }
+  }
+
+  let expansion: ScenarioExpansion
+  try {
+    const jsonStr = raw.match(/\{[\s\S]*\}/)?.[0] ?? raw
+    expansion = JSON.parse(jsonStr)
+  } catch {
+    return { success: false, error: '계획 파싱 실패' }
+  }
+
+  await prisma.scenario.update({
+    where: { id },
+    data: { expansion: expansion as any },
+  })
+
+  return { success: true, expansion }
 }

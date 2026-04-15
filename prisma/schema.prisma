@@ -409,6 +409,7 @@ model Scenario {
   familyId    String
   family      FamilyGroup @relation(fields: [familyId], references: [id])
   title       String
+  category    String?     // 부동산/투자/부채/현금흐름/연금 등
   rationale   String      // 왜 지금 나에게 관련있는지
   gap         String?     // 필요조건 vs 현재 갭
   timeline    String?     // 예상 타임라인
@@ -417,6 +418,7 @@ model Scenario {
   feasibility Int         // 실행 가능성 0~100
   sourceIds   String[]    // 참조한 ContentSource ids
   status      String      @default("active") // active | interested | dismissed
+  expansion   Json?       // 상세 실행 계획 (expandScenario 호출 후)
   generatedAt DateTime    @default(now())
 
   @@index([familyId])
