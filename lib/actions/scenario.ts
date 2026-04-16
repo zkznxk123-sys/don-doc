@@ -284,6 +284,8 @@ ${contentSection}
 
 {"scenarios":[{"category":"부동산","title":"...","rationale":"...","gap":"...","timeline":"...","risk":"...","actions":["...","..."],"feasibility":75,"sourceIndexes":[0]}]}`
 
+  console.log('[generateScenarios] prompt:\n', prompt)
+
   let raw = ''
   try {
     raw = await chat(
