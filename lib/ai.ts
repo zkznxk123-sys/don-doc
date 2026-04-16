@@ -12,9 +12,9 @@ const BASE_URL = process.env.LLM_MUX_URL ?? 'http://localhost:8317'
 // 용도별 모델 (환경변수로 오버라이드 가능)
 // llm-mux provider prefix 지원: "codex://gpt-4o-mini", "copilot://gpt-4o", "claude://claude-sonnet-4-20250514"
 export const AI_MODELS = {
-  fast:     process.env.LLM_MUX_MODEL_FAST     ?? 'gpt-4o-mini',              // 분류 등 빠른 작업 (Codex)
-  balanced: process.env.LLM_MUX_MODEL_BALANCED ?? 'claude-sonnet-4-20250514', // 일반 분석 (Claude)
-  smart:    process.env.LLM_MUX_MODEL_SMART    ?? 'claude-opus-4-5-20251101', // 인사이트 등 고품질 (Claude)
+  fast:     process.env.LLM_MUX_MODEL_FAST     ?? 'gpt-5-mini', // 분류 등 빠른 작업
+  balanced: process.env.LLM_MUX_MODEL_BALANCED ?? 'gpt-5-mini', // 일반 분석
+  smart:    process.env.LLM_MUX_MODEL_SMART    ?? 'gpt-5-mini', // 인사이트 등 고품질
 } as const
 
 export interface ChatMessage {

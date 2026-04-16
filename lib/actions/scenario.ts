@@ -288,7 +288,7 @@ ${contentSection}
   try {
     raw = await chat(
       [{ role: 'user', content: prompt }],
-      { model: AI_MODELS.balanced, maxTokens: 2000, timeoutMs: 60_000 },
+      { model: AI_MODELS.balanced, maxTokens: 2000, timeoutMs: 120_000 },
     )
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
@@ -419,7 +419,7 @@ ${financialContext}
   try {
     raw = await chat(
       [{ role: 'user', content: prompt }],
-      { model: AI_MODELS.smart, maxTokens: 2500, timeoutMs: 90_000 },
+      { model: AI_MODELS.smart, maxTokens: 2500, timeoutMs: 150_000 },
     )
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
