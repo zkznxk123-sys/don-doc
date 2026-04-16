@@ -10,9 +10,24 @@ import {
 import { cn } from '@/lib/utils'
 import {
   addContentSource, getContentSources, deleteContentSource,
-  generateScenarios, getScenarios, updateScenarioStatus, expandScenario,
+  getScenarios, updateScenarioStatus,
   type ContentSourceData, type ScenarioData, type ScenarioExpansion,
 } from '@/lib/actions/scenario'
+
+// API 라우트 호출 (maxDuration 60s 적용)
+async function generateScenariosAPI(): Promise<{ success: boolean; count?: number; error?: string }> {
+  const res = await fetch('/api/scenario/generate', { method: 'POST' })
+  return res.json()
+}
+
+async function expandScenarioAPI(id: string): Promise<{ success: boolean; expansion?: ScenarioExpansion; error?: string }> {
+  const res = await fetch('/api/scenario/expand', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id }),
+  })
+  return res.json()
+}
 
 // ── 헬퍼 ─────────────────────────────────────────────────────────────────────
 function feasibilityColor(v: number) {
@@ -145,7 +160,7 @@ function ScenarioCard({
     setExpanding(true)
     toast.loading('상세 계획 생성 중...', { id: `expand-${scenario.id}` })
     try {
-      const res = await expandScenario(scenario.id)
+      const res = await expandScenarioAPI(scenario.id)
       if (res.success && res.expansion) {
         onExpanded(res.expansion)
         setExpanded(true)
@@ -337,7 +352,7 @@ export default function ScenarioPage() {
       if (scData.length === 0) {
         setGenerating(true)
         toast.loading('재무 상태 분석 중...', { id: 'gen' })
-        generateScenarios().then(res => {
+        generateScenariosAPI().then(res => {
           if (res.success) {
             getScenarios().then(setScenarios)
             toast.success(`시나리오 ${res.count}개 생성됨`, { id: 'gen' })
@@ -381,7 +396,7 @@ export default function ScenarioPage() {
     setGenerating(true)
     toast.loading('시나리오 생성 중...', { id: 'gen' })
     try {
-      const res = await generateScenarios()
+      const res = await generateScenariosAPI()
       if (res.success) {
         const updated = await getScenarios()
         setScenarios(updated)
