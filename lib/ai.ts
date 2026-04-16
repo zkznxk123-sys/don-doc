@@ -60,20 +60,19 @@ export async function chat(
 
   // 운영 환경에서 llm-mux가 localhost를 가리키면 OpenAI 직접 사용
   if (isLocalMux && process.env.OPENAI_API_KEY) {
-    return chatOpenAI(messages, { model: toOpenAIModel(model), temperature, maxTokens, timeoutMs })
+    return chatOpenAI(messages, { model: toOpenAIModel(model), temperature, maxTokens: maxTokens ?? 1000, timeoutMs })
   }
 
-  return chatLlmMux(messages, { model, temperature, maxTokens, timeoutMs })
+  return chatLlmMux(messages, { model, temperature, maxTokens: maxTokens ?? 1000, timeoutMs })
 }
 
 async function chatLlmMux(
   messages: ChatMessage[],
-  options: Required<Omit<ChatOptions, 'model'>> & { model: string },
+  options: { model: string; temperature: number; maxTokens: number; timeoutMs: number },
 ): Promise<string> {
   const { model, temperature, maxTokens, timeoutMs } = options
 
-  const body: Record<string, unknown> = { model, messages, temperature, stream: false }
-  if (maxTokens) body.max_tokens = maxTokens
+  const body: Record<string, unknown> = { model, messages, temperature, stream: false, max_tokens: maxTokens }
 
   const res = await fetch(`${BASE_URL}/v1/chat/completions`, {
     method: 'POST',
@@ -93,12 +92,11 @@ async function chatLlmMux(
 
 async function chatOpenAI(
   messages: ChatMessage[],
-  options: Required<Omit<ChatOptions, 'model'>> & { model: string },
+  options: { model: string; temperature: number; maxTokens: number; timeoutMs: number },
 ): Promise<string> {
   const { model, temperature, maxTokens, timeoutMs } = options
 
-  const body: Record<string, unknown> = { model, messages, temperature, stream: false }
-  if (maxTokens) body.max_tokens = maxTokens
+  const body: Record<string, unknown> = { model, messages, temperature, stream: false, max_tokens: maxTokens }
 
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
