@@ -362,7 +362,7 @@ export async function getScenarios(): Promise<ScenarioData[]> {
     feasibility: r.feasibility,
     sourceIds: r.sourceIds,
     status: r.status,
-    expansion: r.expansion ? (r.expansion as ScenarioExpansion) : null,
+    expansion: r.expansion ? (r.expansion as unknown as ScenarioExpansion) : null,
     generatedAt: r.generatedAt,
   }))
 }
