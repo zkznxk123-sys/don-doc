@@ -60,9 +60,11 @@ export async function chat(
 
   // 운영 환경에서 llm-mux가 localhost를 가리키면 OpenAI 직접 사용
   if (isLocalMux && process.env.OPENAI_API_KEY) {
+    console.log(`[ai] → OpenAI direct, model: ${toOpenAIModel(model)}`)
     return chatOpenAI(messages, { model: toOpenAIModel(model), temperature, maxTokens: maxTokens ?? 1000, timeoutMs })
   }
 
+  console.log(`[ai] → llm-mux, model: ${model}, url: ${BASE_URL}`)
   return chatLlmMux(messages, { model, temperature, maxTokens: maxTokens ?? 1000, timeoutMs })
 }
 
