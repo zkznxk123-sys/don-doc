@@ -15,9 +15,9 @@ const isLocalMux =
 
 // 용도별 모델 (환경변수로 오버라이드 가능)
 export const AI_MODELS = {
-  fast:     process.env.LLM_MUX_MODEL_FAST     ?? 'gpt-5-mini', // 빠른 작업 (llm-mux) / gpt-4o-mini (OpenAI)
-  balanced: process.env.LLM_MUX_MODEL_BALANCED ?? 'gpt-5-mini', // 일반 분석
-  smart:    process.env.LLM_MUX_MODEL_SMART    ?? 'gpt-5-mini', // 고품질
+  fast:     process.env.LLM_MUX_MODEL_FAST     ?? 'gpt-5-mini', // 빠른 작업: URL 요약, 분류
+  balanced: process.env.LLM_MUX_MODEL_BALANCED ?? 'gpt-4.1',    // 시나리오 생성, AI 채팅
+  smart:    process.env.LLM_MUX_MODEL_SMART    ?? 'o4-mini',    // 상세 실행 계획 (추론 필요)
 } as const
 
 // OpenAI 폴백 모델 매핑 (llm-mux 전용 모델 → 표준 OpenAI 모델)
@@ -25,6 +25,8 @@ const OPENAI_MODEL_MAP: Record<string, string> = {
   'gpt-5-mini': 'gpt-4o-mini',
   'gpt-5':      'gpt-4o',
   'gpt-5.1':    'gpt-4o',
+  'gpt-4.1':    'gpt-4.1',
+  'o4-mini':    'o4-mini',
 }
 function toOpenAIModel(model: string): string {
   return OPENAI_MODEL_MAP[model] ?? model
@@ -60,11 +62,9 @@ export async function chat(
 
   // 운영 환경에서 llm-mux가 localhost를 가리키면 OpenAI 직접 사용
   if (isLocalMux && process.env.OPENAI_API_KEY) {
-    console.log(`[ai] → OpenAI direct, model: ${toOpenAIModel(model)}`)
     return chatOpenAI(messages, { model: toOpenAIModel(model), temperature, maxTokens: maxTokens ?? 1000, timeoutMs })
   }
 
-  console.log(`[ai] → llm-mux, model: ${model}, url: ${BASE_URL}`)
   return chatLlmMux(messages, { model, temperature, maxTokens: maxTokens ?? 1000, timeoutMs })
 }
 
@@ -92,13 +92,25 @@ async function chatLlmMux(
   return data.choices?.[0]?.message?.content?.trim() ?? ''
 }
 
+const REASONING_MODELS = new Set(['o4-mini', 'o3-mini', 'o3', 'o1', 'o1-mini'])
+
 async function chatOpenAI(
   messages: ChatMessage[],
   options: { model: string; temperature: number; maxTokens: number; timeoutMs: number },
 ): Promise<string> {
   const { model, temperature, maxTokens, timeoutMs } = options
 
-  const body: Record<string, unknown> = { model, messages, temperature, stream: false, max_tokens: maxTokens }
+  const isReasoning = REASONING_MODELS.has(model)
+  const body: Record<string, unknown> = {
+    model,
+    messages,
+    stream: false,
+    // 추론 모델은 temperature 미지원, max_completion_tokens 사용
+    ...(isReasoning
+      ? { max_completion_tokens: maxTokens }
+      : { temperature, max_tokens: maxTokens }
+    ),
+  }
 
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',

@@ -7,6 +7,27 @@ import { deleteTransaction } from '@/lib/actions/transaction'
 import { upsertCategoryPreference } from '@/lib/actions/preferences'
 import { prisma } from '@/lib/prisma'
 
+export async function GET(
+  _req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const authUser = await getAuthUser()
+    if (!authUser) return NextResponse.json({ success: false, error: '인증이 필요합니다.' }, { status: 401 })
+
+    const tx = await prisma.transaction.findUnique({
+      where: { id: params.id },
+      include: { subItems: true },
+    })
+    if (!tx) return NextResponse.json({ success: false, error: '내역을 찾을 수 없습니다.' }, { status: 404 })
+
+    const isMasked = tx.visibility === 'PRIVATE' && tx.userId !== authUser.id
+    return NextResponse.json({ success: true, transaction: { ...tx, isMasked } })
+  } catch (e) {
+    return NextResponse.json({ success: false, error: String(e) }, { status: 500 })
+  }
+}
+
 export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }

@@ -90,6 +90,7 @@ model FamilyGroup {
   targetProperties   TargetProperty[]
   contentSources     ContentSource[]
   scenarios          Scenario[]
+  familyPosts        FamilyPost[]
   createdAt          DateTime           @default(now())
 }
 
@@ -128,6 +129,10 @@ model User {
   accounts               Account[]
   budgets                Budget[]
   categoryPreferences    UserCategoryPreference[]
+  familyPosts            FamilyPost[]
+  postComments           PostComment[]
+  postReactions          PostReaction[]
+  taggedInPosts          FamilyPost[]   @relation("FamilyPostTaggedUsers")
 
   @@index([familyId])
 }
@@ -216,6 +221,7 @@ model Transaction {
   parentId     String?
   parent       Transaction?  @relation("SubTransactions", fields: [parentId], references: [id], onDelete: Cascade)
   subItems     Transaction[] @relation("SubTransactions")
+  familyPosts  FamilyPost[]
 
   @@index([userId, date])
   @@index([accountId])
@@ -405,21 +411,81 @@ model ContentSource {
 }
 
 model Scenario {
-  id          String      @id @default(cuid())
-  familyId    String
-  family      FamilyGroup @relation(fields: [familyId], references: [id])
-  title       String
-  category    String?     // 부동산/투자/부채/현금흐름/연금 등
-  rationale   String      // 왜 지금 나에게 관련있는지
-  gap         String?     // 필요조건 vs 현재 갭
-  timeline    String?     // 예상 타임라인
-  risk        String?     // 주요 리스크
-  actions     String[]    // 다음 액션 목록
-  feasibility Int         // 실행 가능성 0~100
-  sourceIds   String[]    // 참조한 ContentSource ids
-  status      String      @default("active") // active | interested | dismissed
-  expansion   Json?       // 상세 실행 계획 (expandScenario 호출 후)
-  generatedAt DateTime    @default(now())
+  id               String               @id @default(cuid())
+  familyId         String
+  family           FamilyGroup          @relation(fields: [familyId], references: [id])
+  title            String
+  category         String?              // 부동산/투자/부채/현금흐름/연금 등
+  rationale        String               // 왜 지금 나에게 관련있는지
+  gap              String?              // 필요조건 vs 현재 갭
+  timeline         String?              // 예상 타임라인
+  risk             String?              // 주요 리스크
+  actions          String[]             // 다음 액션 목록
+  completedActions Int[]                // 완료된 액션 인덱스 목록
+  feasibility      Int                  // 실행 가능성 0~100
+  sourceIds        String[]             // 참조한 ContentSource ids
+  status           String               @default("active") // active | interested | dismissed | archived
+  generationBatch  String               @default("") // 같은 생성 회차 그룹핑 (cuid)
+  expansion        Json?                // 상세 실행 계획 (expandScenario 호출 후)
+  generatedAt      DateTime             @default(now())
+  chatMessages     ScenarioChatMessage[]
 
   @@index([familyId])
+  @@index([generationBatch])
+}
+
+model ScenarioChatMessage {
+  id         String   @id @default(cuid())
+  scenarioId String
+  scenario   Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  role       String   // user | assistant
+  content    String
+  createdAt  DateTime @default(now())
+
+  @@index([scenarioId])
+}
+
+model FamilyPost {
+  id            String         @id @default(cuid())
+  familyId      String
+  family        FamilyGroup    @relation(fields: [familyId], references: [id])
+  authorId      String
+  author        User           @relation(fields: [authorId], references: [id])
+  type          String         @default("text") // text | txn_ref
+  content       String
+  isPinned      Boolean        @default(false)
+  transactionId String?
+  transaction   Transaction?   @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+  taggedUsers   User[]         @relation("FamilyPostTaggedUsers")
+  comments      PostComment[]
+  reactions     PostReaction[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([familyId])
+}
+
+model PostComment {
+  id        String     @id @default(cuid())
+  postId    String
+  post      FamilyPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User       @relation(fields: [authorId], references: [id])
+  content   String
+  createdAt DateTime   @default(now())
+
+  @@index([postId])
+}
+
+model PostReaction {
+  id        String     @id @default(cuid())
+  postId    String
+  post      FamilyPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User       @relation(fields: [userId], references: [id])
+  emoji     String     // ✅ 👍 🤔 ❤️
+  createdAt DateTime   @default(now())
+
+  @@unique([postId, userId, emoji])
+  @@index([postId])
 }

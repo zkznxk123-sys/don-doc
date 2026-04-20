@@ -16,6 +16,7 @@ import {
   Loader2,
   X,
   Sparkles,
+  MessageSquare,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ShellUser } from './DashboardShell'
@@ -29,6 +30,7 @@ export const NAV_ITEMS = [
   { href: '/dashboard/assets',     label: '자산 관리',      icon: Wallet },
   { href: '/dashboard/budget',     label: '예산 관리',      icon: Calculator },
   { href: '/dashboard/scenario',   label: '시나리오 허브',  icon: Sparkles },
+  { href: '/dashboard/feed',       label: '가족 피드',      icon: MessageSquare },
   { href: '/dashboard/settings',   label: '설정',           icon: Settings },
 ]
 

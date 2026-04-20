@@ -56,6 +56,7 @@ import {
   type PriceHistoryPoint, type TargetPropertyData,
 } from '@/lib/actions/realestate'
 import { TrendingUp, TrendingDown, Wallet, Building2, Landmark, CreditCard, Camera, Plus, PiggyBank, Pencil, ChevronRight, AlertTriangle, ShieldCheck, Clock, BadgePercent, Banknote, HandCoins, CalendarClock, Percent, RefreshCw, BookOpen, BarChart2, Target, TrendingDown as TrendingDownIcon } from 'lucide-react'
+import { PortfolioAnalysis } from '@/components/ui/portfolio-analysis'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -1972,6 +1973,13 @@ function FinancialTab({
 
   return (
     <div className="space-y-4">
+      {/* 포트폴리오 분석: 자산군 분류 + 종목별 비중 */}
+      <PortfolioAnalysis
+        accounts={accounts}
+        investmentSummary={investmentSummary}
+        usdKrwRate={usdKrwRate}
+      />
+
       {/* 종목 P&L 요약 (holdings 있을 때만) */}
       {investmentSummary.length > 0 && (
         <div className="bg-card rounded-2xl border border-border p-4">

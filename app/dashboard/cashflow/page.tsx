@@ -6,6 +6,7 @@ import {
   ChevronLeft, ChevronRight, TrendingUp, TrendingDown,
   PiggyBank, Eye, EyeOff, Pencil, Check, X, Save, Loader2,
   FileSpreadsheet, Plus, GitMerge, Sparkles, ArrowUpDown, ArrowDownUp,
+  Share2, Send,
 } from 'lucide-react'
 import { cn, formatCurrency, formatLargeNumber } from '@/lib/utils'
 import { useDashboardActions } from '@/components/layout/DashboardShell'
@@ -17,6 +18,7 @@ import {
 import { InputGuide } from '@/components/dashboard/InputGuide'
 import { getFamilyCategories, type CategoryOption } from '@/lib/actions/categories'
 import { AutoCleanupDialog } from '@/components/ui/auto-cleanup-dialog'
+import { createTxnRefPost, getFamilyMembersForTag, type PostAuthor } from '@/lib/actions/feed'
 
 type TypeFilter = 'INCOME' | 'EXPENSE'
 
@@ -208,6 +210,41 @@ export default function CashflowPage() {
     fetchGoal(year, month)
     getFamilyCategories().then(setAllCategories).catch(() => {})
   }, [year, month, fetchData, fetchGoal, refreshKey])
+
+  // ?txn= 파라미터로 진입 시 해당 거래의 드로어 자동 오픈
+  const txnParam = searchParams.get('txn')
+  const txnOpenedRef = useRef<string | null>(null)
+  useEffect(() => {
+    if (!txnParam || txnOpenedRef.current === txnParam) return
+    txnOpenedRef.current = txnParam
+
+    // URL에서 파라미터 제거
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete('txn')
+    const qs = params.toString()
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+
+    // 거래 직접 조회 → 해당 월로 이동 후 드로어 오픈
+    fetch(`/api/transactions/${txnParam}`)
+      .then(r => r.json())
+      .then(data => {
+        if (!data.success) return
+        const tx = data.transaction
+        const txDate = new Date(tx.date)
+        setYear(txDate.getFullYear())
+        setMonth(txDate.getMonth() + 1)
+        openTransactionDrawer({
+          id: tx.id, amount: tx.amount,
+          date: tx.date instanceof Date ? tx.date.toISOString() : tx.date,
+          category: tx.category, description: tx.description,
+          visibility: tx.visibility, userId: tx.userId,
+          accountId: tx.accountId ?? '', isMasked: tx.isMasked,
+          isExcluded: tx.isExcluded, excludeFromBudget: tx.excludeFromBudget,
+          subItems: tx.subItems,
+        })
+      })
+      .catch(() => {})
+  }, [txnParam, openTransactionDrawer, router, pathname, searchParams])
 
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
 
@@ -1240,6 +1277,119 @@ function SubItemRow({ item }: { item: SubItem }) {
   )
 }
 
+// ── 거래 공유 모달 ────────────────────────────────────────────────────────────
+
+function TxnShareModal({ tx, onClose }: { tx: Transaction; onClose: () => void }) {
+  const [message, setMessage] = useState('')
+  const [sending, setSending] = useState(false)
+  const [members, setMembers] = useState<PostAuthor[]>([])
+  const [taggedIds, setTaggedIds] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    getFamilyMembersForTag().then(setMembers)
+  }, [])
+
+  const toggleTag = (id: string) =>
+    setTaggedIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+
+  const submit = async () => {
+    if (!message.trim() || sending) return
+    setSending(true)
+    const res = await createTxnRefPost(tx.id, message.trim(), Array.from(taggedIds))
+    if (res.success) {
+      toast.success('피드에 공유됐습니다')
+      onClose()
+    } else {
+      toast.error(res.error ?? '공유 실패')
+      setSending(false)
+    }
+  }
+
+  const dateStr = new Date(tx.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={onClose}>
+      <div
+        className="bg-card border border-border rounded-2xl w-full max-w-sm shadow-xl space-y-3 p-4"
+        onClick={e => e.stopPropagation()}
+      >
+        <p className="text-sm font-semibold text-foreground">가족 피드에 공유</p>
+
+        {/* 거래 미리보기 */}
+        <div className="bg-muted/50 border border-border rounded-xl px-3 py-2.5 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs text-muted-foreground/60 mb-0.5">{dateStr} · {tx.isMasked ? '-' : tx.category}</p>
+            <p className="text-sm text-foreground truncate">{tx.isMasked ? '비공개 거래' : tx.description}</p>
+          </div>
+          <p className={cn(
+            'text-sm font-semibold tabular-nums flex-shrink-0',
+            tx.amount > 0 ? 'text-emerald-500' : 'text-foreground',
+          )}>
+            {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)}
+          </p>
+        </div>
+
+        {/* 구성원 태그 */}
+        {members.length > 0 && (
+          <div className="space-y-1.5">
+            <p className="text-[10px] text-muted-foreground/50 font-medium">구성원 태그</p>
+            <div className="flex flex-wrap gap-1.5">
+              {members.map(m => (
+                <button
+                  key={m.id}
+                  onClick={() => toggleTag(m.id)}
+                  className={cn(
+                    'px-2.5 py-1 rounded-full text-xs font-medium border transition-colors',
+                    taggedIds.has(m.id)
+                      ? 'bg-primary/10 border-primary/40 text-primary'
+                      : 'bg-muted/50 border-border text-muted-foreground hover:bg-muted',
+                  )}
+                >
+                  @{m.name ?? m.id.slice(0, 6)}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 메시지 입력 */}
+        <textarea
+          autoFocus
+          value={message}
+          onChange={e => setMessage(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && (e.metaKey || e.ctrlKey) && submit()}
+          placeholder="한마디 남기기... (예: 이 지출 확인해봐, 왜 이렇게 많지?)"
+          rows={3}
+          className="w-full resize-none text-sm bg-muted/50 border border-border rounded-xl px-3 py-2.5 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/30"
+        />
+
+        <div className="flex gap-2 justify-end">
+          <button
+            onClick={onClose}
+            className="px-3 py-1.5 rounded-xl text-xs text-muted-foreground hover:bg-muted transition-colors"
+          >
+            취소
+          </button>
+          <button
+            onClick={submit}
+            disabled={!message.trim() || sending}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-primary text-primary-foreground text-xs font-medium disabled:opacity-50 transition-opacity"
+          >
+            {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+            공유
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 function TransactionRow({
   tx, isEditing, isDirty, effectiveCategory, effectiveExcluded, effectiveAmount, effectiveDescription,
   allCategories, canEdit, onEdit, onDraftChange, subItems,
@@ -1257,6 +1407,7 @@ function TransactionRow({
   onDraftChange: (patch: Partial<DraftItem>) => void
   subItems?: SubItem[]
 }) {
+  const [shareOpen, setShareOpen] = useState(false)
   const hasSubItems = (subItems?.length ?? 0) > 0
   const date = new Date(tx.date)
   const dateStr = `${String(date.getMonth() + 1).padStart(2, '0')}.${String(date.getDate()).padStart(2, '0')}`
@@ -1377,7 +1528,14 @@ function TransactionRow({
           {effectiveCategory}
         </span>
       </div>
-      <div className="self-center flex justify-center">
+      <div className="self-center flex items-center gap-0.5 justify-center">
+        <button
+          onClick={() => setShareOpen(true)}
+          className="p-1 rounded-lg text-muted-foreground/40 hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors opacity-0 group-hover:opacity-100"
+          title="피드에 공유"
+        >
+          <Share2 className="w-3 h-3" />
+        </button>
         {canEdit && !isEditing && (
           <button
             onClick={onEdit}
@@ -1393,6 +1551,13 @@ function TransactionRow({
     {hasSubItems && subItems!.map(item => (
       <SubItemRow key={item.id} item={item} />
     ))}
+    {/* 피드 공유 모달 */}
+    {shareOpen && (
+      <TxnShareModal
+        tx={tx}
+        onClose={() => setShareOpen(false)}
+      />
+    )}
   </>
   )
 }
