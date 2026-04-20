@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils'
 import type { ShellUser } from './DashboardShell'
 import { useState, useEffect, useRef } from 'react'
 import { getLatestInviteCode } from '@/lib/actions/family'
+import { getRecentFeedPreview } from '@/lib/actions/feed'
 import { toast } from 'sonner'
 
 export const NAV_ITEMS = [
@@ -43,6 +44,16 @@ interface AppSidebarProps {
 
 export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
   const pathname = usePathname()
+  const [hasUnreadFeed, setHasUnreadFeed] = useState(false)
+
+  useEffect(() => {
+    getRecentFeedPreview(1).then(posts => {
+      if (posts.length === 0) return
+      const lastRead = localStorage.getItem('don-doc:lastFeedRead')
+      const since = lastRead ? new Date(lastRead) : new Date(0)
+      setHasUnreadFeed(new Date(posts[0].createdAt) > since)
+    })
+  }, [pathname]) // pathname 바뀔 때마다 재확인 (피드 방문 후 점 사라짐)
 
   const isActive = (item: typeof NAV_ITEMS[number]) =>
     item.exact ? pathname === item.href : pathname.startsWith(item.href)
@@ -90,21 +101,33 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
         {NAV_ITEMS.map((item) => {
           const active = isActive(item)
           const Icon = item.icon
+          const isFeed = item.href === '/dashboard/feed'
+          const showDot = isFeed && hasUnreadFeed && !active
           return (
             <Link
               key={item.href}
               href={item.href}
               onClick={handleNavClick}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors group',
+                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors group relative',
                 active
                   ? 'bg-muted text-foreground'
                   : 'text-muted-foreground hover:text-foreground/80 hover:bg-muted',
                 !open && 'lg:justify-center lg:px-0',
               )}
             >
-              <Icon className="w-4 h-4 flex-shrink-0" />
-              {open && <span className="truncate">{item.label}</span>}
+              <div className="relative flex-shrink-0">
+                <Icon className="w-4 h-4" />
+                {showDot && (
+                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-blue-400 border border-background" />
+                )}
+              </div>
+              {open && <span className="truncate flex-1">{item.label}</span>}
+              {open && showDot && (
+                <span className="text-[10px] font-semibold text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded-full leading-none">
+                  NEW
+                </span>
+              )}
             </Link>
           )
         })}

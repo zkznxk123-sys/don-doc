@@ -547,6 +547,8 @@ export default function FeedPage() {
 
   useEffect(() => {
     load()
+    // 피드 방문 시각 저장 — 대시보드 알림 초기화용
+    localStorage.setItem('don-doc:lastFeedRead', new Date().toISOString())
     // CFO 여부는 첫 게시물 or 별도 액션으로 판단 (간단히 로컬 처리)
     // TODO: getAuthUser role을 클라이언트에 노출하는 방법 추가 시 개선
   }, [load])

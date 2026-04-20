@@ -48,6 +48,39 @@ export interface FamilyPostData {
   isOwn: boolean
 }
 
+// ── 피드 미리보기 (대시보드용) ─────────────────────────────────────────────────
+
+export interface FeedPreviewItem {
+  id: string
+  type: string
+  content: string
+  author: PostAuthor
+  taggedUsers: PostAuthor[]
+  createdAt: Date
+}
+
+export async function getRecentFeedPreview(limit = 5): Promise<FeedPreviewItem[]> {
+  const user = await getAuthUser()
+  if (!user?.familyId) return []
+  const posts = await prisma.familyPost.findMany({
+    where: { familyId: user.familyId },
+    include: {
+      author: { select: { id: true, name: true } },
+      taggedUsers: { select: { id: true, name: true } },
+    },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+  })
+  return posts.map(p => ({
+    id: p.id,
+    type: p.type,
+    content: p.content,
+    author: { id: p.author.id, name: p.author.name },
+    taggedUsers: p.taggedUsers.map((u: any) => ({ id: u.id, name: u.name })),
+    createdAt: p.createdAt,
+  }))
+}
+
 // ── 가족 멤버 조회 (태그용) ────────────────────────────────────────────────────
 
 export async function getFamilyMembersForTag(): Promise<PostAuthor[]> {
