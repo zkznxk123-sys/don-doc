@@ -275,7 +275,7 @@ export function LandingPage() {
             className="text-center mb-16"
           >
             <motion.p variants={fadeUp} custom={0} className="text-xs text-secondary uppercase tracking-widest mb-3 font-medium">
-              왜 돈독인가
+              왜 돈Doc인가
             </motion.p>
             <motion.h2 variants={fadeUp} custom={1} className="text-3xl sm:text-4xl font-bold tracking-tight font-serif">
               단순한 가계부가 아닙니다

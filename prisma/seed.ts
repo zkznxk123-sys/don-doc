@@ -14,7 +14,7 @@ async function main() {
 
   // 1. 가족 그룹
   const family = await prisma.familyGroup.create({
-    data: { name: '우리집 돈독' },
+    data: { name: '우리집 돈Doc' },
   })
 
   // 2. 사용자 A (나) & 사용자 B (가족)
