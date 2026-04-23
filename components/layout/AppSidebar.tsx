@@ -75,10 +75,13 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
         'flex items-center gap-3 px-4 h-14 border-b border-border/60 flex-shrink-0',
         !open && 'lg:justify-center lg:px-0',
       )}>
-        <Link href="/dashboard" className="flex items-center gap-3 min-w-0 flex-1">
+        <Link href="/dashboard" className={cn(
+          'flex items-center gap-3 min-w-0 flex-1',
+          !open && 'lg:justify-center',
+        )}>
           {open ? (
             <div className="min-w-0 flex flex-col gap-0.5">
-              <BrandMark variant="wordmark" size={20} />
+              <span className="text-sm font-black tracking-tight text-foreground">돈Doc</span>
               {user.familyName && (
                 <p className="text-[10px] text-muted-foreground truncate">{user.familyName}</p>
               )}
