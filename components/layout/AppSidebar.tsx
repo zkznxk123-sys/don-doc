@@ -76,14 +76,15 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
         !open && 'lg:justify-center lg:px-0',
       )}>
         <Link href="/dashboard" className="flex items-center gap-3 min-w-0 flex-1">
-          <BrandMark size={28} />
-          {open && (
+          {open ? (
             <div className="min-w-0 flex flex-col gap-0.5">
               <BrandMark variant="wordmark" size={20} />
               {user.familyName && (
                 <p className="text-[10px] text-muted-foreground truncate">{user.familyName}</p>
               )}
             </div>
+          ) : (
+            <BrandMark variant="symbol" size={28} />
           )}
         </Link>
         {/* 모바일 닫기 */}
