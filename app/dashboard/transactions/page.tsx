@@ -110,12 +110,12 @@ export default function TransactionsPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-1.5">
-                  <TrendingUp className="w-3 h-3 text-emerald-600 dark:text-emerald-500" />
+                  <TrendingUp className="w-3 h-3 text-income" />
                   수입
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-base font-bold text-emerald-600 dark:text-emerald-400 tabular-nums leading-tight">
+                <p className="text-base font-bold text-income tabular-nums leading-tight">
                   {formatCurrency(summary.income)}
                 </p>
               </CardContent>
@@ -123,12 +123,12 @@ export default function TransactionsPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-1.5">
-                  <TrendingDown className="w-3 h-3 text-red-600 dark:text-red-400" />
+                  <TrendingDown className="w-3 h-3 text-expense" />
                   지출
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-base font-bold text-red-600 dark:text-red-400 tabular-nums leading-tight">
+                <p className="text-base font-bold text-expense tabular-nums leading-tight">
                   {formatCurrency(summary.expense)}
                 </p>
               </CardContent>
@@ -136,14 +136,14 @@ export default function TransactionsPage() {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-1.5">
-                  <PiggyBank className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                  <PiggyBank className="w-3 h-3 text-savings" />
                   저축
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <p className={cn(
                   'text-base font-bold tabular-nums leading-tight',
-                  summary.savings >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-amber-600 dark:text-amber-400'
+                  summary.savings >= 0 ? 'text-savings' : 'text-warning'
                 )}>
                   {formatCurrency(summary.savings)}
                 </p>
@@ -153,7 +153,7 @@ export default function TransactionsPage() {
         )}
 
         {/* 내역 테이블 */}
-        <div className="rounded-2xl border border-border overflow-hidden">
+        <div className="rounded-2xl shadow-card dark:border dark:border-border overflow-hidden">
           {/* 테이블 헤더 */}
           <div className="grid grid-cols-[72px_1fr_88px_72px] px-4 py-2.5 bg-card border-b border-border">
             {['날짜', '내용', '금액', '카테고리'].map(h => (
@@ -211,7 +211,7 @@ function TransactionRow({ tx }: { tx: Transaction }) {
       </div>
       <p className={cn(
         'text-sm tabular-nums text-right font-medium',
-        tx.amount > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'
+        tx.amount > 0 ? 'text-income' : 'text-foreground'
       )}>
         {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)}
       </p>

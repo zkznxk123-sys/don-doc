@@ -15,6 +15,7 @@ import {
 } from 'recharts'
 import { Progress } from '@/components/ui/progress'
 import { formatCurrency, formatLargeNumber, cn } from '@/lib/utils'
+import { LogoLockup } from '@/components/ui/brand-mark'
 import { motion, AnimatePresence } from 'framer-motion'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -78,12 +79,12 @@ const TYPE_LABEL: Record<string, string> = {
   PENSION: '연금', DEBT: '대출', CRYPTO: '가상자산',
 }
 const TYPE_COLOR: Record<string, string> = {
-  REAL_ESTATE: 'text-amber-500', INVESTMENT: 'text-blue-500', CASH: 'text-emerald-500',
-  PENSION: 'text-violet-500', DEBT: 'text-red-400', CRYPTO: 'text-orange-400',
+  REAL_ESTATE: 'text-amber-500', INVESTMENT: 'text-blue-500', CASH: 'text-income',
+  PENSION: 'text-violet-500', DEBT: 'text-expense', CRYPTO: 'text-orange-400',
 }
 const TYPE_BG: Record<string, string> = {
-  REAL_ESTATE: 'bg-amber-500/10', INVESTMENT: 'bg-blue-500/10', CASH: 'bg-emerald-500/10',
-  PENSION: 'bg-violet-500/10', DEBT: 'bg-red-400/10', CRYPTO: 'bg-orange-400/10',
+  REAL_ESTATE: 'bg-amber-500/10', INVESTMENT: 'bg-blue-500/10', CASH: 'bg-income-soft',
+  PENSION: 'bg-violet-500/10', DEBT: 'bg-expense-soft', CRYPTO: 'bg-orange-400/10',
 }
 
 const NAV_ITEMS: { key: PageKey; label: string; icon: React.ElementType }[] = [
@@ -111,9 +112,7 @@ function DemoSidebar({ activePage, onNav, open, onClose, familyName }: {
       )}>
         {/* 브랜드 */}
         <div className={cn('flex items-center gap-3 px-4 h-14 border-b border-border/60 flex-shrink-0', !open && 'lg:justify-center lg:px-0')}>
-          <div className="w-7 h-7 rounded-md bg-foreground flex items-center justify-center flex-shrink-0">
-            <span className="text-xs font-bold text-background">돈</span>
-          </div>
+          <LogoLockup showText={false} size="md" />
           {open && (
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-foreground truncate font-serif tracking-tight">돈Doc</p>
@@ -175,10 +174,10 @@ function DashboardView({ data }: { data: DemoData }) {
       {/* KPI */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { icon: <Wallet className="w-3.5 h-3.5 text-emerald-500" />, label: '가족 순자산', value: formatLargeNumber(wealth.netWorth), sub: `총자산 ${formatLargeNumber(wealth.totalAssets)}` },
-          { icon: <ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />, label: `${monthLabel} 수입`, value: formatLargeNumber(cashflow.monthlyIncome), sub: '이번 달 가족 합산' },
-          { icon: <ArrowDownRight className="w-3.5 h-3.5 text-red-400" />, label: `${monthLabel} 지출`, value: formatLargeNumber(cashflow.monthlyExpense), sub: '이번 달 가족 합산' },
-          { icon: <PiggyBank className="w-3.5 h-3.5 text-blue-400" />, label: `${monthLabel} 저축률`, value: `${cashflow.savingsRate}%`, sub: '목표 35% 대비 초과', subColor: 'text-emerald-400' },
+          { icon: <Wallet className="w-3.5 h-3.5 text-income" />, label: '가족 순자산', value: formatLargeNumber(wealth.netWorth), sub: `총자산 ${formatLargeNumber(wealth.totalAssets)}` },
+          { icon: <ArrowUpRight className="w-3.5 h-3.5 text-income" />, label: `${monthLabel} 수입`, value: formatLargeNumber(cashflow.monthlyIncome), sub: '이번 달 가족 합산' },
+          { icon: <ArrowDownRight className="w-3.5 h-3.5 text-expense" />, label: `${monthLabel} 지출`, value: formatLargeNumber(cashflow.monthlyExpense), sub: '이번 달 가족 합산' },
+          { icon: <PiggyBank className="w-3.5 h-3.5 text-savings" />, label: `${monthLabel} 저축률`, value: `${cashflow.savingsRate}%`, sub: '목표 35% 대비 초과', subColor: 'text-income' },
         ].map(item => (
           <div key={item.label} className="bg-card rounded-2xl p-4 border border-border flex flex-col gap-1">
             <div className="flex items-center gap-1.5">{item.icon}<span className="text-xs text-muted-foreground">{item.label}</span></div>
@@ -189,7 +188,7 @@ function DashboardView({ data }: { data: DemoData }) {
       </div>
 
       {/* 순자산 차트 */}
-      <div className="bg-card rounded-2xl border border-border p-5">
+      <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold">순자산 추이</h3>
           <span className="text-[10px] text-muted-foreground/60">최근 12개월</span>
@@ -213,7 +212,7 @@ function DashboardView({ data }: { data: DemoData }) {
 
       {/* 자산 현황 + 예산 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <div className="bg-card rounded-2xl border border-border p-5">
+        <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5">
           <h3 className="text-sm font-semibold mb-4">자산/부채 현황</h3>
           <div className="space-y-2.5">
             {accounts.map(a => (
@@ -232,7 +231,7 @@ function DashboardView({ data }: { data: DemoData }) {
           </div>
         </div>
 
-        <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
+        <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5 space-y-4">
           <div className="flex items-center gap-1.5">
             <Calculator className="w-3.5 h-3.5 text-muted-foreground" />
             <h3 className="text-sm font-semibold">{monthLabel} 예산 현황</h3>
@@ -247,7 +246,7 @@ function DashboardView({ data }: { data: DemoData }) {
                 ].map(item => (
                   <div key={item.label} className="bg-muted rounded-xl p-3 text-center">
                     <p className="text-[10px] text-muted-foreground mb-1">{item.label}</p>
-                    <p className={cn('text-sm font-bold tabular-nums', item.green ? 'text-emerald-400' : item.warn ? 'text-red-400' : 'text-foreground')}>
+                    <p className={cn('text-sm font-bold tabular-nums', item.green ? 'text-income' : item.warn ? 'text-expense' : 'text-foreground')}>
                       {formatLargeNumber(item.value)}
                     </p>
                   </div>
@@ -258,7 +257,7 @@ function DashboardView({ data }: { data: DemoData }) {
                   <span>소진율</span><span>{Math.round(Math.min((budgetSpent / budget.amount) * 100, 100))}%</span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-1.5">
-                  <div className={cn('h-1.5 rounded-full', (budgetSpent / budget.amount) > 0.8 ? 'bg-red-500' : 'bg-emerald-500')}
+                  <div className={cn('h-1.5 rounded-full', (budgetSpent / budget.amount) > 0.8 ? 'bg-[var(--viz-red)]' : 'bg-[var(--viz-emerald)]')}
                     style={{ width: `${Math.min((budgetSpent / budget.amount) * 100, 100)}%` }} />
                 </div>
               </div>
@@ -289,7 +288,7 @@ function DashboardView({ data }: { data: DemoData }) {
 
       {/* 시나리오 미리보기 */}
       {scenarios.length > 0 && (
-        <div className="bg-card rounded-2xl border border-border p-5">
+        <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5">
           <div className="flex items-center gap-2 mb-4">
             <Sparkles className="w-4 h-4 text-violet-400" />
             <h3 className="text-sm font-semibold">AI 시나리오 허브</h3>
@@ -313,17 +312,17 @@ function DashboardView({ data }: { data: DemoData }) {
       )}
 
       {/* 최근 거래 */}
-      <div className="bg-card rounded-2xl border border-border p-5">
+      <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5">
         <h3 className="text-sm font-semibold mb-4">이번 달 가족 거래</h3>
         <div className="space-y-0">
           {data.transactions.slice(0, 8).map(tx => (
             <div key={tx.id} className="flex items-center gap-3 py-2.5 border-b border-border/40 last:border-0">
-              <div className={cn('w-1.5 h-8 rounded-full flex-shrink-0', tx.amount > 0 ? 'bg-emerald-400' : 'bg-muted')} />
+              <div className={cn('w-1.5 h-8 rounded-full flex-shrink-0', tx.amount > 0 ? 'bg-[var(--viz-emerald)]' : 'bg-muted')} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{tx.description}</p>
                 <p className="text-xs text-muted-foreground">{tx.userName} · {tx.category}</p>
               </div>
-              <span className={cn('text-sm font-semibold tabular-nums flex-shrink-0', tx.amount > 0 ? 'text-emerald-500' : 'text-foreground')}>
+              <span className={cn('text-sm font-semibold tabular-nums flex-shrink-0', tx.amount > 0 ? 'text-income' : 'text-foreground')}>
                 {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)}
               </span>
             </div>
@@ -333,7 +332,7 @@ function DashboardView({ data }: { data: DemoData }) {
 
       {/* 피드 미리보기 */}
       {feedPosts.length > 0 && (
-        <div className="bg-card rounded-2xl border border-border overflow-hidden">
+        <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border overflow-hidden">
           <div className="flex items-center gap-2 px-4 py-3 border-b border-border/60">
             <MessageSquare className="w-4 h-4 text-blue-400" />
             <h3 className="text-sm font-semibold">가족 피드</h3>
@@ -382,11 +381,11 @@ function CashflowView({ data }: { data: DemoData }) {
       {/* KPI */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: '수입', value: cashflow.monthlyIncome, color: 'text-emerald-500', icon: <TrendingUp className="w-3.5 h-3.5 text-emerald-500" /> },
-          { label: '지출', value: cashflow.monthlyExpense, color: 'text-red-400', icon: <TrendingDown className="w-3.5 h-3.5 text-red-400" /> },
-          { label: '저축률', value: null, rate: cashflow.savingsRate, color: 'text-blue-400', icon: <PiggyBank className="w-3.5 h-3.5 text-blue-400" /> },
+          { label: '수입', value: cashflow.monthlyIncome, color: 'text-income', icon: <TrendingUp className="w-3.5 h-3.5 text-income" /> },
+          { label: '지출', value: cashflow.monthlyExpense, color: 'text-expense', icon: <TrendingDown className="w-3.5 h-3.5 text-expense" /> },
+          { label: '저축률', value: null, rate: cashflow.savingsRate, color: 'text-savings', icon: <PiggyBank className="w-3.5 h-3.5 text-savings" /> },
         ].map(item => (
-          <div key={item.label} className="bg-card rounded-2xl border border-border p-4">
+          <div key={item.label} className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-4">
             <div className="flex items-center gap-1.5 mb-1">{item.icon}<span className="text-xs text-muted-foreground">{item.label}</span></div>
             <p className={cn('text-lg font-bold tabular-nums font-serif', item.color)}>
               {item.value !== null ? formatLargeNumber(item.value) : `${item.rate}%`}
@@ -397,7 +396,7 @@ function CashflowView({ data }: { data: DemoData }) {
 
       {/* 월별 수입/지출 바 차트 */}
       {cashflow.monthlyTrend.length > 0 && (
-        <div className="bg-card rounded-2xl border border-border p-5">
+        <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5">
           <h3 className="text-sm font-semibold mb-4">월별 수입/지출 추이</h3>
           <ResponsiveContainer width="100%" height={200}>
             <ComposedChart data={cashflow.monthlyTrend}>
@@ -414,7 +413,7 @@ function CashflowView({ data }: { data: DemoData }) {
 
       {/* 카테고리별 지출 */}
       {cashflow.categoryBreakdown.length > 0 && (
-        <div className="bg-card rounded-2xl border border-border p-5">
+        <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5">
           <h3 className="text-sm font-semibold mb-4">카테고리별 지출</h3>
           <div className="space-y-2.5">
             {cashflow.categoryBreakdown.slice(0, 8).map((item, i) => {
@@ -436,7 +435,7 @@ function CashflowView({ data }: { data: DemoData }) {
       )}
 
       {/* 거래 내역 */}
-      <div className="bg-card rounded-2xl border border-border p-5">
+      <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-sm font-semibold">거래 내역 <span className="text-[10px] text-muted-foreground/60 bg-muted px-1.5 py-0.5 rounded-full ml-1">{filteredTx.length}건</span></h3>
           <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
@@ -459,7 +458,7 @@ function CashflowView({ data }: { data: DemoData }) {
                 <p className="text-sm font-medium truncate">{tx.description}</p>
                 <p className="text-xs text-muted-foreground">{tx.userName} · {tx.category} · {new Date(tx.date).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })}</p>
               </div>
-              <span className={cn('text-sm font-semibold tabular-nums flex-shrink-0', tx.amount > 0 ? 'text-emerald-500' : 'text-foreground')}>
+              <span className={cn('text-sm font-semibold tabular-nums flex-shrink-0', tx.amount > 0 ? 'text-income' : 'text-foreground')}>
                 {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)}
               </span>
             </div>
@@ -502,11 +501,11 @@ function AssetsView({ data }: { data: DemoData }) {
       {/* 순자산 요약 */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: '총 자산', value: wealth.totalAssets, color: 'text-emerald-500' },
-          { label: '총 부채', value: wealth.totalLiabilities, color: 'text-red-400' },
+          { label: '총 자산', value: wealth.totalAssets, color: 'text-income' },
+          { label: '총 부채', value: wealth.totalLiabilities, color: 'text-expense' },
           { label: '순 자산', value: wealth.netWorth, color: 'text-foreground', bold: true },
         ].map(item => (
-          <div key={item.label} className={cn('bg-card rounded-2xl border p-4', item.bold ? 'border-emerald-500/30' : 'border-border')}>
+          <div key={item.label} className={cn('bg-card rounded-2xl border p-4', item.bold ? 'border-[var(--viz-emerald)]/30' : 'border-border')}>
             <p className="text-[10px] text-muted-foreground mb-1">{item.label}</p>
             <p className={cn('text-base font-bold tabular-nums font-serif', item.color)}>{formatLargeNumber(item.value)}</p>
           </div>
@@ -514,7 +513,7 @@ function AssetsView({ data }: { data: DemoData }) {
       </div>
 
       {/* 자산/부채 추이 차트 */}
-      <div className="bg-card rounded-2xl border border-border p-5">
+      <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5">
         <h3 className="text-sm font-semibold mb-4">자산 추이 (12개월)</h3>
         <ResponsiveContainer width="100%" height={200}>
           <ComposedChart data={chartData}>
@@ -538,7 +537,7 @@ function AssetsView({ data }: { data: DemoData }) {
       </div>
 
       {/* 탭별 계좌 */}
-      <div className="bg-card rounded-2xl border border-border overflow-hidden">
+      <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border overflow-hidden">
         <div className="flex border-b border-border/60">
           {tabs.map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
@@ -577,7 +576,7 @@ function AssetsView({ data }: { data: DemoData }) {
                         <div className="text-right flex-shrink-0">
                           <p className="text-xs font-semibold tabular-nums">{formatLargeNumber(evalAmt)}</p>
                           {h.currentPrice !== null && (
-                            <p className={cn('text-[10px] tabular-nums', gainPct >= 0 ? 'text-emerald-400' : 'text-red-400')}>
+                            <p className={cn('text-[10px] tabular-nums', gainPct >= 0 ? 'text-income' : 'text-expense')}>
                               {gainPct >= 0 ? '+' : ''}{gainPct.toFixed(1)}%
                             </p>
                           )}
@@ -613,7 +612,7 @@ function BudgetView({ data }: { data: DemoData }) {
       <h2 className="text-base font-bold">예산 관리</h2>
 
       {/* 가족 전체 예산 */}
-      <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
+      <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5 space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold">{monthLabel} 가족 예산</h3>
           <button onClick={showDemoToast} className="text-xs text-muted-foreground/60 hover:text-foreground bg-muted px-2 py-1 rounded-lg">편집</button>
@@ -623,8 +622,8 @@ function BudgetView({ data }: { data: DemoData }) {
             <div className="grid grid-cols-3 gap-3">
               {[
                 { label: '예산', value: budget.amount, color: 'text-foreground' },
-                { label: '사용', value: budgetSpent, color: budgetSpent > budget.amount * 0.8 ? 'text-red-400' : 'text-amber-500' },
-                { label: '잔여', value: Math.max(budget.amount - budgetSpent, 0), color: 'text-emerald-400' },
+                { label: '사용', value: budgetSpent, color: budgetSpent > budget.amount * 0.8 ? 'text-expense' : 'text-warning' },
+                { label: '잔여', value: Math.max(budget.amount - budgetSpent, 0), color: 'text-income' },
               ].map(item => (
                 <div key={item.label} className="bg-muted rounded-xl p-4 text-center">
                   <p className="text-xs text-muted-foreground mb-1.5">{item.label}</p>
@@ -635,12 +634,12 @@ function BudgetView({ data }: { data: DemoData }) {
             <div>
               <div className="flex justify-between text-xs text-muted-foreground mb-2">
                 <span>소진율</span>
-                <span className={cn((budgetSpent / budget.amount) > 0.8 ? 'text-red-400' : 'text-emerald-400')}>
+                <span className={cn((budgetSpent / budget.amount) > 0.8 ? 'text-expense' : 'text-income')}>
                   {Math.round(Math.min((budgetSpent / budget.amount) * 100, 100))}%
                 </span>
               </div>
               <div className="w-full bg-muted rounded-full h-2">
-                <div className={cn('h-2 rounded-full transition-all', (budgetSpent / budget.amount) > 0.8 ? 'bg-red-500' : 'bg-emerald-500')}
+                <div className={cn('h-2 rounded-full transition-all', (budgetSpent / budget.amount) > 0.8 ? 'bg-[var(--viz-red)]' : 'bg-[var(--viz-emerald)]')}
                   style={{ width: `${Math.min((budgetSpent / budget.amount) * 100, 100)}%` }} />
               </div>
             </div>
@@ -650,7 +649,7 @@ function BudgetView({ data }: { data: DemoData }) {
 
       {/* 멤버별 예산 */}
       {memberBudgets.length > 0 && (
-        <div className="bg-card rounded-2xl border border-border p-5 space-y-4">
+        <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5 space-y-4">
           <h3 className="text-sm font-semibold">구성원별 예산 현황</h3>
           <div className="space-y-4">
             {memberBudgets.map(mb => {
@@ -679,7 +678,7 @@ function BudgetView({ data }: { data: DemoData }) {
       )}
 
       {/* 카테고리별 지출 분석 */}
-      <div className="bg-card rounded-2xl border border-border p-5">
+      <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5">
         <h3 className="text-sm font-semibold mb-4">카테고리별 지출 분석</h3>
         <div className="space-y-3">
           {cashflow.categoryBreakdown.slice(0, 8).map((item, i) => {
@@ -704,7 +703,7 @@ function BudgetView({ data }: { data: DemoData }) {
       </div>
 
       {/* 재무 목표 */}
-      <div className="bg-card rounded-2xl border border-border p-5">
+      <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5">
         <h3 className="text-sm font-semibold mb-4">이번 달 재무 목표</h3>
         <div className="space-y-3">
           {[
@@ -720,13 +719,13 @@ function BudgetView({ data }: { data: DemoData }) {
               <div key={item.label}>
                 <div className="flex justify-between text-xs mb-1.5">
                   <span className="text-foreground/80">{item.label}</span>
-                  <span className={cn('font-semibold', good ? 'text-emerald-400' : 'text-amber-500')}>
+                  <span className={cn('font-semibold', good ? 'text-income' : 'text-warning')}>
                     {item.rate ? `${item.actual}% / ${item.target}%` : `${formatLargeNumber(item.actual)} / ${formatLargeNumber(item.target)}`}
                     {good ? ' ✓' : ''}
                   </span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-1.5">
-                  <div className={cn('h-1.5 rounded-full', good ? 'bg-emerald-500' : 'bg-amber-500')}
+                  <div className={cn('h-1.5 rounded-full', good ? 'bg-[var(--viz-emerald)]' : 'bg-[var(--viz-amber)]')}
                     style={{ width: `${Math.min(pct, 100)}%` }} />
                 </div>
               </div>
@@ -747,14 +746,14 @@ function ScenarioView({ data }: { data: DemoData }) {
 
   const STATUS_COLOR: Record<string, string> = {
     active: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
-    interested: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    interested: 'bg-income-soft text-income border-[var(--viz-emerald)]/20',
   }
   const STATUS_LABEL: Record<string, string> = { active: '검토 중', interested: '관심' }
 
   function feasibilityColor(v: number) {
-    if (v >= 70) return 'text-emerald-400'
-    if (v >= 40) return 'text-amber-400'
-    return 'text-red-400'
+    if (v >= 70) return 'text-income'
+    if (v >= 40) return 'text-warning'
+    return 'text-expense'
   }
 
   return (
@@ -794,7 +793,7 @@ function ScenarioView({ data }: { data: DemoData }) {
         {selectedSc && (
           <div className="lg:col-span-2 space-y-4">
             {/* 개요 */}
-            <div className="bg-card rounded-2xl border border-border p-5">
+            <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <h3 className="text-sm font-bold leading-snug">{selectedSc.title}</h3>
                 <span className={cn('text-[10px] font-medium px-2 py-1 rounded-full border flex-shrink-0', STATUS_COLOR[selectedSc.status])}>
@@ -817,15 +816,15 @@ function ScenarioView({ data }: { data: DemoData }) {
 
             {/* 액션 플랜 */}
             {selectedSc.actions.length > 0 && (
-              <div className="bg-card rounded-2xl border border-border p-5">
+              <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5">
                 <h4 className="text-sm font-semibold mb-3">실행 액션</h4>
                 <div className="space-y-2.5">
                   {(selectedSc.actions as string[]).map((action, i) => {
                     const done = selectedSc.completedActions.includes(i)
                     return (
-                      <div key={i} className={cn('flex items-start gap-3 p-3 rounded-xl', done ? 'bg-emerald-500/5' : 'bg-muted/40')}>
+                      <div key={i} className={cn('flex items-start gap-3 p-3 rounded-xl', done ? 'bg-income-soft' : 'bg-muted/40')}>
                         <div className={cn('w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5',
-                          done ? 'bg-emerald-500 border-emerald-500' : 'border-border')}>
+                          done ? 'bg-[var(--viz-emerald)] border-[var(--viz-emerald)]' : 'border-border')}>
                           {done && <Check className="w-3 h-3 text-white" />}
                         </div>
                         <p className={cn('text-xs leading-relaxed', done ? 'text-muted-foreground line-through' : 'text-foreground/80')}>
@@ -836,7 +835,7 @@ function ScenarioView({ data }: { data: DemoData }) {
                   })}
                 </div>
                 {selectedSc.completedActions.length > 0 && (
-                  <p className="text-xs text-emerald-400 mt-3">
+                  <p className="text-xs text-income mt-3">
                     {selectedSc.completedActions.length}/{selectedSc.actions.length} 완료
                   </p>
                 )}
@@ -845,7 +844,7 @@ function ScenarioView({ data }: { data: DemoData }) {
 
             {/* AI 채팅 미리보기 */}
             {selectedSc.chatMessages.length > 0 && (
-              <div className="bg-card rounded-2xl border border-border overflow-hidden">
+              <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border overflow-hidden">
                 <div className="flex items-center gap-2 px-4 py-3 border-b border-border/60">
                   <MessageCircle className="w-4 h-4 text-violet-400" />
                   <h4 className="text-sm font-semibold">AI 상담 내역</h4>

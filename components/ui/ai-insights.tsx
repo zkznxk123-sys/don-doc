@@ -57,7 +57,7 @@ export function AiInsights({ familyId }: AiInsightsProps) {
   }
 
   return (
-    <div className="bg-card rounded-2xl border border-border overflow-hidden mb-6">
+    <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border overflow-hidden mb-6">
       {/* 헤더 */}
       <div
         className="flex items-center justify-between px-4 py-3.5 cursor-pointer hover:bg-muted/40 transition-colors"
@@ -71,9 +71,9 @@ export function AiInsights({ familyId }: AiInsightsProps) {
             <span className="text-sm font-semibold text-foreground">AI 가계 인사이트</span>
             <span className="ml-2 text-[10px] text-muted-foreground/60">
               {llmStatus === 'online'
-                ? <span className="text-emerald-500">● llm-mux 연결됨</span>
+                ? <span className="text-income">● llm-mux 연결됨</span>
                 : llmStatus === 'offline'
-                ? <span className="text-red-500">● llm-mux 오프라인</span>
+                ? <span className="text-expense">● llm-mux 오프라인</span>
                 : null}
             </span>
           </div>
@@ -99,11 +99,11 @@ export function AiInsights({ familyId }: AiInsightsProps) {
             <div className="grid grid-cols-3 gap-2 mb-4">
               <div className="bg-muted/60 rounded-xl px-3 py-2.5 text-center">
                 <p className="text-[10px] text-muted-foreground mb-0.5">{summary.month} 지출</p>
-                <p className="text-sm font-bold text-red-400">{formatCurrency(-summary.totalExpense)}</p>
+                <p className="text-sm font-bold text-expense">{formatCurrency(-summary.totalExpense)}</p>
               </div>
               <div className="bg-muted/60 rounded-xl px-3 py-2.5 text-center">
                 <p className="text-[10px] text-muted-foreground mb-0.5">수입</p>
-                <p className="text-sm font-bold text-emerald-400">+{formatCurrency(summary.totalIncome)}</p>
+                <p className="text-sm font-bold text-income">+{formatCurrency(summary.totalIncome)}</p>
               </div>
               <div className="bg-muted/60 rounded-xl px-3 py-2.5 text-center">
                 <p className="text-[10px] text-muted-foreground mb-0.5">최다 지출</p>

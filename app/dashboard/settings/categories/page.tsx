@@ -129,7 +129,7 @@ function CategoryTab({
   return (
     <div className="space-y-2">
       {/* 리스트 */}
-      <div className="rounded-2xl border border-border overflow-hidden divide-y divide-border/60">
+      <div className="rounded-2xl shadow-card dark:border dark:border-border overflow-hidden divide-y divide-border/60">
         {categories.length === 0 && (
           <div className="py-10 text-center text-muted-foreground/60 text-sm">
             카테고리가 없습니다
@@ -362,7 +362,7 @@ function AssetTab({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-2xl border border-border overflow-hidden divide-y divide-border/60">
+      <div className="rounded-2xl shadow-card dark:border dark:border-border overflow-hidden divide-y divide-border/60">
         {/* 헤더 */}
         <div className="grid grid-cols-[120px_1fr_1fr] px-4 py-2.5 bg-card text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
           <span>유형</span>
@@ -398,7 +398,7 @@ function AssetTab({
                 />
                 {saving === type && <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin flex-shrink-0" />}
                 {isCustom && saving !== type && (
-                  <span className="text-[9px] text-emerald-500 flex-shrink-0">커스텀</span>
+                  <span className="text-[9px] text-income flex-shrink-0">커스텀</span>
                 )}
               </div>
             </div>

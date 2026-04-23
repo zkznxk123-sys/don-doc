@@ -17,7 +17,7 @@ import { toast } from 'sonner'
 
 const TYPE_META: Record<string, { label: string; Icon: React.ElementType; color: string; bg: string }> = {
   CASH:        { label: '현금 · 예적금', Icon: Banknote,   color: 'text-blue-400',    bg: 'bg-blue-400/10' },
-  INVESTMENT:  { label: '주식 · 펀드',   Icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-400/10' },
+  INVESTMENT:  { label: '주식 · 펀드',   Icon: TrendingUp, color: 'text-income',      bg: 'bg-income-soft' },
   PENSION:     { label: '연금',           Icon: PiggyBank,  color: 'text-teal-400',    bg: 'bg-teal-400/10' },
   CRYPTO:      { label: '가상자산',       Icon: Bitcoin,    color: 'text-amber-400',   bg: 'bg-amber-400/10' },
   REAL_ESTATE: { label: '부동산',         Icon: Building2,  color: 'text-purple-400',  bg: 'bg-purple-400/10' },
@@ -342,8 +342,8 @@ function HoldingSubRow({
   return (
     <div className="flex items-center gap-2 pl-[52px] pr-3 py-2.5 border-t border-border/40 bg-background/30 hover:bg-muted/30 transition-colors group/holding">
       <CornerDownRight className="w-3 h-3 text-border flex-shrink-0" />
-      <div className="w-5 h-5 rounded-md bg-emerald-400/10 flex items-center justify-center flex-shrink-0">
-        <TrendingUp className="w-3 h-3 text-emerald-400" />
+      <div className="w-5 h-5 rounded-md bg-income-soft flex items-center justify-center flex-shrink-0">
+        <TrendingUp className="w-3 h-3 text-income" />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
@@ -378,7 +378,7 @@ function HoldingSubRow({
             <button
               onClick={savePrice}
               disabled={savingPrice}
-              className="text-[10px] text-emerald-500 hover:text-emerald-400 font-medium disabled:opacity-40"
+              className="text-[10px] text-income font-medium disabled:opacity-40"
             >
               저장
             </button>
@@ -396,7 +396,7 @@ function HoldingSubRow({
             {pnl != null ? (
               <p className={cn(
                 'text-[10px] tabular-nums',
-                pnl > 0 ? 'text-emerald-500' : pnl < 0 ? 'text-red-400' : 'text-muted-foreground/50'
+                pnl > 0 ? 'text-income' : pnl < 0 ? 'text-expense' : 'text-muted-foreground/50'
               )}>
                 {pnl >= 0 ? '+' : ''}{fmtAmount(Math.abs(pnl))}
                 {pnlPct != null && ` (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%)`}
@@ -447,7 +447,7 @@ export function AssetList({
   const multiGroup = groups.length > 1
 
   return (
-    <div className="bg-card rounded-2xl border border-border overflow-hidden">
+    <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border overflow-hidden">
       {/* 헤더 */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-border">
         <h3 className="text-sm font-semibold text-foreground">등록된 자산</h3>
@@ -556,7 +556,7 @@ export function AssetList({
 export function LiabilityList({ liabilities, totalLiabilities, onEdit, onAdd, currentUserId }: LiabilityListProps) {
   if (liabilities.length === 0) {
     return (
-      <div className="bg-card rounded-2xl border border-border">
+      <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border">
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <h3 className="text-sm font-semibold text-foreground">부채</h3>
           <button

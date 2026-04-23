@@ -49,7 +49,7 @@ function DebtRow({ debt, onToggleLtv }: { debt: LinkedDebt; onToggleLtv: (id: st
       </div>
       <div className="flex items-center gap-3 flex-shrink-0">
         <div className="text-right">
-          <p className="text-xs font-semibold text-red-600 dark:text-red-400 tabular-nums">-{formatLargeNumber(debt.balance)}</p>
+          <p className="text-xs font-semibold text-expense tabular-nums">-{formatLargeNumber(debt.balance)}</p>
           {debt.monthlyPayment != null && (
             <p className="text-[10px] text-muted-foreground/60 tabular-nums">월 {formatLargeNumber(debt.monthlyPayment)}</p>
           )}
@@ -99,7 +99,7 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
   const displayPrice = data?.currentPrice ?? account.balance
 
   return (
-    <div className="bg-card rounded-2xl border border-border overflow-hidden">
+    <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border overflow-hidden">
       {/* 헤더 */}
       <div className="flex items-start justify-between px-5 py-4 border-b border-border">
         <div className="flex items-center gap-3">
@@ -167,7 +167,7 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
                   <p className="text-[10px] text-muted-foreground/70 mb-0.5">시세차익</p>
                   <p className={cn(
                     'text-base font-bold tabular-nums leading-none',
-                    capitalGain! >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+                    capitalGain! >= 0 ? 'text-income' : 'text-expense'
                   )}>
                     {capitalGain! >= 0 ? '+' : ''}{formatLargeNumber(capitalGain!)}
                   </p>
@@ -176,12 +176,12 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
                   <p className="text-[10px] text-muted-foreground/70 mb-0.5">수익률 (ROI)</p>
                   <div className="flex items-center gap-1 justify-end">
                     {data!.roi! >= 0
-                      ? <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-                      : <TrendingDown className="w-3.5 h-3.5 text-red-500" />
+                      ? <TrendingUp className="w-3.5 h-3.5 text-income" />
+                      : <TrendingDown className="w-3.5 h-3.5 text-expense" />
                     }
                     <p className={cn(
                       'text-base font-bold tabular-nums leading-none',
-                      data!.roi! >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+                      data!.roi! >= 0 ? 'text-income' : 'text-expense'
                     )}>
                       {data!.roi! >= 0 ? '+' : ''}{data!.roi!.toFixed(1)}%
                     </p>
@@ -205,7 +205,7 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
                         : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/50'
                     )}>
                       <p className="text-[10px] text-muted-foreground mb-1">순자본</p>
-                      <p className={cn('text-sm font-bold tabular-nums', data.netEquity >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-400')}>
+                      <p className={cn('text-sm font-bold tabular-nums', data.netEquity >= 0 ? 'text-income' : 'text-expense')}>
                         {data.netEquity >= 0 ? '' : '-'}{formatLargeNumber(Math.abs(data.netEquity))}
                       </p>
                       <p className="text-[9px] text-muted-foreground/50 mt-0.5">시세 − 총부채</p>
@@ -223,10 +223,10 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
                       <p className="text-[10px] text-muted-foreground mb-1">수익률</p>
                       <div className="flex items-center gap-1">
                         {data.roi >= 0
-                          ? <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-                          : <TrendingDown className="w-3.5 h-3.5 text-red-400" />
+                          ? <TrendingUp className="w-3.5 h-3.5 text-income" />
+                          : <TrendingDown className="w-3.5 h-3.5 text-expense" />
                         }
-                        <p className={cn('text-sm font-bold tabular-nums', data.roi >= 0 ? 'text-emerald-400' : 'text-red-400')}>
+                        <p className={cn('text-sm font-bold tabular-nums', data.roi >= 0 ? 'text-income' : 'text-expense')}>
                           {data.roi >= 0 ? '+' : ''}{data.roi.toFixed(1)}%
                         </p>
                       </div>
@@ -277,7 +277,7 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
                     <span className="text-xs text-muted-foreground/60">{data.linkedDebts.length}건</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-semibold text-red-400 tabular-nums">
+                    <span className="text-xs font-semibold text-expense tabular-nums">
                       -{formatLargeNumber(data.totalDebt)}
                     </span>
                     {debtExpanded

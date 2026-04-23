@@ -312,7 +312,7 @@ export default function BudgetPage() {
       {/* ── 재무 목표 설정 ── */}
       <div className="bg-card rounded-2xl p-6 border border-border mb-4">
         <div className="flex items-center gap-2 mb-5">
-          <Target className="w-5 h-5 text-emerald-600 dark:text-emerald-500" />
+          <Target className="w-5 h-5 text-income" />
           <h2 className="text-base font-semibold text-foreground">이번 달 재무 목표</h2>
         </div>
 
@@ -330,11 +330,11 @@ export default function BudgetPage() {
                   value={goalInput.targetIncome}
                   onChange={e => handleIncomeChange(e.target.value)}
                   placeholder="0"
-                  className="w-full h-11 bg-muted border border-border rounded-xl px-3 text-sm font-bold text-emerald-600 dark:text-emerald-400 placeholder-muted-foreground/50 outline-none focus:border-emerald-600 dark:focus:border-emerald-700 transition-colors tabular-nums"
+                  className="w-full h-11 bg-muted border border-border rounded-xl px-3 text-sm font-bold text-income placeholder-muted-foreground/50 outline-none focus:border-ring transition-colors tabular-nums"
                 />
               </div>
             ) : (
-              <div className="h-11 flex items-center px-3 bg-muted rounded-xl text-sm font-bold text-emerald-600 dark:text-emerald-400">
+              <div className="h-11 flex items-center px-3 bg-muted rounded-xl text-sm font-bold text-income">
                 {goalData?.targetIncome ? formatCurrency(goalData.targetIncome) : '—'}
               </div>
             )}
@@ -352,10 +352,10 @@ export default function BudgetPage() {
                 value={goalInput.targetExpense}
                 onChange={e => handleExpenseChange(e.target.value)}
                 placeholder="0"
-                className="w-full h-11 bg-muted border border-border rounded-xl px-3 text-sm font-bold text-red-600 dark:text-red-400 placeholder-muted-foreground/50 outline-none focus:border-red-600 dark:focus:border-red-900 transition-colors tabular-nums"
+                className="w-full h-11 bg-muted border border-border rounded-xl px-3 text-sm font-bold text-expense placeholder-muted-foreground/50 outline-none focus:border-ring transition-colors tabular-nums"
               />
             ) : (
-              <div className="h-11 flex items-center px-3 bg-muted rounded-xl text-sm font-bold text-red-600 dark:text-red-400">
+              <div className="h-11 flex items-center px-3 bg-muted rounded-xl text-sm font-bold text-expense">
                 {goalData?.targetExpense ? formatCurrency(goalData.targetExpense) : '—'}
               </div>
             )}
@@ -377,12 +377,12 @@ export default function BudgetPage() {
                   value={goalInput.targetSavingsRate}
                   onChange={e => handleRateChange(e.target.value)}
                   placeholder="0"
-                  className="w-full h-11 bg-muted border border-border rounded-xl px-3 pr-7 text-sm font-bold text-blue-600 dark:text-blue-400 placeholder-muted-foreground/50 outline-none focus:border-blue-600 dark:focus:border-blue-900 transition-colors tabular-nums"
+                  className="w-full h-11 bg-muted border border-border rounded-xl px-3 pr-7 text-sm font-bold text-savings placeholder-muted-foreground/50 outline-none focus:border-ring transition-colors tabular-nums"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
               </div>
             ) : (
-              <div className="h-11 flex items-center px-3 bg-muted rounded-xl text-sm font-bold text-blue-600 dark:text-blue-400">
+              <div className="h-11 flex items-center px-3 bg-muted rounded-xl text-sm font-bold text-savings">
                 {goalData?.targetSavingsRate ? `${goalData.targetSavingsRate}%` : '—'}
               </div>
             )}
@@ -396,7 +396,7 @@ export default function BudgetPage() {
             <div className="text-right">
               <span className={cn(
                 'text-sm font-bold tabular-nums',
-                savingsAmount >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+                savingsAmount >= 0 ? 'text-income' : 'text-expense'
               )}>
                 {savingsAmount >= 0 ? '+' : ''}{formatCurrency(savingsAmount)}
               </span>
@@ -411,7 +411,7 @@ export default function BudgetPage() {
       {/* ── 가족 전체 지출 한도 ── */}
       <div className="bg-card rounded-2xl p-6 border border-border mb-4">
         <div className="flex items-center gap-2 mb-4">
-          <Wallet className="w-5 h-5 text-emerald-600 dark:text-emerald-500" />
+          <Wallet className="w-5 h-5 text-income" />
           <h2 className="text-base font-semibold text-foreground">가족 지출 한도</h2>
           <span className="text-[10px] text-muted-foreground/60 bg-muted px-2 py-0.5 rounded-full ml-auto">구성원 배분 기준</span>
         </div>
@@ -481,7 +481,7 @@ export default function BudgetPage() {
       )}
 
       {/* 구성원별 예산 */}
-      <div className="bg-card rounded-2xl border border-border mb-6 overflow-hidden">
+      <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border mb-6 overflow-hidden">
         <div className="flex items-center gap-2 px-6 py-4 border-b border-border">
           <Users className="w-4 h-4 text-muted-foreground" />
           <h2 className="text-base font-semibold text-foreground">구성원별 예산 배분</h2>
@@ -633,13 +633,13 @@ export default function BudgetPage() {
 
       {/* 저장 상태 메시지 */}
       {saveStatus === 'success' && (
-        <div className="flex items-center gap-2 text-emerald-400 text-sm mb-4 px-1">
+        <div className="flex items-center gap-2 text-income text-sm mb-4 px-1">
           <CheckCircle2 className="w-4 h-4" />
           저장되었습니다.
         </div>
       )}
       {saveStatus === 'error' && (
-        <div className="flex items-center gap-2 text-red-400 text-sm mb-4 px-1">
+        <div className="flex items-center gap-2 text-expense text-sm mb-4 px-1">
           <AlertCircle className="w-4 h-4" />
           {saveError}
         </div>

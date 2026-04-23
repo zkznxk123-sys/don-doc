@@ -16,8 +16,8 @@ const LIGHT_APPEARANCE = {
     colorTextSecondary: '#735C00',
     colorDanger: '#DC2626',
     borderRadius: '0.375rem',
-    fontFamily: 'var(--font-inter), ui-sans-serif, system-ui, sans-serif',
-    fontFamilyButtons: 'var(--font-inter), ui-sans-serif, system-ui, sans-serif',
+    fontFamily: 'var(--font-sans), ui-sans-serif, system-ui, sans-serif',
+    fontFamilyButtons: 'var(--font-sans), ui-sans-serif, system-ui, sans-serif',
     fontSize: '14px',
   },
   elements: {
@@ -119,8 +119,8 @@ const DARK_APPEARANCE = {
     colorTextSecondary: '#B49B3E',
     colorDanger: '#F87171',
     borderRadius: '0.375rem',
-    fontFamily: 'var(--font-inter), ui-sans-serif, system-ui, sans-serif',
-    fontFamilyButtons: 'var(--font-inter), ui-sans-serif, system-ui, sans-serif',
+    fontFamily: 'var(--font-sans), ui-sans-serif, system-ui, sans-serif',
+    fontFamilyButtons: 'var(--font-sans), ui-sans-serif, system-ui, sans-serif',
     fontSize: '14px',
   },
   elements: {

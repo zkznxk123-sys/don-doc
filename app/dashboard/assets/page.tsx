@@ -273,12 +273,12 @@ export default function AssetsPage() {
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 mb-2">
-              <Wallet className="w-4 h-4 text-emerald-500" />
+              <Wallet className="w-4 h-4 text-income" />
               <span className="text-xs text-muted-foreground font-medium">가족 순자산</span>
             </div>
             <p className={cn(
               'text-3xl font-bold tabular-nums',
-              totalNetWorth >= 0 ? 'text-foreground' : 'text-red-400'
+              totalNetWorth >= 0 ? 'text-foreground' : 'text-expense'
             )}>
               {loading ? '...' : formatCurrency(totalNetWorth)}
             </p>
@@ -296,7 +296,7 @@ export default function AssetsPage() {
 
         <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border">
           <div className="flex items-center gap-1.5">
-            <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
+            <TrendingUp className="w-3.5 h-3.5 text-income" />
             <span className="text-xs text-muted-foreground">총 자산</span>
             <span className="text-xs font-semibold text-foreground tabular-nums ml-1">
               {loading ? '...' : formatLargeNumber(totalAssets)}
@@ -306,9 +306,9 @@ export default function AssetsPage() {
             <>
               <span className="text-border text-xs">—</span>
               <div className="flex items-center gap-1.5">
-                <TrendingDown className="w-3.5 h-3.5 text-red-400" />
+                <TrendingDown className="w-3.5 h-3.5 text-expense" />
                 <span className="text-xs text-muted-foreground">총 부채</span>
-                <span className="text-xs font-semibold text-red-400 tabular-nums ml-1">
+                <span className="text-xs font-semibold text-expense tabular-nums ml-1">
                   {loading ? '...' : formatLargeNumber(totalLiabilities)}
                 </span>
               </div>
@@ -730,7 +730,7 @@ function RealEstateTab({
                         {target.budget && (
                           <div>
                             <p className="text-[10px] text-muted-foreground/50">목표 예산</p>
-                            <p className="text-sm font-semibold tabular-nums text-blue-500 dark:text-blue-400">
+                            <p className="text-sm font-semibold tabular-nums text-savings">
                               {formatLargeNumber(target.budget)}
                             </p>
                           </div>
@@ -740,7 +740,7 @@ function RealEstateTab({
                             <p className="text-[10px] text-muted-foreground/50">현재와 갭</p>
                             <p className={cn(
                               'text-sm font-bold tabular-nums',
-                              gap >= 0 ? 'text-red-500 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400',
+                              gap >= 0 ? 'text-expense' : 'text-income',
                             )}>
                               {gap >= 0 ? '+' : ''}{formatLargeNumber(gap)}
                             </p>
@@ -850,22 +850,22 @@ function RealEstateAggregatePanel({
           </div>
           <div className="bg-muted/40 rounded-xl p-3">
             <p className="text-[10px] text-muted-foreground/60 mb-1">총 부채</p>
-            <p className="text-sm font-bold text-red-400 tabular-nums">-{formatLargeNumber(summary.totalDebt)}</p>
+            <p className="text-sm font-bold text-expense tabular-nums">-{formatLargeNumber(summary.totalDebt)}</p>
           </div>
-          <div className={cn('rounded-xl p-3 border', summary.totalNetEquity >= 0
-            ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-900/50'
-            : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/50')}>
+          <div className={cn('rounded-xl p-3 border border-border/50', summary.totalNetEquity >= 0
+            ? 'bg-income-soft'
+            : 'bg-expense-soft')}>
             <p className="text-[10px] text-muted-foreground/60 mb-1">총 순자산</p>
-            <p className={cn('text-sm font-bold tabular-nums', summary.totalNetEquity >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-400')}>
+            <p className={cn('text-sm font-bold tabular-nums', summary.totalNetEquity >= 0 ? 'text-income' : 'text-expense')}>
               {summary.totalNetEquity >= 0 ? '' : '-'}{formatLargeNumber(Math.abs(summary.totalNetEquity))}
             </p>
           </div>
           {summary.totalCapitalGain != null ? (
-            <div className={cn('rounded-xl p-3 border', summary.totalCapitalGain >= 0
-              ? 'bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200 dark:border-emerald-900/50'
-              : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/50')}>
+            <div className={cn('rounded-xl p-3 border border-border/50', summary.totalCapitalGain >= 0
+              ? 'bg-income-soft'
+              : 'bg-expense-soft')}>
               <p className="text-[10px] text-muted-foreground/60 mb-1">시세차익</p>
-              <p className={cn('text-sm font-bold tabular-nums', summary.totalCapitalGain >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-400')}>
+              <p className={cn('text-sm font-bold tabular-nums', summary.totalCapitalGain >= 0 ? 'text-income' : 'text-expense')}>
                 {summary.totalCapitalGain >= 0 ? '+' : '-'}{formatLargeNumber(Math.abs(summary.totalCapitalGain))}
               </p>
             </div>
@@ -949,7 +949,7 @@ function EmptyTab({
   onAdd: () => void
 }) {
   return (
-    <div className="bg-card rounded-2xl border border-border px-5 py-12 flex flex-col items-center text-center gap-3">
+    <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border px-5 py-12 flex flex-col items-center text-center gap-3">
       <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center">
         {icon}
       </div>
@@ -1412,7 +1412,7 @@ function PensionCard({
       {remainingYears != null && (
         <div className={cn('flex items-center gap-2 px-3 py-2 rounded-xl mb-2.5 text-xs',
           remainingYears <= 0
-            ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+            ? 'bg-income-soft text-income'
             : 'bg-muted/50 text-muted-foreground')}>
           <Clock className="w-3.5 h-3.5 flex-shrink-0" />
           {remainingYears <= 0
@@ -1470,10 +1470,10 @@ function PensionCard({
             </div>
             {withdrawable.canWithdraw ? (
               <span className={cn('font-bold tabular-nums',
-                withdrawable.taxRate > 0.1 ? 'text-red-500' : 'text-foreground')}>
+                withdrawable.taxRate > 0.1 ? 'text-expense' : 'text-foreground')}>
                 {formatLargeNumber(withdrawable.netAmount)}
                 {withdrawable.taxRate > 0.1 && (
-                  <span className="text-[10px] font-normal text-red-400 ml-1">
+                  <span className="text-[10px] font-normal text-expense ml-1">
                     (-{formatLargeNumber(withdrawable.taxAmount)} 세금)
                   </span>
                 )}
@@ -1487,7 +1487,7 @@ function PensionCard({
       {showDetail && withdrawable && (
         <div className={cn('px-3 py-2.5 rounded-xl mb-2.5 text-[11px] -mt-2',
           withdrawable.canWithdraw && withdrawable.taxRate > 0.1
-            ? 'bg-red-50 dark:bg-red-900/10 border border-red-200/50 dark:border-red-800/30 text-red-600 dark:text-red-400'
+            ? 'bg-expense-soft border border-[var(--viz-red)]/20 text-expense'
             : 'bg-muted/40 text-muted-foreground'
         )}>
           {withdrawable.note}
@@ -1592,7 +1592,7 @@ function DebtTab({
               <HandCoins className="w-3.5 h-3.5 text-red-400" />
               <p className="text-[11px] text-muted-foreground font-medium">총 대출 잔액</p>
             </div>
-            <p className="text-lg font-bold tabular-nums text-red-500 dark:text-red-400">
+            <p className="text-lg font-bold tabular-nums text-expense">
               {formatLargeNumber(summary.totalBalance)}
             </p>
             <p className="text-[10px] text-muted-foreground/50 mt-1">{summary.accounts.length}건</p>
@@ -1778,7 +1778,7 @@ function DebtCard({
         {/* 잔액 + 명의 */}
         <div className="flex items-start justify-between mb-4">
           <div>
-            <p className="text-2xl font-bold tabular-nums text-red-500 dark:text-red-400">
+            <p className="text-2xl font-bold tabular-nums text-expense">
               {formatCurrency(debt.balance)}
             </p>
             {(debt.ownerName || debt.isJoint) && (
@@ -1982,7 +1982,7 @@ function FinancialTab({
 
       {/* 종목 P&L 요약 (holdings 있을 때만) */}
       {investmentSummary.length > 0 && (
-        <div className="bg-card rounded-2xl border border-border p-4">
+        <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <BarChart2 className="w-4 h-4 text-violet-500" />
@@ -2016,7 +2016,7 @@ function FinancialTab({
             <div className="bg-muted/50 rounded-xl p-3">
               <p className="text-[10px] text-muted-foreground/60 mb-1">평가손익</p>
               <p className={cn('text-sm font-bold tabular-nums',
-                totalPnl > 0 ? 'text-emerald-500' : totalPnl < 0 ? 'text-red-400' : 'text-muted-foreground'
+                totalPnl > 0 ? 'text-income' : totalPnl < 0 ? 'text-expense' : 'text-muted-foreground'
               )}>
                 {totalPnl >= 0 ? '+' : ''}{formatLargeNumber(Math.round(totalPnl))}
                 {totalPnlPct != null && (
@@ -2211,7 +2211,7 @@ function InvestmentTab({
     <div className="space-y-4">
       {/* 종목 보유 P&L 요약 카드 (holdings 있을 때만) */}
       {investmentSummary.length > 0 && (
-        <div className="bg-card rounded-2xl border border-border p-4">
+        <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <BarChart2 className="w-4 h-4 text-violet-500" />
@@ -2239,7 +2239,7 @@ function InvestmentTab({
               <p className="text-[10px] text-muted-foreground/60 mb-1">평가손익</p>
               <p className={cn(
                 'text-sm font-bold tabular-nums',
-                totalPnl > 0 ? 'text-emerald-500' : totalPnl < 0 ? 'text-red-400' : 'text-muted-foreground'
+                totalPnl > 0 ? 'text-income' : totalPnl < 0 ? 'text-expense' : 'text-muted-foreground'
               )}>
                 {totalPnl >= 0 ? '+' : ''}{formatLargeNumber(Math.round(totalPnl))}
                 {totalPnlPct != null && (
@@ -2254,7 +2254,7 @@ function InvestmentTab({
       )}
 
       {/* 계좌 목록 — holdings 있는 계좌 먼저, 나머지는 기존 스타일 */}
-      <div className="bg-card rounded-2xl border border-border overflow-hidden">
+      <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border overflow-hidden">
         {sortedAccounts.map((account, idx) => {
           const summary = investmentSummary.find(s => s.accountId === account.id)
           const hasHoldings = !!summary
@@ -2282,7 +2282,7 @@ function InvestmentTab({
                     {hasHoldings && pnl !== 0 && (
                       <span className={cn(
                         'text-[11px] font-medium tabular-nums',
-                        pnl > 0 ? 'text-emerald-500' : 'text-red-400'
+                        pnl > 0 ? 'text-income' : pnl < 0 ? 'text-expense' : 'text-muted-foreground'
                       )}>
                         {pnl > 0 ? '+' : ''}{formatLargeNumber(pnl)}
                         {pnlPct != null && ` (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%)`}
@@ -2385,11 +2385,11 @@ function InvestmentTab({
                         <div className="text-right w-14">
                           {hPnl != null ? (
                             <>
-                              <p className={cn('text-xs font-bold tabular-nums', hPnl > 0 ? 'text-emerald-500' : hPnl < 0 ? 'text-red-400' : 'text-muted-foreground')}>
+                              <p className={cn('text-xs font-bold tabular-nums', hPnl > 0 ? 'text-income' : hPnl < 0 ? 'text-expense' : 'text-muted-foreground')}>
                                 {hPnl >= 0 ? '+' : ''}{formatLargeNumber(hPnl)}
                               </p>
                               {hPnlPct != null && (
-                                <p className={cn('text-[10px] tabular-nums', hPnlPct > 0 ? 'text-emerald-500/70' : hPnlPct < 0 ? 'text-red-400/70' : 'text-muted-foreground/50')}>
+                                <p className={cn('text-[10px] tabular-nums opacity-70', hPnlPct > 0 ? 'text-income' : hPnlPct < 0 ? 'text-expense' : 'text-muted-foreground')}>
                                   {hPnlPct >= 0 ? '+' : ''}{hPnlPct.toFixed(1)}%
                                 </p>
                               )}

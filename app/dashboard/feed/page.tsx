@@ -236,8 +236,8 @@ function TxnRefCard({ txnRef }: { txnRef: TxnRefData }) {
       txnRef.isMasked
         ? 'bg-muted/30 border-border'
         : isExpense
-          ? 'bg-rose-500/5 border-rose-500/20'
-          : 'bg-emerald-500/5 border-emerald-500/20',
+          ? 'bg-expense-soft border-[var(--viz-red)]/20'
+          : 'bg-income-soft border-[var(--viz-emerald)]/20',
     )}>
       <div className="px-3.5 py-2.5 flex items-center justify-between gap-3">
         <div className="min-w-0">
@@ -260,7 +260,7 @@ function TxnRefCard({ txnRef }: { txnRef: TxnRefData }) {
           'text-sm font-bold tabular-nums flex-shrink-0',
           txnRef.isMasked
             ? 'text-muted-foreground/40'
-            : isExpense ? 'text-rose-400' : 'text-emerald-400',
+            : isExpense ? 'text-expense' : 'text-income',
         )}>
           {txnRef.isMasked ? '비공개' : (isExpense ? '-' : '+') + formatted}
         </span>
@@ -271,8 +271,8 @@ function TxnRefCard({ txnRef }: { txnRef: TxnRefData }) {
           className={cn(
             'flex items-center justify-center gap-1 py-1.5 text-[10px] font-medium border-t transition-colors',
             isExpense
-              ? 'border-rose-500/15 text-rose-400/60 hover:text-rose-400 hover:bg-rose-500/5'
-              : 'border-emerald-500/15 text-emerald-400/60 hover:text-emerald-400 hover:bg-emerald-500/5',
+              ? 'border-[var(--viz-red)]/15 text-muted-foreground hover:text-expense hover:bg-expense-soft'
+              : 'border-[var(--viz-emerald)]/15 text-muted-foreground hover:text-income hover:bg-income-soft',
           )}
         >
           현금흐름에서 확인

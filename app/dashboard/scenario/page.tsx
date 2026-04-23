@@ -53,21 +53,21 @@ async function chatAPI(scenarioId: string, message: string): Promise<{ success: 
 // ── 스타일 헬퍼 ───────────────────────────────────────────────────────────────
 
 function feasibilityColor(v: number) {
-  if (v >= 70) return 'text-emerald-500 dark:text-emerald-400'
-  if (v >= 40) return 'text-amber-500 dark:text-amber-400'
-  return 'text-red-400'
+  if (v >= 70) return 'text-income'
+  if (v >= 40) return 'text-warning'
+  return 'text-expense'
 }
 function feasibilityBg(v: number) {
-  if (v >= 70) return 'bg-emerald-500'
-  if (v >= 40) return 'bg-amber-500'
-  return 'bg-red-400'
+  if (v >= 70) return 'bg-[var(--viz-emerald)]'
+  if (v >= 40) return 'bg-[var(--viz-amber)]'
+  return 'bg-[var(--viz-red)]'
 }
 
 const CATEGORY_STYLE: Record<string, string> = {
   '부동산': 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
   '투자':   'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400',
   '부채':   'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400',
-  '현금흐름': 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400',
+  '현금흐름': 'bg-income-soft text-income',
   '연금/장기': 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
 }
 function categoryStyle(c: string | null) {
@@ -116,8 +116,8 @@ function ExpansionView({ expansion }: { expansion: ScenarioExpansion }) {
                 </div>
               ))}
               <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-border/50">
-                <CheckCircle2 className="w-3 h-3 text-emerald-400 flex-shrink-0" />
-                <span className="text-[11px] text-emerald-600 dark:text-emerald-400">{step.milestone}</span>
+                <CheckCircle2 className="w-3 h-3 text-income flex-shrink-0" />
+                <span className="text-[11px] text-income">{step.milestone}</span>
               </div>
             </div>
           </div>
@@ -151,8 +151,8 @@ function ExpansionView({ expansion }: { expansion: ScenarioExpansion }) {
         </div>
       )}
 
-      <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-xl px-4 py-3">
-        <p className="text-[10px] text-emerald-500 font-medium mb-1">성공 기준</p>
+      <div className="bg-income-soft border border-border/30 rounded-xl px-4 py-3">
+        <p className="text-[10px] text-income font-medium mb-1">성공 기준</p>
         <p className="text-xs text-foreground/80">{expansion.successMetric}</p>
       </div>
     </div>
@@ -361,7 +361,7 @@ function ScenarioCard({
               </span>
             )}
             {totalActions > 0 && completedCount > 0 && (
-              <span className="text-[10px] text-emerald-500 dark:text-emerald-400 ml-auto">
+              <span className="text-[10px] text-income ml-auto">
                 {completedCount}/{totalActions} 완료
               </span>
             )}
@@ -384,7 +384,7 @@ function ScenarioCard({
       <div className="mx-5 mb-3 h-1 bg-muted rounded-full overflow-hidden">
         {totalActions > 0 && completedCount > 0 ? (
           <div
-            className="h-full rounded-full bg-emerald-500 transition-all"
+            className="h-full rounded-full bg-[var(--viz-emerald)] transition-all"
             style={{ width: `${(completedCount / totalActions) * 100}%` }}
           />
         ) : (
@@ -461,14 +461,14 @@ function ScenarioCard({
                       disabled={readonly}
                       className={cn(
                         'w-full flex items-start gap-3 rounded-xl px-3 py-2.5 text-left transition-colors',
-                        done ? 'bg-emerald-500/5' : 'bg-muted/40 hover:bg-muted/70',
+                        done ? 'bg-income-soft' : 'bg-muted/40 hover:bg-muted/70',
                         readonly && 'cursor-default',
                       )}
                     >
                       <span className={cn(
                         'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors',
                         done
-                          ? 'bg-emerald-500 border-emerald-500'
+                          ? 'bg-[var(--viz-emerald)] border-[var(--viz-emerald)]'
                           : 'border-muted-foreground/30',
                       )}>
                         {done && <Check className="w-3 h-3 text-white" />}
@@ -484,7 +484,7 @@ function ScenarioCard({
                 })}
                 {completedCount === totalActions && totalActions > 0 && (
                   <div className="text-center py-2">
-                    <p className="text-xs text-emerald-500 font-medium">모든 액션 완료!</p>
+                    <p className="text-xs text-income font-medium">모든 액션 완료!</p>
                   </div>
                 )}
               </div>

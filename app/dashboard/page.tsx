@@ -36,7 +36,7 @@ function FeedNewBanner() {
       const lastRead = localStorage.getItem(FEED_READ_KEY)
       const since = lastRead ? new Date(lastRead) : new Date(0)
       setNewCount(data.filter(p => new Date(p.createdAt) > since).length)
-    })
+    }).catch(() => {/* 로그아웃 중 인증 만료 무시 */})
   }, [])
 
   if (newCount === 0) return null
@@ -120,7 +120,7 @@ function KpiCardSkeleton() {
 /** Tier 2 — 순자산 추이 차트 스켈레톤 */
 function NetWorthChartSkeleton() {
   return (
-    <div className="bg-card rounded-2xl border border-border overflow-hidden">
+    <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4 border-b border-border">
         <div className="flex items-center gap-2">
           <Skeleton className="w-4 h-4 rounded-full" />
@@ -153,7 +153,7 @@ function NetWorthChartSkeleton() {
 /** Tier 2 — 현금흐름 차트 스켈레톤 */
 function CashflowChartSkeleton() {
   return (
-    <div className="bg-card rounded-2xl border border-border p-5">
+    <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5">
       <div className="flex items-center justify-between mb-4">
         <Skeleton className="w-24 h-4" />
         <div className="flex gap-3">
@@ -181,7 +181,7 @@ function CashflowChartSkeleton() {
 /** Tier 3 Left — 도넛 차트 스켈레톤 */
 function DonutChartSkeleton() {
   return (
-    <div className="bg-card rounded-2xl border border-border p-5">
+    <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5">
       <Skeleton className="w-24 h-5 mb-1" />
       <Skeleton className="w-36 h-3 mb-5" />
       <div className="flex flex-col items-center gap-5">
@@ -216,7 +216,7 @@ function DonutChartSkeleton() {
 /** Tier 3 Right — 예산 + 카테고리 스켈레톤 */
 function BudgetCategorySkeleton() {
   return (
-    <div className="bg-card rounded-2xl border border-border p-5 space-y-5">
+    <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5 space-y-5">
       {/* 예산 섹션 */}
       <div>
         <div className="flex items-center justify-between mb-3">
@@ -259,7 +259,7 @@ function BudgetCategorySkeleton() {
 /** Tier 4 — 거래 피드 스켈레톤 */
 function TransactionFeedSkeleton() {
   return (
-    <div className="bg-card rounded-2xl border border-border p-5">
+    <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Skeleton className="w-4 h-4 rounded-full" />
@@ -304,7 +304,7 @@ function MemberBudgetSkeleton() {
 /** Member 뷰 — 카테고리 카드 스켈레톤 */
 function MemberCategorySkeleton() {
   return (
-    <div className="bg-card rounded-2xl border border-border p-5">
+    <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5">
       <Skeleton className="w-28 h-4 mb-4" />
       <div className="space-y-3">
         {[85, 65, 50, 40, 30].map((w, i) => (
@@ -409,13 +409,13 @@ function KpiCard({
           : onClick && <span className="flex-shrink-0 hidden xs:inline text-[10px] text-muted-foreground/40">탭하여 필터</span>
         }
       </div>
-      <p className="text-lg sm:text-xl font-bold text-foreground tabular-nums leading-tight font-serif tracking-tight">{value}</p>
+      <p className="numeric text-lg sm:text-xl text-foreground leading-tight">{value}</p>
       {sub && <p className={cn('text-[10px] sm:text-xs tabular-nums leading-snug', subColor)}>{sub}</p>}
     </Tag>
   )
 }
 
-const CF_COLORS = { income: '#059669', expense: '#f97316', rate: '#3b82f6' }
+const CF_COLORS = { income: 'var(--viz-emerald)', expense: 'var(--viz-orange)', rate: 'var(--viz-blue)' }
 
 function CashflowTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
@@ -428,15 +428,15 @@ function CashflowTooltip({ active, payload, label }: any) {
       <p className="font-semibold text-foreground mb-1.5">{label}</p>
       <div className="flex justify-between gap-4">
         <span className="text-muted-foreground">수입</span>
-        <span className="font-medium text-emerald-500 tabular-nums">{formatLargeNumber(income)}</span>
+        <span className="font-medium text-income tabular-nums">{formatLargeNumber(income)}</span>
       </div>
       <div className="flex justify-between gap-4">
         <span className="text-muted-foreground">지출</span>
-        <span className="font-medium text-orange-400 tabular-nums">{formatLargeNumber(expense)}</span>
+        <span className="font-medium tabular-nums" style={{ color: 'var(--viz-orange)' }}>{formatLargeNumber(expense)}</span>
       </div>
       <div className="flex justify-between gap-4 border-t border-border/60 pt-1 mt-1">
         <span className="text-muted-foreground">흑자액</span>
-        <span className={cn('font-semibold tabular-nums', surplus >= 0 ? 'text-foreground' : 'text-red-400')}>
+        <span className={cn('font-semibold tabular-nums', surplus >= 0 ? 'text-foreground' : 'text-expense')}>
           {surplus >= 0 ? '' : '-'}{formatLargeNumber(Math.abs(surplus))}
         </span>
       </div>
@@ -530,7 +530,7 @@ function CashflowChart({ months }: { months: { label: string; income: number; ex
   )
 }
 
-const CAT_COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#8b5cf6', '#ef4444']
+const CAT_COLORS = ['var(--viz-emerald)', 'var(--viz-blue)', 'var(--viz-amber)', 'var(--viz-violet)', 'var(--viz-red)']
 
 function TopExpenseCategories({ transactions }: { transactions: Transaction[] }) {
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -608,13 +608,13 @@ function TransactionFeedRow({ tx }: { tx: Transaction }) {
     <div className="flex items-center gap-3 py-2.5 border-b border-border/60 last:border-0">
       <div className={cn(
         'w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0',
-        tx.isMasked ? 'bg-muted' : isIncome ? 'bg-emerald-100 dark:bg-emerald-900/40' : 'bg-muted'
+        tx.isMasked ? 'bg-muted' : isIncome ? 'bg-income-soft' : 'bg-muted'
       )}>
         {tx.isMasked
           ? <EyeOff className="w-3.5 h-3.5 text-muted-foreground/60" />
           : isIncome
-            ? <ArrowUpRight className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            : <ArrowDownRight className="w-3.5 h-3.5 text-red-400" />}
+            ? <ArrowUpRight className="w-3.5 h-3.5 text-income" />
+            : <ArrowDownRight className="w-3.5 h-3.5 text-expense" />}
       </div>
       <div className="flex-1 min-w-0">
         <p className={cn('text-xs font-medium truncate', tx.isMasked ? 'text-muted-foreground/60 italic' : 'text-foreground')}>
@@ -626,7 +626,7 @@ function TransactionFeedRow({ tx }: { tx: Transaction }) {
       </div>
       <span className={cn(
         'text-xs font-semibold tabular-nums flex-shrink-0',
-        tx.isMasked ? 'text-muted-foreground/60' : isIncome ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
+        tx.isMasked ? 'text-muted-foreground/60' : isIncome ? 'text-income' : 'text-expense'
       )}>
         {isIncome ? '+' : ''}{formatCurrency(tx.amount)}
       </span>
@@ -659,7 +659,7 @@ function MemberBudgetCard({
       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">{monthLabel} 남은 예산</p>
       {myBudget > 0 ? (
         <>
-          <p className={cn('text-4xl font-bold tabular-nums mb-1 font-serif tracking-tight', isOver ? 'text-red-600 dark:text-red-400' : isWarning ? 'text-amber-600 dark:text-amber-400' : 'text-foreground')}>
+          <p className={cn('numeric text-4xl mb-1', isOver ? 'text-red-600 dark:text-red-400' : isWarning ? 'text-amber-600 dark:text-amber-400' : 'text-foreground')}>
             {isOver ? '-' : ''}{formatCurrency(remaining)}
           </p>
           <p className="text-xs text-muted-foreground mb-4">{formatCurrency(myExpenses)} 사용 / {formatCurrency(myBudget)} 예산</p>
@@ -673,7 +673,7 @@ function MemberBudgetCard({
         </>
       ) : (
         <>
-          <p className="text-3xl font-bold text-foreground tabular-nums mb-1 font-serif tracking-tight">{formatCurrency(myExpenses)}</p>
+          <p className="numeric text-3xl text-foreground mb-1">{formatCurrency(myExpenses)}</p>
           <p className="text-xs text-muted-foreground">{monthLabel} 지출 · {myTxCount}건</p>
           <p className="text-xs text-muted-foreground/60 mt-2">예산이 설정되지 않았습니다</p>
         </>
@@ -857,7 +857,7 @@ export default function Dashboard() {
               {/* 카드1: 순자산 — baseLoading */}
               {baseLoading ? <KpiCardSkeleton /> : (
                 <KpiCard
-                  icon={<Wallet className="w-3.5 h-3.5 text-emerald-500" />}
+                  icon={<Wallet className="w-3.5 h-3.5 text-income" />}
                   label="가족 순자산"
                   value={formatLargeNumber(totalNetWorth)}
                   sub={`총자산 ${formatLargeNumber(totalAssets)}`}
@@ -873,7 +873,7 @@ export default function Dashboard() {
               ) : (
                 <>
                   <KpiCard
-                    icon={<ArrowUpRight className="w-3.5 h-3.5 text-emerald-400" />}
+                    icon={<ArrowUpRight className="w-3.5 h-3.5 text-income" />}
                     label={`${monthLabel} 수입`}
                     value={formatLargeNumber(monthlyIncome)}
                     sub={monthlyIncome === 0 ? '거래 없음' : undefined}
@@ -883,7 +883,7 @@ export default function Dashboard() {
                     accentColor="#34d399"
                   />
                   <KpiCard
-                    icon={<ArrowDownRight className="w-3.5 h-3.5 text-red-400" />}
+                    icon={<ArrowDownRight className="w-3.5 h-3.5 text-expense" />}
                     label={`${monthLabel} 지출`}
                     value={formatLargeNumber(monthlyExpense)}
                     sub={insights && insights.historicalMonthCount >= 2
@@ -891,13 +891,13 @@ export default function Dashboard() {
                         ? `연평균보다 ${Math.abs(insights.expenseVsAvgPercent).toFixed(0)}% 더 지출`
                         : `연평균보다 ${Math.abs(insights.expenseVsAvgPercent).toFixed(0)}% 절감`
                       : undefined}
-                    subColor={insights && insights.expenseVsAvgPercent > 0 ? 'text-orange-600 dark:text-orange-400' : 'text-emerald-600 dark:text-emerald-400'}
+                    subColor={insights && insights.expenseVsAvgPercent > 0 ? 'text-warning' : 'text-income'}
                     onClick={() => setTxFilter(f => f === 'expense' ? 'all' : 'expense')}
                     active={txFilter === 'expense'}
                     accentColor="#f87171"
                   />
                   <KpiCard
-                    icon={<PiggyBank className="w-3.5 h-3.5 text-blue-400" />}
+                    icon={<PiggyBank className="w-3.5 h-3.5 text-savings" />}
                     label={`${monthLabel} 저축률`}
                     value={monthlyIncome > 0 ? `${savingsRate}%` : '—'}
                     sub={insights && insights.historicalMonthCount >= 2
@@ -905,7 +905,7 @@ export default function Dashboard() {
                         ? `연평균보다 ${Math.abs(insights.savingsRateVsAvgPercent).toFixed(0)}%p 높음`
                         : `연평균보다 ${Math.abs(insights.savingsRateVsAvgPercent).toFixed(0)}%p 낮음`
                       : undefined}
-                    subColor={insights && insights.savingsRateVsAvgPercent >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-orange-600 dark:text-orange-400'}
+                    subColor={insights && insights.savingsRateVsAvgPercent >= 0 ? 'text-income' : 'text-warning'}
                   />
                 </>
               )}
@@ -936,13 +936,13 @@ export default function Dashboard() {
 
               <TabsContent value="cashflow" className="mt-3">
                 {monthLoading ? <CashflowChartSkeleton /> : (
-                  <div className="bg-card rounded-2xl border border-border p-5">
+                  <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5">
                     <div className="mb-4 flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-foreground">월별 현금흐름</h3>
                       <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
-                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm inline-block bg-emerald-500" />수입</span>
-                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm inline-block bg-red-500" />지출</span>
-                        <span className="flex items-center gap-1.5"><span className="w-2 h-0.5 inline-block bg-blue-400" />순저축</span>
+                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm inline-block" style={{ backgroundColor: 'var(--viz-emerald)' }} />수입</span>
+                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm inline-block" style={{ backgroundColor: 'var(--viz-orange)' }} />지출</span>
+                        <span className="flex items-center gap-1.5"><span className="w-2 h-0.5 inline-block" style={{ backgroundColor: 'var(--viz-blue)' }} />순저축</span>
                       </div>
                     </div>
                     <CashflowChart months={cashflowMonths} />
@@ -966,7 +966,7 @@ export default function Dashboard() {
 
               {/* Right: 예산 + 카테고리 Top5 */}
               {monthLoading ? <BudgetCategorySkeleton /> : (
-                <div className="bg-card rounded-2xl border border-border p-5 space-y-5">
+                <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5 space-y-5">
                   <div>
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-1.5">
@@ -987,7 +987,7 @@ export default function Dashboard() {
                           {[
                             { label: '예산', value: budgetData.familyBudget, color: 'text-foreground' },
                             { label: '사용', value: budgetData.familySpent, color: budgetData.familySpent > budgetData.familyBudget * 0.8 ? 'text-red-600 dark:text-red-400' : 'text-foreground' },
-                            { label: '잔여', value: Math.max(budgetData.familyBudget - budgetData.familySpent, 0), color: 'text-emerald-600 dark:text-emerald-400' },
+                            { label: '잔여', value: Math.max(budgetData.familyBudget - budgetData.familySpent, 0), color: 'text-income' },
                           ].map(item => (
                             <div key={item.label} className="bg-muted rounded-xl p-3 text-center">
                               <p className="text-[10px] text-muted-foreground mb-1">{item.label}</p>
@@ -1036,7 +1036,7 @@ export default function Dashboard() {
                 txFilter === 'expense' ? tx.amount < 0 : true
               )
               return (
-                <div className="bg-card rounded-2xl border border-border p-5">
+                <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-muted-foreground" />
@@ -1092,7 +1092,7 @@ export default function Dashboard() {
             )}
 
             {monthLoading ? <MemberCategorySkeleton /> : (
-              <div className="bg-card rounded-2xl border border-border p-5">
+              <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5">
                 <h3 className="text-sm font-semibold text-foreground mb-4">내 카테고리별 지출</h3>
                 <TopExpenseCategories
                   transactions={transactions.filter(tx => tx.userId === currentUserId)}
@@ -1102,7 +1102,7 @@ export default function Dashboard() {
             )}
 
             {monthLoading ? <TransactionFeedSkeleton /> : (
-              <div className="bg-card rounded-2xl border border-border p-5">
+              <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-sm font-semibold text-foreground">내 최근 거래</h3>
                   <Link href="/dashboard/transactions" className="text-xs text-muted-foreground hover:text-foreground transition-colors">더보기 →</Link>

@@ -100,20 +100,20 @@ interface MonthlyGoal {
 type DraftItem = { category: string; isExcluded: boolean; amount: number; description: string }
 
 const CAT_COLORS: Record<string, string> = {
-  '식비': '#f97316',
-  '카페/간식': '#f59e0b',
+  '식비': 'var(--viz-orange)',
+  '카페/간식': 'var(--viz-amber)',
   '쇼핑': '#ec4899',
-  '교통': '#3b82f6',
-  '주거/관리비': '#6366f1',
-  '의료/건강': '#10b981',
-  '문화/여가': '#8b5cf6',
+  '교통': 'var(--viz-blue)',
+  '주거/관리비': 'var(--viz-violet)',
+  '의료/건강': 'var(--viz-emerald)',
+  '문화/여가': 'var(--viz-violet)',
   '교육': '#06b6d4',
   '구독/통신': '#64748b',
-  '저축/투자': '#0ea5e9',
+  '저축/투자': 'var(--viz-sky)',
   '기타': '#94a3b8',
-  '급여': '#22c55e',
+  '급여': 'var(--viz-emerald)',
   '부업': '#84cc16',
-  '이자/배당': '#a3e635',
+  '이자/배당': 'var(--viz-mint)',
   '기타 수입': '#cbd5e1',
 }
 
@@ -483,7 +483,7 @@ export default function CashflowPage() {
       setPageActions(
         <div className="flex items-center gap-2">
           {draftCount > 0 && (
-            <span className="text-xs text-emerald-600 dark:text-emerald-500 font-medium hidden sm:inline">
+            <span className="text-xs text-income font-medium hidden sm:inline">
               {draftCount}건 수정됨
             </span>
           )}
@@ -917,25 +917,25 @@ export default function CashflowPage() {
       {effectiveSummary && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
           <SummaryCard
-            icon={<TrendingUp className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />}
+            icon={<TrendingUp className="w-3.5 h-3.5 text-income" />}
             label="수입" value={formatCurrency(effectiveSummary.income)}
-            valueClass="text-emerald-600 dark:text-emerald-400"
+            valueClass="text-income"
             isActive={typeFilter === 'INCOME'}
-            activeClass="bg-emerald-100 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-500/50"
+            activeClass="bg-income-soft border-emerald-300 dark:border-emerald-500/50"
             onClick={() => toggleFilter('INCOME')}
           />
           <SummaryCard
-            icon={<TrendingDown className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />}
+            icon={<TrendingDown className="w-3.5 h-3.5 text-expense" />}
             label="지출" value={formatCurrency(effectiveSummary.expense)}
-            valueClass="text-red-600 dark:text-red-400"
+            valueClass="text-expense"
             isActive={typeFilter === 'EXPENSE'}
-            activeClass="bg-red-100 dark:bg-red-950/30 border-red-300 dark:border-red-500/50"
+            activeClass="bg-expense-soft border-red-300 dark:border-red-500/50"
             onClick={() => toggleFilter('EXPENSE')}
           />
-          <SummaryCard icon={<PiggyBank className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />} label="저축" value={formatCurrency(effectiveSummary.savings)} valueClass={effectiveSummary.savings >= 0 ? 'text-blue-600 dark:text-blue-400' : 'text-amber-600 dark:text-amber-400'} />
-          <div className={cn('rounded-2xl p-4 border', effectiveSavingsRate !== null && effectiveSavingsRate >= 30 ? 'bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-900/40' : 'bg-card border-border')}>
+          <SummaryCard icon={<PiggyBank className="w-3.5 h-3.5 text-savings" />} label="저축" value={formatCurrency(effectiveSummary.savings)} valueClass={effectiveSummary.savings >= 0 ? 'text-savings' : 'text-warning'} />
+          <div className={cn('rounded-2xl p-4 border', effectiveSavingsRate !== null && effectiveSavingsRate >= 30 ? 'bg-savings-soft border-emerald-200 dark:border-emerald-900/40' : 'bg-card border-border')}>
             <p className="text-xs text-muted-foreground font-medium mb-2">저축률</p>
-            <p className={cn('text-lg font-bold tabular-nums', effectiveSavingsRate === null ? 'text-muted-foreground/60' : effectiveSavingsRate >= 30 ? 'text-emerald-600 dark:text-emerald-400' : effectiveSavingsRate < 10 ? 'text-red-600 dark:text-red-400' : 'text-foreground')}>
+            <p className={cn('text-lg font-bold tabular-nums', effectiveSavingsRate === null ? 'text-muted-foreground/60' : effectiveSavingsRate >= 30 ? 'text-savings' : effectiveSavingsRate < 10 ? 'text-expense' : 'text-foreground')}>
               {effectiveSavingsRate !== null ? `${effectiveSavingsRate}%` : '—'}
             </p>
           </div>
@@ -953,13 +953,13 @@ export default function CashflowPage() {
       )}
 
       {/* 내역 테이블 */}
-      <div className="rounded-2xl border border-border overflow-visible">
+      <div className="rounded-2xl shadow-card dark:border dark:border-border overflow-visible">
 
         {/* 테이블 헤더 */}
         <div className={cn(
           'px-4 py-2.5 border-b border-border text-[10px] font-semibold uppercase tracking-wide rounded-t-2xl',
           isEditing
-            ? 'bg-emerald-100 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-400 flex items-center gap-2'
+            ? 'bg-income-soft text-income flex items-center gap-2'
             : 'grid grid-cols-[72px_1fr_96px_80px_36px] bg-card text-muted-foreground',
         )}>
           {isEditing ? (
@@ -1128,17 +1128,17 @@ function InsightCard({ label, icon, actual, target, type, suffix, isRate = false
   let barColor = 'bg-muted', valueColor = 'text-foreground', statusText = ''
   if (hasTarget) {
     if (type === 'income') {
-      if (pct >= 100) { barColor = 'bg-emerald-500'; valueColor = 'text-emerald-600 dark:text-emerald-400'; statusText = '목표 달성!' }
-      else if (pct >= 70) { barColor = 'bg-yellow-500'; valueColor = 'text-yellow-700 dark:text-yellow-400'; statusText = `${pct}% 달성` }
-      else { barColor = 'bg-red-500'; valueColor = 'text-red-600 dark:text-red-400'; statusText = `${pct}% 달성` }
+      if (pct >= 100) { barColor = 'bg-[var(--viz-emerald)]'; valueColor = 'text-income'; statusText = '목표 달성!' }
+      else if (pct >= 70) { barColor = 'bg-[var(--viz-amber)]'; valueColor = 'text-warning'; statusText = `${pct}% 달성` }
+      else { barColor = 'bg-[var(--viz-red)]'; valueColor = 'text-expense'; statusText = `${pct}% 달성` }
     } else if (type === 'expense') {
-      if (pct <= 80) { barColor = 'bg-emerald-500'; valueColor = 'text-emerald-600 dark:text-emerald-400'; statusText = '절약 중!' }
-      else if (pct <= 100) { barColor = 'bg-yellow-500'; valueColor = 'text-yellow-700 dark:text-yellow-400'; statusText = `${pct}% 사용` }
-      else { barColor = 'bg-red-500'; valueColor = 'text-red-600 dark:text-red-400'; statusText = `초과 ${pct - 100}%` }
+      if (pct <= 80) { barColor = 'bg-[var(--viz-emerald)]'; valueColor = 'text-income'; statusText = '절약 중!' }
+      else if (pct <= 100) { barColor = 'bg-[var(--viz-amber)]'; valueColor = 'text-warning'; statusText = `${pct}% 사용` }
+      else { barColor = 'bg-[var(--viz-red)]'; valueColor = 'text-expense'; statusText = `초과 ${pct - 100}%` }
     } else {
-      if (pct >= 100) { barColor = 'bg-emerald-500'; valueColor = 'text-emerald-600 dark:text-emerald-400'; statusText = '목표 달성!' }
-      else if (pct >= 70) { barColor = 'bg-yellow-500'; valueColor = 'text-yellow-700 dark:text-yellow-400'; statusText = `${pct}% 달성` }
-      else { barColor = 'bg-red-500'; valueColor = 'text-red-600 dark:text-red-400'; statusText = `${pct}% 달성` }
+      if (pct >= 100) { barColor = 'bg-[var(--viz-emerald)]'; valueColor = 'text-income'; statusText = '목표 달성!' }
+      else if (pct >= 70) { barColor = 'bg-[var(--viz-amber)]'; valueColor = 'text-warning'; statusText = `${pct}% 달성` }
+      else { barColor = 'bg-[var(--viz-red)]'; valueColor = 'text-expense'; statusText = `${pct}% 달성` }
     }
   }
   return (
@@ -1147,7 +1147,7 @@ function InsightCard({ label, icon, actual, target, type, suffix, isRate = false
         <span className="text-muted-foreground">{icon}</span>
         <span className="text-xs text-muted-foreground font-medium">{label}</span>
       </div>
-      <p className={cn('text-xl font-bold tabular-nums mb-1 font-serif tracking-tight', valueColor)}>
+      <p className={cn('numeric text-xl mb-1', valueColor)}>
         {isRate ? `${actual}%` : formatCurrency(actual)}
       </p>
       {hasTarget ? (
@@ -1264,7 +1264,7 @@ function SubItemRow({ item }: { item: SubItem }) {
       <div className="min-w-0 pr-2 flex items-center">
         <p className="text-xs text-muted-foreground truncate">{item.description}</p>
       </div>
-      <p className={cn('text-xs tabular-nums text-right font-medium self-center', item.amount > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground/70')}>
+      <p className={cn('text-xs tabular-nums text-right font-medium self-center', item.amount > 0 ? 'text-income' : 'text-foreground/70')}>
         {item.amount > 0 ? '+' : ''}{formatCurrency(item.amount)}
       </p>
       <div className="pl-2 self-center">
@@ -1327,7 +1327,7 @@ function TxnShareModal({ tx, onClose }: { tx: Transaction; onClose: () => void }
           </div>
           <p className={cn(
             'text-sm font-semibold tabular-nums flex-shrink-0',
-            tx.amount > 0 ? 'text-emerald-500' : 'text-foreground',
+            tx.amount > 0 ? 'text-income' : 'text-foreground',
           )}>
             {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)}
           </p>
@@ -1451,7 +1451,7 @@ function TransactionRow({
               onChange={e => handleAmountChange(e.target.value)}
               className={cn(
                 'h-7 w-full bg-muted border border-border rounded-lg pl-2 pr-1 text-xs text-right outline-none focus:border-ring transition-colors tabular-nums',
-                tx.amount > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground'
+                tx.amount > 0 ? 'text-income' : 'text-foreground'
               )}
             />
           </div>
@@ -1520,7 +1520,7 @@ function TransactionRow({
           {tx.description}
         </p>
       </div>
-      <p className={cn('text-sm tabular-nums text-right font-medium self-center', tx.amount > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-foreground')}>
+      <p className={cn('text-sm tabular-nums text-right font-medium self-center', tx.amount > 0 ? 'text-income' : 'text-foreground')}>
         {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)}
       </p>
       <div className="pl-2 self-center">

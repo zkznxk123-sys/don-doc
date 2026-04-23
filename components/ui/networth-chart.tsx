@@ -39,17 +39,17 @@ const CustomTooltip = ({ active, payload, label }: any) => {
       <div className="space-y-1.5">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-blue-400 flex-shrink-0" />
+            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: 'var(--viz-sky)' }} />
             <span className="text-xs text-muted-foreground">총 자산</span>
           </div>
           <span className="text-xs font-semibold text-foreground tabular-nums">{formatCurrency(totalAssets)}</span>
         </div>
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
+            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: 'var(--viz-mint)' }} />
             <span className="text-xs text-muted-foreground">순자산</span>
           </div>
-          <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{formatCurrency(netWorth)}</span>
+          <span className="text-xs font-semibold text-income tabular-nums">{formatCurrency(netWorth)}</span>
         </div>
       </div>
     </div>
@@ -74,11 +74,11 @@ export function NetWorthChart({ data, onDataSaved, onQuickSnapshot }: NetWorthCh
 
   return (
     <>
-      <div className="bg-card rounded-2xl border border-border overflow-hidden">
+      <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div className="flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <TrendingUp className="w-4 h-4 text-income" />
             <h2 className="text-sm font-semibold text-foreground font-serif tracking-tight">순자산 추이</h2>
             {data.length > 0 && (
               <span className="text-xs text-muted-foreground/60">{data.length}개월</span>
@@ -116,12 +116,12 @@ export function NetWorthChart({ data, onDataSaved, onQuickSnapshot }: NetWorthCh
               <AreaChart data={chartData} margin={{ top: 4, right: 16, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="gradTotalAssets" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.2} />
-                    <stop offset="95%" stopColor="#60a5fa" stopOpacity={0} />
+                    <stop offset="5%" stopColor="var(--viz-sky)" stopOpacity={0.2} />
+                    <stop offset="95%" stopColor="var(--viz-sky)" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="gradNetWorth" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#34d399" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#34d399" stopOpacity={0} />
+                    <stop offset="5%" stopColor="var(--viz-mint)" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="var(--viz-mint)" stopOpacity={0} />
                   </linearGradient>
                 </defs>
 
@@ -150,11 +150,11 @@ export function NetWorthChart({ data, onDataSaved, onQuickSnapshot }: NetWorthCh
                   type="monotone"
                   dataKey="totalAssets"
                   name="총 자산"
-                  stroke="#60a5fa"
+                  stroke="var(--viz-sky)"
                   strokeWidth={1.5}
                   fill="url(#gradTotalAssets)"
                   dot={false}
-                  activeDot={{ r: 4, fill: '#60a5fa', strokeWidth: 0 }}
+                  activeDot={{ r: 4, fill: 'var(--viz-sky)', strokeWidth: 0 }}
                 />
 
                 {/* 순자산 — 앞에 그려서 강조 */}
@@ -162,11 +162,11 @@ export function NetWorthChart({ data, onDataSaved, onQuickSnapshot }: NetWorthCh
                   type="monotone"
                   dataKey="netWorth"
                   name="순자산"
-                  stroke="#34d399"
+                  stroke="var(--viz-mint)"
                   strokeWidth={2}
                   fill="url(#gradNetWorth)"
                   dot={false}
-                  activeDot={{ r: 5, fill: '#34d399', strokeWidth: 0 }}
+                  activeDot={{ r: 5, fill: 'var(--viz-mint)', strokeWidth: 0 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -177,11 +177,11 @@ export function NetWorthChart({ data, onDataSaved, onQuickSnapshot }: NetWorthCh
         {!isEmpty && (
           <div className="flex items-center gap-4 px-5 pb-4">
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-0.5 rounded-full bg-emerald-400" />
+              <div className="w-3 h-0.5 rounded-full" style={{ backgroundColor: 'var(--viz-mint)' }} />
               <span className="text-xs text-muted-foreground">순자산</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-0.5 rounded-full bg-blue-400" />
+              <div className="w-3 h-0.5 rounded-full" style={{ backgroundColor: 'var(--viz-sky)' }} />
               <span className="text-xs text-muted-foreground">총 자산</span>
             </div>
           </div>

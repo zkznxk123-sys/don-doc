@@ -177,7 +177,7 @@ export default function FamilyPage() {
       <h1 className="text-2xl font-bold text-foreground mb-6">가족 관리</h1>
 
       {/* 가족 정보 카드 */}
-      <div className="bg-card rounded-2xl border border-border p-6 mb-6">
+      <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-6 mb-6">
         <div className="flex items-start justify-between gap-4 mb-6">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-foreground/10 flex items-center justify-center flex-shrink-0">
@@ -251,7 +251,7 @@ export default function FamilyPage() {
               className={cn(
                 'flex items-center gap-1.5 px-4 py-2 rounded-xl border text-xs font-medium transition-all flex-shrink-0',
                 copied
-                  ? 'bg-emerald-100 border-emerald-300 text-emerald-700 dark:bg-emerald-500/10 dark:border-emerald-500/30 dark:text-emerald-400'
+                  ? 'bg-income-soft border-[var(--viz-emerald)]/30 text-income'
                   : 'bg-muted border-border text-foreground/70 hover:text-foreground hover:border-ring'
               )}
             >
@@ -264,7 +264,7 @@ export default function FamilyPage() {
       </div>
 
       {/* 멤버 리스트 */}
-      <div className="bg-card rounded-2xl border border-border">
+      <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border">
         <div className="px-5 py-4 border-b border-border flex items-center justify-between rounded-t-2xl">
           <h2 className="text-sm font-semibold text-foreground">구성원</h2>
           <p className="text-[11px] text-muted-foreground/60">CFO · 공동CFO는 모든 자산을 관리할 수 있어요</p>
