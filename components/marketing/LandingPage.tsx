@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { LogoLockup } from '@/components/ui/brand-mark'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -70,12 +71,12 @@ function NetWorthMockup() {
     <div className="bg-card rounded-2xl p-4 border border-border shadow-sm w-full">
       <p className="text-[10px] text-muted-foreground/70 mb-0.5">이번 달 순자산</p>
       <p className="text-2xl font-bold tabular-nums">7.3억</p>
-      <p className="text-[11px] text-emerald-500 mt-0.5 font-medium">↑ +2,300만 전월 대비</p>
+      <p className="text-[11px] text-income mt-0.5 font-medium">↑ +2,300만 전월 대비</p>
       <div className="mt-3 flex items-end gap-1 h-10">
         {bars.map((h, i) => (
           <div
             key={i}
-            className={`flex-1 rounded-sm transition-all ${i === bars.length - 1 ? 'bg-emerald-500' : 'bg-muted-foreground/15'}`}
+            className={`flex-1 rounded-sm transition-all ${i === bars.length - 1 ? 'bg-[var(--viz-emerald)]' : 'bg-muted-foreground/15'}`}
             style={{ height: `${h}%` }}
           />
         ))}
@@ -97,16 +98,16 @@ function RealEstateMockup() {
           <p className="text-[10px] text-muted-foreground/70">래미안 ○○아파트</p>
           <p className="text-lg font-bold">9.5억</p>
         </div>
-        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 font-medium">+26.7%</span>
+        <span className="text-[10px] px-2 py-0.5 rounded-full bg-income-soft text-income font-medium">+26.7%</span>
       </div>
       <div className="space-y-2">
         <div>
           <div className="flex justify-between text-[10px] mb-1">
             <span className="text-muted-foreground">LTV</span>
-            <span className="font-semibold text-emerald-600">42%</span>
+            <span className="font-semibold text-income">42%</span>
           </div>
           <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-            <div className="h-full w-[42%] bg-emerald-500 rounded-full" />
+            <div className="h-full w-[42%] bg-[var(--viz-emerald)] rounded-full" />
           </div>
         </div>
         <div className="grid grid-cols-3 gap-2 pt-1">
@@ -117,7 +118,7 @@ function RealEstateMockup() {
           ].map(item => (
             <div key={item.label} className="bg-muted/40 rounded-lg px-2 py-1.5 text-center">
               <p className="text-[9px] text-muted-foreground/60">{item.label}</p>
-              <p className={`text-[11px] font-semibold mt-0.5 ${item.ok ? 'text-emerald-500' : 'text-red-400'}`}>{item.value}</p>
+              <p className={`text-[11px] font-semibold mt-0.5 ${item.ok ? 'text-income' : 'text-expense'}`}>{item.value}</p>
             </div>
           ))}
         </div>
@@ -146,7 +147,7 @@ function TransactionMockup() {
               <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded-md font-medium ${tx.color}`}>{tx.cat}</span>
               <span className="text-xs text-foreground truncate">{tx.name}</span>
             </div>
-            <span className={`text-xs font-medium tabular-nums ml-2 shrink-0 ${tx.amt.startsWith('+') ? 'text-emerald-500' : 'text-foreground/70'}`}>
+            <span className={`text-xs font-medium tabular-nums ml-2 shrink-0 ${tx.amt.startsWith('+') ? 'text-income' : 'text-foreground/70'}`}>
               {tx.amt}
             </span>
           </div>
@@ -163,7 +164,7 @@ export function LandingPage() {
 
       {/* ── 네비게이션 ────────────────────────────────────────── */}
       <nav className="fixed top-0 inset-x-0 z-50 flex items-center justify-between px-6 md:px-12 h-16 border-b border-border bg-background/80 backdrop-blur-xl transition-colors duration-300">
-        <span className="text-sm font-bold tracking-tight text-foreground font-serif">돈Doc</span>
+        <LogoLockup size="md" />
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <Link
@@ -204,11 +205,9 @@ export function LandingPage() {
             custom={1}
             className="text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.1] tracking-tight font-serif"
           >
-            우리 가족을 위한
+            가족의 자산을 더
             <br />
-            <span className="text-foreground/60">
-              프라이빗 뱅킹
-            </span>
+            <span className="text-secondary">돈독</span>하게 연결하다
           </motion.h1>
 
           <motion.p
