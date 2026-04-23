@@ -19,6 +19,7 @@ import {
   MessageSquare,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { BrandMark } from '@/components/ui/brand-mark'
 import type { ShellUser } from './DashboardShell'
 import { useState, useEffect, useRef } from 'react'
 import { getLatestInviteCode } from '@/lib/actions/family'
@@ -47,12 +48,14 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
   const [hasUnreadFeed, setHasUnreadFeed] = useState(false)
 
   useEffect(() => {
+    let cancelled = false
     getRecentFeedPreview(1).then(posts => {
-      if (posts.length === 0) return
+      if (cancelled || posts.length === 0) return
       const lastRead = localStorage.getItem('don-doc:lastFeedRead')
       const since = lastRead ? new Date(lastRead) : new Date(0)
       setHasUnreadFeed(new Date(posts[0].createdAt) > since)
-    })
+    }).catch(() => {/* 로그아웃 중 인증 만료 무시 */})
+    return () => { cancelled = true }
   }, [pathname]) // pathname 바뀔 때마다 재확인 (피드 방문 후 점 사라짐)
 
   const isActive = (item: typeof NAV_ITEMS[number]) =>
@@ -73,12 +76,10 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
         !open && 'lg:justify-center lg:px-0',
       )}>
         <Link href="/dashboard" className="flex items-center gap-3 min-w-0 flex-1">
-          <div className="w-7 h-7 rounded-md bg-foreground flex items-center justify-center flex-shrink-0">
-            <span className="text-xs font-bold text-background">돈</span>
-          </div>
+          <BrandMark size={28} />
           {open && (
-            <div className="min-w-0">
-              <p className="text-sm font-bold text-foreground truncate font-serif tracking-tight">돈Doc</p>
+            <div className="min-w-0 flex flex-col gap-0.5">
+              <BrandMark variant="wordmark" size={20} />
               {user.familyName && (
                 <p className="text-[10px] text-muted-foreground truncate">{user.familyName}</p>
               )}
@@ -271,7 +272,7 @@ function InviteCodeButton() {
                 className={cn(
                   'w-full h-9 rounded-xl border text-xs font-medium transition-all flex items-center justify-center gap-1.5',
                   copied
-                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                    ? 'bg-income-soft border-[var(--viz-emerald)]/30 text-income'
                     : 'bg-muted border-border text-foreground/70 hover:text-foreground'
                 )}
               >

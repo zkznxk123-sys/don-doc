@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="230" height="64" viewBox="0 0 230 64">
+  <defs>
+    <mask id="cut-d-dk" maskUnits="userSpaceOnUse" x="0" y="0" width="230" height="64">
+      <rect width="230" height="64" fill="white"></rect>
+      <circle cx="117" cy="21" r="5" fill="black"></circle>
+      <circle cx="117" cy="43" r="5" fill="black"></circle>
+    </mask>
+    <mask id="cut-c-dk" maskUnits="userSpaceOnUse" x="0" y="0" width="230" height="64">
+      <rect width="230" height="64" fill="white"></rect>
+      <circle cx="154" cy="19" r="5" fill="black"></circle>
+      <circle cx="154" cy="45" r="5" fill="black"></circle>
+    </mask>
+  </defs>
+
+  <text x="2" y="48" fill="#F1F5F9" font-size="52" font-weight="900" font-family="Pretendard, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif" letter-spacing="-3">돈</text>
+  <g fill="none" stroke="#F1F5F9" stroke-width="3.2" stroke-linecap="round">
+    <g mask="url(#cut-d-dk)">
+      <path d="M98 10 L98 54"></path>
+      <path d="M98 10 A22 22 0 0 1 98 54"></path>
+    </g>
+    <circle cx="136" cy="32" r="22"></circle>
+    <g mask="url(#cut-c-dk)">
+      <path d="M190 16 A22 22 0 1 0 190 48"></path>
+    </g>
+  </g>
+  <circle cx="136" cy="32" r="5" fill="#B49B3E"></circle>
+</svg>
