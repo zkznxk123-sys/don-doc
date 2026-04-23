@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Suspense } from 'react'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import { LogoLockup } from '@/components/ui/brand-mark'
+import { BrandMark } from '@/components/ui/brand-mark'
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -164,7 +164,10 @@ export function LandingPage() {
 
       {/* ── 네비게이션 ────────────────────────────────────────── */}
       <nav className="fixed top-0 inset-x-0 z-50 flex items-center justify-between px-6 md:px-12 h-16 border-b border-border bg-background/80 backdrop-blur-xl transition-colors duration-300">
-        <LogoLockup size="md" />
+        <Link href="/" className="flex items-center gap-2">
+          <BrandMark variant="symbol" size={28} />
+          <span className="text-sm font-black tracking-tight text-foreground">돈Doc</span>
+        </Link>
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <Link
