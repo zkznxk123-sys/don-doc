@@ -24,6 +24,7 @@ export default function SignInPage() {
 
           {/* Clerk SignIn 컴포넌트 */}
           <SignIn
+            routing="hash"
             fallbackRedirectUrl="/dashboard"
             signUpUrl="/sign-up"
             appearance={{

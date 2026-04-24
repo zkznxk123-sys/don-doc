@@ -228,3 +228,27 @@ export async function joinFamily(inviteCode: string): Promise<{ error?: string }
 
   redirect('/dashboard')
 }
+
+export type AiModeSetting = 'api' | 'claude' | 'chatgpt' | 'gemini'
+
+export async function getAiMode(): Promise<AiModeSetting> {
+  const user = await getAuthUser()
+  if (!user?.familyId) return 'api'
+  const family = await prisma.familyGroup.findUnique({
+    where: { id: user.familyId },
+    select: { aiMode: true },
+  })
+  const raw = family?.aiMode ?? 'api'
+  // 이전 'proxy' 값 하위호환
+  return (raw === 'proxy' ? 'claude' : raw) as AiModeSetting
+}
+
+export async function setAiMode(mode: AiModeSetting): Promise<{ success: boolean; error?: string }> {
+  const user = await getAuthUser()
+  if (!user?.familyId) return { success: false, error: 'Unauthorized' }
+  await prisma.familyGroup.update({
+    where: { id: user.familyId },
+    data: { aiMode: mode },
+  })
+  return { success: true }
+}

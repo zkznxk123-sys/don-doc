@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
-import { chat, AI_MODELS } from '@/lib/ai'
+import { chat } from '@/lib/ai'
 import { formatLargeNumber } from '@/lib/utils'
 import { YoutubeTranscript } from 'youtube-transcript'
 import { SCENARIO_CATEGORIES } from '@/lib/scenario-constants'
@@ -319,7 +319,7 @@ export async function addContentSource(
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `URL: ${url}\n\n${rawText}` },
         ],
-        { model: AI_MODELS.fast, maxTokens: 300, timeoutMs: 15_000 },
+        { mode: user.familyAiMode, sessionId: user.familyId ?? undefined, tier: 'fast', maxTokens: 300, timeoutMs: 15_000 },
       )
     }
   } catch (e) {
@@ -447,7 +447,7 @@ ${categoryRule}
   try {
     raw = await chat(
       [{ role: 'user', content: prompt }],
-      { model: AI_MODELS.balanced, maxTokens: 2000, timeoutMs: 120_000 },
+      { mode: user.familyAiMode, sessionId: user.familyId ?? undefined, tier: 'smart', maxTokens: 4000, timeoutMs: 120_000 },
     )
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
@@ -457,11 +457,25 @@ ${categoryRule}
 
   let parsed: { scenarios: any[] }
   try {
-    const jsonStr = raw.match(/\{[\s\S]*\}/)?.[0] ?? raw
+    const cleaned = raw.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim()
+    const jsonStr = cleaned.match(/\{[\s\S]*\}/)?.[0] ?? cleaned
     parsed = JSON.parse(jsonStr)
   } catch {
-    console.error('[generateScenarios] parse error, raw:', raw.slice(0, 500))
-    return { success: false, error: '시나리오 파싱 실패' }
+    // 토큰 한도로 잘린 경우 완성된 시나리오 객체만 부분 추출
+    const partialMatches = raw.match(/\{[^{}]*"title"[^{}]*"rationale"[^{}]*\}/g) ?? []
+    if (partialMatches.length > 0) {
+      const recoverable = partialMatches.flatMap(s => { try { return [JSON.parse(s)] } catch { return [] } })
+      if (recoverable.length > 0) {
+        parsed = { scenarios: recoverable }
+        console.warn('[generateScenarios] partial recovery:', recoverable.length, 'scenarios')
+      } else {
+        console.error('[generateScenarios] parse error, raw length:', raw.length)
+        return { success: false, error: '시나리오 파싱 실패 — 응답이 잘렸을 수 있습니다' }
+      }
+    } else {
+      console.error('[generateScenarios] parse error, raw length:', raw.length)
+      return { success: false, error: '시나리오 파싱 실패 — 응답이 잘렸을 수 있습니다' }
+    }
   }
 
   const scenariosInput = parsed.scenarios ?? []
@@ -632,7 +646,7 @@ ${financialContext}
   try {
     raw = await chat(
       [{ role: 'user', content: prompt }],
-      { model: AI_MODELS.smart, maxTokens: 2500, timeoutMs: 150_000 },
+      { mode: user.familyAiMode, sessionId: user.familyId ?? undefined, tier: 'smart', maxTokens: 6000, timeoutMs: 150_000 },
     )
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
@@ -641,10 +655,13 @@ ${financialContext}
 
   let expansion: ScenarioExpansion
   try {
-    const jsonStr = raw.match(/\{[\s\S]*\}/)?.[0] ?? raw
+    // 마크다운 코드블록 제거 후 JSON 추출
+    const cleaned = raw.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim()
+    const jsonStr = cleaned.match(/\{[\s\S]*\}/)?.[0] ?? cleaned
     expansion = JSON.parse(jsonStr)
   } catch {
-    return { success: false, error: '계획 파싱 실패' }
+    console.error('[expandScenario] parse error, raw length:', raw.length, 'preview:', raw.slice(0, 200))
+    return { success: false, error: '계획 파싱 실패 — AI 응답이 예상 형식이 아닙니다' }
   }
 
   await prisma.scenario.update({
@@ -689,15 +706,15 @@ export async function chatWithScenario(
     prisma.scenarioChatMessage.findMany({
       where: { scenarioId },
       orderBy: { createdAt: 'asc' },
-      take: 20, // 최근 20개 메시지
+      take: 20,
     }),
   ])
 
   if (!scenario) return { success: false, error: '시나리오를 찾을 수 없습니다' }
 
-  const systemPrompt = `당신은 개인 재무 어드바이저입니다. 아래 시나리오와 재무 상태를 기반으로 사용자의 질문에 구체적이고 실용적으로 답변하세요.
+  const contextBlock = `[역할] 당신은 개인 재무 어드바이저입니다. 아래 시나리오와 재무 상태를 기반으로 사용자의 질문에 구체적이고 실용적으로 답변하세요. 한국어로 답변하세요.
 
-=== 현재 시나리오 ===
+[현재 시나리오]
 제목: ${scenario.title}
 카테고리: ${scenario.category ?? '미분류'}
 요약: ${scenario.rationale}
@@ -706,24 +723,32 @@ export async function chatWithScenario(
 리스크: ${scenario.risk ?? '없음'}
 다음 액션: ${scenario.actions.join(', ')}
 
-=== 재무 상태 ===
-${financialContext}
+[재무 상태]
+${financialContext}`
 
-답변 시 이 가족의 실제 수치를 언급하며 구체적으로 답변하세요. 한국어로 답변하세요.`
+  // system 롤 대신 첫 user 메시지에 컨텍스트를 포함 (CLIProxy 경유 시 system 롤 무시 방지)
+  // 히스토리의 첫 user 메시지(또는 현재 메시지)에 contextBlock 삽입
+  const historyMessages = history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content }))
 
-  const messages: { role: 'user' | 'assistant'; content: string }[] = [
-    ...history.map(h => ({ role: h.role as 'user' | 'assistant', content: h.content })),
-    { role: 'user', content: userMessage },
-  ]
+  let messages: { role: 'user' | 'assistant'; content: string }[]
+  if (history.length === 0) {
+    // 첫 대화 — 컨텍스트 + 질문을 하나의 user 메시지로
+    messages = [{ role: 'user', content: `${contextBlock}\n\n[질문]\n${userMessage}` }]
+  } else {
+    // 이어지는 대화 — 첫 히스토리 user 메시지에 컨텍스트 주입, 나머지 그대로
+    const [first, ...rest] = historyMessages
+    messages = [
+      { role: first.role, content: `${contextBlock}\n\n[질문]\n${first.content}` },
+      ...rest,
+      { role: 'user', content: userMessage },
+    ]
+  }
 
   let reply = ''
   try {
     reply = await chat(
-      [
-        { role: 'system', content: systemPrompt },
-        ...messages,
-      ],
-      { model: AI_MODELS.balanced, maxTokens: 800, timeoutMs: 60_000 },
+      messages,
+      { mode: user.familyAiMode, sessionId: user.familyId ?? undefined, tier: 'balanced', maxTokens: 1200, timeoutMs: 60_000 },
     )
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)

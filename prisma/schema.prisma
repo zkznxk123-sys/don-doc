@@ -79,6 +79,7 @@ enum PensionType {
 model FamilyGroup {
   id                String             @id @default(cuid())
   name              String             // 예: "우리집 패밀리오피스"
+  aiMode            String             @default("api") // "api" | "proxy"
   users             User[]
   accounts          Account[]
   invites           FamilyInvite[]

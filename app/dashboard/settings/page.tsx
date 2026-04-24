@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Trash2, AlertTriangle, ShieldAlert, ArrowLeft, Tag, ChevronRight, User, Pencil, Check, X } from 'lucide-react'
+import { Trash2, AlertTriangle, ShieldAlert, ArrowLeft, Tag, ChevronRight, User, Pencil, Check, X, Zap } from 'lucide-react'
 import Link from 'next/link'
 import {
   AlertDialog,
@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { updateUserName, getCurrentUser } from '@/lib/actions/user'
 import { deleteZeroBalanceAccounts } from '@/lib/actions/accounts'
+import { getAiMode, setAiMode } from '@/lib/actions/family'
 import { useAssetThreshold } from '@/lib/hooks/useAssetThreshold'
 
 export default function SettingsPage() {
@@ -28,6 +29,10 @@ function SettingsClient() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [isDeletingZero, setIsDeletingZero] = useState(false)
+  const [aiMode, setAiModeState] = useState<'api' | 'claude' | 'chatgpt' | 'gemini'>('api')
+  const [connectedProviders, setConnectedProviders] = useState<Set<string>>(new Set())
+  const [statusLoading, setStatusLoading] = useState(true)
+  const [connectingProvider, setConnectingProvider] = useState<'claude' | 'chatgpt' | 'gemini' | null>(null)
   const { threshold, setThreshold } = useAssetThreshold()
   const [currentName, setCurrentName] = useState<string | null>(null)
   const [currentEmail, setCurrentEmail] = useState('')
@@ -43,7 +48,110 @@ function SettingsClient() {
         setNameInput(u.name ?? '')
       }
     })
+    getAiMode().then(async (mode) => {
+      setAiModeState(mode)
+      // 세 provider 연결 상태 모두 조회
+      const results = await Promise.all(
+        (['claude', 'chatgpt', 'gemini'] as const).map(p =>
+          fetch(`/api/ai/oauth-status?provider=${p}`)
+            .then(r => r.json())
+            .catch(() => ({ connected: false }))
+            .then(d => ({ p, connected: !!d.connected }))
+        )
+      )
+      const connected = new Set(results.filter(r => r.connected).map(r => r.p))
+      setConnectedProviders(connected)
+      setStatusLoading(false)
+      // 현재 활성 provider가 실제 연결 안 돼 있으면 api로 리셋
+      if (mode !== 'api' && !connected.has(mode)) {
+        await setAiMode('api')
+        setAiModeState('api')
+      }
+    })
   }, [])
+
+  const PROVIDER_CONFIG = [
+    {
+      id: 'claude' as const,
+      label: 'Claude',
+      sub: 'Anthropic Pro/Max · 최고 품질',
+      letter: 'C',
+      iconBg: 'bg-orange-500/15',
+      iconColor: 'text-orange-400',
+      activeBorder: 'border-orange-500/30',
+      activeBg: 'bg-orange-500/5',
+      activeText: 'text-orange-400',
+      badgeBg: 'bg-orange-500/10 text-orange-400',
+    },
+    {
+      id: 'chatgpt' as const,
+      label: 'ChatGPT',
+      sub: 'OpenAI Plus/Pro · GPT-4o',
+      letter: 'G',
+      iconBg: 'bg-emerald-500/15',
+      iconColor: 'text-emerald-400',
+      activeBorder: 'border-emerald-500/30',
+      activeBg: 'bg-emerald-500/5',
+      activeText: 'text-emerald-400',
+      badgeBg: 'bg-emerald-500/10 text-emerald-400',
+    },
+    {
+      id: 'gemini' as const,
+      label: 'Gemini',
+      sub: 'Google Advanced · 멀티모달',
+      letter: 'Gm',
+      iconBg: 'bg-blue-500/15',
+      iconColor: 'text-blue-400',
+      activeBorder: 'border-blue-500/30',
+      activeBg: 'bg-blue-500/5',
+      activeText: 'text-blue-400',
+      badgeBg: 'bg-blue-500/10 text-blue-400',
+    },
+  ] as const
+
+  const handleConnectProvider = async (provider: 'claude' | 'chatgpt' | 'gemini') => {
+    // 이미 연결된 경우 OAuth 없이 바로 전환
+    if (connectedProviders.has(provider)) {
+      await setAiMode(provider)
+      setAiModeState(provider)
+      const cfg = PROVIDER_CONFIG.find(c => c.id === provider)!
+      toast.success(`${cfg.label} 계정으로 전환되었습니다.`)
+      return
+    }
+
+    setConnectingProvider(provider)
+    try {
+      const res = await fetch(`/api/ai/oauth-url?provider=${provider}`)
+      const data = await res.json()
+      if (!data.url) { toast.error('OAuth URL을 가져올 수 없습니다'); return }
+
+      const popup = window.open(data.url, '_blank', 'width=600,height=700')
+      const cfg = PROVIDER_CONFIG.find(c => c.id === provider)!
+
+      const poll = setInterval(async () => {
+        const status = await fetch(`/api/ai/oauth-status?provider=${provider}`).then(r => r.json())
+        if (status.connected) {
+          clearInterval(poll)
+          popup?.close()
+          setConnectedProviders(prev => new Set(Array.from(prev).concat(provider)))
+          await setAiMode(provider)
+          setAiModeState(provider)
+          toast.success(`${cfg.label} 계정이 연결되었습니다.`)
+        }
+        if (popup?.closed) clearInterval(poll)
+      }, 2000)
+    } catch {
+      toast.error('연결 중 오류가 발생했습니다.')
+    } finally {
+      setConnectingProvider(null)
+    }
+  }
+
+  const handleSwitchToApi = async () => {
+    await setAiMode('api')
+    setAiModeState('api')
+    toast.success('앱 기본 AI로 전환되었습니다.')
+  }
 
   const handleSaveName = async () => {
     setIsSavingName(true)
@@ -163,6 +271,83 @@ function SettingsClient() {
             ))}
           </div>
         </div>
+      </section>
+
+      {/* AI 설정 */}
+      <section className="rounded-2xl border border-border bg-card/30 p-5 mb-4">
+        <h2 className="text-sm font-semibold text-foreground/70 mb-3">AI 설정</h2>
+
+        {/* 앱 기본 AI */}
+        <button
+          onClick={aiMode === 'api' ? undefined : handleSwitchToApi}
+          className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all mb-2 ${
+            aiMode === 'api'
+              ? 'border-foreground/20 bg-muted/50'
+              : 'border-border hover:bg-muted/30 cursor-pointer'
+          }`}
+        >
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
+            aiMode === 'api' ? 'bg-foreground/10' : 'bg-muted'
+          }`}>
+            <Zap className={`w-4 h-4 ${aiMode === 'api' ? 'text-foreground' : 'text-muted-foreground'}`} />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-medium text-foreground">앱 기본 AI</p>
+            <p className="text-xs text-muted-foreground mt-0.5">GPT-4o-mini · 빠르고 안정적</p>
+          </div>
+          {aiMode === 'api' && (
+            <span className="text-xs font-medium text-foreground/50 flex-shrink-0">사용 중</span>
+          )}
+        </button>
+
+        {/* 구독 연동 providers */}
+        {PROVIDER_CONFIG.map((cfg) => {
+          const isActive = aiMode === cfg.id
+          const isConnected = connectedProviders.has(cfg.id)
+          const isConnecting = connectingProvider === cfg.id
+
+          return (
+            <button
+              key={cfg.id}
+              onClick={isActive ? undefined : () => handleConnectProvider(cfg.id)}
+              disabled={connectingProvider !== null && !isConnecting}
+              className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all mb-2 last:mb-0 ${
+                isActive
+                  ? `${cfg.activeBorder} ${cfg.activeBg}`
+                  : 'border-border hover:bg-muted/30 cursor-pointer disabled:opacity-40'
+              }`}
+            >
+              {/* 프로바이더 아이콘 */}
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors font-bold text-sm ${
+                isActive || isConnected ? cfg.iconBg : 'bg-muted'
+              } ${isActive || isConnected ? cfg.iconColor : 'text-muted-foreground'}`}>
+                {cfg.letter}
+              </div>
+
+              {/* 텍스트 */}
+              <div className="flex-1 text-left min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <p className="text-sm font-medium text-foreground">{cfg.label}</p>
+                  {isConnected && !isActive && !statusLoading && (
+                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${cfg.badgeBg}`}>연결됨</span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">{cfg.sub}</p>
+              </div>
+
+              {/* 액션 */}
+              {isActive ? (
+                <span className={`text-xs font-semibold flex-shrink-0 ${cfg.activeText}`}>사용 중</span>
+              ) : isConnecting ? (
+                <span className="text-xs text-muted-foreground flex-shrink-0 animate-pulse">연결 중…</span>
+              ) : isConnected ? (
+                <span className="text-xs font-medium text-foreground/50 flex-shrink-0 px-2 py-1 rounded-lg bg-muted border border-border">전환</span>
+              ) : (
+                <span className="text-xs text-muted-foreground flex-shrink-0">연결</span>
+              )}
+            </button>
+          )
+        })}
       </section>
 
       {/* 카테고리 관리 */}

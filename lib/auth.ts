@@ -9,6 +9,7 @@ export interface AuthUser {
   role: AppRole
   familyId: string | null
   familyName: string | null
+  familyAiMode: 'api' | 'claude' | 'chatgpt' | 'gemini'
 }
 
 /**
@@ -28,6 +29,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
     })
 
     if (prismaUser) {
+      const rawAiMode = prismaUser.family?.aiMode ?? 'api'
       return {
         id: prismaUser.id,
         email: prismaUser.email,
@@ -35,6 +37,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
         role: prismaUser.role as AppRole,
         familyId: prismaUser.familyId,
         familyName: prismaUser.family?.name ?? null,
+        familyAiMode: (rawAiMode === 'proxy' ? 'claude' : rawAiMode) as 'api' | 'claude' | 'chatgpt' | 'gemini',
       }
     }
 
@@ -59,6 +62,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
         data: { clerkId, name: existingByEmail.name ?? displayName },
         include: { family: true },
       })
+      const rawUpdatedMode = updated.family?.aiMode ?? 'api'
       return {
         id: updated.id,
         email: updated.email,
@@ -66,6 +70,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
         role: updated.role as AppRole,
         familyId: updated.familyId,
         familyName: updated.family?.name ?? null,
+        familyAiMode: (rawUpdatedMode === 'proxy' ? 'claude' : rawUpdatedMode) as 'api' | 'claude' | 'chatgpt' | 'gemini',
       }
     }
 
@@ -82,6 +87,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
       role: newUser.role as AppRole,
       familyId: newUser.familyId,
       familyName: null,
+      familyAiMode: 'api',
     }
   } catch {
     return null

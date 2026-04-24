@@ -2,13 +2,13 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 import { NextResponse } from 'next/server'
-import { openai } from '@ai-sdk/openai'
 import { generateObject } from 'ai'
 import { z } from 'zod'
 import { getAuthUser } from '@/lib/auth'
 import { getCategories } from '@/lib/actions/categories'
 import { getUserCategoryPreferences } from '@/lib/actions/preferences'
 import { prisma } from '@/lib/prisma'
+import { proxyModel } from '@/lib/ai'
 
 const mappingSchema = z.object({
   mappings: z.array(
@@ -27,14 +27,16 @@ function chunk<T>(arr: T[], size: number): T[][] {
 
 async function callAiBatch(
   items: { description: string; category: string }[],
-  categoryList: string
+  categoryList: string,
+  mode: Parameters<typeof proxyModel>[1],
+  options?: Parameters<typeof proxyModel>[2],
 ): Promise<{ description: string; categoryId: string }[]> {
   const itemList = items
     .map((item, i) => `${i + 1}. 내용: "${item.description}", 기존분류: "${item.category}"`)
     .join('\n')
 
   const { object } = await generateObject({
-    model: openai('gpt-4o-mini'),
+    model: proxyModel('fast', mode, options),
     schema: mappingSchema,
     temperature: 0.1,
     prompt: `너는 한국 가계부 분류 AI야. 아래 거래 내역들을 보고 카테고리 목록 중 가장 적합한 categoryId를 매핑해.
@@ -58,7 +60,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: '인증 필요' }, { status: 401 })
     }
 
-    // ?month=YYYY-MM, ?force=true, ?preview=true 파라미터
     const { searchParams } = new URL(req.url)
     const monthParam = searchParams.get('month')
     const forceMode = searchParams.get('force') === 'true'
@@ -73,7 +74,6 @@ export async function POST(req: Request) {
       }
     }
 
-    // force=true: 전체 거래 대상 / 기본: 미분류(categoryId=null)만
     const where = {
       user: { familyId: user.familyId },
       ...(forceMode ? {} : { categoryId: null }),
@@ -86,23 +86,23 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, updated: 0, remaining: 0, message: forceMode ? '처리할 항목이 없습니다' : '미분류 항목이 없습니다' })
     }
 
-    // 1회 최대 150건 처리
     const BATCH_LIMIT = 150
-    const txs = await prisma.transaction.findMany({
-      where,
-      select: { id: true, description: true, category: true, amount: true, categoryId: true },
-      take: BATCH_LIMIT,
-      orderBy: { date: 'desc' },
-    })
-
-    const [categories, prefMap] = await Promise.all([
+    const [txs, categories, prefMap] = await Promise.all([
+      prisma.transaction.findMany({
+        where,
+        select: { id: true, description: true, category: true, amount: true, categoryId: true },
+        take: BATCH_LIMIT,
+        orderBy: { date: 'desc' },
+      }),
       getCategories(user.familyId),
       getUserCategoryPreferences(user.id),
     ])
+
     if (categories.length === 0) {
       return NextResponse.json({ error: '카테고리가 없습니다' }, { status: 400 })
     }
 
+    const modelOpts = { sessionId: user.familyId }
     const categoryList = categories.map(c => `${c.id}|${c.name}|${c.type}`).join('\n')
     const catById = new Map(categories.map(c => [c.id, c]))
 
@@ -134,17 +134,15 @@ export async function POST(req: Request) {
     const allRaw: { description: string; categoryId: string }[] = []
     if (uniqueItems.length > 0) {
       const batches = chunk(uniqueItems, 50)
-      const results = await Promise.allSettled(batches.map(batch => callAiBatch(batch, categoryList)))
+      const results = await Promise.allSettled(batches.map(batch => callAiBatch(batch, categoryList, user.familyAiMode, modelOpts)))
       for (const res of results) {
         if (res.status === 'fulfilled') allRaw.push(...res.value)
         else console.error('[recategorize] batch error:', res.reason)
       }
     }
 
-    // description → categoryId 맵 (선호도 + AI 합산)
     const aiMappingMap = new Map(allRaw.map(r => [r.description, r.categoryId]))
 
-    // preview 모드: DB 저장 없이 suggestions 반환
     if (previewMode) {
       const suggestions = txs.map(tx => {
         const newCategoryId = prefMappingMap.get(tx.description) ?? aiMappingMap.get(tx.description)
@@ -174,8 +172,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, suggestions, total: totalCount, remaining })
     }
 
-    // 거래별 업데이트
-    let updated = 0
     const updateOps = txs.flatMap(tx => {
       const categoryId = prefMappingMap.get(tx.description) ?? aiMappingMap.get(tx.description)
       if (!categoryId || !catById.has(categoryId)) return []
@@ -187,14 +183,10 @@ export async function POST(req: Request) {
       ]
     })
 
-    // 병렬 트랜잭션 배치 처리
     const updateBatches = chunk(updateOps, 50)
     await Promise.all(updateBatches.map(batch => prisma.$transaction(batch)))
-    updated = updateOps.length
 
-    const remaining = totalCount - txs.length
-
-    return NextResponse.json({ success: true, updated, remaining })
+    return NextResponse.json({ success: true, updated: updateOps.length, remaining: totalCount - txs.length })
   } catch (e) {
     console.error('[recategorize] error:', e)
     return NextResponse.json({ error: String(e) }, { status: 500 })

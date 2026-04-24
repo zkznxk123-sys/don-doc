@@ -1,35 +1,70 @@
-/**
- * LLM 클라이언트
- *
- * 로컬: llm-mux (http://localhost:8317) 사용
- * 운영: OPENAI_API_KEY 직접 사용 (폴백)
- *
- * llm-mux 설치: curl -fsSL https://raw.githubusercontent.com/nghyane/llm-mux/main/install.sh | bash
- * 실행: llm-mux serve
- */
+import { createOpenAI } from '@ai-sdk/openai'
 
-const BASE_URL = process.env.LLM_MUX_URL ?? 'http://localhost:8317'
+const PROXY_URL = process.env.CLI_PROXY_URL ?? 'http://localhost:8317'
+const PROXY_KEY = process.env.CLI_PROXY_API_KEY ?? 'canvas-local-dev-key'
 
-const isLocalMux =
-  BASE_URL.includes('localhost') || BASE_URL.includes('127.0.0.1')
+export type Provider = 'claude' | 'chatgpt' | 'gemini'
+export type AiMode = 'api' | 'claude' | 'chatgpt' | 'gemini'
 
-// 용도별 모델 (환경변수로 오버라이드 가능)
-export const AI_MODELS = {
-  fast:     process.env.LLM_MUX_MODEL_FAST     ?? 'gpt-5-mini', // 빠른 작업: URL 요약, 분류
-  balanced: process.env.LLM_MUX_MODEL_BALANCED ?? 'gpt-4.1',    // 시나리오 생성, AI 채팅
-  smart:    process.env.LLM_MUX_MODEL_SMART    ?? 'o4-mini',    // 상세 실행 계획 (추론 필요)
+export const PROVIDER_MODELS: Record<Provider, { fast: string; balanced: string; smart: string }> = {
+  claude: {
+    fast:     'claude-haiku-4-5-20251001',
+    balanced: 'claude-sonnet-4-6',
+    smart:    'claude-opus-4-7',
+  },
+  chatgpt: {
+    fast:     'gpt-4o-mini',
+    balanced: 'gpt-4o',
+    smart:    'o4-mini',
+  },
+  gemini: {
+    fast:     'gemini-2.0-flash',
+    balanced: 'gemini-2.5-pro',
+    smart:    'gemini-2.5-pro',
+  },
+}
+
+// api 모드 (OpenAI 직접) 모델
+const API_MODELS = {
+  fast:     'gpt-4o-mini',
+  balanced: 'gpt-4o-mini',
+  smart:    'gpt-4o',
 } as const
 
-// OpenAI 폴백 모델 매핑 (llm-mux 전용 모델 → 표준 OpenAI 모델)
-const OPENAI_MODEL_MAP: Record<string, string> = {
-  'gpt-5-mini': 'gpt-4o-mini',
-  'gpt-5':      'gpt-4o',
-  'gpt-5.1':    'gpt-4o',
-  'gpt-4.1':    'gpt-4.1',
-  'o4-mini':    'o4-mini',
+// tier 폴백: smart → balanced → fast
+const FALLBACK_TIER: Record<string, 'fast' | 'balanced' | 'smart'> = {
+  smart: 'balanced',
+  balanced: 'fast',
 }
-function toOpenAIModel(model: string): string {
-  return OPENAI_MODEL_MAP[model] ?? model
+
+export class ProxyCooldownError extends Error {
+  constructor(
+    public readonly model: string,
+    public readonly resetSeconds: number,
+  ) {
+    super(`모델 ${model}이(가) 쿨다운 중입니다. ${Math.ceil(resetSeconds / 60)}분 후 재시도해주세요.`)
+    this.name = 'ProxyCooldownError'
+  }
+}
+
+/** Vercel AI SDK (generateObject 등)용 모델 인스턴스 */
+export function proxyModel(
+  tier: keyof typeof API_MODELS = 'fast',
+  mode: AiMode = 'claude',
+  options?: { sessionId?: string },
+) {
+  if (mode === 'api') {
+    const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY })
+    return openai(API_MODELS[tier])
+  }
+
+  const provider: Provider = mode === 'proxy' as never ? 'claude' : mode as Provider
+  const openai = createOpenAI({
+    baseURL: `${PROXY_URL}/v1`,
+    apiKey: PROXY_KEY,
+    headers: options?.sessionId ? { 'X-Session-ID': options.sessionId } : {},
+  })
+  return openai(PROVIDER_MODELS[provider][tier])
 }
 
 export interface ChatMessage {
@@ -38,88 +73,71 @@ export interface ChatMessage {
 }
 
 export interface ChatOptions {
+  mode?: AiMode
+  sessionId?: string
+  tier?: keyof typeof API_MODELS
   model?: string
   temperature?: number
   maxTokens?: number
   timeoutMs?: number
 }
 
-/**
- * LLM 채팅 호출.
- * - 로컬: llm-mux 경유
- * - 운영(localhost + OPENAI_API_KEY 있음): OpenAI API 직접 호출
- */
-export async function chat(
+async function callProxy(
+  model: string,
   messages: ChatMessage[],
-  options: ChatOptions = {}
+  opts: { temperature: number; maxTokens: number; timeoutMs: number; sessionId?: string },
 ): Promise<string> {
-  const {
-    model = AI_MODELS.fast,
-    temperature = 0.3,
-    maxTokens,
-    timeoutMs = 20_000,
-  } = options
-
-  // 운영 환경에서 llm-mux가 localhost를 가리키면 OpenAI 직접 사용
-  if (isLocalMux && process.env.OPENAI_API_KEY) {
-    return chatOpenAI(messages, { model: toOpenAIModel(model), temperature, maxTokens: maxTokens ?? 1000, timeoutMs })
-  }
-
-  return chatLlmMux(messages, { model, temperature, maxTokens: maxTokens ?? 1000, timeoutMs })
-}
-
-async function chatLlmMux(
-  messages: ChatMessage[],
-  options: { model: string; temperature: number; maxTokens: number; timeoutMs: number },
-): Promise<string> {
-  const { model, temperature, maxTokens, timeoutMs } = options
-
-  const body: Record<string, unknown> = { model, messages, temperature, stream: false, max_tokens: maxTokens }
-
-  const res = await fetch(`${BASE_URL}/v1/chat/completions`, {
+  const res = await fetch(`${PROXY_URL}/v1/chat/completions`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(timeoutMs),
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${PROXY_KEY}`,
+      ...(opts.sessionId ? { 'X-Session-ID': opts.sessionId } : {}),
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      max_tokens: opts.maxTokens,
+      stream: false,
+      ...(model.includes('opus-4') ? {} : { temperature: opts.temperature }),
+    }),
+    signal: AbortSignal.timeout(opts.timeoutMs),
   })
+
+  if (res.status === 429) {
+    const text = await res.text().catch(() => '')
+    const resetSeconds = (() => {
+      try {
+        const outer = JSON.parse(text)
+        const inner = JSON.parse(outer?.error?.message ?? '{}')
+        return inner?.error?.reset_seconds ?? inner?.reset_seconds ?? 1800
+      } catch { return 1800 }
+    })()
+    throw new ProxyCooldownError(model, resetSeconds)
+  }
 
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText)
-    throw new Error(`llm-mux ${res.status}: ${text}`)
+    throw new Error(`CLIProxy ${res.status}: ${text}`)
   }
 
   const data = await res.json()
   return data.choices?.[0]?.message?.content?.trim() ?? ''
 }
 
-const REASONING_MODELS = new Set(['o4-mini', 'o3-mini', 'o3', 'o1', 'o1-mini'])
-
-async function chatOpenAI(
+async function callOpenAI(
+  model: string,
   messages: ChatMessage[],
-  options: { model: string; temperature: number; maxTokens: number; timeoutMs: number },
+  opts: { temperature: number; maxTokens: number; timeoutMs: number },
 ): Promise<string> {
-  const { model, temperature, maxTokens, timeoutMs } = options
-
-  const isReasoning = REASONING_MODELS.has(model)
-  const body: Record<string, unknown> = {
-    model,
-    messages,
-    stream: false,
-    // 추론 모델은 temperature 미지원, max_completion_tokens 사용
-    ...(isReasoning
-      ? { max_completion_tokens: maxTokens }
-      : { temperature, max_tokens: maxTokens }
-    ),
-  }
-
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
     },
-    body: JSON.stringify(body),
-    signal: AbortSignal.timeout(timeoutMs),
+    body: JSON.stringify({ model, messages, temperature: opts.temperature, max_tokens: opts.maxTokens, stream: false }),
+    signal: AbortSignal.timeout(opts.timeoutMs),
   })
 
   if (!res.ok) {
@@ -131,10 +149,71 @@ async function chatOpenAI(
   return data.choices?.[0]?.message?.content?.trim() ?? ''
 }
 
-/** llm-mux 서버 상태 확인 */
-export async function pingLlmMux(): Promise<boolean> {
+export async function chat(
+  messages: ChatMessage[],
+  options: ChatOptions = {}
+): Promise<string> {
+  const {
+    mode = 'claude',
+    sessionId,
+    tier = 'fast',
+    temperature = 0.3,
+    maxTokens = 1000,
+    timeoutMs = 20_000,
+  } = options
+
+  const callOpts = { temperature, maxTokens, timeoutMs }
+
+  if (mode === 'api') {
+    const model = options.model ?? API_MODELS[tier]
+    return callOpenAI(model, messages, callOpts)
+  }
+
+  const provider: Provider = (mode === 'proxy' as never ? 'claude' : mode) as Provider
+
+  if (options.model) {
+    return callProxy(options.model, messages, { ...callOpts, sessionId })
+  }
+
+  let currentTier: keyof typeof API_MODELS = tier
+  while (true) {
+    const model = PROVIDER_MODELS[provider][currentTier]
+    try {
+      return await callProxy(model, messages, { ...callOpts, sessionId })
+    } catch (err) {
+      if (err instanceof ProxyCooldownError && FALLBACK_TIER[currentTier]) {
+        currentTier = FALLBACK_TIER[currentTier]
+        continue
+      }
+      throw err
+    }
+  }
+}
+
+/** 연결된 계정에서 활성 프로바이더 조회 */
+export async function getActiveProvider(): Promise<Provider | null> {
   try {
-    const res = await fetch(`${BASE_URL}/v1/models`, {
+    const res = await fetch(`${PROXY_URL}/v0/management/get-auth-status`, {
+      headers: { 'X-Management-Key': process.env.CLI_PROXY_MGMT_SECRET ?? '' },
+      signal: AbortSignal.timeout(3_000),
+    })
+    if (!res.ok) return null
+    const data = await res.json()
+    const accounts: { provider: string }[] = data.accounts ?? data ?? []
+    const found = accounts[0]?.provider
+    if (found === 'anthropic') return 'claude'
+    if (found === 'codex' || found === 'openai') return 'chatgpt'
+    if (found === 'google') return 'gemini'
+    return null
+  } catch {
+    return null
+  }
+}
+
+export async function pingProxy(): Promise<boolean> {
+  try {
+    const res = await fetch(`${PROXY_URL}/v1/models`, {
+      headers: { 'Authorization': `Bearer ${PROXY_KEY}` },
       signal: AbortSignal.timeout(3_000),
     })
     return res.ok

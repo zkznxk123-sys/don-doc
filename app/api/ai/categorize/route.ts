@@ -1,10 +1,11 @@
 export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
-import { openai } from '@ai-sdk/openai'
 import { generateObject } from 'ai'
 import { z } from 'zod'
 import { getFamilyCategories } from '@/lib/actions/categories'
+import { proxyModel } from '@/lib/ai'
+import { getAuthUser } from '@/lib/auth'
 
 const resultSchema = z.object({
   category: z.string().describe('매핑된 카테고리 이름'),
@@ -25,8 +26,10 @@ export async function POST(req: Request) {
       .map(c => c.name)
       .join(', ')
 
+    const user = await getAuthUser()
+
     const { object } = await generateObject({
-      model: openai('gpt-4o-mini'),
+      model: proxyModel('fast', user?.familyAiMode ?? 'claude', { sessionId: user?.familyId ?? undefined }),
       schema: resultSchema,
       temperature: 0.1,
       prompt: `한국 가계부 앱에서 거래를 분류해. 아래 카테고리 중 가장 적합한 것을 하나만 골라.

@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { chat, AI_MODELS } from '@/lib/ai'
+import { chat } from '@/lib/ai'
 
 export async function GET() {
   try {
@@ -87,7 +87,7 @@ ${topCategories.map((c, i) => `${i + 1}. ${c}`).join('\n')}
         },
         { role: 'user', content: prompt },
       ],
-      { model: AI_MODELS.smart, temperature: 0.7, maxTokens: 400 }
+      { mode: user.familyAiMode, sessionId: user.familyId ?? undefined, tier: 'fast', temperature: 0.7, maxTokens: 400 }
     )
 
     return NextResponse.json({
@@ -102,13 +102,11 @@ ${topCategories.map((c, i) => `${i + 1}. ${c}`).join('\n')}
     })
   } catch (error) {
     const msg = String(error)
-    const isLlmMuxDown = msg.includes('ECONNREFUSED') || msg.includes('fetch failed') || msg.includes('llm-mux')
+    const isProxyDown = msg.includes('ECONNREFUSED') || msg.includes('fetch failed')
     return NextResponse.json(
       {
-        error: isLlmMuxDown
-          ? 'llm-mux가 실행 중이지 않습니다. `llm-mux serve` 명령어로 시작해주세요.'
-          : msg,
-        llmMuxDown: isLlmMuxDown,
+        error: isProxyDown ? 'CLIProxyAPI 서버에 연결할 수 없습니다.' : msg,
+        proxyDown: isProxyDown,
       },
       { status: 503 }
     )

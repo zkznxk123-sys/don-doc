@@ -1,12 +1,12 @@
 export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
-import { openai } from '@ai-sdk/openai'
 import { generateObject } from 'ai'
 import { z } from 'zod'
 import { getAuthUser } from '@/lib/auth'
 import { getCategories } from '@/lib/actions/categories'
 import { getUserCategoryPreferences } from '@/lib/actions/preferences'
+import { proxyModel } from '@/lib/ai'
 
 export interface MappingItem {
   description: string
@@ -37,14 +37,16 @@ function chunk<T>(arr: T[], size: number): T[][] {
 
 async function callAiBatch(
   items: MappingItem[],
-  categoryList: string
+  categoryList: string,
+  mode: Parameters<typeof proxyModel>[1],
+  options?: Parameters<typeof proxyModel>[2],
 ): Promise<{ description: string; categoryId: string }[]> {
   const itemList = items
     .map((item, i) => `${i + 1}. 내용: "${item.description}", 뱅샐분류: "${item.banksaladCategory}"`)
     .join('\n')
 
   const { object } = await generateObject({
-    model: openai('gpt-4o-mini'),
+    model: proxyModel('fast', mode, options),
     schema: mappingSchema,
     temperature: 0.1,
     prompt: `너는 한국 가계부 분류 AI야. 아래 거래 내역들을 보고 카테고리 목록 중 가장 적합한 categoryId를 매핑해.
@@ -83,6 +85,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ mappings: [], warning: '카테고리가 없습니다.' })
     }
 
+    const modelOpts = { sessionId: user.familyId }
     const catById = new Map(categories.map(c => [c.id, c]))
     const categoryList = categories.map(c => `${c.id}|${c.name}|${c.type}`).join('\n')
 
@@ -112,7 +115,7 @@ export async function POST(req: Request) {
       const batches = chunk(needsAi, 50)
       for (const batch of batches) {
         try {
-          const batchResult = await callAiBatch(batch, categoryList)
+          const batchResult = await callAiBatch(batch, categoryList, user.familyAiMode, modelOpts)
           allRaw.push(...batchResult)
         } catch (batchErr) {
           console.error('[map-categories] batch error:', batchErr)

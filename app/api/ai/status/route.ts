@@ -1,9 +1,9 @@
 export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
-import { pingLlmMux } from '@/lib/ai'
+import { pingProxy } from '@/lib/ai'
 
 export async function GET() {
-  const online = await pingLlmMux()
+  const online = await pingProxy()
   return NextResponse.json({ online })
 }

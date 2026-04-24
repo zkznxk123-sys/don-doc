@@ -30,6 +30,7 @@ export default function SignUpPage({ searchParams }: Props) {
 
           {/* Clerk SignUp 컴포넌트 */}
           <SignUp
+            routing="hash"
             fallbackRedirectUrl={inviteCode ? `/onboarding?code=${inviteCode}` : '/onboarding'}
             signInUrl="/sign-in"
             appearance={{
