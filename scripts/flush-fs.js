@@ -521,7 +521,25 @@ const syncSleep = (ms) => {
 const origModuleLoad = Module._load
 Module._load = function (request, parent, isMain) {
   try {
-    return origModuleLoad.call(this, request, parent, isMain)
+    const result = origModuleLoad.call(this, request, parent, isMain)
+    // Patch static-paths-worker to handle PageNotFoundError (page not compiled yet in dev).
+    // Applies in both main process and worker process (both load flush-fs.js via NODE_OPTIONS).
+    if (typeof request === 'string' && request.includes('static-paths-worker') &&
+        result && typeof result.loadStaticPaths === 'function' && !result.__flushFsPatched) {
+      result.__flushFsPatched = true
+      const origLoadStaticPaths = result.loadStaticPaths
+      result.loadStaticPaths = async function (...args) {
+        try {
+          return await origLoadStaticPaths.apply(this, args)
+        } catch (e) {
+          if (e && (e.name === 'PageNotFoundError' || (e.message && e.message.includes('Cannot find module for page')))) {
+            return { prerenderedRoutes: [], fallbackMode: 'NOT_FOUND' }
+          }
+          throw e
+        }
+      }
+    }
+    return result
   } catch (e) {
     const isNotFound = e.code === 'MODULE_NOT_FOUND' || e.code === 'ENOENT'
     if (!isNotFound) throw e

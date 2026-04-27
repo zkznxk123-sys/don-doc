@@ -27,3 +27,43 @@ const cacheDirs = [
 for (const d of cacheDirs) {
   fs.mkdirSync(d, { recursive: true })
 }
+
+// Patch static-paths-worker.js to handle PageNotFoundError (page not compiled yet in dev).
+// jest-worker uses eval("require") (bundled require), so Module._load hooks in flush-fs.js
+// do not intercept its function calls. The only reliable fix is a direct disk patch.
+const path = require('path')
+const spwPath = path.join(__dirname, '../node_modules/next/dist/server/dev/static-paths-worker.js')
+const PATCH_SENTINEL = '// [flush-fs PageNotFoundError patch]'
+try {
+  let spwContent = fs.readFileSync(spwPath, 'utf8')
+  if (!spwContent.includes(PATCH_SENTINEL)) {
+    spwContent = spwContent.replace(
+      `    const components = await (0, _loadcomponents.loadComponents)({
+        distDir,
+        // In \`pages/\`, the page is the same as the pathname.
+        page: page || pathname,
+        isAppPath,
+        isDev: true,
+        sriEnabled
+    });`,
+      `    ${PATCH_SENTINEL}
+    let components;
+    try {
+        components = await (0, _loadcomponents.loadComponents)({
+            distDir,
+            // In \`pages/\`, the page is the same as the pathname.
+            page: page || pathname,
+            isAppPath,
+            isDev: true,
+            sriEnabled
+        });
+    } catch (e) {
+        if (e && (e.name === 'PageNotFoundError' || (e.message && e.message.includes('Cannot find module for page')))) {
+            return { prerenderedRoutes: [], fallbackMode: 'NOT_FOUND' };
+        }
+        throw e;
+    }`
+    )
+    fs.writeFileSync(spwPath, spwContent)
+  }
+} catch (_) {}
