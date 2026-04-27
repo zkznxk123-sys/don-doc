@@ -182,13 +182,12 @@ fs.writeFile = function (filePath, data, options, callback) {
         global.__nextPackCache = global.__nextPackCache || new Map()
         global.__nextPackCache.set(filePath, Buffer.isBuffer(data) ? data : Buffer.from(typeof data === 'string' ? data : String(data)))
       }
-      if (!err && isServerFile) {
-        // fsync the parent directory to make this file visible to subsequent require() calls.
-        // This fixes the APFS directory entry visibility race for ALL server files,
-        // including vendor chunks AND manifest JSONs.
+      // Fsync for .next/server/ files AND .next/static/ chunks/CSS (APFS dir-entry race fix)
+      const isStaticNextFile = typeof filePath === 'string' && filePath.startsWith(nodePath.join(NEXT_DIR, 'static'))
+      if (!err && (isServerFile || isStaticNextFile)) {
         const isManifest = typeof filePath === 'string' && filePath.endsWith('-manifest.json')
         fsyncDir(dir).then(() => {
-          if (isManifest) {
+          if (isServerFile && isManifest) {
             // Store in global manifest cache for NodeManifestLoader fallback
             const dataStr = typeof data === 'string' ? data : Buffer.isBuffer(data) ? data.toString('utf8') : String(data)
             global.__nextManifestCache.set(filePath, dataStr)
@@ -247,17 +246,20 @@ fs.promises.writeFile = async function (filePath, data, options) {
   if (isVendorChunk) {
     vendorChunkCache.set(filePath, Buffer.isBuffer(data) ? data : Buffer.from(data))
   }
-  if (isServerFile) {
+  const isStaticNextFile2 = typeof filePath === 'string' && filePath.startsWith(nodePath.join(NEXT_DIR, 'static'))
+  if (isServerFile || isStaticNextFile2) {
     await fsyncDir(dir)
-    const isManifest = typeof filePath === 'string' && filePath.endsWith('-manifest.json')
-    if (isManifest) {
-      // Store in global manifest cache for NodeManifestLoader fallback (bypasses APFS race)
-      const dataStr = typeof data === 'string' ? data : Buffer.isBuffer(data) ? data.toString('utf8') : String(data)
-      global.__nextManifestCache.set(filePath, dataStr)
-      try {
-        fs.accessSync(filePath, fs.constants.F_OK)
-      } catch (e) {
-        fsyncDirSync(dir)
+    if (isServerFile) {
+      const isManifest = typeof filePath === 'string' && filePath.endsWith('-manifest.json')
+      if (isManifest) {
+        // Store in global manifest cache for NodeManifestLoader fallback (bypasses APFS race)
+        const dataStr = typeof data === 'string' ? data : Buffer.isBuffer(data) ? data.toString('utf8') : String(data)
+        global.__nextManifestCache.set(filePath, dataStr)
+        try {
+          fs.accessSync(filePath, fs.constants.F_OK)
+        } catch (e) {
+          fsyncDirSync(dir)
+        }
       }
     }
   }
@@ -301,6 +303,7 @@ fs.promises.rename = async function (oldPath, newPath) {
         try {
           await fs.promises.mkdir(nodePath.dirname(newPath), { recursive: true })
           await fs.promises.writeFile(newPath, content)
+          await fsyncDir(nodePath.dirname(newPath))
           packCache.delete(oldPath)
           return
         } catch (_) {}
@@ -308,7 +311,9 @@ fs.promises.rename = async function (oldPath, newPath) {
     }
     throw lastErr
   }
-  if (typeof newPath === 'string' && newPath.startsWith(NEXT_SERVER)) {
+  if (typeof newPath === 'string' && newPath.startsWith(NEXT_DIR) &&
+      (newPath.startsWith(NEXT_SERVER) || newPath.includes('/cache/webpack/') ||
+       newPath.startsWith(nodePath.join(NEXT_DIR, 'static')))) {
     await fsyncDir(nodePath.dirname(newPath))
   }
 }
@@ -317,7 +322,11 @@ const origRename = fs.rename.bind(fs)
 fs.rename = function (oldPath, newPath, callback) {
   origRename(oldPath, newPath, function (err) {
     if (!err) {
-      if (typeof newPath === 'string' && newPath.startsWith(NEXT_SERVER)) {
+      // Fsync for server, pack cache, and static chunk renames (APFS dir-entry race fix)
+      const needsFsync = typeof newPath === 'string' && newPath.startsWith(NEXT_DIR) &&
+        (newPath.startsWith(NEXT_SERVER) || newPath.includes('/cache/webpack/') ||
+         newPath.startsWith(nodePath.join(NEXT_DIR, 'static')))
+      if (needsFsync) {
         fsyncDir(nodePath.dirname(newPath)).then(() => callback(null)).catch(() => callback(null))
       } else {
         callback(null)
@@ -335,6 +344,7 @@ fs.rename = function (oldPath, newPath, callback) {
         try {
           origMkdirSync(nodePath.dirname(newPath), { recursive: true })
           fs.writeFileSync(newPath, content)
+          fsyncDirSync(nodePath.dirname(newPath))
           packCache.delete(oldPath)
           return callback(null)
         } catch (_) {}
@@ -352,6 +362,7 @@ fs.rename = function (oldPath, newPath, callback) {
             try {
               origMkdirSync(nodePath.dirname(newPath), { recursive: true })
               fs.writeFileSync(newPath, content)
+              fsyncDirSync(nodePath.dirname(newPath))
               packCache.delete(oldPath)
               return callback(null)
             } catch (_) {}
@@ -364,7 +375,10 @@ fs.rename = function (oldPath, newPath, callback) {
         setTimeout(() => {
           origRename(oldPath, newPath, function (err2) {
             if (!err2) {
-              if (typeof newPath === 'string' && newPath.startsWith(NEXT_SERVER)) {
+              const needsFsync2 = typeof newPath === 'string' && newPath.startsWith(NEXT_DIR) &&
+                (newPath.startsWith(NEXT_SERVER) || newPath.includes('/cache/webpack/') ||
+                 newPath.startsWith(nodePath.join(NEXT_DIR, 'static')))
+              if (needsFsync2) {
                 fsyncDir(nodePath.dirname(newPath)).then(() => callback(null)).catch(() => callback(null))
               } else {
                 callback(null)
