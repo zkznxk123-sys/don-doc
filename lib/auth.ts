@@ -19,7 +19,15 @@ export interface AuthUser {
  */
 export async function getAuthUser(): Promise<AuthUser | null> {
   try {
-    const { userId: clerkId } = await auth()
+    // auth() works when Clerk middleware is active; currentUser() works without middleware
+    let clerkId: string | null = null
+    const { userId } = await auth()
+    if (userId) {
+      clerkId = userId
+    } else {
+      const clerkUser = await currentUser()
+      clerkId = clerkUser?.id ?? null
+    }
     if (!clerkId) return null
 
     // clerkId로 Prisma User 조회
@@ -89,7 +97,10 @@ export async function getAuthUser(): Promise<AuthUser | null> {
       familyName: null,
       familyAiMode: 'api',
     }
-  } catch {
+  } catch (e) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('[getAuthUser]', e)
+    }
     return null
   }
 }

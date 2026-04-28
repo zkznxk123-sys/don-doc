@@ -9,7 +9,7 @@ export default async function OnboardingLayout({
   const user = await getAuthUser()
 
   if (!user) {
-    redirect('/login')
+    redirect('/sign-in')
   }
 
   if (user.familyId) {
