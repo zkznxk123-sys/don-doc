@@ -9,6 +9,7 @@ export async function POST(req: NextRequest) {
   const result = await generateScenarios({
     categories: body.categories,
     sourceIds: body.sourceIds,
+    userDirective: body.userDirective,
   })
   return NextResponse.json(result)
 }

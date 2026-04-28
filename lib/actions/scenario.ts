@@ -11,7 +11,8 @@ import { SCENARIO_CATEGORIES } from '@/lib/scenario-constants'
 
 export interface ContentSourceData {
   id: string
-  url: string
+  type: 'url' | 'text'
+  url: string | null
   title: string | null
   summary: string | null
   createdAt: Date
@@ -284,51 +285,62 @@ async function buildFeedbackContext(familyId: string): Promise<string> {
 // ── ContentSource CRUD ───────────────────────────────────────────────────────
 
 export async function addContentSource(
-  url: string,
+  input: { type: 'url'; url: string } | { type: 'text'; title: string; text: string },
 ): Promise<{ success: boolean; data?: ContentSourceData; error?: string }> {
   const user = await getAuthUser()
   if (!user?.familyId) return { success: false, error: 'Unauthorized' }
 
   let title = ''
   let summary = ''
+  let url: string | null = null
 
   try {
-    let rawText = ''
-
-    if (isYouTubeUrl(url)) {
-      const { title: ytTitle, rawText: ytText } = await extractYouTubeContent(url)
-      title = ytTitle
-      rawText = ytText
+    if (input.type === 'text') {
+      title = input.title
+      const rawText = input.text.slice(0, 4000)
+      if (rawText.length > 30) {
+        summary = await chat(
+          [{ role: 'user', content: `당신은 가계부 앱의 재무 메모 요약 AI입니다. 아래 사용자 메모에서 핵심 재무/투자 인사이트를 3~5문장으로 요약하세요.\n\n[메모 제목] ${input.title}\n[메모 내용]\n${rawText}\n\n[요약]` }],
+          { mode: user.familyAiMode, sessionId: user.familyId ?? undefined, tier: 'fast', maxTokens: 300, timeoutMs: 15_000 },
+        )
+      } else {
+        summary = rawText
+      }
     } else {
-      const res = await fetch(url, {
-        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DonDoc/1.0)' },
-        signal: AbortSignal.timeout(10_000),
-      })
-      const html = await res.text()
-      const extracted = extractFromHtml(html)
-      title = extracted.title
-      rawText = extracted.rawText
-    }
-
-    if (rawText.length > 30) {
-      const systemPrompt = isYouTubeUrl(url)
-        ? '당신은 재무/투자 콘텐츠 요약 전문가입니다. YouTube 영상의 자막 전문을 분석해 투자/재무/부동산 관련 핵심 인사이트를 3~5문장으로 요약하세요. 구체적인 수치나 전략이 있으면 반드시 포함하세요.'
-        : '당신은 재무/투자 관련 콘텐츠 요약 전문가입니다. 주어진 텍스트에서 투자/재무/부동산과 관련된 핵심 인사이트만 3~5문장으로 간결하게 요약하세요. 관련 없는 내용은 무시하세요.'
-      summary = await chat(
-        [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `URL: ${url}\n\n${rawText}` },
-        ],
-        { mode: user.familyAiMode, sessionId: user.familyId ?? undefined, tier: 'fast', maxTokens: 300, timeoutMs: 15_000 },
-      )
+      url = input.url
+      let rawText = ''
+      if (isYouTubeUrl(url)) {
+        const { title: ytTitle, rawText: ytText } = await extractYouTubeContent(url)
+        title = ytTitle
+        rawText = ytText
+      } else {
+        const res = await fetch(url, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DonDoc/1.0)' },
+          signal: AbortSignal.timeout(10_000),
+        })
+        const html = await res.text()
+        const extracted = extractFromHtml(html)
+        title = extracted.title
+        rawText = extracted.rawText
+      }
+      if (rawText.length > 30) {
+        const roleDesc = isYouTubeUrl(url)
+          ? '당신은 가계부 앱의 재무 콘텐츠 요약 AI입니다. YouTube 자막에서 투자/부동산 핵심 인사이트를 3~5문장으로 요약하세요.'
+          : '당신은 가계부 앱의 재무 콘텐츠 요약 AI입니다. 아래 기사/페이지에서 투자/재무/부동산 핵심 인사이트만 3~5문장으로 요약하세요.'
+        summary = await chat(
+          [{ role: 'user', content: `${roleDesc}\n\n[출처] ${url}\n[내용]\n${rawText}\n\n[요약]` }],
+          { mode: user.familyAiMode, sessionId: user.familyId ?? undefined, tier: 'fast', maxTokens: 300, timeoutMs: 15_000 },
+        )
+      }
     }
   } catch (e) {
-    console.error('[addContentSource] fetch/parse error:', e)
+    console.error('[addContentSource] error:', e)
   }
 
   const row = await prisma.contentSource.create({
     data: {
       familyId: user.familyId,
+      type: input.type,
       url,
       title: title || null,
       summary: summary || null,
@@ -339,6 +351,7 @@ export async function addContentSource(
     success: true,
     data: {
       id: row.id,
+      type: row.type as 'url' | 'text',
       url: row.url,
       title: row.title,
       summary: row.summary,
@@ -358,6 +371,7 @@ export async function getContentSources(): Promise<ContentSourceData[]> {
 
   return rows.map(r => ({
     id: r.id,
+    type: (r.type ?? 'url') as 'url' | 'text',
     url: r.url,
     title: r.title,
     summary: r.summary,
@@ -377,6 +391,7 @@ export async function deleteContentSource(id: string): Promise<{ success: boolea
 export interface GenerateScenariosOptions {
   categories?: string[]   // 빈 배열이면 전체 카테고리
   sourceIds?: string[]    // 빈 배열이면 전체 컨텐츠 소스
+  userDirective?: string  // 사용자가 원하는 방향/요청사항
 }
 
 export async function generateScenarios(
@@ -385,6 +400,7 @@ export async function generateScenarios(
   const user = await getAuthUser()
   if (!user?.familyId) return { success: false, error: 'Unauthorized' }
 
+  const { userDirective } = options
   const selectedCategories = options.categories && options.categories.length > 0
     ? options.categories
     : [...SCENARIO_CATEGORIES]
@@ -418,18 +434,26 @@ export async function generateScenarios(
     ? `\n=== 이 가족의 과거 참여 패턴 ===\n${feedbackContext}\n`
     : ''
 
+  const directiveSection = userDirective?.trim()
+    ? `\n=== 사용자 요청 방향 ===\n${userDirective.trim()}\n`
+    : ''
+
   const feedbackRule = feedbackContext ? `
 - 과거 참여 패턴을 반드시 반영하세요:
   * 관심률/액션 완료율이 높은 카테고리 → 더 구체적이고 실행 중심의 시나리오
   * AI 상담이 많았던 카테고리 → 심층적인 rationale과 gap 분석 포함
   * 관심률이 낮은 카테고리 → 이전과 다른 새로운 각도로 접근 (같은 방식 반복 금지)` : ''
 
+  const directiveRule = userDirective?.trim() ? `
+- [최우선] 사용자가 명시한 방향을 반드시 최우선으로 반영하세요: "${userDirective.trim()}"
+  * 이 방향에 맞는 시나리오를 중심으로 생성하되, 재무 수치 기반 근거를 포함하세요.` : ''
+
   const prompt = `당신은 개인 재무 시나리오 어드바이저입니다.
 아래 재무 상태와 관심 컨텐츠를 분석해 이 가족에게 지금 가장 관련있는 재무/투자 시나리오를 생성하세요.
 
 === 재무 상태 ===
 ${financialContext}
-${feedbackSection}
+${feedbackSection}${directiveSection}
 === 관심 컨텐츠 ===
 ${contentSection}
 
@@ -437,7 +461,7 @@ ${contentSection}
 ${categoryRule}
 - 카테고리 내에서 비슷한 시나리오를 여러 개 만들지 마세요.
 - 각 시나리오는 이 가족의 실제 재무 수치(순자산, 여유자금, 부채)를 근거로 구체적으로 작성하세요.
-- 실행 가능성(feasibility)은 현재 여유자금과 자산 규모 기준 0~100 정수로 표현하세요.${feedbackRule}
+- 실행 가능성(feasibility)은 현재 여유자금과 자산 규모 기준 0~100 정수로 표현하세요.${feedbackRule}${directiveRule}
 
 반드시 아래 JSON 형식만 반환하세요 (마크다운 코드블록 없이):
 

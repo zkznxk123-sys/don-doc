@@ -6,7 +6,8 @@ import {
   Sparkles, Link2, Trash2, RefreshCw, BookmarkCheck,
   X, ChevronRight, Clock, AlertTriangle, Zap, CheckCircle2,
   Loader2, Plus, ExternalLink, MessageCircle, Send, History,
-  Filter, ChevronDown, Check, SlidersHorizontal,
+  Check, SlidersHorizontal, FileText, BarChart3, ChevronDown,
+  Target, TrendingUp, Bot, ShoppingCart, Play, Banknote,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -18,11 +19,12 @@ import {
 } from '@/lib/actions/scenario'
 import { SCENARIO_CATEGORIES } from '@/lib/scenario-constants'
 
-// ── API 호출 헬퍼 ─────────────────────────────────────────────────────────────
+// ── API 헬퍼 ─────────────────────────────────────────────────────────────────
 
 async function generateScenariosAPI(options: {
   categories: string[]
   sourceIds: string[]
+  userDirective?: string
 }): Promise<{ success: boolean; count?: number; error?: string; hasFeedback?: boolean }> {
   const res = await fetch('/api/scenario/generate', {
     method: 'POST',
@@ -83,9 +85,421 @@ function formatDate(d: Date) {
   return `${date.getMonth() + 1}/${date.getDate()} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`
 }
 
+// ── 관심 시나리오 진행 요약 ───────────────────────────────────────────────────
+
+function ProgressSummary({ scenarios }: { scenarios: ScenarioData[] }) {
+  const interested = scenarios.filter(s => s.status === 'interested' && s.actions.length > 0)
+  if (interested.length === 0) return null
+
+  return (
+    <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <Target className="w-4 h-4 text-blue-400" />
+        <span className="text-sm font-semibold text-foreground">진행 중인 시나리오</span>
+      </div>
+      <div className="space-y-2.5">
+        {interested.map(s => {
+          const pct = s.actions.length > 0
+            ? Math.round((s.completedActions.length / s.actions.length) * 100)
+            : 0
+          return (
+            <div key={s.id}>
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs text-foreground/80 truncate pr-2">{s.title}</span>
+                <span className={cn('text-xs font-semibold flex-shrink-0', pct === 100 ? 'text-income' : 'text-muted-foreground')}>
+                  {pct === 100 ? '완료!' : `${s.completedActions.length}/${s.actions.length}`}
+                </span>
+              </div>
+              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                <div
+                  className={cn('h-full rounded-full transition-all', pct === 100 ? 'bg-[var(--viz-emerald)]' : 'bg-blue-400')}
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+              {pct === 100 && (
+                <p className="text-[10px] text-income mt-1 flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3" />모든 액션 완료 — 실행 계획이나 AI 상담으로 다음 단계를 확인하세요
+                </p>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ── 비교 뷰 ───────────────────────────────────────────────────────────────────
+
+function CompareView({ scenarios }: { scenarios: ScenarioData[] }) {
+  const active = scenarios.filter(s => s.status !== 'dismissed')
+  if (active.length === 0) {
+    return (
+      <div className="text-center py-10">
+        <BarChart3 className="w-6 h-6 text-muted-foreground/30 mx-auto mb-2" />
+        <p className="text-sm text-muted-foreground/40">비교할 시나리오가 없습니다</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="overflow-x-auto -mx-4 px-4">
+      <table className="w-full text-xs border-collapse min-w-[480px]">
+        <thead>
+          <tr className="border-b border-border">
+            <th className="text-left py-2 pr-3 text-muted-foreground/60 font-medium w-40">시나리오</th>
+            <th className="text-center py-2 px-2 text-muted-foreground/60 font-medium">카테고리</th>
+            <th className="text-center py-2 px-2 text-muted-foreground/60 font-medium">실현가능성</th>
+            <th className="text-center py-2 px-2 text-muted-foreground/60 font-medium">타임라인</th>
+            <th className="text-center py-2 px-2 text-muted-foreground/60 font-medium">진행</th>
+            <th className="text-center py-2 pl-2 text-muted-foreground/60 font-medium">리스크</th>
+          </tr>
+        </thead>
+        <tbody>
+          {active.map(s => {
+            const pct = s.actions.length > 0
+              ? Math.round((s.completedActions.length / s.actions.length) * 100)
+              : null
+            return (
+              <tr key={s.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
+                <td className="py-3 pr-3">
+                  <div>
+                    <p className="font-medium text-foreground leading-snug line-clamp-2">{s.title}</p>
+                    {s.status === 'interested' && (
+                      <span className="text-[9px] text-blue-400 font-semibold">관심있음</span>
+                    )}
+                  </div>
+                </td>
+                <td className="py-3 px-2 text-center">
+                  {s.category && (
+                    <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-medium', categoryStyle(s.category))}>
+                      {s.category}
+                    </span>
+                  )}
+                </td>
+                <td className="py-3 px-2 text-center">
+                  <div className="flex flex-col items-center gap-1">
+                    <span className={cn('font-bold tabular-nums', feasibilityColor(s.feasibility))}>
+                      {s.feasibility}%
+                    </span>
+                    <div className="w-12 h-1 bg-muted rounded-full overflow-hidden">
+                      <div className={cn('h-full rounded-full', feasibilityBg(s.feasibility))} style={{ width: `${s.feasibility}%` }} />
+                    </div>
+                  </div>
+                </td>
+                <td className="py-3 px-2 text-center text-muted-foreground">
+                  {s.timeline ?? '—'}
+                </td>
+                <td className="py-3 px-2 text-center">
+                  {pct !== null ? (
+                    <span className={cn('font-medium', pct === 100 ? 'text-income' : 'text-muted-foreground')}>
+                      {pct === 100 ? '✓ 완료' : `${pct}%`}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground/40">—</span>
+                  )}
+                </td>
+                <td className="py-3 pl-2 text-center">
+                  {s.risk ? (
+                    <span className="text-amber-400" title={s.risk}>
+                      <AlertTriangle className="w-3.5 h-3.5 inline" />
+                    </span>
+                  ) : (
+                    <span className="text-income">
+                      <Check className="w-3.5 h-3.5 inline" />
+                    </span>
+                  )}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+
+      {/* 추천 선택 */}
+      {active.length > 1 && (
+        <div className="mt-4 p-3 bg-muted/30 rounded-xl">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <TrendingUp className="w-3.5 h-3.5 text-income" />
+            <span className="text-xs font-semibold text-foreground">지금 시작하기 좋은 시나리오</span>
+          </div>
+          {(() => {
+            const best = [...active].sort((a, b) => b.feasibility - a.feasibility)[0]
+            return (
+              <p className="text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">{best.title}</span>
+                {' '}— 실현가능성 {best.feasibility}%로 가장 높습니다
+              </p>
+            )
+          })()}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── 확장 계획 뷰 ──────────────────────────────────────────────────────────────
 
+// ── 브로커 에이전트 ───────────────────────────────────────────────────────────
+
+interface ProposedOrder {
+  ticker: string
+  name: string
+  market: 'KRX'
+  quantity: number
+  price: number
+  totalAmount: number
+  currency: 'KRW'
+  reason: string
+}
+
+function BrokerAgentPanel({
+  scenarioPlanText,
+  onClose,
+}: {
+  scenarioPlanText: string
+  onClose: () => void
+}) {
+  const [accounts, setAccounts] = useState<{ id: string; name: string; type: string }[]>([])
+  const [selectedAccountId, setSelectedAccountId] = useState('')
+  const [budget, setBudget] = useState(1_000_000)
+  const [analyzing, setAnalyzing] = useState(false)
+  const [orders, setOrders] = useState<ProposedOrder[]>([])
+  const [summary, setSummary] = useState('')
+  const [executing, setExecuting] = useState<Record<string, boolean>>({})
+  const [done, setDone] = useState<Record<string, { orderId: string; isMock: boolean }>>({})
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    fetch('/api/wealth').then(r => r.json()).then(data => {
+      if (data.success) {
+        const inv = (data.accounts ?? []).filter((a: { type: string }) =>
+          ['INVESTMENT', 'CRYPTO', 'STO'].includes(a.type)
+        )
+        setAccounts(inv)
+        if (inv.length > 0) setSelectedAccountId(inv[0].id)
+      }
+    })
+  }, [])
+
+  const handleAnalyze = async () => {
+    setAnalyzing(true)
+    setOrders([])
+    setSummary('')
+    setError('')
+    try {
+      const res = await fetch('/api/broker/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scenarioPlan: scenarioPlanText, budgetKRW: budget }),
+      })
+      const data = await res.json()
+      console.log('[BrokerAgent] analyze result:', data)
+      if (data.success) {
+        setOrders(data.orders)
+        setSummary(data.summary)
+      } else {
+        setError(data.error ?? '분석 실패')
+      }
+    } catch (e) {
+      console.error('[BrokerAgent] analyze error:', e)
+      setError('네트워크 오류: ' + String(e))
+    } finally {
+      setAnalyzing(false)
+    }
+  }
+
+  const handleExecute = async (order: ProposedOrder) => {
+    if (!selectedAccountId) { toast.error('계좌를 선택하세요'); return }
+    const key = order.ticker
+    setExecuting(p => ({ ...p, [key]: true }))
+    try {
+      const res = await fetch('/api/broker/execute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ticker: order.ticker,
+          name: order.name,
+          quantity: order.quantity,
+          price: order.price,
+          accountId: selectedAccountId,
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setDone(p => ({ ...p, [key]: { orderId: data.orderId, isMock: data.isMock } }))
+        toast.success(`${order.name} ${data.isMock ? '모의' : '실'} 주문 완료 (주문번호: ${data.orderId})`)
+      } else {
+        toast.error(`${order.name} 주문 실패: ${data.error}`)
+      }
+    } catch {
+      toast.error('주문 중 오류가 발생했습니다')
+    } finally {
+      setExecuting(p => ({ ...p, [key]: false }))
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      <div className="relative w-full sm:max-w-lg bg-card border border-border rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col">
+        {/* 헤더 */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border flex-shrink-0">
+          <div className="flex items-center gap-2">
+            <Bot className="w-4 h-4 text-violet-400" />
+            <span className="text-sm font-semibold">AI 에이전트 실행</span>
+            <span className="text-[10px] bg-amber-500/10 text-amber-500 border border-amber-500/20 px-1.5 py-0.5 rounded-full">
+              {process.env.NEXT_PUBLIC_KIS_IS_MOCK !== 'false' ? '모의투자' : '실계좌'}
+            </span>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
+          {/* 설정 */}
+          {orders.length === 0 && !analyzing && (
+            <div className="space-y-3">
+              <div>
+                <label className="text-[10px] text-muted-foreground/60 uppercase tracking-wider block mb-1.5">투자 예산</label>
+                <div className="flex items-center gap-2">
+                  <Banknote className="w-4 h-4 text-muted-foreground/50 flex-shrink-0" />
+                  <input
+                    type="number"
+                    value={budget}
+                    onChange={e => setBudget(Number(e.target.value))}
+                    step={100000}
+                    className="flex-1 bg-muted rounded-lg px-3 py-2 text-sm text-foreground border border-border focus:outline-none focus:border-ring"
+                  />
+                  <span className="text-xs text-muted-foreground">원</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground/50 mt-1">{budget.toLocaleString()}원 한도 내에서 종목을 추천합니다</p>
+              </div>
+
+              <div>
+                <label className="text-[10px] text-muted-foreground/60 uppercase tracking-wider block mb-1.5">담을 계좌</label>
+                {accounts.length === 0 ? (
+                  <p className="text-xs text-muted-foreground/60">투자 계좌가 없습니다. 자산 관리에서 추가하세요.</p>
+                ) : (
+                  <select
+                    value={selectedAccountId}
+                    onChange={e => setSelectedAccountId(e.target.value)}
+                    className="w-full bg-muted rounded-lg px-3 py-2 text-sm text-foreground border border-border focus:outline-none focus:border-ring"
+                  >
+                    {accounts.map(a => (
+                      <option key={a.id} value={a.id}>{a.name}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/30 rounded-xl px-3 py-2">
+                  <p className="text-xs text-red-400">{error}</p>
+                </div>
+              )}
+
+              <button
+                onClick={handleAnalyze}
+                disabled={accounts.length === 0}
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-violet-500 text-white text-sm font-semibold hover:bg-violet-600 transition-colors disabled:opacity-50"
+              >
+                <Sparkles className="w-4 h-4" />
+                시나리오 분석 시작
+              </button>
+            </div>
+          )}
+
+          {/* 분석 중 */}
+          {analyzing && (
+            <div className="flex flex-col items-center py-8 gap-3">
+              <Loader2 className="w-6 h-6 animate-spin text-violet-400" />
+              <p className="text-sm text-muted-foreground">시나리오를 분석하여 종목을 선택하고 있습니다...</p>
+              <p className="text-[11px] text-muted-foreground/50">KIS API로 현재가를 조회 중</p>
+            </div>
+          )}
+
+          {/* 주문 제안 결과 */}
+          {orders.length > 0 && (
+            <div className="space-y-3">
+              {summary && (
+                <div className="bg-violet-500/5 border border-violet-500/20 rounded-xl px-4 py-3">
+                  <p className="text-[10px] text-violet-400 font-medium mb-1">에이전트 분석</p>
+                  <p className="text-xs text-foreground/80">{summary}</p>
+                </div>
+              )}
+
+              <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">제안 주문 ({orders.length}건)</p>
+
+              {orders.map(order => {
+                const key = order.ticker
+                const isDone = !!done[key]
+                const isExec = !!executing[key]
+                return (
+                  <div key={key} className={cn(
+                    'border rounded-xl overflow-hidden',
+                    isDone ? 'border-income/30 bg-income-soft' : 'border-border bg-muted/30',
+                  )}>
+                    <div className="px-4 py-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-bold text-foreground">{order.name}</span>
+                            <span className="text-[10px] text-muted-foreground/50 font-mono">{order.ticker}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[11px] text-muted-foreground">{order.quantity}주</span>
+                            <span className="text-[11px] text-muted-foreground">×</span>
+                            <span className="text-[11px] text-muted-foreground">{order.price.toLocaleString()}원</span>
+                            <span className="text-[11px] font-semibold text-foreground">= {order.totalAmount.toLocaleString()}원</span>
+                          </div>
+                        </div>
+                        {isDone ? (
+                          <div className="flex items-center gap-1 text-income text-xs flex-shrink-0">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
+                            <span>완료</span>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => handleExecute(order)}
+                            disabled={isExec}
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-semibold hover:bg-foreground/90 transition-colors disabled:opacity-50 flex-shrink-0"
+                          >
+                            {isExec ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                            {isExec ? '주문 중' : '실행'}
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-muted-foreground/70 mt-2 leading-relaxed">{order.reason}</p>
+                    </div>
+                    {isDone && (
+                      <div className="px-4 py-2 border-t border-income/20 bg-income/5">
+                        <p className="text-[10px] text-income">주문번호 {done[key].orderId} {done[key].isMock && '(모의)'}</p>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+
+              <button
+                onClick={() => { setOrders([]); setSummary(''); setDone({}) }}
+                className="w-full py-2 text-xs text-muted-foreground/60 hover:text-muted-foreground transition-colors"
+              >
+                다시 분석
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── 실행 계획 뷰 ──────────────────────────────────────────────────────────────
+
 function ExpansionView({ expansion }: { expansion: ScenarioExpansion }) {
+  const [agentOpen, setAgentOpen] = useState(false)
   return (
     <div className="space-y-4">
       <div className="bg-indigo-500/5 border border-indigo-500/20 rounded-xl px-4 py-3">
@@ -155,6 +569,23 @@ function ExpansionView({ expansion }: { expansion: ScenarioExpansion }) {
         <p className="text-[10px] text-income font-medium mb-1">성공 기준</p>
         <p className="text-xs text-foreground/80">{expansion.successMetric}</p>
       </div>
+
+      {/* 에이전트 실행 */}
+      <button
+        onClick={() => setAgentOpen(true)}
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/30 text-violet-500 dark:text-violet-400 text-xs font-semibold hover:bg-violet-500/20 transition-colors"
+      >
+        <Bot className="w-3.5 h-3.5" />
+        AI 에이전트로 실행하기
+        <ShoppingCart className="w-3.5 h-3.5" />
+      </button>
+
+      {agentOpen && (
+        <BrokerAgentPanel
+          scenarioPlanText={JSON.stringify(expansion)}
+          onClose={() => setAgentOpen(false)}
+        />
+      )}
     </div>
   )
 }
@@ -185,7 +616,6 @@ function ChatPanel({ scenario }: { scenario: ScenarioData }) {
     setInput('')
     setSending(true)
 
-    // 낙관적 업데이트
     const tempUser: ScenarioChatMessageData = {
       id: `tmp-${Date.now()}`,
       role: 'user',
@@ -196,13 +626,12 @@ function ChatPanel({ scenario }: { scenario: ScenarioData }) {
 
     const res = await chatAPI(scenario.id, msg)
     if (res.success && res.reply) {
-      const tempAssistant: ScenarioChatMessageData = {
+      setMessages(prev => [...prev, {
         id: `tmp-${Date.now()}-a`,
         role: 'assistant',
-        content: res.reply,
+        content: res.reply!,
         createdAt: new Date(),
-      }
-      setMessages(prev => [...prev, tempAssistant])
+      }])
     } else {
       toast.error(res.error ?? '답변 생성 실패')
     }
@@ -223,7 +652,6 @@ function ChatPanel({ scenario }: { scenario: ScenarioData }) {
         <span className="text-[10px] text-muted-foreground/40">이 시나리오에 대해 물어보세요</span>
       </div>
 
-      {/* 메시지 목록 */}
       <div className="max-h-64 overflow-y-auto px-4 py-3 space-y-3">
         {loaded && messages.length === 0 && (
           <div className="space-y-1.5">
@@ -240,13 +668,7 @@ function ChatPanel({ scenario }: { scenario: ScenarioData }) {
           </div>
         )}
         {messages.map(m => (
-          <div
-            key={m.id}
-            className={cn(
-              'flex',
-              m.role === 'user' ? 'justify-end' : 'justify-start',
-            )}
-          >
+          <div key={m.id} className={cn('flex', m.role === 'user' ? 'justify-end' : 'justify-start')}>
             <div className={cn(
               'max-w-[85%] rounded-2xl px-3.5 py-2.5 text-xs leading-relaxed',
               m.role === 'user'
@@ -267,7 +689,6 @@ function ChatPanel({ scenario }: { scenario: ScenarioData }) {
         <div ref={bottomRef} />
       </div>
 
-      {/* 입력창 */}
       <div className="px-3 py-2.5 border-t border-border flex gap-2">
         <input
           type="text"
@@ -313,6 +734,7 @@ function ScenarioCard({
   const interested = scenario.status === 'interested'
   const completedCount = scenario.completedActions.length
   const totalActions = scenario.actions.length
+  const allDone = totalActions > 0 && completedCount === totalActions
 
   const handleExpand = async () => {
     if (scenario.expansion) return
@@ -360,16 +782,17 @@ function ScenarioCard({
                 <Zap className="w-3 h-3" />계획 완성
               </span>
             )}
-            {totalActions > 0 && completedCount > 0 && (
-              <span className="text-[10px] text-income ml-auto">
-                {completedCount}/{totalActions} 완료
+            {allDone ? (
+              <span className="text-[10px] text-income ml-auto font-semibold flex items-center gap-0.5">
+                <CheckCircle2 className="w-3 h-3" />완료
               </span>
-            )}
-            {totalActions > 0 && completedCount === 0 && (
+            ) : totalActions > 0 && completedCount > 0 ? (
+              <span className="text-[10px] text-income ml-auto">{completedCount}/{totalActions} 완료</span>
+            ) : totalActions > 0 ? (
               <span className={cn('text-xs font-bold tabular-nums ml-auto', feasibilityColor(scenario.feasibility))}>
                 {scenario.feasibility}%
               </span>
-            )}
+            ) : null}
           </div>
           <p className="text-sm font-semibold text-foreground leading-snug">{scenario.title}</p>
           <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{scenario.rationale}</p>
@@ -380,7 +803,7 @@ function ScenarioCard({
         )} />
       </button>
 
-      {/* 실행가능성 바 (액션 진행률로 대체) */}
+      {/* 진행 바 */}
       <div className="mx-5 mb-3 h-1 bg-muted rounded-full overflow-hidden">
         {totalActions > 0 && completedCount > 0 ? (
           <div
@@ -398,7 +821,6 @@ function ScenarioCard({
       {/* 상세 */}
       {expanded && (
         <div className="border-t border-border">
-          {/* 탭 */}
           <div className="flex border-b border-border px-5">
             {(['actions', 'plan', 'chat'] as const).map(tab => (
               <button
@@ -426,7 +848,6 @@ function ScenarioCard({
           </div>
 
           <div className="px-5 py-4 space-y-4">
-            {/* 공통 정보 */}
             <div className="flex gap-4 flex-wrap">
               {scenario.gap && (
                 <div className="w-full">
@@ -448,7 +869,6 @@ function ScenarioCard({
               )}
             </div>
 
-            {/* 액션 탭 */}
             {activeTab === 'actions' && (
               <div className="space-y-2">
                 <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">다음 액션</p>
@@ -467,9 +887,7 @@ function ScenarioCard({
                     >
                       <span className={cn(
                         'w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors',
-                        done
-                          ? 'bg-[var(--viz-emerald)] border-[var(--viz-emerald)]'
-                          : 'border-muted-foreground/30',
+                        done ? 'bg-[var(--viz-emerald)] border-[var(--viz-emerald)]' : 'border-muted-foreground/30',
                       )}>
                         {done && <Check className="w-3 h-3 text-white" />}
                       </span>
@@ -482,15 +900,15 @@ function ScenarioCard({
                     </button>
                   )
                 })}
-                {completedCount === totalActions && totalActions > 0 && (
-                  <div className="text-center py-2">
-                    <p className="text-xs text-income font-medium">모든 액션 완료!</p>
+                {allDone && (
+                  <div className="rounded-xl bg-income-soft border border-income/20 px-4 py-3 text-center">
+                    <p className="text-xs text-income font-semibold mb-1">모든 액션 완료!</p>
+                    <p className="text-[11px] text-muted-foreground">실행 계획 탭에서 다음 단계를 확인하거나 AI 상담으로 심화 질문하세요.</p>
                   </div>
                 )}
               </div>
             )}
 
-            {/* 실행 계획 탭 */}
             {activeTab === 'plan' && (
               scenario.expansion ? (
                 <ExpansionView expansion={scenario.expansion} />
@@ -511,15 +929,11 @@ function ScenarioCard({
               )
             )}
 
-            {/* AI 상담 탭 */}
-            {activeTab === 'chat' && (
-              <ChatPanel scenario={scenario} />
-            )}
+            {activeTab === 'chat' && <ChatPanel scenario={scenario} />}
           </div>
         </div>
       )}
 
-      {/* 액션 버튼 */}
       {!readonly && !dismissed && (
         <div className="px-5 pb-4 flex gap-2">
           {!interested ? (
@@ -527,24 +941,21 @@ function ScenarioCard({
               onClick={onInterested}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500 dark:text-blue-400 text-xs font-medium hover:bg-blue-500/20 transition-colors"
             >
-              <BookmarkCheck className="w-3.5 h-3.5" />
-              관심있음
+              <BookmarkCheck className="w-3.5 h-3.5" />관심있음
             </button>
           ) : (
             <button
               onClick={onInterested}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-muted text-muted-foreground text-xs font-medium hover:bg-muted/80 transition-colors"
             >
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              관심 해제
+              <CheckCircle2 className="w-3.5 h-3.5" />관심 해제
             </button>
           )}
           <button
             onClick={onDismiss}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-muted text-muted-foreground/60 text-xs font-medium hover:bg-muted/80 transition-colors"
           >
-            <X className="w-3.5 h-3.5" />
-            패스
+            <X className="w-3.5 h-3.5" />패스
           </button>
         </div>
       )}
@@ -571,14 +982,14 @@ function GenerateOptionsPanel({
   generating,
 }: {
   sources: ContentSourceData[]
-  onGenerate: (categories: string[], sourceIds: string[]) => void
+  onGenerate: (categories: string[], sourceIds: string[], directive: string) => void
   generating: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([...SCENARIO_CATEGORIES])
   const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([])
+  const [directive, setDirective] = useState('')
 
-  // 소스 선택 초기화: 전체 선택
   useEffect(() => {
     setSelectedSourceIds(sources.map(s => s.id))
   }, [sources])
@@ -600,7 +1011,7 @@ function GenerateOptionsPanel({
       toast.error('카테고리를 1개 이상 선택해주세요')
       return
     }
-    onGenerate(selectedCategories, selectedSourceIds)
+    onGenerate(selectedCategories, selectedSourceIds, directive)
     setOpen(false)
   }
 
@@ -617,9 +1028,21 @@ function GenerateOptionsPanel({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-72 bg-card border border-border rounded-2xl shadow-lg z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
           <div className="px-4 py-3 border-b border-border">
             <p className="text-xs font-semibold text-foreground">시나리오 생성 옵션</p>
+          </div>
+
+          {/* 원하는 방향 입력 */}
+          <div className="px-4 py-3 border-b border-border">
+            <p className="text-[11px] text-muted-foreground font-medium mb-2">원하는 방향 (선택)</p>
+            <textarea
+              value={directive}
+              onChange={e => setDirective(e.target.value)}
+              placeholder="예: 마통 상환 우선, 갈아타기 준비 중, 연금 비중 늘리기..."
+              rows={2}
+              className="w-full text-xs bg-muted/50 border border-border rounded-xl px-3 py-2 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/30 resize-none"
+            />
           </div>
 
           {/* 카테고리 선택 */}
@@ -629,9 +1052,7 @@ function GenerateOptionsPanel({
               <button
                 onClick={() =>
                   setSelectedCategories(
-                    selectedCategories.length === SCENARIO_CATEGORIES.length
-                      ? []
-                      : [...SCENARIO_CATEGORIES]
+                    selectedCategories.length === SCENARIO_CATEGORIES.length ? [] : [...SCENARIO_CATEGORIES]
                   )
                 }
                 className="text-[10px] text-primary hover:underline"
@@ -648,9 +1069,7 @@ function GenerateOptionsPanel({
                     onClick={() => toggleCategory(cat)}
                     className={cn(
                       'text-[11px] px-2.5 py-1 rounded-full border transition-colors font-medium',
-                      active
-                        ? `${categoryStyle(cat)} border-transparent`
-                        : 'bg-muted border-transparent text-muted-foreground/60',
+                      active ? `${categoryStyle(cat)} border-transparent` : 'bg-muted border-transparent text-muted-foreground/60',
                     )}
                   >
                     {cat}
@@ -668,9 +1087,7 @@ function GenerateOptionsPanel({
                 <button
                   onClick={() =>
                     setSelectedSourceIds(
-                      selectedSourceIds.length === sources.length
-                        ? []
-                        : sources.map(s => s.id)
+                      selectedSourceIds.length === sources.length ? [] : sources.map(s => s.id)
                     )
                   }
                   className="text-[10px] text-primary hover:underline"
@@ -696,7 +1113,7 @@ function GenerateOptionsPanel({
                       )}>
                         {active && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
                       </span>
-                      <span className="text-xs text-foreground/80 truncate">{src.title ?? src.url}</span>
+                      <span className="text-xs text-foreground/80 truncate">{src.title ?? src.url ?? '텍스트 메모'}</span>
                     </button>
                   )
                 })}
@@ -733,21 +1150,17 @@ function HistoryView() {
     })
   }, [])
 
-  if (loading) {
-    return (
-      <div className="flex justify-center py-8">
-        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground/40" />
-      </div>
-    )
-  }
+  if (loading) return (
+    <div className="flex justify-center py-8">
+      <Loader2 className="w-5 h-5 animate-spin text-muted-foreground/40" />
+    </div>
+  )
 
-  if (batches.length === 0) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-sm text-muted-foreground/40">이전 시나리오 이력이 없습니다</p>
-      </div>
-    )
-  }
+  if (batches.length === 0) return (
+    <div className="text-center py-8">
+      <p className="text-sm text-muted-foreground/40">이전 시나리오 이력이 없습니다</p>
+    </div>
+  )
 
   return (
     <div className="space-y-2">
@@ -771,7 +1184,6 @@ function HistoryView() {
               openBatch === b.batch && 'rotate-90',
             )} />
           </button>
-
           {openBatch === b.batch && (
             <div className="border-t border-border px-4 pb-4 pt-3 space-y-3">
               {b.scenarios.map(s => (
@@ -793,24 +1205,190 @@ function HistoryView() {
   )
 }
 
+// ── 관심 컨텐츠 섹션 ─────────────────────────────────────────────────────────
+
+function ContentSourceSection({
+  sources,
+  onAdd,
+  onDelete,
+  adding,
+}: {
+  sources: ContentSourceData[]
+  onAdd: (input: { type: 'url'; url: string } | { type: 'text'; title: string; text: string }) => Promise<void>
+  onDelete: (id: string) => void
+  adding: boolean
+}) {
+  const [inputMode, setInputMode] = useState<'url' | 'text'>('url')
+  const [urlInput, setUrlInput] = useState('')
+  const [textTitle, setTextTitle] = useState('')
+  const [textContent, setTextContent] = useState('')
+
+  const handleSubmit = async () => {
+    if (inputMode === 'url') {
+      let url = urlInput.trim()
+      if (!url) return
+      if (!/^https?:\/\//i.test(url)) url = 'https://' + url
+      await onAdd({ type: 'url', url })
+      setUrlInput('')
+    } else {
+      if (!textTitle.trim() || !textContent.trim()) {
+        toast.error('제목과 내용을 모두 입력해주세요')
+        return
+      }
+      await onAdd({ type: 'text', title: textTitle.trim(), text: textContent.trim() })
+      setTextTitle('')
+      setTextContent('')
+    }
+  }
+
+  const canSubmit = inputMode === 'url' ? urlInput.trim().length > 0 : textTitle.trim().length > 0 && textContent.trim().length > 0
+
+  return (
+    <div className="bg-card border border-border rounded-2xl overflow-hidden">
+      <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Link2 className="w-4 h-4 text-muted-foreground/60" />
+          <span className="text-sm font-semibold text-foreground">관심 컨텐츠</span>
+          <span className="text-[10px] text-muted-foreground/50">시나리오 생성에 반영됩니다</span>
+        </div>
+        {/* URL / 텍스트 토글 */}
+        <div className="flex items-center bg-muted rounded-lg p-0.5">
+          <button
+            onClick={() => setInputMode('url')}
+            className={cn(
+              'flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors',
+              inputMode === 'url' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground',
+            )}
+          >
+            <Link2 className="w-3 h-3" />URL
+          </button>
+          <button
+            onClick={() => setInputMode('text')}
+            className={cn(
+              'flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors',
+              inputMode === 'text' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground',
+            )}
+          >
+            <FileText className="w-3 h-3" />텍스트
+          </button>
+        </div>
+      </div>
+
+      <div className="px-4 py-3 space-y-2">
+        {inputMode === 'url' ? (
+          <div className="flex gap-2">
+            <input
+              type="url"
+              value={urlInput}
+              onChange={e => setUrlInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+              placeholder="https://..."
+              className="flex-1 text-sm bg-muted/50 border border-border rounded-xl px-3 py-2 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/30"
+            />
+            <button
+              onClick={handleSubmit}
+              disabled={adding || !canSubmit}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-medium disabled:opacity-50 transition-opacity"
+            >
+              {adding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+              추가
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            <input
+              type="text"
+              value={textTitle}
+              onChange={e => setTextTitle(e.target.value)}
+              placeholder="제목 (예: 마통 갈아타기 전략 메모)"
+              className="w-full text-sm bg-muted/50 border border-border rounded-xl px-3 py-2 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/30"
+            />
+            <div className="flex gap-2">
+              <textarea
+                value={textContent}
+                onChange={e => setTextContent(e.target.value)}
+                placeholder="관심 있는 재무/투자 내용을 자유롭게 입력하세요..."
+                rows={3}
+                className="flex-1 text-sm bg-muted/50 border border-border rounded-xl px-3 py-2 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/30 resize-none"
+              />
+              <button
+                onClick={handleSubmit}
+                disabled={adding || !canSubmit}
+                className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-medium disabled:opacity-50 transition-opacity self-start"
+              >
+                {adding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                추가
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {sources.length > 0 && (
+        <div className="border-t border-border divide-y divide-border">
+          {sources.map(src => (
+            <div key={src.id} className="px-4 py-2.5 flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                {src.type === 'text' ? (
+                  <FileText className="w-3.5 h-3.5 text-muted-foreground/40" />
+                ) : (
+                  <Link2 className="w-3.5 h-3.5 text-muted-foreground/40" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-foreground truncate">
+                  {src.title ?? src.url ?? '텍스트 메모'}
+                </p>
+                {src.summary && (
+                  <p className="text-[11px] text-muted-foreground/60 mt-0.5 line-clamp-2">{src.summary}</p>
+                )}
+                {src.type === 'url' && src.url && (
+                  <a
+                    href={src.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-muted-foreground/40 hover:text-primary flex items-center gap-0.5 mt-0.5 w-fit"
+                  >
+                    <ExternalLink className="w-2.5 h-2.5" />
+                    {src.url.slice(0, 50)}{src.url.length > 50 ? '...' : ''}
+                  </a>
+                )}
+              </div>
+              <button
+                onClick={() => onDelete(src.id)}
+                className="p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground/40 hover:text-red-400 transition-colors flex-shrink-0"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {sources.length === 0 && (
+        <div className="px-4 py-4 text-center">
+          <p className="text-xs text-muted-foreground/40">
+            관심 기사·유튜브 링크 또는 재무 메모를 추가해보세요
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── 메인 페이지 ───────────────────────────────────────────────────────────────
 
 export default function ScenarioPage() {
   const [sources, setSources] = useState<ContentSourceData[]>([])
   const [scenarios, setScenarios] = useState<ScenarioData[]>([])
-  const [urlInput, setUrlInput] = useState('')
-  const [addingUrl, setAddingUrl] = useState(false)
+  const [adding, setAdding] = useState(false)
   const [generating, setGenerating] = useState(false)
   const [initialized, setInitialized] = useState(false)
   const [needsRegen, setNeedsRegen] = useState(false)
-  const [tab, setTab] = useState<'scenarios' | 'history'>('scenarios')
-  const [optionsOpen, setOptionsOpen] = useState(false)
+  const [tab, setTab] = useState<'scenarios' | 'compare' | 'history'>('scenarios')
 
   const loadData = useCallback(async () => {
-    const [srcData, scData] = await Promise.all([
-      getContentSources(),
-      getScenarios(),
-    ])
+    const [srcData, scData] = await Promise.all([getContentSources(), getScenarios()])
     setSources(srcData)
     setScenarios(scData)
     return { srcData, scData }
@@ -837,23 +1415,19 @@ export default function ScenarioPage() {
     })
   }, [loadData])
 
-  const handleAddUrl = async () => {
-    if (!urlInput.trim()) return
-    let url = urlInput.trim()
-    if (!/^https?:\/\//i.test(url)) url = 'https://' + url
-    setAddingUrl(true)
+  const handleAddContent = async (input: { type: 'url'; url: string } | { type: 'text'; title: string; text: string }) => {
+    setAdding(true)
     try {
-      const res = await addContentSource(url)
+      const res = await addContentSource(input)
       if (res.success && res.data) {
         setSources(prev => [res.data!, ...prev])
-        setUrlInput('')
         toast.success('컨텐츠 추가됨')
         setNeedsRegen(true)
       } else {
         toast.error(res.error ?? '추가 실패')
       }
     } finally {
-      setAddingUrl(false)
+      setAdding(false)
     }
   }
 
@@ -862,19 +1436,19 @@ export default function ScenarioPage() {
     setSources(prev => prev.filter(s => s.id !== id))
   }
 
-  const handleGenerate = async (categories: string[], sourceIds: string[]) => {
+  const handleGenerate = async (categories: string[], sourceIds: string[], directive: string) => {
     setGenerating(true)
     toast.loading('시나리오 생성 중...', { id: 'gen' })
     try {
-      const res = await generateScenariosAPI({ categories, sourceIds })
+      const res = await generateScenariosAPI({ categories, sourceIds, userDirective: directive || undefined })
       if (res.success) {
         const updated = await getScenarios()
         setScenarios(updated)
         setNeedsRegen(false)
-        const msg = res.hasFeedback
-          ? `시나리오 ${res.count}개 생성됨 (이전 패턴 반영)`
-          : `시나리오 ${res.count}개 생성됨`
-        toast.success(msg, { id: 'gen' })
+        toast.success(
+          res.hasFeedback ? `시나리오 ${res.count}개 생성됨 (이전 패턴 반영)` : `시나리오 ${res.count}개 생성됨`,
+          { id: 'gen' },
+        )
       } else {
         toast.error(res.error ?? '생성 실패', { id: 'gen' })
       }
@@ -884,7 +1458,7 @@ export default function ScenarioPage() {
   }
 
   const handleQuickGenerate = () => {
-    handleGenerate([...SCENARIO_CATEGORIES], sources.map(s => s.id))
+    handleGenerate([...SCENARIO_CATEGORIES], sources.map(s => s.id), '')
   }
 
   const handleStatusChange = async (id: string, status: 'active' | 'interested' | 'dismissed') => {
@@ -895,25 +1469,12 @@ export default function ScenarioPage() {
   const handleActionToggle = async (id: string, actionIndex: number, done: boolean) => {
     const res = await updateActionProgress(id, actionIndex, done)
     if (res.success && res.completedActions !== undefined) {
-      setScenarios(prev =>
-        prev.map(s => s.id === id ? { ...s, completedActions: res.completedActions! } : s)
-      )
+      setScenarios(prev => prev.map(s => s.id === id ? { ...s, completedActions: res.completedActions! } : s))
     }
   }
 
   const activeScenarios = scenarios.filter(s => s.status !== 'dismissed')
   const dismissedScenarios = scenarios.filter(s => s.status === 'dismissed')
-
-  // 옵션 드롭다운 외부 클릭 닫기
-  useEffect(() => {
-    if (!optionsOpen) return
-    const handler = (e: MouseEvent) => {
-      const target = e.target as HTMLElement
-      if (!target.closest('[data-options-panel]')) setOptionsOpen(false)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [optionsOpen])
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
@@ -925,13 +1486,11 @@ export default function ScenarioPage() {
           <h1 className="text-lg font-bold text-foreground">시나리오 허브</h1>
         </div>
         <div className="flex items-center gap-2">
-          <div data-options-panel>
-            <GenerateOptionsPanel
-              sources={sources}
-              onGenerate={handleGenerate}
-              generating={generating}
-            />
-          </div>
+          <GenerateOptionsPanel
+            sources={sources}
+            onGenerate={handleGenerate}
+            generating={generating}
+          />
           <button
             onClick={handleQuickGenerate}
             disabled={generating}
@@ -952,100 +1511,39 @@ export default function ScenarioPage() {
         </div>
       </div>
 
-      {/* 컨텐츠 소스 입력 */}
-      <div className="bg-card border border-border rounded-2xl overflow-hidden">
-        <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center gap-2">
-          <Link2 className="w-4 h-4 text-muted-foreground/60" />
-          <span className="text-sm font-semibold text-foreground">관심 컨텐츠</span>
-          <span className="text-[10px] text-muted-foreground/50">URL을 추가하면 시나리오에 반영됩니다</span>
-        </div>
+      {/* 관심 컨텐츠 */}
+      <ContentSourceSection
+        sources={sources}
+        onAdd={handleAddContent}
+        onDelete={handleDeleteSource}
+        adding={adding}
+      />
 
-        <div className="px-4 py-3 flex gap-2">
-          <input
-            type="url"
-            value={urlInput}
-            onChange={e => setUrlInput(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAddUrl()}
-            placeholder="https://..."
-            className="flex-1 text-sm bg-muted/50 border border-border rounded-xl px-3 py-2 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/30"
-          />
-          <button
-            onClick={handleAddUrl}
-            disabled={addingUrl || !urlInput.trim()}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-medium disabled:opacity-50 transition-opacity"
-          >
-            {addingUrl ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-            추가
-          </button>
-        </div>
-
-        {sources.length > 0 && (
-          <div className="border-t border-border divide-y divide-border">
-            {sources.map(src => (
-              <div key={src.id} className="px-4 py-2.5 flex items-start gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-foreground truncate">
-                    {src.title ?? src.url}
-                  </p>
-                  {src.summary && (
-                    <p className="text-[11px] text-muted-foreground/60 mt-0.5 line-clamp-2">{src.summary}</p>
-                  )}
-                  <a
-                    href={src.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[10px] text-muted-foreground/40 hover:text-primary flex items-center gap-0.5 mt-0.5 w-fit"
-                  >
-                    <ExternalLink className="w-2.5 h-2.5" />
-                    {src.url.slice(0, 50)}{src.url.length > 50 ? '...' : ''}
-                  </a>
-                </div>
-                <button
-                  onClick={() => handleDeleteSource(src.id)}
-                  className="p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground/40 hover:text-red-400 transition-colors flex-shrink-0"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {sources.length === 0 && (
-          <div className="px-4 py-4 text-center">
-            <p className="text-xs text-muted-foreground/40">
-              관심있는 부동산/투자 기사, 유튜브 링크 등을 추가해보세요
-            </p>
-          </div>
-        )}
-      </div>
+      {/* 진행 중 시나리오 요약 */}
+      <ProgressSummary scenarios={scenarios} />
 
       {/* 탭 */}
       <div className="flex border-b border-border">
-        <button
-          onClick={() => setTab('scenarios')}
-          className={cn(
-            'px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px',
-            tab === 'scenarios' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground',
-          )}
-        >
-          현재 시나리오
-          {scenarios.length > 0 && (
-            <span className="ml-1.5 text-[10px] bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground">
-              {activeScenarios.length}
-            </span>
-          )}
-        </button>
-        <button
-          onClick={() => setTab('history')}
-          className={cn(
-            'px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px flex items-center gap-1.5',
-            tab === 'history' ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground',
-          )}
-        >
-          <History className="w-3.5 h-3.5" />
-          이력
-        </button>
+        {([
+          { id: 'scenarios', label: '현재 시나리오', badge: activeScenarios.length > 0 ? activeScenarios.length : null },
+          { id: 'compare', label: '비교', icon: <BarChart3 className="w-3.5 h-3.5" /> },
+          { id: 'history', label: '이력', icon: <History className="w-3.5 h-3.5" /> },
+        ] as const).map(t => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            className={cn(
+              'flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors -mb-px',
+              tab === t.id ? 'border-primary text-foreground' : 'border-transparent text-muted-foreground hover:text-foreground',
+            )}
+          >
+            {'icon' in t && t.icon}
+            {t.label}
+            {'badge' in t && t.badge !== null && (
+              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full text-muted-foreground">{t.badge}</span>
+            )}
+          </button>
+        ))}
       </div>
 
       {/* 시나리오 목록 */}
@@ -1057,7 +1555,6 @@ export default function ScenarioPage() {
               <p className="text-sm text-muted-foreground">재무 상태를 분석하고 있습니다...</p>
             </div>
           )}
-
           {!generating && initialized && scenarios.length === 0 && (
             <div className="bg-muted/30 border border-dashed border-border rounded-2xl py-10 text-center">
               <Sparkles className="w-6 h-6 text-muted-foreground/30 mx-auto mb-2" />
@@ -1065,7 +1562,6 @@ export default function ScenarioPage() {
               <p className="text-xs text-muted-foreground/30 mt-1">재생성 버튼을 눌러보세요</p>
             </div>
           )}
-
           {activeScenarios.map(scenario => (
             <ScenarioCard
               key={scenario.id}
@@ -1080,7 +1576,6 @@ export default function ScenarioPage() {
               onActionToggle={(i, done) => handleActionToggle(scenario.id, i, done)}
             />
           ))}
-
           {dismissedScenarios.length > 0 && (
             <details className="group">
               <summary className="text-xs text-muted-foreground/40 hover:text-muted-foreground cursor-pointer list-none flex items-center gap-1 py-1">
@@ -1106,7 +1601,7 @@ export default function ScenarioPage() {
         </div>
       )}
 
-      {/* 이력 */}
+      {tab === 'compare' && <CompareView scenarios={scenarios} />}
       {tab === 'history' && <HistoryView />}
     </div>
   )

@@ -403,9 +403,10 @@ model ContentSource {
   id        String      @id @default(cuid())
   familyId  String
   family    FamilyGroup @relation(fields: [familyId], references: [id])
-  url       String
-  title     String?     // 페이지 제목 (og:title 등)
-  summary   String?     // AI 요약 핵심 내용
+  type      String      @default("url") // "url" | "text"
+  url       String?     // type=url일 때만 사용
+  title     String?
+  summary   String?
   createdAt DateTime    @default(now())
 
   @@index([familyId])
