@@ -570,21 +570,26 @@ function ExpansionView({ expansion }: { expansion: ScenarioExpansion }) {
         <p className="text-xs text-foreground/80">{expansion.successMetric}</p>
       </div>
 
-      {/* 에이전트 실행 */}
-      <button
-        onClick={() => setAgentOpen(true)}
-        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/30 text-violet-500 dark:text-violet-400 text-xs font-semibold hover:bg-violet-500/20 transition-colors"
-      >
-        <Bot className="w-3.5 h-3.5" />
-        AI 에이전트로 실행하기
-        <ShoppingCart className="w-3.5 h-3.5" />
-      </button>
+      {/* 에이전트 실행 — KIS 브로커 연동 검증 후 활성화 (feat/kis-broker 브랜치 참조) */}
+      {/* eslint-disable-next-line @typescript-eslint/no-unused-vars */}
+      {false && (
+        <>
+          <button
+            onClick={() => setAgentOpen(true)}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/30 text-violet-500 dark:text-violet-400 text-xs font-semibold hover:bg-violet-500/20 transition-colors"
+          >
+            <Bot className="w-3.5 h-3.5" />
+            AI 에이전트로 실행하기
+            <ShoppingCart className="w-3.5 h-3.5" />
+          </button>
 
-      {agentOpen && (
-        <BrokerAgentPanel
-          scenarioPlanText={JSON.stringify(expansion)}
-          onClose={() => setAgentOpen(false)}
-        />
+          {agentOpen && (
+            <BrokerAgentPanel
+              scenarioPlanText={JSON.stringify(expansion)}
+              onClose={() => setAgentOpen(false)}
+            />
+          )}
+        </>
       )}
     </div>
   )
