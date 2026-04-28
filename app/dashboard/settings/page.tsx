@@ -33,6 +33,7 @@ function SettingsClient() {
   const [connectedProviders, setConnectedProviders] = useState<Set<string>>(new Set())
   const [statusLoading, setStatusLoading] = useState(true)
   const [connectingProvider, setConnectingProvider] = useState<'claude' | 'chatgpt' | 'gemini' | null>(null)
+  const [proxyOnline, setProxyOnline] = useState<boolean | null>(null)
   const { threshold, setThreshold } = useAssetThreshold()
   const [currentName, setCurrentName] = useState<string | null>(null)
   const [currentEmail, setCurrentEmail] = useState('')
@@ -50,6 +51,24 @@ function SettingsClient() {
     })
     getAiMode().then(async (mode) => {
       setAiModeState(mode)
+
+      // CLIProxy 가용성 먼저 체크 (프로덕션/원격 배포에서는 대개 false)
+      const online = await fetch('/api/ai/status')
+        .then(r => r.json())
+        .then(d => !!d.online)
+        .catch(() => false)
+      setProxyOnline(online)
+
+      if (!online) {
+        // 프록시 오프라인이면 provider 상태 조회 생략 (503 불필요한 네트워크 호출 방지)
+        setStatusLoading(false)
+        if (mode !== 'api') {
+          await setAiMode('api')
+          setAiModeState('api')
+        }
+        return
+      }
+
       // 세 provider 연결 상태 모두 조회
       const results = await Promise.all(
         (['claude', 'chatgpt', 'gemini'] as const).map(p =>
@@ -110,6 +129,12 @@ function SettingsClient() {
   ] as const
 
   const handleConnectProvider = async (provider: 'claude' | 'chatgpt' | 'gemini') => {
+    // 프록시 오프라인이면 사전 차단
+    if (proxyOnline === false) {
+      toast.error('로컬 CLIProxy 서버가 필요합니다. (개발 환경 전용)')
+      return
+    }
+
     // 이미 연결된 경우 OAuth 없이 바로 전환
     if (connectedProviders.has(provider)) {
       await setAiMode(provider)
@@ -305,16 +330,21 @@ function SettingsClient() {
           const isActive = aiMode === cfg.id
           const isConnected = connectedProviders.has(cfg.id)
           const isConnecting = connectingProvider === cfg.id
+          const isProxyOffline = proxyOnline === false
+          const isDisabled = (connectingProvider !== null && !isConnecting) || isProxyOffline
 
           return (
             <button
               key={cfg.id}
-              onClick={isActive ? undefined : () => handleConnectProvider(cfg.id)}
-              disabled={connectingProvider !== null && !isConnecting}
+              onClick={isActive || isProxyOffline ? undefined : () => handleConnectProvider(cfg.id)}
+              disabled={isDisabled}
+              title={isProxyOffline ? '로컬 CLIProxy 서버가 필요합니다 (개발 환경 전용)' : undefined}
               className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all mb-2 last:mb-0 ${
                 isActive
                   ? `${cfg.activeBorder} ${cfg.activeBg}`
-                  : 'border-border hover:bg-muted/30 cursor-pointer disabled:opacity-40'
+                  : isProxyOffline
+                    ? 'border-border opacity-50 cursor-not-allowed'
+                    : 'border-border hover:bg-muted/30 cursor-pointer disabled:opacity-40'
               }`}
             >
               {/* 프로바이더 아이콘 */}
@@ -340,6 +370,8 @@ function SettingsClient() {
                 <span className={`text-xs font-semibold flex-shrink-0 ${cfg.activeText}`}>사용 중</span>
               ) : isConnecting ? (
                 <span className="text-xs text-muted-foreground flex-shrink-0 animate-pulse">연결 중…</span>
+              ) : isProxyOffline ? (
+                <span className="text-[10px] font-medium text-muted-foreground/60 flex-shrink-0 px-2 py-1 rounded-lg bg-muted/50 border border-border">로컬 전용</span>
               ) : isConnected ? (
                 <span className="text-xs font-medium text-foreground/50 flex-shrink-0 px-2 py-1 rounded-lg bg-muted border border-border">전환</span>
               ) : (
