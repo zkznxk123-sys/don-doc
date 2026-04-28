@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { AssetList, LiabilityList } from '@/components/ui/asset-list'
 import { AssetDonutChart, type AssetTypeData } from '@/components/ui/asset-donut-chart'
 import { NetWorthChart } from '@/components/ui/networth-chart'
@@ -81,6 +82,7 @@ function getCurrentYearMonth(): string {
 
 export default function AssetsPage() {
   const { refreshKey, setPageActions, shellUser } = useDashboardActions()
+  const searchParams = useSearchParams()
   const [accounts, setAccounts] = useState<AccountInitialData[]>([])
   const [liabilities, setLiabilities] = useState<AccountInitialData[]>([])
   const [assetsByType, setAssetsByType] = useState<AssetTypeData[]>([])
@@ -219,6 +221,12 @@ export default function AssetsPage() {
     setDrawerParentInfo(undefined)
     setIsAccountDrawerOpen(true)
   }
+
+  // 대시보드 "자산 추가" 버튼에서 ?add=true 파라미터로 진입 시 드로어 자동 오픈
+  useEffect(() => {
+    if (searchParams.get('add') === 'true') openAdd()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const openEdit = (account: AccountInitialData) => {
     if (account.isMasked) return

@@ -9,14 +9,15 @@ import { prisma } from '@/lib/prisma'
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const authUser = await getAuthUser()
     if (!authUser) return NextResponse.json({ success: false, error: '인증이 필요합니다.' }, { status: 401 })
 
     const tx = await prisma.transaction.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { subItems: true },
     })
     if (!tx) return NextResponse.json({ success: false, error: '내역을 찾을 수 없습니다.' }, { status: 404 })
@@ -30,9 +31,10 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const authUser = await getAuthUser()
     if (!authUser) {
       return NextResponse.json({ success: false, error: '인증이 필요합니다.' }, { status: 401 })
@@ -40,7 +42,7 @@ export async function PATCH(
 
     const body = await req.json()
 
-    const tx = await prisma.transaction.findUnique({ where: { id: params.id } })
+    const tx = await prisma.transaction.findUnique({ where: { id } })
     if (!tx) return NextResponse.json({ success: false, error: '내역을 찾을 수 없습니다.' }, { status: 404 })
     if (tx.userId !== authUser.id && !isCFOLevel(authUser.role)) {
       return NextResponse.json({ success: false, error: '권한이 없습니다.' }, { status: 403 })
@@ -56,12 +58,10 @@ export async function PATCH(
     if (body.isExcluded        !== undefined) data.isExcluded        = body.isExcluded
     if (body.excludeFromBudget !== undefined) data.excludeFromBudget = body.excludeFromBudget
     if (body.categoryId  !== undefined) data.categoryId  = body.categoryId ?? null
-    // accountId: 전달된 경우만 변경, 미전달 시 기존 값 유지 (잔액 건드리지 않음)
     if (body.accountId !== undefined) data.accountId = body.accountId
 
-    const updated = await prisma.transaction.update({ where: { id: params.id }, data })
+    const updated = await prisma.transaction.update({ where: { id }, data })
 
-    // 사용자가 직접 categoryId를 설정한 경우 선호도로 저장
     if (body.categoryId && updated.description) {
       await upsertCategoryPreference(authUser.id, updated.description, body.categoryId).catch(() => {})
     }
@@ -75,19 +75,16 @@ export async function PATCH(
 
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const authUser = await getAuthUser()
     if (!authUser) {
       return NextResponse.json({ success: false, error: '인증이 필요합니다.' }, { status: 401 })
     }
 
-    const result = await deleteTransaction(
-      authUser.id,
-      authUser.role,
-      params.id
-    )
+    const result = await deleteTransaction(authUser.id, authUser.role, id)
 
     return NextResponse.json(result, { status: result.success ? 200 : 403 })
   } catch (e) {

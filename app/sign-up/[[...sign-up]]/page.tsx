@@ -2,11 +2,11 @@ import { SignUp } from '@clerk/nextjs'
 import Link from 'next/link'
 
 interface Props {
-  searchParams: { code?: string }
+  searchParams: Promise<{ code?: string }>
 }
 
-export default function SignUpPage({ searchParams }: Props) {
-  const inviteCode = searchParams.code
+export default async function SignUpPage({ searchParams }: Props) {
+  const { code: inviteCode } = await searchParams
 
   return (
     <div className="min-h-screen bg-background flex flex-col">

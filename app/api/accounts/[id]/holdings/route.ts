@@ -7,18 +7,19 @@ import { prisma } from '@/lib/prisma'
 /** GET /api/accounts/[id]/holdings — 계좌 보유 종목 목록 */
 export async function GET(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   const user = await getAuthUser()
   if (!user) return NextResponse.json({ success: false, error: '인증이 필요합니다.' }, { status: 401 })
 
   const account = await prisma.account.findFirst({
-    where: { id: params.id, familyId: user.familyId ?? undefined },
+    where: { id, familyId: user.familyId ?? undefined },
   })
   if (!account) return NextResponse.json({ success: false, error: '계좌를 찾을 수 없습니다.' }, { status: 404 })
 
   const holdings = await prisma.investmentHolding.findMany({
-    where: { accountId: params.id },
+    where: { accountId: id },
     include: { trades: { orderBy: { date: 'desc' } } },
     orderBy: { createdAt: 'asc' },
   })
@@ -29,13 +30,14 @@ export async function GET(
 /** POST /api/accounts/[id]/holdings — 종목 추가 */
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params
   const user = await getAuthUser()
   if (!user) return NextResponse.json({ success: false, error: '인증이 필요합니다.' }, { status: 401 })
 
   const account = await prisma.account.findFirst({
-    where: { id: params.id, familyId: user.familyId ?? undefined },
+    where: { id, familyId: user.familyId ?? undefined },
   })
   if (!account) return NextResponse.json({ success: false, error: '계좌를 찾을 수 없습니다.' }, { status: 404 })
 
@@ -48,7 +50,7 @@ export async function POST(
 
   const holding = await prisma.investmentHolding.create({
     data: {
-      accountId: params.id,
+      accountId: id,
       ticker: ticker || null,
       market: market || null,
       name,
