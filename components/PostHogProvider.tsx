@@ -1,43 +1,32 @@
 'use client'
 
-import posthog from 'posthog-js'
-import { PostHogProvider as PHProvider, usePostHog } from 'posthog-js/react'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth, useUser } from '@clerk/nextjs'
 
-if (typeof window !== 'undefined') {
-  posthog.init(process.env.NEXT_PUBLIC_POSTHOG_KEY!, {
-    api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://app.posthog.com',
-    capture_pageview: false, // 수동으로 처리 (App Router 대응)
-    capture_pageleave: true,
-  })
+/** PostHog를 클라이언트에서만 동적으로 로드 */
+export function PostHogProvider({ children }: { children: React.ReactNode }) {
+  return <>{children}</>
 }
 
-/** Clerk 유저 정보를 PostHog에 연결 */
-function PostHogIdentify() {
-  const { userId } = useAuth()
-  const { user } = useUser()
-  const ph = usePostHog()
+/** 클라이언트 전용 PostHog 초기화 컴포넌트 */
+export function PostHogPageView() {
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    if (userId && user) {
-      ph.identify(userId, {
-        email: user.primaryEmailAddress?.emailAddress,
-        name: user.fullName,
-      })
-    } else {
-      ph.reset()
-    }
-  }, [userId, user, ph])
+    setMounted(true)
+    const key = process.env.NEXT_PUBLIC_POSTHOG_KEY
+    if (!key) return
+
+    import('posthog-js').then(({ default: posthog }) => {
+      if (!posthog.__loaded) {
+        posthog.init(key, {
+          api_host: process.env.NEXT_PUBLIC_POSTHOG_HOST ?? 'https://app.posthog.com',
+          capture_pageview: false,
+          capture_pageleave: true,
+        })
+      }
+    })
+  }, [])
 
   return null
-}
-
-export function PostHogProvider({ children }: { children: React.ReactNode }) {
-  return (
-    <PHProvider client={posthog}>
-      <PostHogIdentify />
-      {children}
-    </PHProvider>
-  )
 }
