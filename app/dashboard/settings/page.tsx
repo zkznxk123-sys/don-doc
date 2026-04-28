@@ -32,7 +32,6 @@ function SettingsClient() {
   const [aiMode, setAiModeState] = useState<'api' | 'claude' | 'chatgpt' | 'gemini'>('api')
   const [connectedProviders, setConnectedProviders] = useState<Set<string>>(new Set())
   const [statusLoading, setStatusLoading] = useState(true)
-  const [connectingProvider, setConnectingProvider] = useState<'claude' | 'chatgpt' | 'gemini' | null>(null)
   const [proxyOnline, setProxyOnline] = useState<boolean | null>(null)
   const { threshold, setThreshold } = useAssetThreshold()
   const [currentName, setCurrentName] = useState<string | null>(null)
@@ -128,48 +127,22 @@ function SettingsClient() {
     },
   ] as const
 
+  // 옵션 A (운영자 계정 공유): OAuth 없이 모드 전환만.
+  // 운영자가 사전에 CLIProxy에 OAuth 등록한 provider만 connected로 표시됨.
   const handleConnectProvider = async (provider: 'claude' | 'chatgpt' | 'gemini') => {
-    // 프록시 오프라인이면 사전 차단
     if (proxyOnline === false) {
-      toast.error('로컬 CLIProxy 서버가 필요합니다. (개발 환경 전용)')
+      toast.error('AI 프록시 서버가 오프라인입니다.')
       return
     }
-
-    // 이미 연결된 경우 OAuth 없이 바로 전환
-    if (connectedProviders.has(provider)) {
-      await setAiMode(provider)
-      setAiModeState(provider)
+    if (!connectedProviders.has(provider)) {
       const cfg = PROVIDER_CONFIG.find(c => c.id === provider)!
-      toast.success(`${cfg.label} 계정으로 전환되었습니다.`)
+      toast.error(`${cfg.label} 공유 계정이 아직 등록되지 않았습니다.`)
       return
     }
-
-    setConnectingProvider(provider)
-    try {
-      const res = await fetch(`/api/ai/oauth-url?provider=${provider}`)
-      const data = await res.json()
-      if (!data.url) { toast.error('OAuth URL을 가져올 수 없습니다'); return }
-
-      const popup = window.open(data.url, '_blank', 'width=600,height=700')
-      const cfg = PROVIDER_CONFIG.find(c => c.id === provider)!
-
-      const poll = setInterval(async () => {
-        const status = await fetch(`/api/ai/oauth-status?provider=${provider}`).then(r => r.json())
-        if (status.connected) {
-          clearInterval(poll)
-          popup?.close()
-          setConnectedProviders(prev => new Set(Array.from(prev).concat(provider)))
-          await setAiMode(provider)
-          setAiModeState(provider)
-          toast.success(`${cfg.label} 계정이 연결되었습니다.`)
-        }
-        if (popup?.closed) clearInterval(poll)
-      }, 2000)
-    } catch {
-      toast.error('연결 중 오류가 발생했습니다.')
-    } finally {
-      setConnectingProvider(null)
-    }
+    await setAiMode(provider)
+    setAiModeState(provider)
+    const cfg = PROVIDER_CONFIG.find(c => c.id === provider)!
+    toast.success(`${cfg.label} (가족 공유) 사용 시작`)
   }
 
   const handleSwitchToApi = async () => {
@@ -329,16 +302,22 @@ function SettingsClient() {
         {PROVIDER_CONFIG.map((cfg) => {
           const isActive = aiMode === cfg.id
           const isConnected = connectedProviders.has(cfg.id)
-          const isConnecting = connectingProvider === cfg.id
           const isProxyOffline = proxyOnline === false
-          const isDisabled = (connectingProvider !== null && !isConnecting) || isProxyOffline
+          const isUnregistered = !isConnected && !isProxyOffline && !statusLoading
+          const isDisabled = isProxyOffline || isUnregistered
+
+          const tooltip = isProxyOffline
+            ? 'AI 프록시 서버가 오프라인'
+            : isUnregistered
+              ? `${cfg.label} 공유 계정 미등록`
+              : undefined
 
           return (
             <button
               key={cfg.id}
-              onClick={isActive || isProxyOffline ? undefined : () => handleConnectProvider(cfg.id)}
+              onClick={isActive || isDisabled ? undefined : () => handleConnectProvider(cfg.id)}
               disabled={isDisabled}
-              title={isProxyOffline ? '로컬 CLIProxy 서버가 필요합니다 (개발 환경 전용)' : undefined}
+              title={tooltip}
               className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all mb-2 last:mb-0 ${
                 isActive
                   ? `${cfg.activeBorder} ${cfg.activeBg}`
@@ -358,8 +337,8 @@ function SettingsClient() {
               <div className="flex-1 text-left min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <p className="text-sm font-medium text-foreground">{cfg.label}</p>
-                  {isConnected && !isActive && !statusLoading && (
-                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${cfg.badgeBg}`}>연결됨</span>
+                  {isConnected && !statusLoading && (
+                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${cfg.badgeBg}`}>가족 공유</span>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">{cfg.sub}</p>
@@ -368,14 +347,12 @@ function SettingsClient() {
               {/* 액션 */}
               {isActive ? (
                 <span className={`text-xs font-semibold flex-shrink-0 ${cfg.activeText}`}>사용 중</span>
-              ) : isConnecting ? (
-                <span className="text-xs text-muted-foreground flex-shrink-0 animate-pulse">연결 중…</span>
               ) : isProxyOffline ? (
-                <span className="text-[10px] font-medium text-muted-foreground/60 flex-shrink-0 px-2 py-1 rounded-lg bg-muted/50 border border-border">로컬 전용</span>
-              ) : isConnected ? (
-                <span className="text-xs font-medium text-foreground/50 flex-shrink-0 px-2 py-1 rounded-lg bg-muted border border-border">전환</span>
+                <span className="text-[10px] font-medium text-muted-foreground/60 flex-shrink-0 px-2 py-1 rounded-lg bg-muted/50 border border-border">오프라인</span>
+              ) : isUnregistered ? (
+                <span className="text-[10px] font-medium text-muted-foreground/60 flex-shrink-0 px-2 py-1 rounded-lg bg-muted/50 border border-border">준비 중</span>
               ) : (
-                <span className="text-xs text-muted-foreground flex-shrink-0">연결</span>
+                <span className="text-xs font-medium text-foreground/50 flex-shrink-0 px-2 py-1 rounded-lg bg-muted border border-border">전환</span>
               )}
             </button>
           )

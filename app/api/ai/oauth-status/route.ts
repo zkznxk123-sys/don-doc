@@ -1,32 +1,47 @@
 export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
-import { readdir } from 'fs/promises'
-import { homedir } from 'os'
-import { join } from 'path'
 
 const PROXY_URL = process.env.CLI_PROXY_URL ?? 'http://localhost:8317'
 const MGMT_SECRET = process.env.CLI_PROXY_MGMT_SECRET ?? ''
 
-// CLIProxy auth 파일명 prefix → provider
-const PROVIDER_PREFIX: Record<string, string> = {
-  claude:  'claude-',
-  chatgpt: 'codex-',
-  gemini:  'gemini-',
+// CLIProxy provider 식별자 → 돈독 provider 식별자
+const PROVIDER_MAP: Record<string, string> = {
+  claude:     'claude',
+  codex:      'chatgpt',
+  gemini:     'gemini',
+  'gemini-cli': 'gemini',
 }
 
+interface AuthFile {
+  provider: string
+  status: string
+  unavailable: boolean
+  disabled: boolean
+}
+
+/**
+ * CLIProxy /v0/management/auth-files로 등록된 계정 목록 조회.
+ * 운영자가 사전에 로그인해둔 'active' 상태 계정만 connected로 인정.
+ *
+ * 옵션 A 모델: 유저별 OAuth 없이 운영자 계정 공유.
+ */
 async function getConnectedProviders(): Promise<string[]> {
   try {
-    const authDir = process.env.CLI_PROXY_AUTH_DIR
-      ?? join(homedir(), '.cli-proxy-api')
-    const files = await readdir(authDir)
-    const connected: string[] = []
-    for (const [provider, prefix] of Object.entries(PROVIDER_PREFIX)) {
-      if (files.some(f => f.startsWith(prefix) && f.endsWith('.json'))) {
-        connected.push(provider)
-      }
+    const res = await fetch(`${PROXY_URL}/v0/management/auth-files`, {
+      headers: { 'X-Management-Key': MGMT_SECRET },
+      signal: AbortSignal.timeout(5_000),
+    })
+    if (!res.ok) return []
+    const data = await res.json() as { files?: AuthFile[] }
+    const files = data.files ?? []
+    const connected = new Set<string>()
+    for (const f of files) {
+      if (f.disabled || f.unavailable || f.status !== 'active') continue
+      const mapped = PROVIDER_MAP[f.provider]
+      if (mapped) connected.add(mapped)
     }
-    return connected
+    return Array.from(connected)
   } catch {
     return []
   }
@@ -36,21 +51,17 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url)
   const provider = searchParams.get('provider')
 
-  try {
-    const res = await fetch(`${PROXY_URL}/v0/management/get-auth-status`, {
-      headers: { 'X-Management-Key': MGMT_SECRET },
-      signal: AbortSignal.timeout(3_000),
+  const connectedProviders = await getConnectedProviders()
+
+  if (provider) {
+    return NextResponse.json({
+      connected: connectedProviders.includes(provider),
+      providers: connectedProviders,
     })
-    if (!res.ok) return NextResponse.json({ connected: false, providers: [] })
-
-    const connectedProviders = await getConnectedProviders()
-
-    if (provider) {
-      return NextResponse.json({ connected: connectedProviders.includes(provider), providers: connectedProviders })
-    }
-
-    return NextResponse.json({ connected: connectedProviders.length > 0, providers: connectedProviders })
-  } catch {
-    return NextResponse.json({ connected: false, providers: [] })
   }
+
+  return NextResponse.json({
+    connected: connectedProviders.length > 0,
+    providers: connectedProviders,
+  })
 }
