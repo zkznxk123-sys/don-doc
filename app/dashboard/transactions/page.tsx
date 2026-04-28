@@ -5,6 +5,7 @@ import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, PiggyBank, ArrowLe
 import Link from 'next/link'
 import { cn, formatCurrency } from '@/lib/utils'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { LoadingPrompt } from '@/components/ui/loading-prompt'
 
 interface Transaction {
   id: string
@@ -164,6 +165,10 @@ export default function TransactionsPage() {
           {loading ? (
             <div className="py-20 text-center">
               <div className="inline-block w-5 h-5 border-2 border-border border-t-muted-foreground rounded-full animate-spin" />
+              <LoadingPrompt
+                isLoading={loading}
+                onRefresh={() => fetchData(year, month)}
+              />
             </div>
           ) : transactions.length === 0 ? (
             <div className="py-20 text-center text-muted-foreground/60 text-sm">

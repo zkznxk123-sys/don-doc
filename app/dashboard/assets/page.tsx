@@ -58,6 +58,7 @@ import {
 } from '@/lib/actions/realestate'
 import { TrendingUp, TrendingDown, Wallet, Building2, Landmark, CreditCard, Camera, Plus, PiggyBank, Pencil, ChevronRight, AlertTriangle, ShieldCheck, Clock, BadgePercent, Banknote, HandCoins, CalendarClock, Percent, RefreshCw, BookOpen, BarChart2, Target, TrendingDown as TrendingDownIcon } from 'lucide-react'
 import { PortfolioAnalysis } from '@/components/ui/portfolio-analysis'
+import { LoadingPrompt } from '@/components/ui/loading-prompt'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 
@@ -267,6 +268,15 @@ export default function AssetsPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-5">
+      {/* 로딩 지연 시 표시되는 프롬프트 (3초 후) */}
+      <LoadingPrompt
+        isLoading={loading}
+        onRefresh={loadData}
+        actions={[
+          { label: '자산 추가', icon: <Plus className="w-3 h-3" />, onClick: openAdd },
+        ]}
+      />
+
       {/* 스냅샷 누락 배너 */}
       {showBanner && (
         <SnapshotAlertBanner

@@ -10,6 +10,7 @@ import {
   Target, TrendingUp, Bot, ShoppingCart, Play, Banknote,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { LoadingPrompt } from '@/components/ui/loading-prompt'
 import {
   addContentSource, getContentSources, deleteContentSource,
   getScenarios, getScenarioHistory, updateScenarioStatus,
@@ -1148,16 +1149,20 @@ function HistoryView() {
   const [loading, setLoading] = useState(true)
   const [openBatch, setOpenBatch] = useState<string | null>(null)
 
-  useEffect(() => {
+  const loadHistory = useCallback(() => {
+    setLoading(true)
     getScenarioHistory().then(data => {
       setBatches(data)
       setLoading(false)
     })
   }, [])
 
+  useEffect(() => { loadHistory() }, [loadHistory])
+
   if (loading) return (
-    <div className="flex justify-center py-8">
+    <div className="flex flex-col items-center py-8 gap-2">
       <Loader2 className="w-5 h-5 animate-spin text-muted-foreground/40" />
+      <LoadingPrompt isLoading={loading} onRefresh={loadHistory} />
     </div>
   )
 

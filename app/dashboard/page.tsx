@@ -17,6 +17,8 @@ import { NetWorthChart } from '@/components/ui/networth-chart'
 import { AccountDrawer } from '@/components/ui/account-drawer'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
+import { LoadingPrompt } from '@/components/ui/loading-prompt'
+import { FileSpreadsheet, Plus } from 'lucide-react'
 import { useDashboardActions } from '@/components/layout/DashboardShell'
 import { createSnapshotFromCurrentBalances, type NetWorthSnapshotData } from '@/lib/actions/networth'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -699,7 +701,7 @@ export default function Dashboard() {
     router.replace(`/dashboard?${params.toString()}`)
   }, [searchParams, router, nowMonth])
 
-  const { refreshKey, shellUser } = useDashboardActions()
+  const { refreshKey, shellUser, openTransactionDrawer, openExcelDrawer } = useDashboardActions()
 
   // ── 로딩 상태 ──────────────────────────────────────────────────────────────
   // baseLoading: 자산/순자산 이력 (월 무관) — Tier1 카드1, Tier2, Tier3 Left
@@ -841,6 +843,16 @@ export default function Dashboard() {
 
       {/* 피드 알림 배너 — 항상 최상단 */}
       <FeedNewBanner />
+
+      {/* 로딩이 길어질 때만 표시되는 프롬프트 (3초 후) */}
+      <LoadingPrompt
+        isLoading={baseLoading || monthLoading}
+        onRefresh={() => loadDashboard(selectedMonth, currentUserId)}
+        actions={[
+          { label: '거래 추가', icon: <Plus className="w-3 h-3" />, onClick: () => openTransactionDrawer() },
+          { label: '엑셀 업로드', icon: <FileSpreadsheet className="w-3 h-3" />, onClick: () => openExcelDrawer() },
+        ]}
+      />
 
       <AnimatePresence mode="wait">
         {viewMode !== 'MEMBER' ? (
