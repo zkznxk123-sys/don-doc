@@ -22,8 +22,8 @@ export async function updateUserName(name: string): Promise<{ error?: string }> 
   return {}
 }
 
-export async function getCurrentUser(): Promise<{ name: string | null; email: string } | null> {
+export async function getCurrentUser(): Promise<{ name: string | null; email: string; familyId: string | null } | null> {
   const user = await getAuthUser()
   if (!user) return null
-  return { name: user.name, email: user.email }
+  return { name: user.name, email: user.email, familyId: user.familyId }
 }

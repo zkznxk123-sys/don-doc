@@ -2,9 +2,24 @@ import { createOpenAI } from '@ai-sdk/openai'
 
 const PROXY_URL = process.env.CLI_PROXY_URL ?? 'http://localhost:8317'
 const PROXY_KEY = process.env.CLI_PROXY_API_KEY ?? 'canvas-local-dev-key'
+const ADMIN_FAMILY_ID = process.env.ADMIN_FAMILY_ID ?? ''
 
 export type Provider = 'claude' | 'chatgpt' | 'gemini'
 export type AiMode = 'api' | 'claude' | 'chatgpt' | 'gemini'
+
+/**
+ * 운영자 가족 외에는 CLI OAuth 공유 계정 사용 금지.
+ * mode가 'api'가 아닌데 familyId가 admin이 아니면 'api'로 강제 다운그레이드.
+ *
+ * 이유: 현재 CLIProxy에 저장된 토큰은 운영자 1인 계정이므로,
+ *       다른 가족이 공유하면 레이트 리밋/약관 위반 리스크.
+ */
+function resolveEffectiveMode(mode: AiMode, familyId?: string): AiMode {
+  if (mode === 'api') return 'api'
+  if (!ADMIN_FAMILY_ID) return 'api' // env 미설정 시 안전하게 api
+  if (familyId === ADMIN_FAMILY_ID) return mode
+  return 'api'
+}
 
 export const PROVIDER_MODELS: Record<Provider, { fast: string; balanced: string; smart: string }> = {
   claude: {
@@ -53,12 +68,15 @@ export function proxyModel(
   mode: AiMode = 'claude',
   options?: { sessionId?: string },
 ) {
-  if (mode === 'api') {
+  // sessionId는 현재 familyId로 전달됨 → admin family만 CLI 모드 유지
+  const effective = resolveEffectiveMode(mode, options?.sessionId)
+
+  if (effective === 'api') {
     const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY })
     return openai(API_MODELS[tier])
   }
 
-  const provider: Provider = mode === 'proxy' as never ? 'claude' : mode as Provider
+  const provider: Provider = effective as Provider
   const openai = createOpenAI({
     baseURL: `${PROXY_URL}/v1`,
     apiKey: PROXY_KEY,
@@ -164,12 +182,15 @@ export async function chat(
 
   const callOpts = { temperature, maxTokens, timeoutMs }
 
-  if (mode === 'api') {
+  // sessionId는 familyId로 전달됨 → admin family만 CLI 모드 유지
+  const effective = resolveEffectiveMode(mode, sessionId)
+
+  if (effective === 'api') {
     const model = options.model ?? API_MODELS[tier]
     return callOpenAI(model, messages, callOpts)
   }
 
-  const provider: Provider = (mode === 'proxy' as never ? 'claude' : mode) as Provider
+  const provider: Provider = effective as Provider
 
   if (options.model) {
     return callProxy(options.model, messages, { ...callOpts, sessionId })

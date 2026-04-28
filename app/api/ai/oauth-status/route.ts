@@ -1,9 +1,11 @@
 export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
+import { getAuthUser } from '@/lib/auth'
 
 const PROXY_URL = process.env.CLI_PROXY_URL ?? 'http://localhost:8317'
 const MGMT_SECRET = process.env.CLI_PROXY_MGMT_SECRET ?? ''
+const ADMIN_FAMILY_ID = process.env.ADMIN_FAMILY_ID ?? ''
 
 // CLIProxy provider 식별자 → 돈독 provider 식별자
 const PROVIDER_MAP: Record<string, string> = {
@@ -48,8 +50,24 @@ async function getConnectedProviders(): Promise<string[]> {
 }
 
 export async function GET(req: Request) {
+  const user = await getAuthUser()
   const { searchParams } = new URL(req.url)
   const provider = searchParams.get('provider')
+
+  // 관리자 가족이 아니면 CLIProxy 연결 상태를 false로 반환
+  const isAdmin = user?.familyId === ADMIN_FAMILY_ID
+  if (!isAdmin) {
+    if (provider) {
+      return NextResponse.json({
+        connected: false,
+        providers: [],
+      })
+    }
+    return NextResponse.json({
+      connected: false,
+      providers: [],
+    })
+  }
 
   const connectedProviders = await getConnectedProviders()
 

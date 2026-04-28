@@ -36,15 +36,19 @@ function SettingsClient() {
   const { threshold, setThreshold } = useAssetThreshold()
   const [currentName, setCurrentName] = useState<string | null>(null)
   const [currentEmail, setCurrentEmail] = useState('')
+  const [familyId, setFamilyId] = useState<string | null>(null)
   const [isEditingName, setIsEditingName] = useState(false)
   const [nameInput, setNameInput] = useState('')
   const [isSavingName, setIsSavingName] = useState(false)
+
+  const isAdminFamily = familyId === process.env.NEXT_PUBLIC_ADMIN_FAMILY_ID
 
   useEffect(() => {
     getCurrentUser().then(u => {
       if (u) {
         setCurrentName(u.name)
         setCurrentEmail(u.email)
+        setFamilyId(u.familyId)
         setNameInput(u.name ?? '')
       }
     })
@@ -298,8 +302,8 @@ function SettingsClient() {
           )}
         </button>
 
-        {/* 구독 연동 providers */}
-        {PROVIDER_CONFIG.map((cfg) => {
+        {/* 구독 연동 providers - 관리자 가족만 표시 */}
+        {isAdminFamily && PROVIDER_CONFIG.map((cfg) => {
           const isActive = aiMode === cfg.id
           const isConnected = connectedProviders.has(cfg.id)
           const isProxyOffline = proxyOnline === false
