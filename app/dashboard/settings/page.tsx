@@ -19,7 +19,9 @@ import {
 import { updateUserName, getCurrentUser } from '@/lib/actions/user'
 import { deleteZeroBalanceAccounts } from '@/lib/actions/accounts'
 import { getAiMode, setAiMode } from '@/lib/actions/family'
+import { listOAuthAccounts, disconnectOAuthAccount, type OAuthAccountSummary, type OAuthProvider } from '@/lib/actions/oauth'
 import { useAssetThreshold } from '@/lib/hooks/useAssetThreshold'
+import { OAuthConnectDialog } from '@/components/ui/oauth-connect-dialog'
 
 export default function SettingsPage() {
   return <SettingsClient />
@@ -33,6 +35,9 @@ function SettingsClient() {
   const [connectedProviders, setConnectedProviders] = useState<Set<string>>(new Set())
   const [statusLoading, setStatusLoading] = useState(true)
   const [proxyOnline, setProxyOnline] = useState<boolean | null>(null)
+  const [familyAccounts, setFamilyAccounts] = useState<OAuthAccountSummary[]>([])
+  const [oauthDialog, setOauthDialog] = useState<{ open: boolean; provider: OAuthProvider | null; label: string }>({ open: false, provider: null, label: '' })
+  const [disconnectingProvider, setDisconnectingProvider] = useState<OAuthProvider | null>(null)
   const { threshold, setThreshold } = useAssetThreshold()
   const [currentName, setCurrentName] = useState<string | null>(null)
   const [currentEmail, setCurrentEmail] = useState('')
@@ -84,13 +89,32 @@ function SettingsClient() {
       const connected = new Set(results.filter(r => r.connected).map(r => r.p))
       setConnectedProviders(connected)
       setStatusLoading(false)
-      // 현재 활성 provider가 실제 연결 안 돼 있으면 api로 리셋
-      if (mode !== 'api' && !connected.has(mode)) {
-        await setAiMode('api')
-        setAiModeState('api')
-      }
+      // 모드와 연결 불일치 시 자동 리셋은 안 함 — 가족별 OAuth가 있을 수 있고,
+      // resolveProxyAuth()가 런타임에 알아서 api로 fallback 처리.
     })
+
+    // 가족 OAuth 계정 로드 (admin/non-admin 모두)
+    refreshFamilyAccounts()
   }, [])
+
+  const refreshFamilyAccounts = async () => {
+    const result = await listOAuthAccounts()
+    if (result.data) {
+      setFamilyAccounts(result.data)
+    }
+  }
+
+  const handleDisconnect = async (provider: OAuthProvider) => {
+    setDisconnectingProvider(provider)
+    const result = await disconnectOAuthAccount(provider)
+    setDisconnectingProvider(null)
+    if (result.success) {
+      toast.success('연결 해제됨')
+      refreshFamilyAccounts()
+    } else {
+      toast.error(result.error ?? '해제에 실패했습니다.')
+    }
+  }
 
   const PROVIDER_CONFIG = [
     {
@@ -131,22 +155,28 @@ function SettingsClient() {
     },
   ] as const
 
-  // 옵션 A (운영자 계정 공유): OAuth 없이 모드 전환만.
-  // 운영자가 사전에 CLIProxy에 OAuth 등록한 provider만 connected로 표시됨.
+  // 가족이 해당 provider를 쓸 수 있는지 — 본인 계정 연결 OR (운영자 가족 + 운영자 공유 등록)
+  const isProviderUsable = (provider: 'claude' | 'chatgpt' | 'gemini'): boolean => {
+    if (familyAccounts.some(a => a.provider === provider)) return true
+    if (isAdminFamily && connectedProviders.has(provider)) return true
+    return false
+  }
+
   const handleConnectProvider = async (provider: 'claude' | 'chatgpt' | 'gemini') => {
     if (proxyOnline === false) {
       toast.error('AI 프록시 서버가 오프라인입니다.')
       return
     }
-    if (!connectedProviders.has(provider)) {
+    if (!isProviderUsable(provider)) {
       const cfg = PROVIDER_CONFIG.find(c => c.id === provider)!
-      toast.error(`${cfg.label} 공유 계정이 아직 등록되지 않았습니다.`)
+      toast.error(`${cfg.label} 계정 연결이 필요합니다. 아래 '내 가족 AI 계정'에서 연결하세요.`)
       return
     }
     await setAiMode(provider)
     setAiModeState(provider)
     const cfg = PROVIDER_CONFIG.find(c => c.id === provider)!
-    toast.success(`${cfg.label} (가족 공유) 사용 시작`)
+    const usingOwn = familyAccounts.some(a => a.provider === provider)
+    toast.success(`${cfg.label} (${usingOwn ? '내 계정' : '가족 공유'}) 사용 시작`)
   }
 
   const handleSwitchToApi = async () => {
@@ -302,18 +332,20 @@ function SettingsClient() {
           )}
         </button>
 
-        {/* 구독 연동 providers - 관리자 가족만 표시 */}
-        {isAdminFamily && PROVIDER_CONFIG.map((cfg) => {
+        {/* 구독 연동 providers — 운영자 공유 OR 본인 OAuth 연결 시 사용 가능 */}
+        {PROVIDER_CONFIG.map((cfg) => {
           const isActive = aiMode === cfg.id
-          const isConnected = connectedProviders.has(cfg.id)
+          const usingOwnAccount = familyAccounts.some(a => a.provider === cfg.id)
+          const isShared = isAdminFamily && connectedProviders.has(cfg.id)
+          const isUsable = usingOwnAccount || isShared
           const isProxyOffline = proxyOnline === false
-          const isUnregistered = !isConnected && !isProxyOffline && !statusLoading
-          const isDisabled = isProxyOffline || isUnregistered
+          const isUnusable = !isUsable && !isProxyOffline && !statusLoading
+          const isDisabled = isProxyOffline || isUnusable
 
           const tooltip = isProxyOffline
             ? 'AI 프록시 서버가 오프라인'
-            : isUnregistered
-              ? `${cfg.label} 공유 계정 미등록`
+            : isUnusable
+              ? `${cfg.label} 계정이 연결되지 않았습니다 — '내 가족 AI 계정'에서 연결하세요`
               : undefined
 
           return (
@@ -332,8 +364,8 @@ function SettingsClient() {
             >
               {/* 프로바이더 아이콘 */}
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors font-bold text-sm ${
-                isActive || isConnected ? cfg.iconBg : 'bg-muted'
-              } ${isActive || isConnected ? cfg.iconColor : 'text-muted-foreground'}`}>
+                isActive || isUsable ? cfg.iconBg : 'bg-muted'
+              } ${isActive || isUsable ? cfg.iconColor : 'text-muted-foreground'}`}>
                 {cfg.letter}
               </div>
 
@@ -341,7 +373,10 @@ function SettingsClient() {
               <div className="flex-1 text-left min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <p className="text-sm font-medium text-foreground">{cfg.label}</p>
-                  {isConnected && !statusLoading && (
+                  {usingOwnAccount && !statusLoading && (
+                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${cfg.badgeBg}`}>내 계정</span>
+                  )}
+                  {!usingOwnAccount && isShared && !statusLoading && (
                     <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${cfg.badgeBg}`}>가족 공유</span>
                   )}
                 </div>
@@ -353,8 +388,8 @@ function SettingsClient() {
                 <span className={`text-xs font-semibold flex-shrink-0 ${cfg.activeText}`}>사용 중</span>
               ) : isProxyOffline ? (
                 <span className="text-[10px] font-medium text-muted-foreground/60 flex-shrink-0 px-2 py-1 rounded-lg bg-muted/50 border border-border">오프라인</span>
-              ) : isUnregistered ? (
-                <span className="text-[10px] font-medium text-muted-foreground/60 flex-shrink-0 px-2 py-1 rounded-lg bg-muted/50 border border-border">준비 중</span>
+              ) : isUnusable ? (
+                <span className="text-[10px] font-medium text-muted-foreground/60 flex-shrink-0 px-2 py-1 rounded-lg bg-muted/50 border border-border">미연결</span>
               ) : (
                 <span className="text-xs font-medium text-foreground/50 flex-shrink-0 px-2 py-1 rounded-lg bg-muted border border-border">전환</span>
               )}
@@ -362,6 +397,73 @@ function SettingsClient() {
           )
         })}
       </section>
+
+      {/* 내 가족 AI 계정 (proxy 온라인일 때만) */}
+      {proxyOnline && (
+        <section className="rounded-2xl border border-border bg-card/30 p-5 mb-4">
+          <div className="mb-3">
+            <h2 className="text-sm font-semibold text-foreground/70">내 가족 AI 계정</h2>
+            <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+              본인 구독 계정을 연결하면 가족 공유 모드 대신 내 계정으로 처리됩니다. 연결 안 하면 운영자 공유 모드로 작동합니다.
+            </p>
+          </div>
+
+          {PROVIDER_CONFIG.map((cfg) => {
+            const account = familyAccounts.find(a => a.provider === cfg.id)
+            const isDisconnecting = disconnectingProvider === cfg.id
+
+            return (
+              <div
+                key={cfg.id}
+                className="flex items-center gap-3 p-3 rounded-xl border border-border mb-2 last:mb-0"
+              >
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-sm ${
+                  account ? cfg.iconBg : 'bg-muted'
+                } ${account ? cfg.iconColor : 'text-muted-foreground'}`}>
+                  {cfg.letter}
+                </div>
+
+                <div className="flex-1 text-left min-w-0">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <p className="text-sm font-medium text-foreground">{cfg.label}</p>
+                    {account && (
+                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md ${cfg.badgeBg}`}>내 계정</span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                    {account ? account.email : '미연결'}
+                  </p>
+                </div>
+
+                {account ? (
+                  <button
+                    onClick={() => handleDisconnect(cfg.id)}
+                    disabled={isDisconnecting}
+                    className="flex-shrink-0 text-xs font-medium px-3 h-8 rounded-xl bg-card border border-border text-muted-foreground hover:text-foreground hover:border-ring transition-colors disabled:opacity-50"
+                  >
+                    {isDisconnecting ? '해제 중...' : '해제'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setOauthDialog({ open: true, provider: cfg.id, label: cfg.label })}
+                    className="flex-shrink-0 text-xs font-semibold px-3 h-8 rounded-xl bg-foreground text-background hover:opacity-90 transition-opacity"
+                  >
+                    연결
+                  </button>
+                )}
+              </div>
+            )
+          })}
+        </section>
+      )}
+
+      <OAuthConnectDialog
+        open={oauthDialog.open}
+        provider={oauthDialog.provider}
+        providerLabel={oauthDialog.label}
+        onClose={() => setOauthDialog({ open: false, provider: null, label: '' })}
+        onDone={() => refreshFamilyAccounts()}
+      />
 
       {/* 카테고리 관리 */}
       <section className="rounded-2xl border border-border bg-card/30 p-5 mb-4">

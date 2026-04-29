@@ -2,13 +2,12 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 import { NextResponse } from 'next/server'
-import { generateObject } from 'ai'
 import { z } from 'zod'
 import { getAuthUser } from '@/lib/auth'
 import { getCategories } from '@/lib/actions/categories'
 import { getUserCategoryPreferences } from '@/lib/actions/preferences'
 import { prisma } from '@/lib/prisma'
-import { proxyModel } from '@/lib/ai'
+import { chatJSON, type AiMode } from '@/lib/ai'
 
 const mappingSchema = z.object({
   mappings: z.array(
@@ -28,18 +27,18 @@ function chunk<T>(arr: T[], size: number): T[][] {
 async function callAiBatch(
   items: { description: string; category: string }[],
   categoryList: string,
-  mode: Parameters<typeof proxyModel>[1],
-  options?: Parameters<typeof proxyModel>[2],
+  mode: AiMode,
+  sessionId?: string,
 ): Promise<{ description: string; categoryId: string }[]> {
   const itemList = items
     .map((item, i) => `${i + 1}. 내용: "${item.description}", 기존분류: "${item.category}"`)
     .join('\n')
 
-  const { object } = await generateObject({
-    model: proxyModel('fast', mode, options),
-    schema: mappingSchema,
-    temperature: 0.1,
-    prompt: `너는 한국 가계부 분류 AI야. 아래 거래 내역들을 보고 카테고리 목록 중 가장 적합한 categoryId를 매핑해.
+  const result = await chatJSON(
+    [
+      {
+        role: 'user',
+        content: `너는 한국 가계부 분류 AI야. 아래 거래 내역들을 보고 카테고리 목록 중 가장 적합한 categoryId를 매핑해.
 
 ## 카테고리 목록 (id|name|type)
 ${categoryList}
@@ -47,10 +46,22 @@ ${categoryList}
 ## 거래 내역 (${items.length}건)
 ${itemList}
 
-각 거래의 description은 입력 그대로 반환하고, 해당하는 categoryId를 매핑해.`,
-  })
+각 거래의 description은 입력 그대로 반환하고, 해당하는 categoryId를 매핑해.
 
-  return object.mappings
+응답 형식: {"mappings": [{"description": "...", "categoryId": "..."}]}`,
+      },
+    ],
+    mappingSchema,
+    {
+      mode,
+      sessionId,
+      tier: 'fast',
+      temperature: 0.1,
+      maxTokens: Math.max(2000, items.length * 80),
+    }
+  )
+
+  return result.mappings
 }
 
 export async function POST(req: Request) {
@@ -102,7 +113,6 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: '카테고리가 없습니다' }, { status: 400 })
     }
 
-    const modelOpts = { sessionId: user.familyId }
     const categoryList = categories.map(c => `${c.id}|${c.name}|${c.type}`).join('\n')
     const catById = new Map(categories.map(c => [c.id, c]))
 
@@ -134,7 +144,7 @@ export async function POST(req: Request) {
     const allRaw: { description: string; categoryId: string }[] = []
     if (uniqueItems.length > 0) {
       const batches = chunk(uniqueItems, 50)
-      const results = await Promise.allSettled(batches.map(batch => callAiBatch(batch, categoryList, user.familyAiMode, modelOpts)))
+      const results = await Promise.allSettled(batches.map(batch => callAiBatch(batch, categoryList, user.familyAiMode, user.familyId ?? undefined)))
       for (const res of results) {
         if (res.status === 'fulfilled') allRaw.push(...res.value)
         else console.error('[recategorize] batch error:', res.reason)

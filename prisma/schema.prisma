@@ -13,86 +13,88 @@ datasource db {
 }
 
 enum Role {
-  CFO     // 대표 관리자: 가족 생성자, 전체 접근
-  CO_CFO  // 공동 관리자: CFO와 동일한 접근 권한 (부부 공동 관리 등)
-  MEMBER  // 구성원: 개인 지출 및 공동 지출 기여
+  CFO // 대표 관리자: 가족 생성자, 전체 접근
+  CO_CFO // 공동 관리자: CFO와 동일한 접근 권한 (부부 공동 관리 등)
+  MEMBER // 구성원: 개인 지출 및 공동 지출 기여
 }
 
 enum CategoryType {
   EXPENSE // 지출 카테고리
-  INCOME  // 수입 카테고리
+  INCOME // 수입 카테고리
 }
 
 enum Visibility {
-  SHARED  // 가족 모두에게 상세 내역 공개
+  SHARED // 가족 모두에게 상세 내역 공개
   PRIVATE // 본인 외에는 '합계'만 노출 (상세 내역 마스킹)
 }
 
 enum AccountType {
-  CASH        // 현금/예적금
-  INVESTMENT  // 주식/펀드
-  PENSION     // 연금 (IRP, 연금저축 등)
-  CRYPTO      // 가상자산
+  CASH // 현금/예적금
+  INVESTMENT // 주식/펀드
+  PENSION // 연금 (IRP, 연금저축 등)
+  CRYPTO // 가상자산
   REAL_ESTATE // 부동산
-  STO         // 토큰증권 (장기 확장성)
-  DEBT        // 대출 (부채)
+  STO // 토큰증권 (장기 확장성)
+  DEBT // 대출 (부채)
   CREDIT_CARD // 신용카드 (부채)
 }
 
 enum ShareLevel {
-  PUBLIC       // 내역까지 공개 — 가족 모두가 볼 수 있음
+  PUBLIC // 내역까지 공개 — 가족 모두가 볼 수 있음
   BALANCE_ONLY // 금액만 합산 — 이름/내역 숨김, 금액만 표시
-  PRIVATE      // 나만 보기 — 타인 리스트에서 완전 제외
+  PRIVATE // 나만 보기 — 타인 리스트에서 완전 제외
 }
 
 enum RepaymentType {
   EQUAL_PRINCIPAL_INTEREST // 원리금균등
-  EQUAL_PRINCIPAL          // 원금균등
-  BULLET                   // 만기일시
-  INTEREST_ONLY            // 이자만납부
+  EQUAL_PRINCIPAL // 원금균등
+  BULLET // 만기일시
+  INTEREST_ONLY // 이자만납부
 }
 
 enum DebtType {
-  MORTGAGE        // 주택담보대출
-  JEONSE_DEPOSIT  // 전세보증금(수취)
-  CREDIT_LOAN     // 신용대출
-  OVERDRAFT       // 마이너스통장
-  ETC             // 기타
+  MORTGAGE // 주택담보대출
+  JEONSE_DEPOSIT // 전세보증금(수취)
+  CREDIT_LOAN // 신용대출
+  OVERDRAFT // 마이너스통장
+  ETC // 기타
 }
 
 enum TradeType {
-  BUY       // 매수
-  SELL      // 매도
-  DIVIDEND  // 배당/분배금
-  SPLIT     // 액면분할
+  BUY // 매수
+  SELL // 매도
+  DIVIDEND // 배당/분배금
+  SPLIT // 액면분할
 }
 
 enum PensionType {
-  PUBLIC_PENSION   // 공적연금 (국민연금, 공무원연금 등)
-  RETIREMENT_DB    // 퇴직연금 DB형 (확정급여형)
-  RETIREMENT_DC    // 퇴직연금 DC형 (확정기여형)
-  IRP              // 개인형 퇴직연금 (IRP)
+  PUBLIC_PENSION // 공적연금 (국민연금, 공무원연금 등)
+  RETIREMENT_DB // 퇴직연금 DB형 (확정급여형)
+  RETIREMENT_DC // 퇴직연금 DC형 (확정기여형)
+  IRP // 개인형 퇴직연금 (IRP)
   PERSONAL_PENSION // 개인연금 (연금저축펀드/보험)
-  HOME_PENSION     // 주택연금
+  HOME_PENSION // 주택연금
 }
 
 model FamilyGroup {
-  id                String             @id @default(cuid())
-  name              String             // 예: "우리집 패밀리오피스"
-  aiMode            String             @default("api") // "api" | "proxy"
+  id                String               @id @default(cuid())
+  name              String // 예: "우리집 패밀리오피스"
+  aiMode            String               @default("api") // "api" | "proxy"
   users             User[]
   accounts          Account[]
   invites           FamilyInvite[]
   budgets           Budget[]
   categories        Category[]
   monthlyGoals      MonthlyGoal[]
-  accountTypeLabels  AccountTypeLabel[]
-  netWorthSnapshots  NetWorthSnapshot[]
-  targetProperties   TargetProperty[]
-  contentSources     ContentSource[]
-  scenarios          Scenario[]
-  familyPosts        FamilyPost[]
-  createdAt          DateTime           @default(now())
+  accountTypeLabels AccountTypeLabel[]
+  netWorthSnapshots NetWorthSnapshot[]
+  targetProperties  TargetProperty[]
+  contentSources    ContentSource[]
+  scenarios         Scenario[]
+  familyPosts       FamilyPost[]
+  oauthAccounts     FamilyOAuthAccount[]
+  oauthSessions     FamilyOAuthSession[]
+  createdAt         DateTime             @default(now())
 }
 
 model Category {
@@ -100,7 +102,7 @@ model Category {
   name         String
   icon         String
   type         CategoryType
-  familyId     String?       // null = 시스템 기본값, non-null = 가족 커스텀
+  familyId     String? // null = 시스템 기본값, non-null = 가족 커스텀
   family       FamilyGroup?  @relation(fields: [familyId], references: [id])
   transactions Transaction[]
   createdAt    DateTime      @default(now())
@@ -111,10 +113,10 @@ model FamilyInvite {
   code      String      @unique // 6자리 초대 코드 (대문자+숫자)
   familyId  String
   family    FamilyGroup @relation(fields: [familyId], references: [id])
-  createdBy String      // CFO userId
-  usedBy    String?     // 사용한 유저 email
+  createdBy String // CFO userId
+  usedBy    String? // 사용한 유저 email
   usedAt    DateTime?
-  expiresAt DateTime    // 만료 시각
+  expiresAt DateTime // 만료 시각
   createdAt DateTime    @default(now())
 }
 
@@ -133,7 +135,9 @@ model User {
   familyPosts            FamilyPost[]
   postComments           PostComment[]
   postReactions          PostReaction[]
-  taggedInPosts          FamilyPost[]   @relation("FamilyPostTaggedUsers")
+  taggedInPosts          FamilyPost[]             @relation("FamilyPostTaggedUsers")
+  oauthAccountsConnected FamilyOAuthAccount[]
+  oauthSessionsStarted   FamilyOAuthSession[]
 
   @@index([familyId])
 }
@@ -143,13 +147,13 @@ model PensionDetail {
   accountId              String      @unique
   account                Account     @relation(fields: [accountId], references: [id], onDelete: Cascade)
   pensionType            PensionType @default(PERSONAL_PENSION)
-  institutionName        String?     // 기관명 (예: 국민연금공단, 삼성생명)
-  expectedMonthlyPension Float?      // 예상 월 수령액
+  institutionName        String? // 기관명 (예: 국민연금공단, 삼성생명)
+  expectedMonthlyPension Float? // 예상 월 수령액
   taxDeductible          Boolean     @default(false) // 세액공제 대상 (IRP/개인연금)
-  accumulatedMonths      Int?        // 누적 납입 개월 수
-  pensionStartAge        Int?        // 연금 개시 예정 나이
-  monthlyPayment         Float?      // 월 납입액
-  ownerBirthYear         Int?        // 가입자 출생연도 (수령까지 남은 기간 계산)
+  accumulatedMonths      Int? // 누적 납입 개월 수
+  pensionStartAge        Int? // 연금 개시 예정 나이
+  monthlyPayment         Float? // 월 납입액
+  ownerBirthYear         Int? // 가입자 출생연도 (수령까지 남은 기간 계산)
   createdAt              DateTime    @default(now())
   updatedAt              DateTime    @updatedAt
 }
@@ -158,7 +162,7 @@ model UserCategoryPreference {
   id         String   @id @default(cuid())
   userId     String
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  keyword    String   // normalized description (lowercase, trimmed)
+  keyword    String // normalized description (lowercase, trimmed)
   categoryId String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -167,62 +171,62 @@ model UserCategoryPreference {
 }
 
 model Account {
-  id              String      @id @default(cuid())
-  name            String      // 예: "생활비 통장", "개인 비상금"
-  type            AccountType @default(CASH)
-  balance         Float       @default(0)
-  isShared        Boolean     @default(true)   // 공동 자산 여부 (shareLevel에서 파생)
-  shareLevel      ShareLevel  @default(PUBLIC) // 공유 수준
-  familyId        String
-  family          FamilyGroup @relation(fields: [familyId], references: [id])
-  userId          String?     // 명의자 (null = 미설정 or 공동)
-  user            User?       @relation(fields: [userId], references: [id])
-  isJoint         Boolean     @default(false) // 공동 명의 여부
-  transactions    Transaction[]
+  id           String        @id @default(cuid())
+  name         String // 예: "생활비 통장", "개인 비상금"
+  type         AccountType   @default(CASH)
+  balance      Float         @default(0)
+  isShared     Boolean       @default(true) // 공동 자산 여부 (shareLevel에서 파생)
+  shareLevel   ShareLevel    @default(PUBLIC) // 공유 수준
+  familyId     String
+  family       FamilyGroup   @relation(fields: [familyId], references: [id])
+  userId       String? // 명의자 (null = 미설정 or 공동)
+  user         User?         @relation(fields: [userId], references: [id])
+  isJoint      Boolean       @default(false) // 공동 명의 여부
+  transactions Transaction[]
 
   // 계층 구조 — 예: IRP → 채권펀드, 미래에셋계좌 → 국내주식펀드
   parentAccountId String?
-  parentAccount   Account?    @relation("SubAccounts", fields: [parentAccountId], references: [id])
-  subAccounts     Account[]   @relation("SubAccounts")
+  parentAccount   Account?  @relation("SubAccounts", fields: [parentAccountId], references: [id])
+  subAccounts     Account[] @relation("SubAccounts")
 
   // 부채가 종속된 자산 (self-relation) — 예: 주택담보대출 → 아파트
-  linkedAssetId   String?
-  linkedAsset     Account?    @relation("DebtToAsset", fields: [linkedAssetId], references: [id])
-  linkedDebts     Account[]   @relation("DebtToAsset")
+  linkedAssetId String?
+  linkedAsset   Account?  @relation("DebtToAsset", fields: [linkedAssetId], references: [id])
+  linkedDebts   Account[] @relation("DebtToAsset")
 
   // 유형별 상세 정보 (1:1)
   realEstateDetail     RealEstateDetail?
   financialAssetDetail FinancialAssetDetail?
   debtDetail           DebtDetail?
   pensionDetail        PensionDetail?
-  holdings             InvestmentHolding[]         // INVESTMENT/CRYPTO 계좌 종목 목록
-  priceHistory         RealEstatePriceHistory[]    // REAL_ESTATE 시세 이력
+  holdings             InvestmentHolding[] // INVESTMENT/CRYPTO 계좌 종목 목록
+  priceHistory         RealEstatePriceHistory[] // REAL_ESTATE 시세 이력
 
   @@index([familyId, parentAccountId])
   @@index([userId])
 }
 
 model Transaction {
-  id           String     @id @default(cuid())
-  amount       Float
-  date         DateTime   @default(now())
-  description  String     // 이 필드가 마스킹 대상
-  category     String     // 카테고리 이름 (표시용, 하위호환)
-  categoryId   String?    // Category 모델 FK (선택)
-  categoryRef  Category?  @relation(fields: [categoryId], references: [id])
-  visibility   Visibility @default(SHARED)
-  isExcluded        Boolean    @default(false) // 통계 제외 여부
-  excludeFromBudget Boolean    @default(false) // 예산 집계 제외 여부
-  originalHash String?    @unique        // 엑셀 원본 Row 식별자 SHA-256 (userId|date|amount|desc|accountName)
-  userId       String
-  user         User       @relation(fields: [userId], references: [id])
-  accountId    String
-  account      Account    @relation(fields: [accountId], references: [id])
+  id                String        @id @default(cuid())
+  amount            Float
+  date              DateTime      @default(now())
+  description       String // 이 필드가 마스킹 대상
+  category          String // 카테고리 이름 (표시용, 하위호환)
+  categoryId        String? // Category 모델 FK (선택)
+  categoryRef       Category?     @relation(fields: [categoryId], references: [id])
+  visibility        Visibility    @default(SHARED)
+  isExcluded        Boolean       @default(false) // 통계 제외 여부
+  excludeFromBudget Boolean       @default(false) // 예산 집계 제외 여부
+  originalHash      String?       @unique // 엑셀 원본 Row 식별자 SHA-256 (userId|date|amount|desc|accountName)
+  userId            String
+  user              User          @relation(fields: [userId], references: [id])
+  accountId         String
+  account           Account       @relation(fields: [accountId], references: [id])
   // 분할 항목 (self-relation)
-  parentId     String?
-  parent       Transaction?  @relation("SubTransactions", fields: [parentId], references: [id], onDelete: Cascade)
-  subItems     Transaction[] @relation("SubTransactions")
-  familyPosts  FamilyPost[]
+  parentId          String?
+  parent            Transaction?  @relation("SubTransactions", fields: [parentId], references: [id], onDelete: Cascade)
+  subItems          Transaction[] @relation("SubTransactions")
+  familyPosts       FamilyPost[]
 
   @@index([userId, date])
   @@index([accountId])
@@ -230,30 +234,30 @@ model Transaction {
 }
 
 model RealEstateDetail {
-  id            String    @id @default(cuid())
-  accountId     String    @unique
-  account       Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  propertyType  String?   // 아파트, 빌라, 오피스텔, 토지 등
-  complexName   String?   // 단지명 (예: 래미안원베일리)
-  bjdCode       String?   // 법정동 코드 5자리 (국토부 API용, 예: 11650)
-  area          Float?    // 전용면적 (㎡)
-  floor         Int?      // 층
-  purchasePrice Float?    // 매수 원금 (취득가)
-  purchaseDate  DateTime? // 매수일
-  currentPrice  Float?    // 현재 시세 (수기 입력 또는 API 마지막값)
+  id             String    @id @default(cuid())
+  accountId      String    @unique
+  account        Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  propertyType   String? // 아파트, 빌라, 오피스텔, 토지 등
+  complexName    String? // 단지명 (예: 래미안원베일리)
+  bjdCode        String? // 법정동 코드 5자리 (국토부 API용, 예: 11650)
+  area           Float? // 전용면적 (㎡)
+  floor          Int? // 층
+  purchasePrice  Float? // 매수 원금 (취득가)
+  purchaseDate   DateTime? // 매수일
+  currentPrice   Float? // 현재 시세 (수기 입력 또는 API 마지막값)
   priceUpdatedAt DateTime? // 시세 마지막 업데이트
-  targetPrice   Float?    // 목표 매도가
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  targetPrice    Float? // 목표 매도가
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
 model FinancialAssetDetail {
   id             String    @id @default(cuid())
   accountId      String    @unique
   account        Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  interestRate   Float?    // 수익률 또는 이율 (% 단위, 예: 4.5)
+  interestRate   Float? // 수익률 또는 이율 (% 단위, 예: 4.5)
   maturityDate   DateTime? // 만기일
-  monthlyPayment Float?    // 월 납입액 (적금 등)
+  monthlyPayment Float? // 월 납입액 (적금 등)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }
@@ -263,10 +267,10 @@ model DebtDetail {
   accountId      String         @unique
   account        Account        @relation(fields: [accountId], references: [id], onDelete: Cascade)
   debtType       DebtType       @default(ETC) // 부채 세부 유형
-  interestRate   Float?         // 대출 금리 (% 단위, 예: 3.8)
-  maturityDate   DateTime?      // 대출 만기일
+  interestRate   Float? // 대출 금리 (% 단위, 예: 3.8)
+  maturityDate   DateTime? // 대출 만기일
   repaymentType  RepaymentType? // 상환 방식
-  monthlyPayment Float?         // 월 상환액
+  monthlyPayment Float? // 월 상환액
   includeInLtv   Boolean        @default(true) // LTV 계산 포함 여부
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
@@ -275,10 +279,10 @@ model DebtDetail {
 model Budget {
   id        String      @id @default(cuid())
   amount    Float
-  month     String      // "YYYY-MM"
+  month     String // "YYYY-MM"
   familyId  String
   family    FamilyGroup @relation(fields: [familyId], references: [id])
-  userId    String?     // null = 가족 전체 예산, non-null = 특정 멤버 예산
+  userId    String? // null = 가족 전체 예산, non-null = 특정 멤버 예산
   user      User?       @relation(fields: [userId], references: [id])
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
@@ -300,7 +304,7 @@ model NetWorthSnapshot {
   id               String      @id @default(cuid())
   familyId         String
   family           FamilyGroup @relation(fields: [familyId], references: [id])
-  yearMonth        String      // "YYYY-MM"
+  yearMonth        String // "YYYY-MM"
   totalAssets      Float       @default(0)
   totalLiabilities Float       @default(0)
   netWorth         Float       @default(0)
@@ -312,10 +316,10 @@ model NetWorthSnapshot {
 
 model MonthlyGoal {
   id                String      @id @default(cuid())
-  month             String      // "YYYY-MM"
+  month             String // "YYYY-MM"
   targetIncome      Float       @default(0)
   targetExpense     Float       @default(0)
-  targetSavingsRate Float       @default(0)  // 퍼센트 (예: 30.0 = 30%)
+  targetSavingsRate Float       @default(0) // 퍼센트 (예: 30.0 = 30%)
   familyId          String
   family            FamilyGroup @relation(fields: [familyId], references: [id])
   createdAt         DateTime    @default(now())
@@ -328,14 +332,14 @@ model InvestmentHolding {
   id           String        @id @default(cuid())
   accountId    String
   account      Account       @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  ticker       String?       // 티커 심볼 (예: 005930, AAPL, 005930.KS)
-  market       String?       // KRX, NASDAQ, NYSE, CRYPTO, ETF 등
-  name         String        // 종목명 (예: 삼성전자, Apple Inc.)
-  quantity     Float         // 보유 수량
-  avgPrice     Float         // 평균 매수가 (원 또는 달러)
-  currentPrice Float?        // 현재가 (마지막 조회값)
+  ticker       String? // 티커 심볼 (예: 005930, AAPL, 005930.KS)
+  market       String? // KRX, NASDAQ, NYSE, CRYPTO, ETF 등
+  name         String // 종목명 (예: 삼성전자, Apple Inc.)
+  quantity     Float // 보유 수량
+  avgPrice     Float // 평균 매수가 (원 또는 달러)
+  currentPrice Float? // 현재가 (마지막 조회값)
   currency     String        @default("KRW") // KRW, USD 등
-  lastUpdated  DateTime?     // 현재가 마지막 업데이트
+  lastUpdated  DateTime? // 현재가 마지막 업데이트
   memo         String?
   trades       TradeRecord[]
   createdAt    DateTime      @default(now())
@@ -348,10 +352,10 @@ model TradeRecord {
   id        String            @id @default(cuid())
   holdingId String
   holding   InvestmentHolding @relation(fields: [holdingId], references: [id], onDelete: Cascade)
-  type      TradeType         // BUY, SELL, DIVIDEND, SPLIT
-  quantity  Float             // 수량 (DIVIDEND는 금액)
-  price     Float             // 단가 (DIVIDEND는 주당 배당금)
-  fee       Float?            // 수수료/세금
+  type      TradeType // BUY, SELL, DIVIDEND, SPLIT
+  quantity  Float // 수량 (DIVIDEND는 금액)
+  price     Float // 단가 (DIVIDEND는 주당 배당금)
+  fee       Float? // 수수료/세금
   date      DateTime
   memo      String?
   createdAt DateTime          @default(now())
@@ -361,18 +365,18 @@ model TradeRecord {
 
 // ── 부동산 시세 이력 ──────────────────────────────────────────────────────────
 model RealEstatePriceHistory {
-  id        String   @id @default(cuid())
-  accountId String?                                           // 보유 부동산 (null이면 target)
-  account   Account? @relation(fields: [accountId], references: [id], onDelete: Cascade)
-  targetId  String?                                           // 목표 단지
+  id        String          @id @default(cuid())
+  accountId String? // 보유 부동산 (null이면 target)
+  account   Account?        @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  targetId  String? // 목표 단지
   target    TargetProperty? @relation(fields: [targetId], references: [id], onDelete: Cascade)
-  yearMonth String                                            // "YYYY-MM"
-  price     Float                                             // 중앙값 (원)
-  priceMin  Float?                                            // 최저 거래가 (원, MOLIT)
-  priceMax  Float?                                            // 최고 거래가 (원, MOLIT)
-  area      Float?                                            // 실거래 면적 (㎡), 국토부 조회 시 기록
-  source    String   @default("MANUAL")                      // MANUAL | MOLIT
-  createdAt DateTime @default(now())
+  yearMonth String // "YYYY-MM"
+  price     Float // 중앙값 (원)
+  priceMin  Float? // 최저 거래가 (원, MOLIT)
+  priceMax  Float? // 최고 거래가 (원, MOLIT)
+  area      Float? // 실거래 면적 (㎡), 국토부 조회 시 기록
+  source    String          @default("MANUAL") // MANUAL | MOLIT
+  createdAt DateTime        @default(now())
 
   @@index([accountId, yearMonth])
   @@index([targetId, yearMonth])
@@ -383,12 +387,12 @@ model TargetProperty {
   id           String                   @id @default(cuid())
   familyId     String
   family       FamilyGroup              @relation(fields: [familyId], references: [id])
-  name         String                   // 단지명 (예: 래미안원베일리)
-  bjdCode      String?                  // 법정동 코드 5자리
-  area         Float?                   // 목표 전용면적 (㎡)
-  budget       Float?                   // 목표 예산 (원)
-  currentPrice Float?                   // 최근 시세 캐시 (원)
-  lastUpdated  DateTime?                // 시세 마지막 업데이트
+  name         String // 단지명 (예: 래미안원베일리)
+  bjdCode      String? // 법정동 코드 5자리
+  area         Float? // 목표 전용면적 (㎡)
+  budget       Float? // 목표 예산 (원)
+  currentPrice Float? // 최근 시세 캐시 (원)
+  lastUpdated  DateTime? // 시세 마지막 업데이트
   memo         String?
   priceHistory RealEstatePriceHistory[]
   createdAt    DateTime                 @default(now())
@@ -404,7 +408,7 @@ model ContentSource {
   familyId  String
   family    FamilyGroup @relation(fields: [familyId], references: [id])
   type      String      @default("url") // "url" | "text"
-  url       String?     // type=url일 때만 사용
+  url       String? // type=url일 때만 사용
   title     String?
   summary   String?
   createdAt DateTime    @default(now())
@@ -413,23 +417,23 @@ model ContentSource {
 }
 
 model Scenario {
-  id               String               @id @default(cuid())
+  id               String                @id @default(cuid())
   familyId         String
-  family           FamilyGroup          @relation(fields: [familyId], references: [id])
+  family           FamilyGroup           @relation(fields: [familyId], references: [id])
   title            String
-  category         String?              // 부동산/투자/부채/현금흐름/연금 등
-  rationale        String               // 왜 지금 나에게 관련있는지
-  gap              String?              // 필요조건 vs 현재 갭
-  timeline         String?              // 예상 타임라인
-  risk             String?              // 주요 리스크
-  actions          String[]             // 다음 액션 목록
-  completedActions Int[]                // 완료된 액션 인덱스 목록
-  feasibility      Int                  // 실행 가능성 0~100
-  sourceIds        String[]             // 참조한 ContentSource ids
-  status           String               @default("active") // active | interested | dismissed | archived
-  generationBatch  String               @default("") // 같은 생성 회차 그룹핑 (cuid)
-  expansion        Json?                // 상세 실행 계획 (expandScenario 호출 후)
-  generatedAt      DateTime             @default(now())
+  category         String? // 부동산/투자/부채/현금흐름/연금 등
+  rationale        String // 왜 지금 나에게 관련있는지
+  gap              String? // 필요조건 vs 현재 갭
+  timeline         String? // 예상 타임라인
+  risk             String? // 주요 리스크
+  actions          String[] // 다음 액션 목록
+  completedActions Int[] // 완료된 액션 인덱스 목록
+  feasibility      Int // 실행 가능성 0~100
+  sourceIds        String[] // 참조한 ContentSource ids
+  status           String                @default("active") // active | interested | dismissed | archived
+  generationBatch  String                @default("") // 같은 생성 회차 그룹핑 (cuid)
+  expansion        Json? // 상세 실행 계획 (expandScenario 호출 후)
+  generatedAt      DateTime              @default(now())
   chatMessages     ScenarioChatMessage[]
 
   @@index([familyId])
@@ -440,7 +444,7 @@ model ScenarioChatMessage {
   id         String   @id @default(cuid())
   scenarioId String
   scenario   Scenario @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
-  role       String   // user | assistant
+  role       String // user | assistant
   content    String
   createdAt  DateTime @default(now())
 
@@ -485,9 +489,46 @@ model PostReaction {
   post      FamilyPost @relation(fields: [postId], references: [id], onDelete: Cascade)
   userId    String
   user      User       @relation(fields: [userId], references: [id])
-  emoji     String     // ✅ 👍 🤔 ❤️
+  emoji     String // ✅ 👍 🤔 ❤️
   createdAt DateTime   @default(now())
 
   @@unique([postId, userId, emoji])
   @@index([postId])
+}
+
+// 가족별 CLIProxy OAuth 계정 연결.
+// CLIProxy가 토큰 자체는 자기 볼륨(/data/auths)에 보관하므로,
+// 여기엔 매핑 메타데이터만 저장: 어떤 가족이 어떤 authId를 쓰는지.
+model FamilyOAuthAccount {
+  id                String      @id @default(cuid())
+  familyId          String
+  family            FamilyGroup @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  provider          String // "claude" | "chatgpt" | "gemini"
+  authId            String // CLIProxy 파일명 ID (예: "claude-foo@bar.json")
+  email             String
+  connectedByUserId String
+  connectedBy       User        @relation(fields: [connectedByUserId], references: [id])
+  status            String      @default("active") // "active" | "disconnected"
+  lastUsedAt        DateTime?
+  createdAt         DateTime    @default(now())
+
+  @@unique([familyId, provider]) // 가족당 provider 1개씩만
+  @@index([authId])
+}
+
+// Manual paste OAuth flow 진행 중인 세션.
+// 사용자가 어떤 state로 시작했는지 기억해야 callback URL paste 시 검증 가능.
+// CLIProxy 측 state TTL은 10분 — expiresAt 지나면 정리.
+model FamilyOAuthSession {
+  id        String      @id @default(cuid())
+  familyId  String
+  family    FamilyGroup @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id])
+  provider  String // "claude" | "chatgpt" | "gemini"
+  state     String      @unique // CLIProxy가 발급한 state
+  createdAt DateTime    @default(now())
+  expiresAt DateTime
+
+  @@index([familyId, provider])
 }

@@ -1,4 +1,5 @@
 import { createOpenAI } from '@ai-sdk/openai'
+import { prisma } from '@/lib/prisma'
 
 const PROXY_URL = process.env.CLI_PROXY_URL ?? 'http://localhost:8317'
 const PROXY_KEY = process.env.CLI_PROXY_API_KEY ?? 'canvas-local-dev-key'
@@ -7,18 +8,42 @@ const ADMIN_FAMILY_ID = process.env.ADMIN_FAMILY_ID ?? ''
 export type Provider = 'claude' | 'chatgpt' | 'gemini'
 export type AiMode = 'api' | 'claude' | 'chatgpt' | 'gemini'
 
+export interface ResolvedProxyAuth {
+  mode: AiMode
+  pinnedAuthId?: string
+}
+
 /**
- * 운영자 가족 외에는 CLI OAuth 공유 계정 사용 금지.
- * mode가 'api'가 아닌데 familyId가 admin이 아니면 'api'로 강제 다운그레이드.
+ * 가족 단위로 어떤 AI 경로를 쓸지 결정.
  *
- * 이유: 현재 CLIProxy에 저장된 토큰은 운영자 1인 계정이므로,
- *       다른 가족이 공유하면 레이트 리밋/약관 위반 리스크.
+ * 우선순위:
+ *  1. mode='api' 또는 familyId 없음 → OpenAI 직접
+ *  2. 가족이 본인 OAuth 계정 연결 → CLIProxy + X-Pinned-Auth-ID
+ *  3. 운영자 가족(ADMIN_FAMILY_ID) → CLIProxy 공유 계정 (pin 없음)
+ *  4. 그 외 → OpenAI fallback
  */
-function resolveEffectiveMode(mode: AiMode, familyId?: string): AiMode {
-  if (mode === 'api') return 'api'
-  if (!ADMIN_FAMILY_ID) return 'api' // env 미설정 시 안전하게 api
-  if (familyId === ADMIN_FAMILY_ID) return mode
-  return 'api'
+export async function resolveProxyAuth(
+  familyId: string | undefined,
+  mode: AiMode,
+): Promise<ResolvedProxyAuth> {
+  if (mode === 'api' || !familyId) return { mode: 'api' }
+
+  try {
+    const account = await prisma.familyOAuthAccount.findUnique({
+      where: { familyId_provider: { familyId, provider: mode } },
+    })
+    if (account && account.status === 'active') {
+      return { mode, pinnedAuthId: account.authId }
+    }
+  } catch (e) {
+    console.error('[resolveProxyAuth] DB lookup failed:', e)
+  }
+
+  if (ADMIN_FAMILY_ID && familyId === ADMIN_FAMILY_ID) {
+    return { mode } // 운영자 공유 모드 — pin 없이 round-robin
+  }
+
+  return { mode: 'api' }
 }
 
 export const PROVIDER_MODELS: Record<Provider, { fast: string; balanced: string; smart: string }> = {
@@ -62,25 +87,34 @@ export class ProxyCooldownError extends Error {
   }
 }
 
-/** Vercel AI SDK (generateObject 등)용 모델 인스턴스 */
+/**
+ * Vercel AI SDK (generateObject 등)용 모델 인스턴스.
+ *
+ * 동기 함수라 DB 조회 불가 — 호출 전에 `resolveProxyAuth()`로 mode/pinnedAuthId를
+ * 먼저 확정해서 넘기는 게 정석.
+ *
+ * mode가 'api'면 OpenAI 직접, 그 외엔 CLIProxy 경유.
+ * pinnedAuthId가 있으면 X-Pinned-Auth-ID 헤더로 그 auth 강제.
+ */
 export function proxyModel(
   tier: keyof typeof API_MODELS = 'fast',
   mode: AiMode = 'claude',
-  options?: { sessionId?: string },
+  options?: { sessionId?: string; pinnedAuthId?: string },
 ) {
-  // sessionId는 현재 familyId로 전달됨 → admin family만 CLI 모드 유지
-  const effective = resolveEffectiveMode(mode, options?.sessionId)
-
-  if (effective === 'api') {
+  if (mode === 'api') {
     const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY })
     return openai(API_MODELS[tier])
   }
 
-  const provider: Provider = effective as Provider
+  const provider: Provider = mode as Provider
+  const headers: Record<string, string> = {}
+  if (options?.sessionId) headers['X-Session-ID'] = options.sessionId
+  if (options?.pinnedAuthId) headers['X-Pinned-Auth-ID'] = options.pinnedAuthId
+
   const openai = createOpenAI({
     baseURL: `${PROXY_URL}/v1`,
     apiKey: PROXY_KEY,
-    headers: options?.sessionId ? { 'X-Session-ID': options.sessionId } : {},
+    headers,
   })
   return openai(PROVIDER_MODELS[provider][tier])
 }
@@ -103,7 +137,7 @@ export interface ChatOptions {
 async function callProxy(
   model: string,
   messages: ChatMessage[],
-  opts: { temperature: number; maxTokens: number; timeoutMs: number; sessionId?: string },
+  opts: { temperature: number; maxTokens: number; timeoutMs: number; sessionId?: string; pinnedAuthId?: string },
 ): Promise<string> {
   const res = await fetch(`${PROXY_URL}/v1/chat/completions`, {
     method: 'POST',
@@ -111,6 +145,7 @@ async function callProxy(
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${PROXY_KEY}`,
       ...(opts.sessionId ? { 'X-Session-ID': opts.sessionId } : {}),
+      ...(opts.pinnedAuthId ? { 'X-Pinned-Auth-ID': opts.pinnedAuthId } : {}),
     },
     body: JSON.stringify({
       model,
@@ -182,25 +217,26 @@ export async function chat(
 
   const callOpts = { temperature, maxTokens, timeoutMs }
 
-  // sessionId는 familyId로 전달됨 → admin family만 CLI 모드 유지
-  const effective = resolveEffectiveMode(mode, sessionId)
+  // sessionId는 familyId — DB에서 가족 OAuth 연결 조회
+  const resolved = await resolveProxyAuth(sessionId, mode)
 
-  if (effective === 'api') {
+  if (resolved.mode === 'api') {
     const model = options.model ?? API_MODELS[tier]
     return callOpenAI(model, messages, callOpts)
   }
 
-  const provider: Provider = effective as Provider
+  const provider: Provider = resolved.mode as Provider
+  const proxyOpts = { ...callOpts, sessionId, pinnedAuthId: resolved.pinnedAuthId }
 
   if (options.model) {
-    return callProxy(options.model, messages, { ...callOpts, sessionId })
+    return callProxy(options.model, messages, proxyOpts)
   }
 
   let currentTier: keyof typeof API_MODELS = tier
   while (true) {
     const model = PROVIDER_MODELS[provider][currentTier]
     try {
-      return await callProxy(model, messages, { ...callOpts, sessionId })
+      return await callProxy(model, messages, proxyOpts)
     } catch (err) {
       if (err instanceof ProxyCooldownError && FALLBACK_TIER[currentTier]) {
         currentTier = FALLBACK_TIER[currentTier]
@@ -209,6 +245,95 @@ export async function chat(
       throw err
     }
   }
+}
+
+import type { ZodType } from 'zod'
+
+/**
+ * AI에 JSON 응답을 요청하는 헬퍼.
+ *
+ * 왜 따로 만드나:
+ * Vercel AI SDK의 generateObject는 OpenAI의 response_format=json_schema/tool_use를
+ * 가정하는데, Claude/Gemini를 CLIProxy 구독 경로로 부르면 이 모드가 깨끗하게 안 잡혀서
+ * 모델이 자유형 텍스트 + 마크다운 ```json``` 블록 + 한국어 커멘터리 식으로 응답함.
+ * 그러면 generateObject 내부 JSON.parse가 깨짐.
+ *
+ * 이 함수는:
+ *  1) 프롬프트 끝에 "JSON만, 마크다운/커멘터리 금지" 지시 추가
+ *  2) chat()으로 일반 텍스트 받기
+ *  3) ```json``` 블록 / 첫 [..] 또는 {..} 블록 추출
+ *  4) JSON.parse → zod 검증
+ */
+export async function chatJSON<T>(
+  messages: ChatMessage[],
+  schema: ZodType<T>,
+  options: ChatOptions = {},
+): Promise<T> {
+  const enhanced = messages.length > 0 && messages[messages.length - 1].role === 'user'
+    ? [
+        ...messages.slice(0, -1),
+        {
+          ...messages[messages.length - 1],
+          content:
+            messages[messages.length - 1].content +
+            '\n\n중요: 응답은 오직 유효한 JSON 객체 또는 배열로만. 마크다운 코드 블록(```), 설명, 머리말, 인사말 모두 금지. 첫 글자가 { 또는 [ 로 시작해야 함.',
+        },
+      ]
+    : messages
+
+  const text = await chat(enhanced, { ...options, maxTokens: options.maxTokens ?? 2000 })
+
+  const extracted = extractJSON(text)
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(extracted)
+  } catch {
+    throw new Error(`AI 응답을 JSON으로 파싱할 수 없습니다: ${extracted.slice(0, 200)}`)
+  }
+
+  return schema.parse(parsed)
+}
+
+/**
+ * 텍스트에서 JSON 부분만 뽑아내기.
+ * 우선순위: ```json``` 블록 > ``` 블록 > 첫 { 또는 [ 부터 매칭되는 끝까지.
+ */
+function extractJSON(text: string): string {
+  const trimmed = text.trim()
+
+  const fencedJson = trimmed.match(/```json\s*([\s\S]*?)\s*```/i)
+  if (fencedJson) return fencedJson[1].trim()
+
+  const fencedAny = trimmed.match(/```\s*([\s\S]*?)\s*```/)
+  if (fencedAny) return fencedAny[1].trim()
+
+  const firstObject = trimmed.indexOf('{')
+  const firstArray = trimmed.indexOf('[')
+  const candidates = [firstObject, firstArray].filter(i => i >= 0)
+  if (candidates.length === 0) return trimmed
+
+  const start = Math.min(...candidates)
+  const isArray = trimmed[start] === '['
+  const open = isArray ? '[' : '{'
+  const close = isArray ? ']' : '}'
+
+  // 균형 잡힌 닫는 괄호 찾기 (문자열 안의 괄호 무시)
+  let depth = 0
+  let inString = false
+  let escape = false
+  for (let i = start; i < trimmed.length; i++) {
+    const ch = trimmed[i]
+    if (escape) { escape = false; continue }
+    if (ch === '\\') { escape = true; continue }
+    if (ch === '"') { inString = !inString; continue }
+    if (inString) continue
+    if (ch === open) depth++
+    else if (ch === close) {
+      depth--
+      if (depth === 0) return trimmed.slice(start, i + 1)
+    }
+  }
+  return trimmed.slice(start)
 }
 
 /** 연결된 계정에서 활성 프로바이더 조회 */
