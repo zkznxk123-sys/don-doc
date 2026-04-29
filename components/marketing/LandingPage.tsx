@@ -105,32 +105,32 @@ function Hero() {
                 animation: 'cpDot 1.6s ease-in-out infinite',
               }}
             />
-            패밀리오피스 · 한국형 자산관리
+            AI 패밀리 오피스 · 의사결정 구조 설계
           </p>
 
           <h1
             className="font-serif font-medium leading-[1.05] tracking-[-0.025em] text-[44px] sm:text-[56px] lg:text-[68px]"
             style={{ color: CREAM }}
           >
-            현대적인 자산관리,
+            분석하는 AI를 넘어,
             <br />
             <span
               className="font-serif italic font-normal"
               style={{ color: ACCENT }}
             >
-              가족을 위해
-            </span>{' '}
-            설계되었습니다.
+              실행하는 AI
+            </span>
+            로.
           </h1>
 
           <motion.p
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.15, ease: 'easeOut' }}
-            className="text-base lg:text-[16px] leading-[1.65] mt-7 max-w-[480px]"
+            className="text-base lg:text-[16px] leading-[1.65] mt-7 max-w-[520px]"
             style={{ color: CREAM_DIM }}
           >
-            엑셀 한 번이면 AI가 분류하고, 부동산 LTV·연금·증여까지 — 가족 재정 전체를 한 명의 어드바이저처럼 관리합니다.
+            앱과 엑셀에 흩어진 가족 자산을 구조화하고, AI가 분류 → 분석 → 시나리오 → 실행까지 연결합니다. 가족 단위 재무 의사결정을 위한 통합 플랫폼.
           </motion.p>
 
           <motion.div
@@ -148,15 +148,15 @@ function Hero() {
               <ArrowRight className="w-4 h-4" />
             </a>
             <a
-              href="/api/auth/demo"
+              href="/demo"
               className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-[13px] font-medium transition-all hover:bg-white/5 active:scale-[0.97]"
               style={{ color: CREAM, border: `1px solid ${CREAM_FAINT}` }}
             >
-              데모 체험하기
+              데모 둘러보기
             </a>
           </motion.div>
 
-          {/* live AUM-style proof */}
+          {/* 측정 가능한 결과 — 경진대회 정량 목표 */}
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
@@ -165,9 +165,9 @@ function Hero() {
             style={{ borderTop: `1px solid ${CREAM_FAINT}` }}
           >
             {[
-              { l: '관리 자산 누적', v: <CountUp to={5.2} decimals={1} suffix="조" /> },
-              { l: '활성 가족', v: <CountUp to={12400} suffix="+" /> },
-              { l: 'AI 분류 정확도', v: <CountUp to={94} suffix="%" /> },
+              { l: 'AI 자동분류 정확도', v: <CountUp to={92} suffix="%" /> },
+              { l: '월 거래 분류 시간', v: <><span style={{ fontVariantNumeric: 'tabular-nums' }}><CountUp to={3} /></span><span style={{ fontSize: '0.55em', color: CREAM_DIM, fontWeight: 400 }}> h → </span><span style={{ fontVariantNumeric: 'tabular-nums' }}><CountUp to={30} /></span><span style={{ fontSize: '0.55em', color: CREAM_DIM, fontWeight: 400 }}> 분</span></> },
+              { l: 'AI 호출 비용', v: <><span style={{ fontSize: '0.65em', fontWeight: 400 }}>₩</span><CountUp to={0.15} decimals={2} /><span style={{ fontSize: '0.55em', color: CREAM_DIM, fontWeight: 400 }}> /건</span></> },
             ].map(s => (
               <div key={s.l}>
                 <p
@@ -187,153 +187,230 @@ function Hero() {
           </motion.div>
         </motion.div>
 
-        {/* RIGHT — floating product preview */}
-        <div className="relative h-[460px] sm:h-[540px]">
+        {/* RIGHT — diverse product preview (3 service slices) */}
+        <div className="relative h-[540px] sm:h-[600px]">
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.2, ease: 'easeOut' }}
-            className="absolute inset-0 rounded-[20px] overflow-hidden"
+            className="absolute inset-0 rounded-[20px] overflow-hidden flex flex-col"
             style={{
               background: 'linear-gradient(160deg, #1A2422 0%, #0E1413 100%)',
               border: `1px solid ${CREAM_FAINT}`,
               boxShadow: '0 30px 80px rgba(0,0,0,0.5), inset 0 1px 0 rgba(241,236,227,0.06)',
             }}
           >
-            {/* faux toolbar */}
+            {/* faux toolbar with section pills */}
             <div
-              className="flex items-center justify-between px-[18px] py-[14px]"
+              className="flex items-center justify-between px-[18px] py-[12px] flex-shrink-0"
               style={{ borderBottom: `1px solid ${CREAM_FAINT}`, background: 'rgba(0,0,0,0.3)' }}
             >
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-2">
                 <span
-                  className="w-[22px] h-[22px] rounded-md inline-flex items-center justify-center"
+                  className="w-[22px] h-[22px] rounded-md inline-flex items-center justify-center flex-shrink-0"
                   style={{ background: FOREST }}
                 >
                   <Sparkles className="w-3 h-3" style={{ color: CREAM }} />
                 </span>
-                <span className="text-[11px] font-semibold" style={{ color: CREAM }}>
-                  김OO 가족 · 데모
+                <span className="text-[10px] font-semibold" style={{ color: CREAM }}>
+                  돈Doc 데모
                 </span>
               </div>
-              <div className="flex gap-1.5">
-                {[0, 1, 2].map(i => (
+              <div className="flex gap-1 text-[9px]">
+                {['대시보드', '현금흐름', '시나리오', '피드'].map((p, i) => (
                   <span
-                    key={i}
-                    className="w-2 h-2 rounded-full"
-                    style={{ background: CREAM_FAINT }}
-                  />
+                    key={p}
+                    className="px-2 py-1 rounded-md font-medium"
+                    style={
+                      i === 0
+                        ? { background: ACCENT, color: BG }
+                        : { color: CREAM_DIM, background: 'rgba(241,236,227,0.04)' }
+                    }
+                  >
+                    {p}
+                  </span>
                 ))}
               </div>
             </div>
 
-            {/* faux dashboard inside */}
-            <div className="p-[22px] relative h-[calc(100%-51px)]">
-              <p
-                className="text-[10px] tracking-[0.12em] uppercase m-0"
-                style={{ color: CREAM_DIM }}
-              >
-                가족 순자산
-              </p>
-              <p
-                className="font-serif font-medium m-0 mt-1 tracking-[-0.03em] leading-none text-[44px] sm:text-[56px]"
-                style={{ color: CREAM, fontVariantNumeric: 'tabular-nums' }}
-              >
-                <CountUp to={7.32} decimals={2} suffix="억" duration={2000} />
-              </p>
-              <p className="text-[12px] m-0 mt-1.5 font-medium" style={{ color: POSITIVE }}>
-                ↑ +2,300만 <span style={{ color: CREAM_DIM, fontWeight: 400 }}>전월 대비</span>
-              </p>
+            {/* 3 stacked service slices */}
+            <div className="p-[14px] flex flex-col gap-2.5 flex-1 overflow-hidden">
 
-              {/* sparkline */}
-              <svg viewBox="0 0 400 100" className="w-full h-[90px] mt-4">
-                <defs>
-                  <linearGradient id="cpSpark" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0%" stopColor={ACCENT} stopOpacity="0.4" />
-                    <stop offset="100%" stopColor={ACCENT} stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                <path
-                  d="M 0 70 L 50 62 L 100 68 L 150 50 L 200 55 L 250 38 L 300 42 L 350 25 L 400 18 L 400 100 L 0 100 Z"
-                  fill="url(#cpSpark)"
-                />
-                <path
-                  d="M 0 70 L 50 62 L 100 68 L 150 50 L 200 55 L 250 38 L 300 42 L 350 25 L 400 18"
-                  fill="none"
-                  stroke={ACCENT}
-                  strokeWidth="2"
-                  strokeDasharray="600"
-                  style={{ animation: 'cpDraw 1.6s ease-out 0.6s both' }}
-                />
-              </svg>
-
-              {/* mini cards row */}
-              <div className="grid grid-cols-3 gap-2 mt-3">
-                {[
-                  { l: '부동산', v: '9.5억', d: '+26.7%' },
-                  { l: '주식·ETF', v: '1.2억', d: '+8.4%' },
-                  { l: '예적금', v: '4,200만', d: '+0.2%' },
-                ].map(c => (
-                  <div
-                    key={c.l}
-                    className="rounded-[10px] px-3 py-2.5"
-                    style={{
-                      background: 'rgba(241,236,227,0.04)',
-                      border: `1px solid ${CREAM_FAINT}`,
-                    }}
-                  >
+              {/* SLICE 1 — 통합 대시보드 (compact) */}
+              <div
+                className="rounded-[12px] p-[14px]"
+                style={{ background: 'rgba(241,236,227,0.03)', border: `1px solid ${CREAM_FAINT}` }}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
                     <p
-                      className="text-[9px] tracking-[0.1em] uppercase m-0"
-                      style={{ color: CREAM_DIM }}
+                      className="text-[9px] tracking-[0.14em] uppercase font-semibold m-0 flex items-center gap-1.5"
+                      style={{ color: ACCENT }}
                     >
-                      {c.l}
+                      <span
+                        className="w-1 h-1 rounded-full"
+                        style={{ background: ACCENT, boxShadow: `0 0 6px ${ACCENT}` }}
+                      />
+                      가족 순자산
                     </p>
                     <p
-                      className="text-[14px] m-0 mt-1 font-semibold"
+                      className="font-serif font-medium m-0 mt-1 tracking-[-0.02em] leading-none text-[28px]"
                       style={{ color: CREAM, fontVariantNumeric: 'tabular-nums' }}
                     >
-                      {c.v}
+                      <CountUp to={12.8} decimals={1} suffix="억" duration={2000} />
                     </p>
-                    <p className="text-[10px] m-0 mt-0.5" style={{ color: POSITIVE }}>
-                      {c.d}
+                    <p className="text-[10px] m-0 mt-1 font-medium" style={{ color: POSITIVE }}>
+                      ↑ +1,840만 전월
                     </p>
                   </div>
-                ))}
+                  <svg viewBox="0 0 160 50" className="w-[120px] h-[44px]">
+                    <defs>
+                      <linearGradient id="cpSpark" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor={ACCENT} stopOpacity="0.4" />
+                        <stop offset="100%" stopColor={ACCENT} stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
+                    <path
+                      d="M 0 35 L 20 32 L 40 34 L 60 24 L 80 27 L 100 18 L 120 20 L 140 10 L 160 8 L 160 50 L 0 50 Z"
+                      fill="url(#cpSpark)"
+                    />
+                    <path
+                      d="M 0 35 L 20 32 L 40 34 L 60 24 L 80 27 L 100 18 L 120 20 L 140 10 L 160 8"
+                      fill="none"
+                      stroke={ACCENT}
+                      strokeWidth="1.5"
+                      strokeDasharray="300"
+                      style={{ animation: 'cpDraw 1.6s ease-out 0.6s both' }}
+                    />
+                  </svg>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5 mt-2.5">
+                  {[
+                    { l: '부동산', v: '14.5억' },
+                    { l: '금융', v: '1.1억' },
+                    { l: '부채', v: '-2.8억' },
+                  ].map(c => (
+                    <div key={c.l} className="text-center py-1.5 rounded-md" style={{ background: 'rgba(241,236,227,0.03)' }}>
+                      <p className="text-[8px] m-0 tracking-[0.1em] uppercase" style={{ color: CREAM_DIM }}>
+                        {c.l}
+                      </p>
+                      <p className="text-[11px] m-0 mt-0.5 font-semibold" style={{ color: CREAM, fontVariantNumeric: 'tabular-nums' }}>
+                        {c.v}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* SLICE 2 — AI 자동분류 거래 */}
+              <div
+                className="rounded-[12px] p-[14px]"
+                style={{ background: 'rgba(241,236,227,0.03)', border: `1px solid ${CREAM_FAINT}` }}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <p
+                    className="text-[9px] tracking-[0.14em] uppercase font-semibold m-0 flex items-center gap-1.5"
+                    style={{ color: ACCENT }}
+                  >
+                    <Sparkles className="w-2.5 h-2.5" />
+                    AI 자동 분류 (HITL)
+                  </p>
+                  <span className="text-[9px] font-medium" style={{ color: POSITIVE }}>
+                    92% 정확도
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  {[
+                    { d: '스타벅스 강남R점', cat: '카페', tone: '#C28A4A', amt: '-6,800' },
+                    { d: '카카오T 일반택시', cat: '교통', tone: FOREST, amt: '-12,400' },
+                    { d: '쿠팡 정기배송', cat: '식비', tone: '#7CC9A9', amt: '-58,900' },
+                  ].map(t => (
+                    <div key={t.d} className="flex items-center gap-2">
+                      <span
+                        className="text-[9px] px-1.5 py-0.5 rounded font-semibold flex-shrink-0"
+                        style={{ background: `${t.tone}22`, color: t.tone, minWidth: 36, textAlign: 'center' }}
+                      >
+                        {t.cat}
+                      </span>
+                      <span className="text-[10px] flex-1 truncate" style={{ color: CREAM }}>
+                        {t.d}
+                      </span>
+                      <span className="text-[10px] font-semibold" style={{ color: CREAM_DIM, fontVariantNumeric: 'tabular-nums' }}>
+                        {t.amt}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* SLICE 3 — AI 시나리오 카드 */}
+              <div
+                className="rounded-[12px] p-[14px] flex-1 flex flex-col"
+                style={{
+                  background: `linear-gradient(135deg, ${ACCENT}14 0%, rgba(241,236,227,0.03) 100%)`,
+                  border: `1px solid ${ACCENT}40`,
+                }}
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <p
+                    className="text-[9px] tracking-[0.14em] uppercase font-semibold m-0 flex items-center gap-1.5"
+                    style={{ color: ACCENT }}
+                  >
+                    <Sparkles className="w-2.5 h-2.5" />
+                    AI 시나리오 추천
+                  </p>
+                  <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded" style={{ background: `${ACCENT}26`, color: ACCENT }}>
+                    부동산
+                  </span>
+                </div>
+                <p className="font-serif font-medium text-[15px] m-0 mt-1 tracking-[-0.01em]" style={{ color: CREAM }}>
+                  3년 내 강북 → 강남 갈아타기
+                </p>
+                <p className="text-[10px] m-0 mt-1.5 leading-[1.5]" style={{ color: CREAM_DIM }}>
+                  현재 자산·부채·여유자금 기준 시뮬레이션. 5단계 액션 플랜 자동 생성.
+                </p>
+                <div className="mt-auto pt-2 flex items-center gap-2">
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-[9px]" style={{ color: CREAM_DIM }}>실현 타당도</span>
+                      <span className="text-[9px] font-semibold" style={{ color: ACCENT }}>78%</span>
+                    </div>
+                    <div className="h-1 rounded-full overflow-hidden" style={{ background: CREAM_FAINT }}>
+                      <div
+                        className="h-full rounded-full"
+                        style={{ width: '78%', background: ACCENT }}
+                      />
+                    </div>
+                  </div>
+                  <span className="text-[9px] font-medium px-2 py-1 rounded-md flex-shrink-0" style={{ background: CREAM, color: BG }}>
+                    실행 →
+                  </span>
+                </div>
               </div>
             </div>
           </motion.div>
 
           {/* floating chips */}
-          <motion.div
-            initial={{ opacity: 0, y: 14 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.7 }}
-            className="absolute -left-3 top-[260px] rounded-full px-4 py-2 text-[11px] font-semibold inline-flex items-center gap-2 shadow-2xl"
-            style={{ background: CREAM, color: BG, ...float(0, 5) }}
-          >
-            <Sparkles className="w-3 h-3" />
-            AI 분류 완료 · 423건
-          </motion.div>
-
+          {/* floating accents — 카드 영역과 겹치지 않도록 외곽에 배치 */}
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.85 }}
-            className="absolute -right-2 top-[40px] rounded-full px-4 py-2 text-[11px] font-semibold inline-flex items-center gap-2 shadow-2xl"
+            className="absolute -right-3 top-[180px] rounded-full px-4 py-2 text-[11px] font-semibold inline-flex items-center gap-2 shadow-2xl"
             style={{ background: FOREST, color: CREAM, ...float(2.4, 6) }}
           >
             <span
               className="w-1.5 h-1.5 rounded-full"
               style={{ background: POSITIVE }}
             />
-            가족 4명 동기화됨
+            가족 4명 데이터 통합
           </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 1 }}
-            className="absolute right-5 -bottom-3 rounded-full px-4 py-2 text-[11px] font-semibold inline-flex items-center gap-2 shadow-2xl"
+            className="absolute -left-3 -bottom-3 rounded-full px-4 py-2 text-[11px] font-semibold inline-flex items-center gap-2 shadow-2xl"
             style={{
               background: BG_3,
               color: CREAM,
@@ -341,8 +418,8 @@ function Hero() {
               ...float(4, 5),
             }}
           >
-            <span style={{ color: ACCENT }}>LTV</span>
-            <span style={{ color: POSITIVE }}>42% · 안전</span>
+            <span style={{ color: ACCENT }}>실행하는 AI</span>
+            <span style={{ color: CREAM_DIM, fontWeight: 400 }}>· 다음 단계</span>
           </motion.div>
         </div>
       </div>
@@ -431,15 +508,15 @@ export function LandingPage() {
           className="text-[10px] tracking-[0.14em] uppercase font-semibold"
           style={{ color: ACCENT }}
         >
-          NEW
+          데모
         </span>
-        <span style={{ color: CREAM_DIM }}>패밀리오피스 베타 출시 — 가족 4인 이내 평생 무료</span>
+        <span style={{ color: CREAM_DIM }}>2026 디지털 혁신 AI 경진대회 출품작 · 데모 즉시 체험 가능</span>
         <a
-          href="/sign-up"
+          href="/demo"
           className="underline font-medium hover:opacity-80"
           style={{ color: CREAM }}
         >
-          자세히 →
+          데모 열기 →
         </a>
       </div>
 
@@ -457,30 +534,22 @@ export function LandingPage() {
             <span className="font-black text-[16px] tracking-[-0.02em]" style={{ color: CREAM }}>
               돈Doc
             </span>
-          </Link>
-          {/* persona toggle pill */}
-          <div
-            className="hidden md:flex gap-1.5 text-[11px] rounded-full p-[3px]"
-            style={{ background: CREAM_FAINT }}
-          >
             <span
-              className="px-3.5 py-[5px] rounded-full font-semibold"
-              style={{ background: CREAM, color: BG }}
+              className="hidden sm:inline-block text-[10px] tracking-[0.14em] uppercase font-semibold ml-2 px-2 py-0.5 rounded"
+              style={{ color: ACCENT, background: `${ACCENT}1A`, border: `1px solid ${ACCENT}40` }}
             >
-              가족용
+              AI 패밀리오피스
             </span>
-            <span className="px-3.5 py-[5px] rounded-full" style={{ color: CREAM_DIM }}>
-              어드바이저용
-            </span>
-          </div>
-        </div>
-        <div className="hidden lg:flex gap-7 text-[12px]" style={{ color: CREAM_DIM }}>
-          <span className="hover:opacity-80 cursor-default">대시보드</span>
-          <span className="hover:opacity-80 cursor-default">세무</span>
-          <span className="hover:opacity-80 cursor-default">리소스 ▾</span>
-          <span className="hover:opacity-80 cursor-default">회사 ▾</span>
+          </Link>
         </div>
         <div className="flex items-center gap-2">
+          <a
+            href="/demo"
+            className="hidden sm:inline-flex text-[12px] px-3 py-1.5 hover:opacity-80"
+            style={{ color: CREAM_DIM }}
+          >
+            데모
+          </a>
           <a
             href="/sign-in"
             className="text-[12px] px-3 py-1.5 hover:opacity-80"
@@ -500,7 +569,7 @@ export function LandingPage() {
 
       <Hero />
 
-      {/* ── PRESS STRIP ─────────────────────────────────────────────────────── */}
+      {/* ── TECH STACK STRIP ────────────────────────────────────────────────── */}
       <div
         className="relative py-8 md:py-10"
         style={{ borderTop: `1px solid ${CREAM_FAINT}`, borderBottom: `1px solid ${CREAM_FAINT}` }}
@@ -509,7 +578,7 @@ export function LandingPage() {
           className="text-[11px] tracking-[0.18em] uppercase text-center m-0 mb-6"
           style={{ color: CREAM_DIM }}
         >
-          주요 매체에 소개되었습니다
+          엔드 투 엔드로 직접 설계 · 구현
         </p>
         <div className="overflow-hidden whitespace-nowrap">
           <div
@@ -517,7 +586,7 @@ export function LandingPage() {
             style={{ animation: 'cpTicker 35s linear infinite' }}
           >
             {[...Array(2)].flatMap((_, copy) =>
-              ['조선일보', '중앙일보', 'TechCrunch', '매일경제', '한국경제', 'Forbes Korea', 'EO', 'Outstanding', '비즈한국'].map((p, i) => (
+              ['Next.js 14', 'Prisma 5', 'PostgreSQL', 'Clerk', 'Vercel AI SDK', 'CLIProxyAPI', 'Tailwind', 'shadcn/ui', 'Zod', 'Recharts'].map((p, i) => (
                 <span
                   key={`${copy}-${i}`}
                   className="font-serif font-medium tracking-[-0.02em] text-[20px] sm:text-[22px]"
@@ -534,62 +603,52 @@ export function LandingPage() {
         </div>
       </div>
 
-      {/* ── APPROACH — TEAM ────────────────────────────────────────────────── */}
+      {/* ── APPROACH — AI 4-STEP PIPELINE ─────────────────────────────────── */}
       <Section
-        kicker="우리의 접근"
+        kicker="설계 철학"
         title={
           <>
-            당신만을 위한
+            AI를 호출이 아닌,
             <br />
             <span className="font-serif italic font-normal" style={{ color: ACCENT }}>
-              전담팀
+              4단계 파이프라인
             </span>
-            이 있습니다
+            으로
           </>
         }
-        body="재무·세무·투자 어드바이저로 구성된 전담팀이 가족의 재정 전체를 함께 봅니다. 우리의 일은 — 당신이 최선의 결정을 내리도록 돕는 것."
+        body="단순한 LLM 콜이 아니라 — 데이터 구조화 → 반복업무 자동화 → 분석·시나리오 → 실행 검증까지. 사용자 상황에 맞는 모델 선택과 결과 검증까지 포함한 의사결정 구조로 설계했습니다."
         bg={BG}
       >
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mt-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 mt-12">
           {[
-            { name: '강민우', role: '재무 어드바이저', spec: '15년 · CFP', tone: ACCENT },
-            { name: '이서연', role: '세무 어드바이저', spec: '12년 · CTA', tone: FOREST },
-            { name: '박지훈', role: '투자 매니저', spec: '10년 · CFA', tone: '#8B6E1E' },
-            { name: '최예린', role: '컨시어지', spec: '7년 · 패밀리오피스', tone: '#5A4830' },
+            { n: '01', t: '데이터 구조화', d: '엑셀·앱 등 비정형 데이터를 AI가 처리 가능한 구조로 변환', tone: ACCENT },
+            { n: '02', t: '반복업무 자동화', d: '거래 분류·정리 등 반복 작업을 AI 자동화로 대체', tone: FOREST },
+            { n: '03', t: '분석 → 실행 연결', d: '분석 결과를 실행 가능한 행동(시나리오·액션 플랜)으로 변환', tone: '#8B6E1E' },
+            { n: '04', t: '실행 구조 검증', d: '모델 라우팅 + 비용 최적화 + HITL로 신뢰성 확보', tone: '#5A4830' },
           ].map(p => (
             <div
-              key={p.name}
-              className="rounded-[18px] p-[22px] flex flex-col justify-between min-h-[280px]"
+              key={p.n}
+              className="rounded-[18px] p-[22px] flex flex-col justify-between min-h-[260px]"
               style={{
                 background: `linear-gradient(180deg, ${p.tone}22 0%, ${BG_2} 100%)`,
                 border: `1px solid ${CREAM_FAINT}`,
               }}
             >
               <div
-                className="w-[72px] h-[72px] rounded-full flex items-center justify-center font-serif font-medium text-[28px] mb-3.5"
-                style={{
-                  background: `linear-gradient(135deg, ${p.tone} 0%, ${BG} 100%)`,
-                  border: `1px solid ${CREAM_FAINT}`,
-                  color: CREAM,
-                }}
+                className="font-serif font-medium text-[36px] tracking-[-0.02em] mb-3.5"
+                style={{ color: p.tone }}
               >
-                {p.name[0]}
+                {p.n}
               </div>
               <div>
                 <p
                   className="font-serif font-medium text-[22px] m-0 tracking-[-0.02em]"
                   style={{ color: CREAM }}
                 >
-                  {p.name}
+                  {p.t}
                 </p>
-                <p className="text-[12px] m-0 mt-1" style={{ color: CREAM_DIM }}>
-                  {p.role}
-                </p>
-                <p
-                  className="text-[10px] m-0 mt-3 tracking-[0.12em] uppercase font-semibold"
-                  style={{ color: p.tone }}
-                >
-                  {p.spec}
+                <p className="text-[12px] m-0 mt-2 leading-[1.6]" style={{ color: CREAM_DIM }}>
+                  {p.d}
                 </p>
               </div>
             </div>
@@ -597,32 +656,47 @@ export function LandingPage() {
         </div>
       </Section>
 
-      {/* ── EXCLUSIVE SERVICES ──────────────────────────────────────────────── */}
+      {/* ── 4 CORE FEATURES (deck slide 10) ─────────────────────────────────── */}
       <Section
-        kicker="전담 서비스"
+        kicker="구현된 4가지"
         title={
           <>
-            흩어진 자산을
+            모으기 → 정리하기 →
             <br />
             <span className="font-serif italic font-normal" style={{ color: ACCENT }}>
-              하나의 뷰
+              분석하기 → 실행하기
             </span>
-            로
           </>
         }
-        body="부동산 LTV부터 연금, 증여, 신탁까지 — 한 곳에서 모든 결정을. 가족 권한 분리로 부모와 자녀가 각자의 영역을 안전하게 관리합니다."
+        body="가족 단위 자산을 한곳에 모으고, AI가 정리·분석·실행까지 연결하는 웹 기반 실행형 패밀리오피스 — 7개 화면으로 설계."
         bg={BG_2}
       >
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 mt-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-12">
           {[
-            { Icon: BarChart3, t: '공모·사모 투자', d: '검증된 사모 펀드 액세스' },
-            { Icon: Sparkles, t: '세금 신고', d: '전담 세무사가 직접 신고' },
-            { Icon: Lock, t: '신탁·증여', d: '가족간 자산 이전 설계' },
-            { Icon: Shield, t: '신용 라인', d: '주식 담보 대출 중개' },
+            {
+              Icon: BarChart3,
+              t: '가족 자산 통합 대시보드',
+              d: '가족 구성원의 자산·부채·현금흐름을 한 화면에서 통합 조회. 순자산·월간 흐름·자산구성을 즉시 파악.',
+            },
+            {
+              Icon: Sparkles,
+              t: '현금흐름 + AI 자동분류',
+              d: '엑셀 업로드 → AI가 카테고리 자동 분류·구조화. 사용자 검증·수정 루프(HITL)로 정확도 지속 개선.',
+            },
+            {
+              Icon: ArrowRight,
+              t: 'AI 시나리오 허브',
+              d: '관심 컨텐츠 + 자산 데이터를 결합해 가족 라이프 이벤트(주택·은퇴·교육)별 시뮬레이션과 액션 플랜 자동 생성.',
+            },
+            {
+              Icon: Shield,
+              t: '가족 커뮤니케이션 + AI 대화',
+              d: '같은 데이터를 함께 보고, AI 채팅으로 시나리오를 구체화. 거래 카드 첨부·멘션·댓글로 의사결정 가속.',
+            },
           ].map(s => (
             <div
               key={s.t}
-              className="rounded-[18px] p-7 min-h-[220px] flex flex-col justify-between"
+              className="rounded-[18px] p-7 min-h-[200px] flex flex-col justify-between"
               style={{ background: BG, border: `1px solid ${CREAM_FAINT}` }}
             >
               <div
@@ -639,7 +713,7 @@ export function LandingPage() {
                   {s.t}
                 </p>
                 <p
-                  className="text-[12px] m-0 mt-1.5 leading-[1.55]"
+                  className="text-[13px] m-0 mt-2 leading-[1.6]"
                   style={{ color: CREAM_DIM }}
                 >
                   {s.d}
@@ -650,24 +724,23 @@ export function LandingPage() {
         </div>
       </Section>
 
-      {/* ── POWERFUL TECHNOLOGY — DASHBOARD TILES ──────────────────────────── */}
+      {/* ── POWERFUL TECHNOLOGY — AI INFRASTRUCTURE ────────────────────────── */}
       <Section
-        kicker="강력한 기술"
+        kicker="AI 인프라"
         title={
           <>
-            대시보드가
+            아이디어가 아닌 —
             <br />
             <span className="font-serif italic font-normal" style={{ color: ACCENT }}>
-              스스로 정리
+              운영 가능한 시스템
             </span>
-            합니다
           </>
         }
-        body="순자산 추적, 세금 시뮬레이션, 현금흐름 예측까지 — 엑셀 한 번 업로드하면 AI가 학습해 갈수록 정확해집니다."
+        body="3-tier 모델 라우팅 · 자동 폴백 · HITL 검증 루프 · CLIProxy 멀티 프로바이더. 단순 LLM 호출이 아니라 비용·성능·신뢰성을 균형있게 잡은 AI 시스템 아키텍처를 직접 설계했습니다."
         bg={BG}
       >
         <div className="grid lg:grid-cols-[1.4fr_1fr_1fr] gap-4 mt-12">
-          {/* Big tile — net worth */}
+          {/* Big tile — 3-tier model routing */}
           <div
             className="rounded-[20px] p-6 min-h-[320px]"
             style={{ background: BG_2, border: `1px solid ${CREAM_FAINT}` }}
@@ -678,126 +751,52 @@ export function LandingPage() {
                   className="text-[10px] tracking-[0.14em] uppercase font-semibold m-0"
                   style={{ color: ACCENT }}
                 >
-                  순자산 모니터링
+                  3-tier 모델 라우팅
                 </p>
                 <p
-                  className="font-serif font-medium m-0 mt-1.5 tracking-[-0.02em] text-[36px] sm:text-[44px]"
-                  style={{ color: CREAM, fontVariantNumeric: 'tabular-nums' }}
+                  className="font-serif font-medium m-0 mt-1.5 tracking-[-0.02em] text-[28px] sm:text-[32px] leading-[1.15]"
+                  style={{ color: CREAM }}
                 >
-                  7.32억
+                  작업 난이도에 맞춰
+                  <br />
+                  <span style={{ color: ACCENT }}>비용·성능 자동 균형</span>
                 </p>
-                <p className="text-[12px] m-0 mt-1 font-medium" style={{ color: POSITIVE }}>
-                  ↑ +2,300만 전월 대비
-                </p>
-              </div>
-              <div className="hidden sm:flex gap-1">
-                {['1M', '6M', '1Y', '전체'].map((p, i) => (
-                  <span
-                    key={p}
-                    className="text-[10px] px-2.5 py-1 rounded-full font-medium"
-                    style={
-                      i === 2
-                        ? { background: CREAM, color: BG, border: 'none' }
-                        : { color: CREAM_DIM, border: `1px solid ${CREAM_FAINT}` }
-                    }
-                  >
-                    {p}
-                  </span>
-                ))}
               </div>
             </div>
-            <svg viewBox="0 0 600 160" className="w-full h-[180px] mt-4">
-              <defs>
-                <linearGradient id="cpBigSpark" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0%" stopColor={ACCENT} stopOpacity="0.35" />
-                  <stop offset="100%" stopColor={ACCENT} stopOpacity="0" />
-                </linearGradient>
-              </defs>
-              {[...Array(6)].map((_, i) => (
-                <line
-                  key={i}
-                  x1="0"
-                  x2="600"
-                  y1={i * 32}
-                  y2={i * 32}
-                  stroke={CREAM_FAINT}
-                  strokeWidth="0.5"
-                  strokeDasharray="2 4"
-                />
-              ))}
-              <path
-                d="M 0 130 C 60 120, 100 110, 150 100 S 250 80, 300 90 S 400 60, 450 50 S 540 30, 600 20 L 600 160 L 0 160 Z"
-                fill="url(#cpBigSpark)"
-              />
-              <path
-                d="M 0 130 C 60 120, 100 110, 150 100 S 250 80, 300 90 S 400 60, 450 50 S 540 30, 600 20"
-                fill="none"
-                stroke={ACCENT}
-                strokeWidth="2.5"
-              />
-              <circle cx="600" cy="20" r="5" fill={ACCENT} />
-              <circle
-                cx="600"
-                cy="20"
-                r="10"
-                fill="none"
-                stroke={ACCENT}
-                strokeOpacity="0.3"
-                strokeWidth="1.5"
-              />
-            </svg>
-          </div>
-
-          {/* Tile — cash flow */}
-          <div
-            className="rounded-[20px] p-6 min-h-[320px] flex flex-col"
-            style={{ background: BG_2, border: `1px solid ${CREAM_FAINT}` }}
-          >
-            <p
-              className="text-[10px] tracking-[0.14em] uppercase font-semibold m-0"
-              style={{ color: ACCENT }}
-            >
-              현금흐름 예측
-            </p>
-            <p
-              className="font-serif font-medium text-[26px] m-0 mt-1.5 tracking-[-0.02em]"
-              style={{ color: CREAM }}
-            >
-              은퇴까지 <span style={{ color: ACCENT }}>21년</span>
-            </p>
-            <div className="mt-4 flex flex-col gap-2.5 flex-1 justify-center">
+            <div className="mt-5 flex flex-col gap-2">
               {[
-                { l: '월 수입', v: '+820만', c: POSITIVE, w: 100 },
-                { l: '월 지출', v: '-510만', c: '#E59A6E', w: 62 },
-                { l: '저축 여력', v: '+310만', c: ACCENT, w: 38 },
+                { tier: 'FAST', use: '거래 자동분류 · 일괄 재분류', model: 'Haiku 4.5 / gpt-4o-mini / Gemini 2.0 Flash', tone: POSITIVE },
+                { tier: 'BALANCED', use: 'AI 인사이트 · 시나리오 채팅', model: 'Sonnet 4.6 / gpt-4o / Gemini 2.5 Flash', tone: ACCENT },
+                { tier: 'SMART', use: '시나리오 생성 · 실행계획 확장', model: 'Opus 4.7 / o4-mini / Gemini 2.5 Pro', tone: '#E59A6E' },
               ].map(r => (
-                <div key={r.l}>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-[11px]" style={{ color: CREAM_DIM }}>
-                      {r.l}
-                    </span>
-                    <span
-                      className="text-[11px] font-semibold"
-                      style={{ color: r.c, fontVariantNumeric: 'tabular-nums' }}
-                    >
-                      {r.v}
-                    </span>
-                  </div>
-                  <div
-                    className="h-1.5 rounded-full overflow-hidden"
-                    style={{ background: CREAM_FAINT }}
+                <div
+                  key={r.tier}
+                  className="rounded-[10px] p-3 flex items-center gap-3"
+                  style={{ background: 'rgba(241,236,227,0.04)', border: `1px solid ${CREAM_FAINT}` }}
+                >
+                  <span
+                    className="text-[10px] tracking-[0.14em] font-semibold px-2 py-0.5 rounded"
+                    style={{ background: `${r.tone}1A`, color: r.tone, minWidth: 78, textAlign: 'center' }}
                   >
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${r.w}%`, background: r.c }}
-                    />
+                    {r.tier}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] font-medium m-0" style={{ color: CREAM }}>
+                      {r.use}
+                    </p>
+                    <p className="text-[10px] m-0 mt-0.5 truncate" style={{ color: CREAM_DIM }}>
+                      {r.model}
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
+            <p className="text-[11px] m-0 mt-3" style={{ color: CREAM_DIM }}>
+              429 쿨다운 시 smart → balanced → fast 자동 폴백
+            </p>
           </div>
 
-          {/* Tile — tax simulation */}
+          {/* Tile — HITL */}
           <div
             className="rounded-[20px] p-6 min-h-[320px] flex flex-col"
             style={{ background: BG_2, border: `1px solid ${CREAM_FAINT}` }}
@@ -806,36 +805,77 @@ export function LandingPage() {
               className="text-[10px] tracking-[0.14em] uppercase font-semibold m-0"
               style={{ color: ACCENT }}
             >
-              세금 시뮬레이션
+              Human-in-the-loop
             </p>
             <p
-              className="font-serif font-medium text-[26px] m-0 mt-1.5 tracking-[-0.02em]"
+              className="font-serif font-medium text-[24px] m-0 mt-1.5 tracking-[-0.02em] leading-[1.2]"
               style={{ color: CREAM }}
             >
-              올해 절세
+              AI 출력 →
               <br />
-              <span style={{ color: ACCENT }}>최대 1,240만</span>
+              사용자 검증 → <span style={{ color: ACCENT }}>반영</span>
+            </p>
+            <div className="mt-4 flex flex-col gap-2 flex-1">
+              {[
+                { l: '거래 재분류', d: 'Preview Modal · old → new 매핑 검증' },
+                { l: '시나리오 추천', d: '관심/패스 비율 → 다음 생성 컨텍스트' },
+                { l: '카테고리 학습', d: 'keyword → category 자동 누적' },
+              ].map(r => (
+                <div
+                  key={r.l}
+                  className="rounded-[8px] px-3 py-2"
+                  style={{ background: 'rgba(241,236,227,0.04)' }}
+                >
+                  <p className="text-[12px] font-semibold m-0" style={{ color: CREAM }}>
+                    {r.l}
+                  </p>
+                  <p className="text-[10px] m-0 mt-0.5" style={{ color: CREAM_DIM }}>
+                    {r.d}
+                  </p>
+                </div>
+              ))}
+            </div>
+            <p className="text-[10px] m-0 mt-2" style={{ color: CREAM_DIM }}>
+              사용자 행동 = 학습 신호
+            </p>
+          </div>
+
+          {/* Tile — CLIProxy multi-provider */}
+          <div
+            className="rounded-[20px] p-6 min-h-[320px] flex flex-col"
+            style={{ background: BG_2, border: `1px solid ${CREAM_FAINT}` }}
+          >
+            <p
+              className="text-[10px] tracking-[0.14em] uppercase font-semibold m-0"
+              style={{ color: ACCENT }}
+            >
+              CLIProxy 추상화
+            </p>
+            <p
+              className="font-serif font-medium text-[24px] m-0 mt-1.5 tracking-[-0.02em] leading-[1.2]"
+              style={{ color: CREAM }}
+            >
+              본인 구독 계정으로
+              <br />
+              <span style={{ color: ACCENT }}>직접 연결</span>
             </p>
             <div className="mt-4 flex flex-col gap-1.5 flex-1">
               {[
-                { l: 'IRP 추가 납입', v: '-462만' },
-                { l: '연금저축 펀드', v: '-396만' },
-                { l: '월세 세액공제', v: '-180만' },
-                { l: '기부금 공제', v: '-202만' },
+                { l: 'Claude', d: 'Anthropic Pro/Max' },
+                { l: 'ChatGPT', d: 'OpenAI Plus/Pro' },
+                { l: 'Gemini', d: 'Google Advanced' },
+                { l: 'API 키', d: 'OpenAI 직접 호출 fallback' },
               ].map((r, i) => (
                 <div
                   key={r.l}
                   className="flex justify-between items-center py-2"
                   style={i ? { borderTop: `1px solid ${CREAM_FAINT}` } : {}}
                 >
-                  <span className="text-[11px]" style={{ color: CREAM_DIM }}>
+                  <span className="text-[12px] font-medium" style={{ color: CREAM }}>
                     {r.l}
                   </span>
-                  <span
-                    className="text-[12px] font-semibold"
-                    style={{ color: POSITIVE, fontVariantNumeric: 'tabular-nums' }}
-                  >
-                    {r.v}
+                  <span className="text-[10px]" style={{ color: CREAM_DIM }}>
+                    {r.d}
                   </span>
                 </div>
               ))}
@@ -846,7 +886,7 @@ export function LandingPage() {
             >
               <Sparkles className="w-3 h-3" style={{ color: ACCENT }} />
               <span className="text-[11px] font-medium" style={{ color: ACCENT }}>
-                AI 추천 적용 시
+                가족별 OAuth 라우팅 지원
               </span>
             </div>
           </div>
@@ -858,14 +898,15 @@ export function LandingPage() {
         kicker="비교"
         title={
           <>
-            일반 가계부 앱과
+            개인 가계부와
             <br />
-            무엇이{' '}
+            전통 패밀리오피스{' '}
             <span className="font-serif italic font-normal" style={{ color: ACCENT }}>
-              다를까요
+              사이의 공백
             </span>
           </>
         }
+        body="가계부는 개인 중심, 패밀리오피스는 초고액 자산가 중심 — 그 사이 일반 가정용 통합 자산관리는 비어 있었습니다. 돈Doc은 이 공백을 채웁니다."
         bg={BG_2}
       >
         <div
@@ -888,8 +929,8 @@ export function LandingPage() {
               </div>
               {[
                 { l: '돈Doc', highlight: true },
-                { l: '뱅크샐러드', highlight: false },
-                { l: '엑셀', highlight: false },
+                { l: '개인 가계부 앱', highlight: false },
+                { l: '엑셀 수작업', highlight: false },
               ].map(c => (
                 <div
                   key={c.l}
@@ -909,15 +950,14 @@ export function LandingPage() {
               ))}
             </div>
 
-            {/* rows */}
+            {/* rows — deck slide 6 페인포인트 + 실제 구현 기능만 */}
             {[
-              { f: '엑셀 업로드 → AI 자동 분류', a: true, b: 'half' as const, c: false },
-              { f: '부동산 LTV·DSR 통합 관리', a: true, b: false, c: false },
-              { f: '가족 권한 분리 (부모/자녀)', a: true, b: false, c: false },
-              { f: '세금 시뮬레이션·절세 추천', a: true, b: false, c: false },
-              { f: '연금·증여·신탁 설계', a: true, b: false, c: false },
-              { f: '광고 없음', a: true, b: false, c: true },
-              { f: '월 비용', a: '무료' as const, b: '광고' as const, c: '시간' as const },
+              { f: '엑셀 업로드 → AI 자동 분류 (HITL)', a: true, b: 'half' as const, c: false },
+              { f: '가족 단위 자산·부채·현금흐름 통합', a: true, b: false, c: 'half' as const },
+              { f: '3-Layer 가족 권한 분리 (Role/Share/Visibility)', a: true, b: false, c: false },
+              { f: 'AI 시나리오 생성 + 실행 액션', a: true, b: false, c: false },
+              { f: '본인 구독 계정 직접 연결 (Claude/ChatGPT/Gemini)', a: true, b: false, c: false },
+              { f: '월 정리 시간', a: '30분' as const, b: '수시' as const, c: '3~4h' as const },
             ].map((r, i) => (
               <div
                 key={r.f}
@@ -989,20 +1029,26 @@ export function LandingPage() {
             className="text-[11px] tracking-[0.18em] uppercase font-semibold text-center m-0 mb-6"
             style={{ color: ACCENT }}
           >
-            우리의 약속
+            다음 단계
           </p>
 
           <h2
             className="font-serif font-medium leading-[1.05] tracking-[-0.03em] text-center text-[36px] sm:text-[52px] lg:text-[72px] m-0"
             style={{ color: CREAM }}
           >
-            우리는 가족의 삶에 미친{' '}
+            지금은{' '}
+            <span className="font-serif italic font-normal" style={{ color: ACCENT }}>
+              분석하는 AI
+            </span>
+            ,
+            <br />
+            다음은{' '}
             <span className="inline-block relative mx-2">
               <span
                 className="font-serif italic font-normal"
                 style={{ color: ACCENT }}
               >
-                영향
+                실행하는 AI
               </span>
               <svg
                 viewBox="0 0 200 14"
@@ -1020,20 +1066,20 @@ export function LandingPage() {
                 />
               </svg>
             </span>
-            으로
-            <br />
-            성공을 측정합니다.
+            .
           </h2>
 
           <p
-            className="text-[15px] sm:text-[16px] leading-[1.7] text-center max-w-[680px] mx-auto m-0 mt-10"
+            className="text-[15px] sm:text-[16px] leading-[1.7] text-center max-w-[700px] mx-auto m-0 mt-10"
             style={{ color: CREAM_DIM }}
           >
-            때로는 구체적입니다 — 양도세 절세로 5천만 원을 아끼거나, 부모님 증여 시점을 최적화해 1억의 세금을 줄이거나.
+            지금 돈Doc은 가족 자산을 구조화하고 시나리오까지 제안합니다.
             <br />
             <br />
-            하지만 때로는 더 미묘합니다. 가족이 같은 대시보드를 보며 미래를 함께 그릴 수 있다는 —{' '}
-            <em style={{ color: ACCENT }}>그 평온함</em>.
+            다음 단계는 — 예산 관리, 리마인드, 실행 체크, 후속 액션까지{' '}
+            <em style={{ color: ACCENT }}>AI 에이전트가 직접 실행</em>하는 플랫폼.
+            <br />
+            가족의 재무 데이터를 실제 금융 행동까지 연결하는 의사결정 파트너로 진화합니다.
           </p>
 
           <div className="flex flex-wrap gap-3 justify-center mt-14">
@@ -1046,11 +1092,11 @@ export function LandingPage() {
               <ArrowRight className="w-4 h-4" />
             </a>
             <a
-              href="/api/auth/demo"
+              href="/demo"
               className="inline-flex items-center gap-2 px-9 py-4 rounded-full text-[14px] font-medium transition hover:bg-white/5 active:scale-[0.97]"
               style={{ color: CREAM, border: `1px solid ${CREAM_FAINT}` }}
             >
-              데모 체험하기
+              데모 둘러보기
             </a>
           </div>
 
@@ -1058,12 +1104,11 @@ export function LandingPage() {
             className="mt-20 pt-8 flex flex-col sm:flex-row justify-between items-center gap-3 text-[11px]"
             style={{ borderTop: `1px solid ${CREAM_FAINT}`, color: CREAM_DIM }}
           >
-            <span>© 2026 돈Doc · 패밀리오피스</span>
+            <span>© 2026 돈Doc · AI 패밀리 오피스</span>
             <span className="flex gap-6">
-              <span>개인정보처리방침</span>
-              <span>이용약관</span>
-              <span>보안</span>
-              <span>회사소개</span>
+              <a href="/demo" className="hover:opacity-80">데모</a>
+              <a href="/sign-in" className="hover:opacity-80">로그인</a>
+              <a href="/sign-up" className="hover:opacity-80">시작하기</a>
             </span>
           </div>
         </div>
