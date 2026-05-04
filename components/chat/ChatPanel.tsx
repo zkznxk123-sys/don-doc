@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { usePathname } from 'next/navigation'
 import { Send, Sparkles, Loader2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { useDashboardActions } from '@/components/layout/DashboardShell'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -24,6 +25,7 @@ export function ChatPanel({ open, onClose }: { open: boolean; onClose: () => voi
   const pathname = usePathname()
   const scrollRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const { bumpRefresh } = useDashboardActions()
 
   // 메시지 추가될 때마다 하단으로 스크롤
   useEffect(() => {
@@ -98,8 +100,11 @@ export function ChatPanel({ open, onClose }: { open: boolean; onClose: () => voi
     } finally {
       abortRef.current = null
       setIsStreaming(false)
+      // AI가 mutation tool을 호출했을 수 있으므로 streaming 끝나면 항상 페이지 데이터 갱신.
+      // 데이터 변경 없는 단순 조회에도 fetch 한 번 더 발생하지만 비용 작음.
+      bumpRefresh()
     }
-  }, [messages, isStreaming, pathname])
+  }, [messages, isStreaming, pathname, bumpRefresh])
 
   return (
     <>
@@ -209,7 +214,7 @@ export function ChatPanel({ open, onClose }: { open: boolean; onClose: () => voi
             </button>
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">
-            읽기 전용 · 거래 추가/수정은 화면에서 직접 해주세요
+            잔액·거래 카테고리·제외 토글 일괄 수정 가능 · 거래 추가/예산은 화면에서
           </p>
         </form>
       </aside>

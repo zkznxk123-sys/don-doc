@@ -1,6 +1,7 @@
 import { tool } from 'ai'
 import { z } from 'zod'
 import { AccountType } from '@prisma/client'
+import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { isCFOLevel } from '@/lib/roles'
 import type { AuthUser } from '@/lib/auth'
@@ -25,9 +26,13 @@ function currentYearMonth(): string {
 }
 
 /**
- * 가족 AI 어시스턴트가 사용할 읽기 전용 tool 셋.
+ * 가족 AI 어시스턴트가 사용할 tool 셋.
  * 모든 쿼리는 `user.familyId` 스코프이며, 가시성 규칙(PRIVATE 계좌/거래 마스킹)을
  * `getFamilyTransactions` 와 동일한 방식으로 적용함.
+ *
+ * 쓰기 권한:
+ *  - `updateAccountBalances` 만 허용 (계좌 잔액 일괄 업데이트, 본인/CFO 권한 검사 + 변경 이력 기록)
+ *  - 거래·예산·카테고리·계좌 자체의 추가/삭제/수정은 미지원
  */
 export function buildAgentTools(user: AuthUser) {
   const familyId = user.familyId
@@ -641,6 +646,365 @@ export function buildAgentTools(user: AuthUser) {
           balanceChanges: visibleChanges,
           transactions: visibleTx,
           truncated: batch.txAdded > visibleTx.length,
+        }
+      },
+    }),
+
+    updateAccountBalances: tool({
+      description:
+        '여러 계좌의 잔액을 한 번에 업데이트. ' +
+        '**단일 계좌는 화면에서 직접 수정이 빠르므로 2개 이상 동시일 때 사용 권장.** ' +
+        '각 update는 부분 일치 검색어 + 새 잔액(정수, 부채는 음수). ' +
+        '권한: 본인 소유 계좌 또는 CFO + 공유 계좌만 변경 가능. ' +
+        '결과는 성공/모호(여러 매칭)/못 찾음/권한 없음/변동 없음으로 분류해 반환. ' +
+        '성공 항목은 단일 UploadBatch로 묶여 업로드 이력에 기록됨.',
+      inputSchema: z.object({
+        updates: z.array(z.object({
+          accountKeyword: z.string().describe('계좌명 부분 일치 검색어 (예: "카카오", "마이너스")'),
+          newBalance: z.number().int().describe('새 잔액 (KRW 정수, 부채/마통은 음수)'),
+        })).min(1),
+        reason: z.string().optional().describe('변경 사유 — 업로드 이력 fileName에 기록되어 추적 가능'),
+      }),
+      execute: async ({ updates, reason }) => {
+        const isCFO = isCFOLevel(user.role)
+
+        type Resolved = {
+          keyword: string
+          newBalance: number
+          account?: { id: string; name: string; balance: number; userId: string | null; isShared: boolean }
+          status: 'ok' | 'ambiguous' | 'not_found' | 'no_permission' | 'no_change'
+          candidates?: string[]
+        }
+
+        const resolved: Resolved[] = []
+        for (const u of updates) {
+          // 사용자가 접근 가능한 계좌만 검색에 노출 (PRIVATE 다른 멤버 계좌 leak 방지)
+          const matches = await prisma.account.findMany({
+            where: {
+              familyId,
+              parentAccountId: null,
+              name: { contains: u.accountKeyword, mode: 'insensitive' },
+              OR: [
+                { userId: user.id },
+                { shareLevel: { not: 'PRIVATE' } },
+              ],
+            },
+            select: { id: true, name: true, balance: true, userId: true, isShared: true },
+          })
+
+          if (matches.length === 0) {
+            resolved.push({ keyword: u.accountKeyword, newBalance: u.newBalance, status: 'not_found' })
+            continue
+          }
+          if (matches.length > 1) {
+            resolved.push({
+              keyword: u.accountKeyword,
+              newBalance: u.newBalance,
+              status: 'ambiguous',
+              candidates: matches.map(m => m.name),
+            })
+            continue
+          }
+
+          const acc = matches[0]
+          const isOwn = acc.userId === user.id
+          // CFO는 가족의 모든 계좌 변경 가능 (검색 필터에서 이미 PRIVATE shareLevel 제외됨).
+          // 비-CFO 비-본인은 거부.
+          if (!isOwn && !isCFO) {
+            resolved.push({ keyword: u.accountKeyword, newBalance: u.newBalance, account: acc, status: 'no_permission' })
+            continue
+          }
+          if (acc.balance === u.newBalance) {
+            resolved.push({ keyword: u.accountKeyword, newBalance: u.newBalance, account: acc, status: 'no_change' })
+            continue
+          }
+          resolved.push({ keyword: u.accountKeyword, newBalance: u.newBalance, account: acc, status: 'ok' })
+        }
+
+        const ok = resolved.filter(r => r.status === 'ok')
+
+        let batchId: string | null = null
+        if (ok.length > 0) {
+          const fileName = reason ? `AI 어시스턴트: ${reason}` : 'AI 어시스턴트 잔액 업데이트'
+          const batch = await prisma.uploadBatch.create({
+            data: { familyId, userId: user.id, fileName, source: 'chat-ai' },
+          })
+          batchId = batch.id
+
+          await Promise.all(ok.map(r =>
+            prisma.account.update({
+              where: { id: r.account!.id },
+              data: { balance: r.newBalance },
+            })
+          ))
+
+          await prisma.balanceChangeLog.createMany({
+            data: ok.map(r => ({
+              accountId: r.account!.id,
+              oldBalance: r.account!.balance,
+              newBalance: r.newBalance,
+              delta: r.newBalance - r.account!.balance,
+              source: 'chat-ai',
+              uploadBatchId: batch.id,
+            })),
+          })
+
+          await prisma.uploadBatch.update({
+            where: { id: batch.id },
+            data: { syncedAccounts: ok.length },
+          })
+        }
+
+        return {
+          successCount: ok.length,
+          ambiguousCount: resolved.filter(r => r.status === 'ambiguous').length,
+          notFoundCount: resolved.filter(r => r.status === 'not_found').length,
+          noPermissionCount: resolved.filter(r => r.status === 'no_permission').length,
+          noChangeCount: resolved.filter(r => r.status === 'no_change').length,
+          batchId,
+          details: resolved.map(r => {
+            if (r.status === 'ok') {
+              return {
+                keyword: r.keyword,
+                status: r.status,
+                accountName: r.account!.name,
+                oldBalance: won(r.account!.balance),
+                newBalance: won(r.newBalance),
+                delta: won(r.newBalance - r.account!.balance),
+              }
+            }
+            if (r.status === 'ambiguous') {
+              return { keyword: r.keyword, status: r.status, candidates: r.candidates }
+            }
+            if (r.status === 'no_change') {
+              return { keyword: r.keyword, status: r.status, accountName: r.account!.name, message: '이미 동일한 잔액' }
+            }
+            if (r.status === 'no_permission') {
+              return { keyword: r.keyword, status: r.status, accountName: r.account?.name, message: '본인 소유 계좌 또는 CFO 권한이 필요합니다' }
+            }
+            return { keyword: r.keyword, status: r.status }
+          }),
+        }
+      },
+    }),
+
+    updateTransactionCategories: tool({
+      description:
+        '거래 검색 조건(기간/현재 카테고리/키워드/유형)에 매칭되는 거래들의 카테고리를 일괄 변경. ' +
+        '권한: 본인 거래 또는 CFO + 공유 계좌 거래만 변경 가능. ' +
+        '**dryRun=true 권장 패턴**: 매칭 건수가 많거나 사용자 의도가 모호하면 먼저 미리보기로 매칭 건수·샘플 확인 후, ' +
+        '사용자 확인을 받고 dryRun=false 로 실제 실행. 명확한 좁은 범위면 바로 실행도 OK.',
+      inputSchema: z.object({
+        from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe('시작 날짜 YYYY-MM-DD'),
+        to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe('종료 날짜 YYYY-MM-DD (포함)'),
+        currentCategory: z.string().optional().describe('현재 카테고리명 부분일치 (예: "카페")'),
+        keyword: z.string().optional().describe('내역(description) 부분일치'),
+        type: z.enum(['expense', 'income', 'all']).default('all'),
+        newCategory: z.string().describe('변경할 새 카테고리명 (정확한 이름 — listCategories로 사전 확인 권장)'),
+        dryRun: z.boolean().default(false).describe('true면 실제 변경 없이 매칭 건수와 샘플만 반환'),
+      }),
+      execute: async ({ from, to, currentCategory, keyword, type, newCategory, dryRun }) => {
+        const range = dateRange(from, to)
+        const isCFO = isCFOLevel(user.role)
+
+        // 매칭 거래 조회 (계좌 isShared 정보 포함 — 권한 분기용)
+        const txs = await prisma.transaction.findMany({
+          where: {
+            user: { familyId },
+            date: range,
+            ...(currentCategory ? { category: { contains: currentCategory, mode: 'insensitive' } } : {}),
+            ...(keyword ? { description: { contains: keyword, mode: 'insensitive' } } : {}),
+            ...(type === 'expense' ? { amount: { lt: 0 } } : {}),
+            ...(type === 'income' ? { amount: { gt: 0 } } : {}),
+          },
+          include: {
+            account: { select: { isShared: true, shareLevel: true } },
+            user: { select: { name: true } },
+          },
+          orderBy: { date: 'desc' },
+        })
+
+        // 권한 규칙:
+        //  - 본인 거래: 항상 가능
+        //  - CFO: PRIVATE 계좌 거래 + PRIVATE-visibility 거래 제외하고 모두 가능
+        //  - 그 외: 거부
+        const allowedIds: string[] = []
+        let deniedCount = 0
+        const sample: { date: string; description: string; oldCategory: string; amount: number; userName: string | null }[] = []
+        for (const tx of txs) {
+          const isOwner = tx.userId === user.id
+          if (!isOwner && !isCFO) continue                                  // 비-CFO 비-본인은 아예 안 보임
+          if (!isOwner && tx.account.shareLevel === 'PRIVATE') continue     // CFO도 PRIVATE 계좌 못 봄
+          if (!isOwner && tx.visibility === 'PRIVATE') {                    // CFO도 PRIVATE 거래는 못 변경
+            deniedCount++
+            continue
+          }
+          allowedIds.push(tx.id)
+          if (sample.length < 5) {
+            sample.push({
+              date: tx.date.toISOString().slice(0, 10),
+              description: tx.description,
+              oldCategory: tx.category,
+              amount: tx.amount,
+              userName: tx.user.name,
+            })
+          }
+        }
+
+        // 새 카테고리의 categoryId FK 매핑 시도
+        const matchedCategory = await prisma.category.findFirst({
+          where: {
+            name: newCategory,
+            OR: [{ familyId: null }, { familyId }],
+          },
+          select: { id: true, name: true },
+        })
+
+        if (dryRun) {
+          return {
+            dryRun: true,
+            matchedCount: allowedIds.length,
+            deniedCount,
+            newCategory,
+            categoryRecognized: !!matchedCategory,
+            sample,
+            note: !matchedCategory
+              ? `"${newCategory}"는 등록된 카테고리가 아닙니다. 그대로 진행하면 카테고리명만 문자열로 저장됩니다 (FK 미연결).`
+              : undefined,
+          }
+        }
+
+        if (allowedIds.length === 0) {
+          return {
+            updatedCount: 0,
+            deniedCount,
+            message: '권한 있는 매칭 거래가 없습니다.',
+          }
+        }
+
+        await prisma.transaction.updateMany({
+          where: { id: { in: allowedIds } },
+          data: {
+            category: newCategory,
+            categoryId: matchedCategory?.id ?? null,
+          },
+        })
+
+        revalidatePath('/dashboard')
+        revalidatePath('/dashboard/cashflow')
+
+        return {
+          updatedCount: allowedIds.length,
+          deniedCount,
+          newCategory,
+          categoryRecognized: !!matchedCategory,
+          sample,
+        }
+      },
+    }),
+
+    toggleTransactionExclusion: tool({
+      description:
+        '거래의 통계 제외(isExcluded) 또는 예산 제외(excludeFromBudget) 플래그를 일괄 토글. ' +
+        '"통계에서 빼줘"=exclude_from_stats, "다시 통계 잡아줘"=include_in_stats, ' +
+        '"예산에서 빼줘"=exclude_from_budget, "예산에 다시 포함"=include_in_budget. ' +
+        '권한: 본인 거래 또는 CFO + 공유 계좌 거래만. dryRun 권장.',
+      inputSchema: z.object({
+        from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        currentCategory: z.string().optional(),
+        keyword: z.string().optional(),
+        type: z.enum(['expense', 'income', 'all']).default('all'),
+        currentlyExcluded: z.boolean().optional().describe('현재 isExcluded 상태로 추가 필터 (되돌리기 시 유용)'),
+        target: z.enum(['exclude_from_stats', 'include_in_stats', 'exclude_from_budget', 'include_in_budget']),
+        dryRun: z.boolean().default(false),
+      }),
+      execute: async ({ from, to, currentCategory, keyword, type, currentlyExcluded, target, dryRun }) => {
+        const range = dateRange(from, to)
+        const isCFO = isCFOLevel(user.role)
+
+        const txs = await prisma.transaction.findMany({
+          where: {
+            user: { familyId },
+            date: range,
+            ...(currentCategory ? { category: { contains: currentCategory, mode: 'insensitive' } } : {}),
+            ...(keyword ? { description: { contains: keyword, mode: 'insensitive' } } : {}),
+            ...(type === 'expense' ? { amount: { lt: 0 } } : {}),
+            ...(type === 'income' ? { amount: { gt: 0 } } : {}),
+            ...(currentlyExcluded === true ? { isExcluded: true } : {}),
+            ...(currentlyExcluded === false ? { isExcluded: false } : {}),
+          },
+          include: {
+            account: { select: { isShared: true, shareLevel: true } },
+            user: { select: { name: true } },
+          },
+          orderBy: { date: 'desc' },
+        })
+
+        // 권한 규칙: 본인 or CFO(단, PRIVATE 계좌 / PRIVATE 거래는 본인만)
+        const allowedIds: string[] = []
+        let deniedCount = 0
+        const sample: { date: string; description: string; category: string; amount: number; userName: string | null }[] = []
+        for (const tx of txs) {
+          const isOwner = tx.userId === user.id
+          if (!isOwner && !isCFO) continue
+          if (!isOwner && tx.account.shareLevel === 'PRIVATE') continue
+          if (!isOwner && tx.visibility === 'PRIVATE') {
+            deniedCount++
+            continue
+          }
+          allowedIds.push(tx.id)
+          if (sample.length < 5) {
+            sample.push({
+              date: tx.date.toISOString().slice(0, 10),
+              description: tx.description,
+              category: tx.category,
+              amount: tx.amount,
+              userName: tx.user.name,
+            })
+          }
+        }
+
+        const targetLabel: Record<typeof target, string> = {
+          exclude_from_stats: '통계 제외',
+          include_in_stats: '통계 포함',
+          exclude_from_budget: '예산 제외',
+          include_in_budget: '예산 포함',
+        }
+
+        if (dryRun) {
+          return {
+            dryRun: true,
+            matchedCount: allowedIds.length,
+            deniedCount,
+            target: targetLabel[target],
+            sample,
+          }
+        }
+
+        if (allowedIds.length === 0) {
+          return { updatedCount: 0, deniedCount, message: '권한 있는 매칭 거래가 없습니다.' }
+        }
+
+        const updateData: { isExcluded?: boolean; excludeFromBudget?: boolean } = {}
+        if (target === 'exclude_from_stats') updateData.isExcluded = true
+        else if (target === 'include_in_stats') updateData.isExcluded = false
+        else if (target === 'exclude_from_budget') updateData.excludeFromBudget = true
+        else if (target === 'include_in_budget') updateData.excludeFromBudget = false
+
+        await prisma.transaction.updateMany({
+          where: { id: { in: allowedIds } },
+          data: updateData,
+        })
+
+        revalidatePath('/dashboard')
+        revalidatePath('/dashboard/cashflow')
+
+        return {
+          updatedCount: allowedIds.length,
+          deniedCount,
+          target: targetLabel[target],
+          sample,
         }
       },
     }),

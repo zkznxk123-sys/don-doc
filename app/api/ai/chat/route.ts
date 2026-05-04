@@ -4,7 +4,7 @@ export const maxDuration = 60
 import { NextRequest } from 'next/server'
 import { streamText, stepCountIs, type ModelMessage } from 'ai'
 import { getAuthUser } from '@/lib/auth'
-import { proxyModel, resolveProxyAuth } from '@/lib/ai'
+import { proxyModel } from '@/lib/ai'
 import { buildAgentTools } from '@/lib/agent/tools'
 import { buildSystemPrompt } from '@/lib/agent/system-prompt'
 
@@ -39,13 +39,11 @@ export async function POST(req: NextRequest) {
   const system = buildSystemPrompt({ user, pathname: body.pathname, today: new Date() })
   const tools = buildAgentTools(user)
 
-  // 가족 AI 설정(api/claude/chatgpt/gemini)을 그대로 따름.
-  // resolveProxyAuth가 OAuth 미연결/비운영자 가족을 OpenAI fallback으로 처리.
-  const resolved = await resolveProxyAuth(user.familyId ?? undefined, user.familyAiMode)
-  const model = proxyModel('fast', resolved.mode, {
-    sessionId: user.familyId ?? undefined,
-    pinnedAuthId: resolved.pinnedAuthId,
-  })
+  // chat agent는 OpenAI 직통('api' 모드)으로 강제.
+  // - CLIProxy 경유는 tool calling 형식 제공자별 차이로 불안정
+  // - tier='smart' = gpt-4o, mini보다 도구 호출 결정 더 안정적
+  // 가족 AI 모드는 무시 — 다른 AI 기능(요약/시나리오 생성)은 가족 설정 그대로 사용함
+  const model = proxyModel('smart', 'api')
 
   try {
     const result = streamText({
@@ -53,8 +51,9 @@ export async function POST(req: NextRequest) {
       system,
       messages,
       tools,
-      stopWhen: stepCountIs(5),
-      temperature: 0.3,
+      stopWhen: stepCountIs(8),
+      // 0.1 — tool calling 결정론적으로
+      temperature: 0.1,
     })
     return result.toTextStreamResponse()
   } catch (e) {
