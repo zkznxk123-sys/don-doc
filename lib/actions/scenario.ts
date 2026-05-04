@@ -3,7 +3,7 @@
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
-import { chat, chatJSON } from '@/lib/ai'
+import { chat, chatJSON, embed, cosineSimilarity } from '@/lib/ai'
 import { formatLargeNumber } from '@/lib/utils'
 import { YoutubeTranscript } from 'youtube-transcript'
 import { SCENARIO_CATEGORIES, type ScenarioCategory } from '@/lib/scenario-constants'
@@ -681,7 +681,7 @@ export interface GenerateScenariosOptions {
 
 export async function generateScenarios(
   options: GenerateScenariosOptions = {},
-): Promise<{ success: boolean; count?: number; error?: string; hasFeedback?: boolean }> {
+): Promise<{ success: boolean; count?: number; replacedCount?: number; error?: string; hasFeedback?: boolean }> {
   const user = await getAuthUser()
   if (!user?.familyId) return { success: false, error: 'Unauthorized' }
 
@@ -795,33 +795,132 @@ ${categoryRule}
   const batch = crypto.randomUUID()
   const sourceIds = sources.map(s => s.id)
 
-  // 기존 active/interested 시나리오를 archived로 전환 (이력 보존)
-  await prisma.scenario.updateMany({
-    where: { familyId: user.familyId, status: { in: ['active', 'interested'] } },
-    data: { status: 'archived' },
-  })
+  // ─── 입력 시나리오 정규화 ──────────────────────────────────────────────
+  type NewScenario = {
+    title: string
+    category: string | null
+    rationale: string
+    gap: string | null
+    timeline: string | null
+    risk: string | null
+    actions: string[]
+    feasibility: number
+    sourceIndexes: number[]
+  }
+  const newScenarios: NewScenario[] = scenariosInput.map((s: any) => ({
+    title: String(s.title ?? ''),
+    category: s.category ? String(s.category) : null,
+    rationale: String(s.rationale ?? ''),
+    gap: s.gap ? String(s.gap) : null,
+    timeline: s.timeline ? String(s.timeline) : null,
+    risk: s.risk ? String(s.risk) : null,
+    actions: Array.isArray(s.actions) ? s.actions.map(String) : [],
+    feasibility: Math.min(100, Math.max(0, parseInt(s.feasibility ?? '50', 10) || 50)),
+    sourceIndexes: Array.isArray(s.sourceIndexes) ? s.sourceIndexes : [],
+  }))
 
+  // ─── 임베딩 기반 유사도 대체 로직 ─────────────────────────────────────
+  // - 같은 카테고리 내 active 시나리오와 cosine 유사도 ≥ THRESHOLD 면 그 active만 archive
+  // - interested / dismissed / 다른 카테고리 active 는 보존
+  // - 옛 active에 embedding 없으면 lazy backfill (한 번 계산 후 저장 → 다음 비교 때 재사용)
+  // - threshold 0.82: text-embedding-3-small 기준 "거의 같은 주제·각도" 정도. 튜닝 가능.
+
+  const SIMILARITY_THRESHOLD = 0.82
+  const embedText = (s: { title: string; rationale: string }) =>
+    `${s.title}\n\n${s.rationale}`
+
+  // 새 시나리오 임베딩 (병렬)
+  const newEmbeddings = await Promise.all(
+    newScenarios.map(async (s) => {
+      try {
+        return await embed(embedText(s))
+      } catch (e) {
+        console.warn('[generateScenarios] new embedding failed:', e)
+        return [] as number[]
+      }
+    }),
+  )
+
+  // 새로 생성하는 카테고리에 한해 기존 active 조회
+  const candidateCategories = Array.from(new Set(newScenarios.map(s => s.category).filter((c): c is string => !!c)))
+  const existingActive = candidateCategories.length > 0
+    ? await prisma.scenario.findMany({
+        where: {
+          familyId: user.familyId,
+          status: 'active',
+          category: { in: candidateCategories },
+        },
+        select: { id: true, category: true, title: true, rationale: true, embedding: true },
+      })
+    : []
+
+  // 기존 active 중 embedding 비어있으면 lazy backfill
+  const existingWithEmbedding = await Promise.all(
+    existingActive.map(async (e) => {
+      if (e.embedding && e.embedding.length > 0) return e
+      try {
+        const vec = await embed(embedText(e))
+        await prisma.scenario.update({ where: { id: e.id }, data: { embedding: vec } })
+        return { ...e, embedding: vec }
+      } catch (err) {
+        console.warn('[generateScenarios] backfill embedding failed:', err)
+        return null
+      }
+    }),
+  ).then(arr => arr.filter((x): x is NonNullable<typeof x> => !!x && x.embedding.length > 0))
+
+  // 새 시나리오마다 같은 카테고리 안에서 가장 유사한 기존 active 매칭
+  const replacedIds = new Set<string>()
+  for (let i = 0; i < newScenarios.length; i++) {
+    const ns = newScenarios[i]
+    const ne = newEmbeddings[i]
+    if (!ns.category || ne.length === 0) continue
+    let best: { id: string; sim: number } | null = null
+    for (const ex of existingWithEmbedding) {
+      if (ex.category !== ns.category) continue
+      if (replacedIds.has(ex.id)) continue
+      const sim = cosineSimilarity(ne, ex.embedding)
+      if (sim >= SIMILARITY_THRESHOLD && (!best || sim > best.sim)) {
+        best = { id: ex.id, sim }
+      }
+    }
+    if (best) replacedIds.add(best.id)
+  }
+
+  // 매칭된 active만 archive (interested/dismissed/다른 카테고리는 미손)
+  if (replacedIds.size > 0) {
+    await prisma.scenario.updateMany({
+      where: { id: { in: Array.from(replacedIds) } },
+      data: { status: 'archived' },
+    })
+  }
+
+  // 새 시나리오 저장 (embedding 포함)
   await prisma.scenario.createMany({
-    data: scenariosInput.map((s: any) => ({
+    data: newScenarios.map((s, i) => ({
       familyId: user.familyId!,
-      title: String(s.title ?? ''),
-      category: s.category ? String(s.category) : null,
-      rationale: String(s.rationale ?? ''),
-      gap: s.gap ? String(s.gap) : null,
-      timeline: s.timeline ? String(s.timeline) : null,
-      risk: s.risk ? String(s.risk) : null,
-      actions: Array.isArray(s.actions) ? s.actions.map(String) : [],
+      title: s.title,
+      category: s.category,
+      rationale: s.rationale,
+      gap: s.gap,
+      timeline: s.timeline,
+      risk: s.risk,
+      actions: s.actions,
       completedActions: [],
-      feasibility: Math.min(100, Math.max(0, parseInt(s.feasibility ?? '50', 10) || 50)),
-      sourceIds: (s.sourceIndexes ?? [])
-        .map((i: number) => sourceIds[i])
-        .filter(Boolean),
+      feasibility: s.feasibility,
+      sourceIds: s.sourceIndexes.map(idx => sourceIds[idx]).filter(Boolean),
       status: 'active',
       generationBatch: batch,
+      embedding: newEmbeddings[i],
     })),
   })
 
-  return { success: true, count: scenariosInput.length, hasFeedback: !!feedbackContext }
+  return {
+    success: true,
+    count: newScenarios.length,
+    replacedCount: replacedIds.size,
+    hasFeedback: !!feedbackContext,
+  }
 }
 
 // ── Scenario 조회/업데이트 ────────────────────────────────────────────────────

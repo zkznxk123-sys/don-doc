@@ -27,7 +27,7 @@ async function generateScenariosAPI(options: {
   categories: string[]
   sourceIds: string[]
   userDirective?: string
-}): Promise<{ success: boolean; count?: number; error?: string; hasFeedback?: boolean }> {
+}): Promise<{ success: boolean; count?: number; replacedCount?: number; error?: string; hasFeedback?: boolean }> {
   const res = await fetch('/api/scenario/generate', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -146,15 +146,26 @@ function CompareView({ scenarios }: { scenarios: ScenarioData[] }) {
 
   return (
     <div className="overflow-x-auto -mx-4 px-4">
-      <table className="w-full text-xs border-collapse min-w-[480px]">
+      <table
+        className="w-full text-xs border-collapse min-w-[760px]"
+        style={{ wordBreak: 'keep-all' }}
+      >
+        <colgroup>
+          <col className="w-[34%]" />
+          <col className="w-[12%]" />
+          <col className="w-[14%]" />
+          <col className="w-[24%]" />
+          <col className="w-[8%]" />
+          <col className="w-[8%]" />
+        </colgroup>
         <thead>
           <tr className="border-b border-border">
-            <th className="text-left py-2 pr-3 text-muted-foreground/60 font-medium w-40">시나리오</th>
-            <th className="text-center py-2 px-2 text-muted-foreground/60 font-medium">카테고리</th>
-            <th className="text-center py-2 px-2 text-muted-foreground/60 font-medium">실현가능성</th>
-            <th className="text-center py-2 px-2 text-muted-foreground/60 font-medium">타임라인</th>
-            <th className="text-center py-2 px-2 text-muted-foreground/60 font-medium">진행</th>
-            <th className="text-center py-2 pl-2 text-muted-foreground/60 font-medium">리스크</th>
+            <th className="text-left py-2 pr-3 text-muted-foreground/60 font-medium whitespace-nowrap">시나리오</th>
+            <th className="text-center py-2 px-2 text-muted-foreground/60 font-medium whitespace-nowrap">카테고리</th>
+            <th className="text-center py-2 px-2 text-muted-foreground/60 font-medium whitespace-nowrap">실현가능성</th>
+            <th className="text-center py-2 px-2 text-muted-foreground/60 font-medium whitespace-nowrap">타임라인</th>
+            <th className="text-center py-2 px-2 text-muted-foreground/60 font-medium whitespace-nowrap">진행</th>
+            <th className="text-center py-2 pl-2 text-muted-foreground/60 font-medium whitespace-nowrap">리스크</th>
           </tr>
         </thead>
         <tbody>
@@ -164,35 +175,37 @@ function CompareView({ scenarios }: { scenarios: ScenarioData[] }) {
               : null
             return (
               <tr key={s.id} className="border-b border-border/50 hover:bg-muted/20 transition-colors">
-                <td className="py-3 pr-3">
-                  <div>
-                    <p className="font-medium text-foreground leading-snug line-clamp-2">{s.title}</p>
-                    {s.status === 'interested' && (
-                      <span className="text-[9px] text-blue-400 font-semibold">관심있음</span>
-                    )}
-                  </div>
+                <td className="py-3 pr-3 align-top">
+                  <p className="font-medium text-foreground leading-snug line-clamp-2">{s.title}</p>
+                  {s.status === 'interested' && (
+                    <span className="text-[9px] text-blue-400 font-semibold">관심있음</span>
+                  )}
                 </td>
-                <td className="py-3 px-2 text-center">
+                <td className="py-3 px-2 text-center align-top">
                   {s.category && (
-                    <span className={cn('text-[10px] px-2 py-0.5 rounded-full font-medium', categoryStyle(s.category))}>
+                    <span className={cn('inline-block text-[10px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap', categoryStyle(s.category))}>
                       {s.category}
                     </span>
                   )}
                 </td>
-                <td className="py-3 px-2 text-center">
+                <td className="py-3 px-2 text-center align-top">
                   <div className="flex flex-col items-center gap-1">
                     <span className={cn('font-bold tabular-nums', feasibilityColor(s.feasibility))}>
                       {s.feasibility}%
                     </span>
-                    <div className="w-12 h-1 bg-muted rounded-full overflow-hidden">
+                    <div className="w-14 h-1 bg-muted rounded-full overflow-hidden">
                       <div className={cn('h-full rounded-full', feasibilityBg(s.feasibility))} style={{ width: `${s.feasibility}%` }} />
                     </div>
                   </div>
                 </td>
-                <td className="py-3 px-2 text-center text-muted-foreground">
-                  {s.timeline ?? '—'}
+                <td className="py-3 px-2 text-muted-foreground align-top text-[11px] leading-snug">
+                  {s.timeline ? (
+                    <span className="line-clamp-3">{s.timeline}</span>
+                  ) : (
+                    <span className="text-muted-foreground/40 block text-center">—</span>
+                  )}
                 </td>
-                <td className="py-3 px-2 text-center">
+                <td className="py-3 px-2 text-center align-top whitespace-nowrap">
                   {pct !== null ? (
                     <span className={cn('font-medium', pct === 100 ? 'text-income' : 'text-muted-foreground')}>
                       {pct === 100 ? '✓ 완료' : `${pct}%`}
@@ -201,14 +214,14 @@ function CompareView({ scenarios }: { scenarios: ScenarioData[] }) {
                     <span className="text-muted-foreground/40">—</span>
                   )}
                 </td>
-                <td className="py-3 pl-2 text-center">
+                <td className="py-3 pl-2 text-center align-top">
                   {s.risk ? (
-                    <span className="text-amber-400" title={s.risk}>
-                      <AlertTriangle className="w-3.5 h-3.5 inline" />
+                    <span className="text-amber-400 inline-flex items-center" title={s.risk}>
+                      <AlertTriangle className="w-3.5 h-3.5" />
                     </span>
                   ) : (
-                    <span className="text-income">
-                      <Check className="w-3.5 h-3.5 inline" />
+                    <span className="text-income inline-flex items-center">
+                      <Check className="w-3.5 h-3.5" />
                     </span>
                   )}
                 </td>
@@ -1921,10 +1934,10 @@ export default function ScenarioPage() {
         const updated = await getScenarios()
         setScenarios(updated)
         setNeedsRegen(false)
-        toast.success(
-          res.hasFeedback ? `시나리오 ${res.count}개 생성됨 (이전 패턴 반영)` : `시나리오 ${res.count}개 생성됨`,
-          { id: 'gen' },
-        )
+        const parts: string[] = [`시나리오 ${res.count}개 생성됨`]
+        if (res.replacedCount && res.replacedCount > 0) parts.push(`(유사한 ${res.replacedCount}개 대체)`)
+        if (res.hasFeedback) parts.push('· 이전 패턴 반영')
+        toast.success(parts.join(' '), { id: 'gen' })
       } else {
         toast.error(res.error ?? '생성 실패', { id: 'gen' })
       }

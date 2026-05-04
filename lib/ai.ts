@@ -356,6 +356,50 @@ export async function getActiveProvider(): Promise<Provider | null> {
   }
 }
 
+// ─── 임베딩 / 유사도 ────────────────────────────────────────────────────────
+//
+// 시나리오 유사도 기반 부분 대체 등에 사용. OpenAI text-embedding-3-small 사용.
+// 차원: 1536. 비용: 1M 토큰당 $0.02 (~ 무시할 수준).
+
+const EMBEDDING_MODEL = 'text-embedding-3-small'
+
+export async function embed(text: string): Promise<number[]> {
+  const trimmed = text.slice(0, 8000) // safety cap
+  const res = await fetch('https://api.openai.com/v1/embeddings', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({ model: EMBEDDING_MODEL, input: trimmed }),
+    signal: AbortSignal.timeout(15_000),
+  })
+  if (!res.ok) {
+    const body = await res.text().catch(() => res.statusText)
+    throw new Error(`Embedding API ${res.status}: ${body}`)
+  }
+  const data = await res.json()
+  const vec = data?.data?.[0]?.embedding
+  if (!Array.isArray(vec)) throw new Error('Embedding 응답 형식 오류')
+  return vec
+}
+
+/**
+ * 코사인 유사도. 둘 다 단위벡터인 경우(임베딩 API는 보통 normalized) 내적과 동일하지만
+ * 안전하게 일반 공식으로 계산.
+ */
+export function cosineSimilarity(a: number[], b: number[]): number {
+  if (a.length !== b.length || a.length === 0) return 0
+  let dot = 0, normA = 0, normB = 0
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i]
+    normA += a[i] * a[i]
+    normB += b[i] * b[i]
+  }
+  const denom = Math.sqrt(normA) * Math.sqrt(normB)
+  return denom === 0 ? 0 : dot / denom
+}
+
 export async function pingProxy(): Promise<boolean> {
   try {
     const res = await fetch(`${PROXY_URL}/v1/models`, {
