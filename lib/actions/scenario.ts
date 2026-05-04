@@ -7,6 +7,7 @@ import { chat, chatJSON, embed, cosineSimilarity } from '@/lib/ai'
 import { formatLargeNumber } from '@/lib/utils'
 import { YoutubeTranscript } from 'youtube-transcript'
 import { SCENARIO_CATEGORIES, type ScenarioCategory } from '@/lib/scenario-constants'
+import { fetchFundamentalsBatch, toYahooTicker, type FundamentalData } from '@/lib/utils/yahoo-fundamental'
 
 // ── 타입 ────────────────────────────────────────────────────────────────────
 
@@ -224,6 +225,12 @@ async function buildFinancialContext(familyId: string): Promise<string> {
     `  - ${t.name}${t.area ? ` ${t.area.toFixed(0)}㎡` : ''}${t.currentPrice ? ` 현재시세 ${formatLargeNumber(t.currentPrice)}` : ''}${t.budget ? ` 목표예산 ${formatLargeNumber(t.budget)}` : ''}`
   )
 
+  // 보유 주식 fundamental — 시나리오 생성에 참고. 실패해도 다른 컨텍스트는 살림.
+  const portfolioFundamentalsLine = await buildPortfolioFundamentalsContext(familyId).catch(e => {
+    console.warn('[buildPortfolioFundamentalsContext]', e)
+    return ''
+  })
+
   const parts = [
     `[순자산 현황]`,
     netWorthLine,
@@ -243,7 +250,114 @@ async function buildFinancialContext(familyId: string): Promise<string> {
     targetLines.length ? targetLines.join('\n') : '  없음',
   ]
 
+  if (portfolioFundamentalsLine) {
+    parts.push('', portfolioFundamentalsLine)
+  }
+
   return parts.join('\n')
+}
+
+/**
+ * 보유 주식·ETF의 fundamental 요약을 시나리오 prompt 컨텍스트에 추가.
+ * 가중평균 PER/PBR/배당/ROE + 섹터 분포 + 평가액 상위 5종목.
+ */
+async function buildPortfolioFundamentalsContext(familyId: string): Promise<string> {
+  const accounts = await prisma.account.findMany({
+    where: { familyId, holdings: { some: {} } },
+    include: { holdings: true },
+  })
+
+  const allHoldings = accounts.flatMap(a => a.holdings)
+  if (allHoldings.length === 0) return ''
+
+  const tickers = Array.from(new Set(
+    allHoldings
+      .filter(h => h.ticker)
+      .map(h => toYahooTicker(h.ticker!, h.market))
+  ))
+  if (tickers.length === 0) return ''
+
+  const fundamentals = await fetchFundamentalsBatch(tickers)
+
+  // 환율
+  const fxRow = await prisma.exchangeRate.findUnique({ where: { pair: 'USDKRW' } })
+  const usdKrw = fxRow?.rate ?? 1450
+
+  // KRW 환산 평가액 + fundamental 매핑
+  const enriched = allHoldings.map(h => {
+    const yh = h.ticker ? toYahooTicker(h.ticker, h.market) : null
+    const f: FundamentalData | null = yh ? fundamentals[yh] ?? null : null
+    const price = h.currentPrice ?? h.avgPrice
+    const raw = h.quantity * price
+    const evalKrw = h.currency === 'USD' ? raw * usdKrw : raw
+    return { holding: h, fundamental: f, evalKrw }
+  })
+
+  const totalEval = enriched.reduce((s, e) => s + e.evalKrw, 0)
+  if (totalEval === 0) return ''
+
+  const weighted = (key: 'per' | 'pbr' | 'dividendYield' | 'roe') => {
+    let sum = 0, w = 0
+    for (const e of enriched) {
+      const v = e.fundamental?.[key]
+      if (v == null || !Number.isFinite(v)) continue
+      sum += v * e.evalKrw
+      w += e.evalKrw
+    }
+    return w > 0 ? sum / w : null
+  }
+
+  const sectorMap = new Map<string, number>()
+  for (const e of enriched) {
+    const s = e.fundamental?.sector
+    if (s) sectorMap.set(s, (sectorMap.get(s) ?? 0) + e.evalKrw)
+  }
+  const topSectors = Array.from(sectorMap.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([name, v]) => `${name} ${Math.round((v / totalEval) * 100)}%`)
+    .join(', ')
+
+  // 평가액 상위 5종목
+  const top5 = [...enriched]
+    .sort((a, b) => b.evalKrw - a.evalKrw)
+    .slice(0, 5)
+    .map(e => {
+      const f = e.fundamental
+      const parts: string[] = [
+        `${e.holding.name} ${formatLargeNumber(e.evalKrw)}`,
+      ]
+      if (f) {
+        const meta: string[] = []
+        if (f.per != null) meta.push(`PER ${f.per.toFixed(1)}`)
+        if (f.pbr != null) meta.push(`PBR ${f.pbr.toFixed(1)}`)
+        if (f.dividendYield != null && f.dividendYield > 0) meta.push(`배당 ${f.dividendYield.toFixed(1)}%`)
+        if (f.roe != null) meta.push(`ROE ${f.roe.toFixed(1)}%`)
+        if (f.sector) meta.push(f.sector)
+        if (meta.length) parts.push(`(${meta.join(' · ')})`)
+      }
+      return `  - ${parts.join(' ')}`
+    })
+
+  const avgPer = weighted('per')
+  const avgPbr = weighted('pbr')
+  const avgDiv = weighted('dividendYield')
+  const avgRoe = weighted('roe')
+
+  const summaryLine = [
+    avgPer != null ? `평균 PER ${avgPer.toFixed(1)}` : null,
+    avgPbr != null ? `PBR ${avgPbr.toFixed(1)}` : null,
+    avgDiv != null ? `배당 ${avgDiv.toFixed(2)}%` : null,
+    avgRoe != null ? `ROE ${avgRoe.toFixed(1)}%` : null,
+  ].filter(Boolean).join(' · ')
+
+  return [
+    `[보유 주식·ETF fundamental (가중평균)]`,
+    summaryLine ? `  ${summaryLine}` : '  fundamental 데이터 없음',
+    topSectors ? `  섹터 분포: ${topSectors}` : '',
+    `  평가액 상위 종목:`,
+    ...top5,
+  ].filter(Boolean).join('\n')
 }
 
 // ── 피드백 컨텍스트 수집 ──────────────────────────────────────────────────────

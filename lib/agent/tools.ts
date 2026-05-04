@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { isCFOLevel } from '@/lib/roles'
 import type { AuthUser } from '@/lib/auth'
+import { fetchFundamentalsBatch, toYahooTicker } from '@/lib/utils/yahoo-fundamental'
 
 const won = (n: number) => `${Math.round(n).toLocaleString('ko-KR')}원`
 
@@ -783,6 +784,99 @@ export function buildAgentTools(user: AuthUser) {
               return { keyword: r.keyword, status: r.status, accountName: r.account?.name, message: '본인 소유 계좌 또는 CFO 권한이 필요합니다' }
             }
             return { keyword: r.keyword, status: r.status }
+          }),
+        }
+      },
+    }),
+
+    screenHoldings: tool({
+      description:
+        '보유 주식·ETF를 PER/PBR/배당수익률/ROE/섹터 같은 fundamental 기준으로 필터·정렬. ' +
+        '"PER 10 이하 + 배당 3% 이상" "ROE 높은 종목" "기술주만" 같은 자연어 쿼리에 매핑. ' +
+        '매칭된 종목 리스트(name, ticker, 평가액, 지표) 반환. ' +
+        '※ 현재 보유 중인 종목만 검색. 후보 종목(미보유) 검색은 향후 지원 예정.',
+      inputSchema: z.object({
+        minPer: z.number().optional().describe('PER 하한'),
+        maxPer: z.number().optional().describe('PER 상한'),
+        minPbr: z.number().optional(),
+        maxPbr: z.number().optional(),
+        minDividendYield: z.number().optional().describe('배당수익률 하한 (% 단위, 예: 3 = 3%)'),
+        minRoe: z.number().optional().describe('ROE 하한 (% 단위)'),
+        sectorContains: z.string().optional().describe('섹터 부분일치 (영문, 예: "Tech", "Financial")'),
+        sortBy: z.enum(['per', 'pbr', 'dividendYield', 'roe', 'evalKrw']).default('evalKrw'),
+        sortDesc: z.boolean().default(true),
+        limit: z.number().int().min(1).max(20).default(10),
+      }),
+      execute: async (params) => {
+        const accounts = await prisma.account.findMany({
+          where: { familyId, holdings: { some: {} } },
+          include: { holdings: true },
+        })
+        const holdings = accounts.flatMap(a => a.holdings)
+        if (holdings.length === 0) {
+          return { count: 0, total: 0, holdings: [], note: '보유 종목이 없습니다.' }
+        }
+
+        const tickers = Array.from(new Set(
+          holdings.filter(h => h.ticker).map(h => toYahooTicker(h.ticker!, h.market))
+        ))
+        const fundamentals = tickers.length > 0 ? await fetchFundamentalsBatch(tickers) : {}
+
+        const fxRow = await prisma.exchangeRate.findUnique({ where: { pair: 'USDKRW' } })
+        const usdKrw = fxRow?.rate ?? 1450
+
+        const enriched = holdings.map(h => {
+          const yh = h.ticker ? toYahooTicker(h.ticker, h.market) : null
+          const f = yh ? fundamentals[yh] ?? null : null
+          const price = h.currentPrice ?? h.avgPrice
+          const raw = h.quantity * price
+          const evalKrw = h.currency === 'USD' ? raw * usdKrw : raw
+          return { holding: h, fundamental: f, evalKrw }
+        })
+
+        const filtered = enriched.filter(e => {
+          const f = e.fundamental
+          if (params.minPer != null && (f?.per == null || f.per < params.minPer)) return false
+          if (params.maxPer != null && (f?.per == null || f.per > params.maxPer)) return false
+          if (params.minPbr != null && (f?.pbr == null || f.pbr < params.minPbr)) return false
+          if (params.maxPbr != null && (f?.pbr == null || f.pbr > params.maxPbr)) return false
+          if (params.minDividendYield != null && (f?.dividendYield == null || f.dividendYield < params.minDividendYield)) return false
+          if (params.minRoe != null && (f?.roe == null || f.roe < params.minRoe)) return false
+          if (params.sectorContains != null && (f?.sector == null || !f.sector.toLowerCase().includes(params.sectorContains.toLowerCase()))) return false
+          return true
+        })
+
+        const sortKey = params.sortBy
+        filtered.sort((a, b) => {
+          let av: number | null = null, bv: number | null = null
+          if (sortKey === 'evalKrw') { av = a.evalKrw; bv = b.evalKrw }
+          else {
+            av = a.fundamental?.[sortKey] ?? null
+            bv = b.fundamental?.[sortKey] ?? null
+          }
+          if (av == null && bv == null) return 0
+          if (av == null) return 1
+          if (bv == null) return -1
+          return params.sortDesc ? bv - av : av - bv
+        })
+
+        return {
+          total: holdings.length,
+          fundamentalCovered: enriched.filter(e => e.fundamental).length,
+          matched: filtered.length,
+          holdings: filtered.slice(0, params.limit).map(e => {
+            const f = e.fundamental
+            return {
+              name: e.holding.name,
+              ticker: e.holding.ticker,
+              quantity: e.holding.quantity,
+              evalKrw: won(e.evalKrw),
+              per: f?.per != null ? Math.round(f.per * 10) / 10 : null,
+              pbr: f?.pbr != null ? Math.round(f.pbr * 100) / 100 : null,
+              dividendYield: f?.dividendYield ?? null,
+              roe: f?.roe ?? null,
+              sector: f?.sector ?? null,
+            }
           }),
         }
       },

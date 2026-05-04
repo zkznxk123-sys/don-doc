@@ -50,6 +50,7 @@ import {
 } from '@/lib/actions/investments'
 import { HoldingDrawer } from '@/components/ui/holding-drawer'
 import { RecentBalanceChanges } from '@/components/ui/recent-balance-changes'
+import { PortfolioFundamentals } from '@/components/ui/portfolio-fundamentals'
 import { TradeDrawer } from '@/components/ui/trade-drawer'
 import { PriceHistoryChart } from '@/components/ui/price-history-chart'
 import { TargetPropertyDrawer } from '@/components/ui/target-property-drawer'
@@ -2005,6 +2006,14 @@ function FinancialTab({
         investmentSummary={investmentSummary}
         usdKrwRate={usdKrwRate}
       />
+
+      {/* Fundamental 분석: PER/PBR/배당/ROE/섹터 */}
+      {investmentSummary.length > 0 && (
+        <PortfolioFundamentals
+          investmentSummary={investmentSummary}
+          usdKrwRate={usdKrwRate}
+        />
+      )}
 
       {/* 종목 P&L 요약 (holdings 있을 때만) */}
       {investmentSummary.length > 0 && (
