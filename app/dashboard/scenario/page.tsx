@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { toast } from 'sonner'
 import {
   Sparkles, Link2, Trash2, RefreshCw, BookmarkCheck,
@@ -12,7 +12,8 @@ import {
 import { cn } from '@/lib/utils'
 import { LoadingPrompt } from '@/components/ui/loading-prompt'
 import {
-  addContentSource, getContentSources, deleteContentSource,
+  addContentSource, getContentSources, deleteContentSource, resummarizeContentSource,
+  updateContentSourceCategories,
   getScenarios, getScenarioHistory, updateScenarioStatus,
   updateActionProgress, getScenarioChatMessages,
   type ContentSourceData, type ScenarioData, type ScenarioExpansion,
@@ -994,11 +995,21 @@ function GenerateOptionsPanel({
   const [open, setOpen] = useState(false)
   const [selectedCategories, setSelectedCategories] = useState<string[]>([...SCENARIO_CATEGORIES])
   const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([])
+  const [autoMatch, setAutoMatch] = useState(true)
   const [directive, setDirective] = useState('')
 
+  // 선택된 카테고리에 매칭되는 컨텐츠 ID. 카테고리 없는(미분류) 컨텐츠는 항상 포함 — 안전한 기본값.
+  const matchingSourceIds = useMemo(() =>
+    sources
+      .filter(s => s.categories.length === 0 || s.categories.some(c => selectedCategories.includes(c)))
+      .map(s => s.id),
+    [sources, selectedCategories],
+  )
+
+  // autoMatch 켜져 있으면 카테고리/소스 변경에 따라 자동 갱신
   useEffect(() => {
-    setSelectedSourceIds(sources.map(s => s.id))
-  }, [sources])
+    if (autoMatch) setSelectedSourceIds(matchingSourceIds)
+  }, [autoMatch, matchingSourceIds])
 
   const toggleCategory = (cat: string) => {
     setSelectedCategories(prev =>
@@ -1007,6 +1018,7 @@ function GenerateOptionsPanel({
   }
 
   const toggleSource = (id: string) => {
+    setAutoMatch(false) // 수동 토글하면 자동 매칭 해제
     setSelectedSourceIds(prev =>
       prev.includes(id) ? prev.filter(s => s !== id) : [...prev, id]
     )
@@ -1034,7 +1046,7 @@ function GenerateOptionsPanel({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
+        <div className="absolute right-0 top-full mt-2 w-[min(420px,calc(100vw-2rem))] bg-card border border-border rounded-2xl shadow-xl z-50 overflow-hidden">
           <div className="px-4 py-3 border-b border-border">
             <p className="text-xs font-semibold text-foreground">시나리오 생성 옵션</p>
           </div>
@@ -1088,38 +1100,81 @@ function GenerateOptionsPanel({
           {/* 컨텐츠 소스 선택 */}
           {sources.length > 0 && (
             <div className="px-4 py-3 border-b border-border">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-[11px] text-muted-foreground font-medium">참고 컨텐츠</p>
-                <button
-                  onClick={() =>
-                    setSelectedSourceIds(
-                      selectedSourceIds.length === sources.length ? [] : sources.map(s => s.id)
-                    )
-                  }
-                  className="text-[10px] text-primary hover:underline"
-                >
-                  {selectedSourceIds.length === sources.length ? '전체 해제' : '전체 선택'}
-                </button>
+              <div className="flex items-center justify-between mb-1.5">
+                <div>
+                  <p className="text-[11px] text-muted-foreground font-medium">참고 컨텐츠</p>
+                  <p className="text-[10px] text-muted-foreground/50 mt-0.5">
+                    {autoMatch
+                      ? `선택한 카테고리에 맞춰 자동 선택됨 · ${selectedSourceIds.length}/${sources.length}개`
+                      : `수동 선택 · ${selectedSourceIds.length}/${sources.length}개`}
+                  </p>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <button
+                    onClick={() => setAutoMatch(v => !v)}
+                    className={cn(
+                      'text-[10px] px-2 py-0.5 rounded-full border transition-colors flex items-center gap-1',
+                      autoMatch
+                        ? 'bg-primary/10 border-primary/30 text-primary'
+                        : 'bg-muted border-border text-muted-foreground/60 hover:bg-muted/80',
+                    )}
+                    title={autoMatch ? '카테고리에 따라 자동으로 컨텐츠가 선택됩니다' : '클릭해서 자동 매칭 모드로 전환'}
+                  >
+                    <span className={cn('w-1.5 h-1.5 rounded-full', autoMatch ? 'bg-primary' : 'bg-muted-foreground/40')} />
+                    자동 매칭
+                  </button>
+                  <button
+                    onClick={() => {
+                      setAutoMatch(false)
+                      setSelectedSourceIds(
+                        selectedSourceIds.length === sources.length ? [] : sources.map(s => s.id)
+                      )
+                    }}
+                    className="text-[10px] text-primary/70 hover:text-primary"
+                  >
+                    {selectedSourceIds.length === sources.length ? '전체 해제' : '전체 선택'}
+                  </button>
+                </div>
               </div>
-              <div className="space-y-1.5 max-h-40 overflow-y-auto">
+              <div className="space-y-1.5 max-h-56 overflow-y-auto -mx-1 px-1">
                 {sources.map(src => {
                   const active = selectedSourceIds.includes(src.id)
+                  const matched = matchingSourceIds.includes(src.id)
                   return (
                     <button
                       key={src.id}
                       onClick={() => toggleSource(src.id)}
                       className={cn(
-                        'w-full flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors',
+                        'w-full flex items-start gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors',
                         active ? 'bg-primary/10' : 'bg-muted/40 hover:bg-muted/60',
+                        autoMatch && !active && !matched && 'opacity-50',
                       )}
                     >
                       <span className={cn(
-                        'w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors',
+                        'w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors mt-0.5',
                         active ? 'bg-primary border-primary' : 'border-muted-foreground/30',
                       )}>
                         {active && <Check className="w-2.5 h-2.5 text-primary-foreground" />}
                       </span>
-                      <span className="text-xs text-foreground/80 truncate">{src.title ?? src.url ?? '텍스트 메모'}</span>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-xs text-foreground/80 line-clamp-2 block leading-snug">
+                          {src.title ?? src.url ?? '텍스트 메모'}
+                        </span>
+                        <div className="flex items-center gap-1 mt-1 flex-wrap">
+                          {src.categories.length > 0 ? (
+                            src.categories.map(cat => (
+                              <span
+                                key={cat}
+                                className={cn('text-[9px] px-1.5 py-0 rounded font-medium', categoryStyle(cat))}
+                              >
+                                {cat}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-[9px] text-muted-foreground/40 italic">미분류</span>
+                          )}
+                        </div>
+                      </div>
                     </button>
                   )
                 })}
@@ -1217,15 +1272,409 @@ function HistoryView() {
 
 // ── 관심 컨텐츠 섹션 ─────────────────────────────────────────────────────────
 
+/**
+ * 접힌 상태에서 보여줄 줄바꿈 없는 평문. 마크다운 마크업·헤딩 제거.
+ */
+function plainPreview(md: string): string {
+  return md
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => l && !l.startsWith('#'))
+    .map(l => l.replace(/^[-*]\s+/, '').replace(/\*\*(.+?)\*\*/g, '$1'))
+    .join(' · ')
+}
+
+/**
+ * 가벼운 마크다운 렌더러 — ##/### 헤딩, "- " 불릿, 빈 줄로 문단 구분만 지원.
+ * 외부 라이브러리 없이 SummaryMarkdown 한 곳에서만 쓰는 용도.
+ */
+function SummaryMarkdown({ text }: { text: string }) {
+  // 줄 단위로 파싱: 헤딩 / 불릿 항목 / 일반 텍스트로 분류
+  const lines = text.split('\n')
+  const blocks: React.ReactNode[] = []
+  let bulletBuffer: string[] = []
+  let paragraphBuffer: string[] = []
+
+  const flushBullets = (key: string) => {
+    if (bulletBuffer.length === 0) return
+    blocks.push(
+      <ul key={`b-${key}`} className="list-disc pl-4 space-y-0.5 my-1">
+        {bulletBuffer.map((b, i) => <li key={i}>{b}</li>)}
+      </ul>
+    )
+    bulletBuffer = []
+  }
+
+  const flushParagraph = (key: string) => {
+    if (paragraphBuffer.length === 0) return
+    blocks.push(
+      <p key={`p-${key}`} className="my-1">{paragraphBuffer.join(' ')}</p>
+    )
+    paragraphBuffer = []
+  }
+
+  lines.forEach((rawLine, i) => {
+    const line = rawLine.trim()
+    const key = String(i)
+
+    if (line.startsWith('## ')) {
+      flushBullets(key); flushParagraph(key)
+      blocks.push(
+        <h4 key={`h-${key}`} className="text-[11px] font-bold text-foreground/90 mt-2 mb-1">
+          {line.slice(3)}
+        </h4>
+      )
+    } else if (line.startsWith('- ') || line.startsWith('* ')) {
+      flushParagraph(key)
+      bulletBuffer.push(line.slice(2))
+    } else if (line === '') {
+      flushBullets(key); flushParagraph(key)
+    } else {
+      flushBullets(key)
+      paragraphBuffer.push(line)
+    }
+  })
+  flushBullets('end'); flushParagraph('end')
+
+  return <div className="text-[11px] text-foreground/80 leading-relaxed">{blocks}</div>
+}
+
+function ExtractedTextBlock({
+  extractedPreview,
+  extractedText,
+  extractedTextKo,
+  extractedLength,
+  showFull,
+  onToggleFull,
+}: {
+  extractedPreview: string
+  extractedText: string | null
+  extractedTextKo: string | null
+  extractedLength: number | null
+  showFull: boolean
+  onToggleFull: () => void
+}) {
+  // 비한국어 원문은 번역이 따로 저장되어 있음 → 별도 토글 (기본 한글 번역, 토글로 원문)
+  const [showOriginal, setShowOriginal] = useState(false)
+  const hasTranslation = !!extractedTextKo
+
+  if (hasTranslation && extractedText) {
+    const body = showOriginal ? extractedText : extractedTextKo
+    return (
+      <div>
+        <div className="text-[10px] font-semibold text-muted-foreground/70 mb-1 flex items-center gap-1.5">
+          <span>{showOriginal ? '추출 원문 (원어)' : '🌏 한글 번역'}</span>
+          {extractedLength != null && (
+            <span className="text-muted-foreground/50 font-normal">
+              (원문 전체 {extractedLength.toLocaleString()}자)
+            </span>
+          )}
+          <button
+            onClick={() => setShowOriginal(v => !v)}
+            className="ml-auto text-[10px] text-primary/70 hover:text-primary"
+          >
+            {showOriginal ? '한글 번역 보기' : '원문 보기'}
+          </button>
+        </div>
+        <p className="text-muted-foreground/70 whitespace-pre-wrap font-mono text-[10px] leading-relaxed bg-muted/30 rounded p-2 max-h-96 overflow-y-auto">
+          {body}
+        </p>
+      </div>
+    )
+  }
+
+  // 한국어 원문 (또는 번역 없음) — 프리뷰/전체 토글
+  return (
+    <div>
+      <div className="text-[10px] font-semibold text-muted-foreground/70 mb-1 flex items-center gap-1.5">
+        <span>추출 원문{showFull ? '' : ' 프리뷰'}</span>
+        {extractedLength != null && (
+          <span className="text-muted-foreground/50 font-normal">
+            (전체 {extractedLength.toLocaleString()}자{showFull || !extractedText ? '' : `, 표시 ${Math.min(500, extractedLength).toLocaleString()}자`})
+          </span>
+        )}
+        {extractedText && extractedLength != null && extractedLength > 500 && (
+          <button
+            onClick={onToggleFull}
+            className="ml-auto text-[10px] text-primary/70 hover:text-primary"
+          >
+            {showFull ? '프리뷰만' : '원문 전체 보기'}
+          </button>
+        )}
+      </div>
+      <p className={cn(
+        'text-muted-foreground/60 whitespace-pre-wrap font-mono text-[10px] leading-relaxed bg-muted/30 rounded p-2 overflow-y-auto',
+        showFull ? 'max-h-96' : 'max-h-40'
+      )}>
+        {showFull && extractedText ? extractedText : extractedPreview}
+      </p>
+    </div>
+  )
+}
+
+function SourceStatusBadge({ status }: { status: ContentSourceData['summaryStatus'] }) {
+  if (status === 'success') {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+        <CheckCircle2 className="w-2.5 h-2.5" />요약 완료
+      </span>
+    )
+  }
+  if (status === 'failed') {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-600 dark:text-red-400">
+        <AlertTriangle className="w-2.5 h-2.5" />요약 실패
+      </span>
+    )
+  }
+  if (status === 'fetch_failed') {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-600 dark:text-red-400">
+        <AlertTriangle className="w-2.5 h-2.5" />추출 실패
+      </span>
+    )
+  }
+  if (status === 'too_short') {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400">
+        <AlertTriangle className="w-2.5 h-2.5" />본문 부족
+      </span>
+    )
+  }
+  return null
+}
+
+function SourceRow({
+  src,
+  onDelete,
+  onResummarize,
+  onUpdateCategories,
+  onGenerateFromSource,
+  generating,
+}: {
+  src: ContentSourceData
+  onDelete: (id: string) => void
+  onResummarize: (id: string) => Promise<void>
+  onUpdateCategories: (id: string, categories: string[]) => Promise<void>
+  onGenerateFromSource: (src: ContentSourceData) => void
+  generating: boolean
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const [resummarizing, setResummarizing] = useState(false)
+  const [showRawText, setShowRawText] = useState(false)
+  const [showFullText, setShowFullText] = useState(false)
+
+  const isFailed = src.summaryStatus === 'failed' || src.summaryStatus === 'fetch_failed'
+  const canExpand = !!(src.summary || src.summaryError || src.extractedPreview)
+
+  const handleResummarize = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setResummarizing(true)
+    try {
+      await onResummarize(src.id)
+    } finally {
+      setResummarizing(false)
+    }
+  }
+
+  const toggleCategory = async (cat: string) => {
+    const next = src.categories.includes(cat)
+      ? src.categories.filter(c => c !== cat)
+      : [...src.categories, cat]
+    await onUpdateCategories(src.id, next)
+  }
+
+  return (
+    <div className={cn('px-4 py-3', isFailed && 'bg-red-500/[0.02]')}>
+      {/* ── 헤더: 제목 줄 + 메타 줄로 분리 (좁은 화면에서도 안 깨짐) ── */}
+      <div
+        className={cn('flex items-start gap-2.5', canExpand && 'cursor-pointer')}
+        onClick={() => canExpand && setExpanded(v => !v)}
+      >
+        <div className="flex-shrink-0 mt-0.5">
+          {src.type === 'text' ? (
+            <FileText className="w-3.5 h-3.5 text-muted-foreground/40" />
+          ) : (
+            <Link2 className="w-3.5 h-3.5 text-muted-foreground/40" />
+          )}
+        </div>
+        <div className="flex-1 min-w-0">
+          {/* 1줄: 제목만 */}
+          <p className="text-sm font-medium text-foreground leading-tight break-words pr-1">
+            {src.title ?? src.url ?? '텍스트 메모'}
+          </p>
+          {/* 2줄: 상태 + 카테고리 뱃지 (자연스럽게 wrap) */}
+          <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+            <SourceStatusBadge status={src.summaryStatus} />
+            {src.categories.map(cat => (
+              <span
+                key={cat}
+                className={cn('text-[10px] px-1.5 py-0.5 rounded-full font-medium', categoryStyle(cat))}
+              >
+                {cat}
+              </span>
+            ))}
+            {src.categories.length === 0 && src.summaryStatus === 'success' && (
+              <span className="text-[10px] text-muted-foreground/40 italic">카테고리 미지정</span>
+            )}
+          </div>
+          {/* 3줄(접힌 상태에서만): 요약 프리뷰 또는 에러 */}
+          {!expanded && src.summary && (
+            <p className="text-[11px] text-muted-foreground/60 mt-1.5 line-clamp-2">{plainPreview(src.summary)}</p>
+          )}
+          {!expanded && !src.summary && src.summaryError && (
+            <p className="text-[11px] text-red-500/70 mt-1.5 line-clamp-1">{src.summaryError}</p>
+          )}
+        </div>
+        <div className="flex items-center gap-0.5 flex-shrink-0">
+          {canExpand && (
+            <ChevronDown className={cn('w-4 h-4 text-muted-foreground/40 transition-transform', expanded && 'rotate-180')} />
+          )}
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(src.id) }}
+            className="p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground/40 hover:text-red-400 transition-colors"
+            aria-label="삭제"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* ── 펼친 영역 ── */}
+      {expanded && (
+        <div className="mt-4 ml-6 space-y-4">
+          {/* 1) 요약 (메인 콘텐츠) */}
+          {src.summary && (
+            <div className="rounded-lg border border-border bg-muted/20 px-3 py-2.5">
+              <SummaryMarkdown text={src.summary} />
+            </div>
+          )}
+
+          {src.summaryError && (
+            <div className="rounded-lg border border-red-500/30 bg-red-500/[0.04] px-3 py-2.5">
+              <div className="text-[10px] font-semibold text-red-500/80 mb-1">실패 사유</div>
+              <p className="text-[11px] text-red-500/80 whitespace-pre-wrap">{src.summaryError}</p>
+            </div>
+          )}
+
+          {/* 2) 카테고리 (always-editable chips) */}
+          <div>
+            <div className="text-[10px] font-semibold text-muted-foreground/70 mb-1.5">
+              카테고리 <span className="font-normal text-muted-foreground/40">— 클릭해서 추가/제거</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {SCENARIO_CATEGORIES.map(cat => {
+                const active = src.categories.includes(cat)
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => toggleCategory(cat)}
+                    className={cn(
+                      'text-[11px] px-2.5 py-1 rounded-full border transition-colors',
+                      active
+                        ? `${categoryStyle(cat)} border-transparent`
+                        : 'bg-transparent border-border text-muted-foreground/50 hover:border-foreground/30 hover:text-foreground/80',
+                    )}
+                  >
+                    {active ? '✓ ' : '+ '}{cat}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* 3) 1차 액션: 시나리오 생성 (full-width primary) */}
+          {src.summaryStatus === 'success' && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onGenerateFromSource(src) }}
+              disabled={generating}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-indigo-500 text-white text-sm font-medium hover:bg-indigo-600 transition-colors disabled:opacity-50"
+            >
+              <Sparkles className="w-4 h-4" />
+              이 컨텐츠로 시나리오 생성
+            </button>
+          )}
+
+          {/* 4) 보조 액션 + 메타 (한 줄) */}
+          <div className="flex items-center justify-between gap-2 flex-wrap text-[10px] text-muted-foreground/60">
+            <div className="flex items-center gap-3">
+              {src.extractedPreview && (
+                <button
+                  onClick={() => setShowRawText(v => !v)}
+                  className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+                >
+                  <ChevronDown className={cn('w-3 h-3 transition-transform', showRawText && 'rotate-180')} />
+                  추출 원문 {showRawText ? '숨기기' : '보기'}
+                  {src.extractedLength != null && (
+                    <span className="text-muted-foreground/40">({src.extractedLength.toLocaleString()}자)</span>
+                  )}
+                </button>
+              )}
+              {src.type === 'url' && src.url && (
+                <a
+                  href={src.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={e => e.stopPropagation()}
+                  className="inline-flex items-center gap-1 hover:text-primary transition-colors"
+                >
+                  <ExternalLink className="w-3 h-3" />출처
+                </a>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              {src.summarizedAt && (
+                <span>
+                  {new Date(src.summarizedAt).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' })}
+                </span>
+              )}
+              {src.type === 'url' && (
+                <button
+                  onClick={handleResummarize}
+                  disabled={resummarizing}
+                  className="inline-flex items-center gap-1 hover:text-foreground transition-colors disabled:opacity-50"
+                >
+                  {resummarizing ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                  재요약
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* 5) 추출 원문 (펼침/접힘) */}
+          {showRawText && src.extractedPreview && (
+            <ExtractedTextBlock
+              extractedPreview={src.extractedPreview}
+              extractedText={src.extractedText}
+              extractedTextKo={src.extractedTextKo}
+              extractedLength={src.extractedLength}
+              showFull={showFullText}
+              onToggleFull={() => setShowFullText(v => !v)}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ContentSourceSection({
   sources,
   onAdd,
   onDelete,
+  onResummarize,
+  onUpdateCategories,
+  onGenerateFromSource,
+  generating,
   adding,
 }: {
   sources: ContentSourceData[]
   onAdd: (input: { type: 'url'; url: string } | { type: 'text'; title: string; text: string }) => Promise<void>
   onDelete: (id: string) => void
+  onResummarize: (id: string) => Promise<void>
+  onUpdateCategories: (id: string, categories: string[]) => Promise<void>
+  onGenerateFromSource: (src: ContentSourceData) => void
+  generating: boolean
   adding: boolean
 }) {
   const [inputMode, setInputMode] = useState<'url' | 'text'>('url')
@@ -1286,24 +1735,37 @@ function ContentSourceSection({
 
       <div className="px-4 py-3 space-y-2">
         {inputMode === 'url' ? (
-          <div className="flex gap-2">
-            <input
-              type="url"
-              value={urlInput}
-              onChange={e => setUrlInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleSubmit()}
-              placeholder="https://..."
-              className="flex-1 text-sm bg-muted/50 border border-border rounded-xl px-3 py-2 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/30"
-            />
-            <button
-              onClick={handleSubmit}
-              disabled={adding || !canSubmit}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-medium disabled:opacity-50 transition-opacity"
-            >
-              {adding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-              추가
-            </button>
-          </div>
+          <>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={urlInput}
+                onChange={e => setUrlInput(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+                placeholder="https://..."
+                disabled={adding}
+                className="flex-1 text-sm bg-muted/50 border border-border rounded-xl px-3 py-2 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:opacity-50"
+              />
+              <button
+                onClick={handleSubmit}
+                disabled={adding || !canSubmit}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-medium disabled:opacity-50 transition-opacity"
+              >
+                {adding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                추가
+              </button>
+            </div>
+            {adding ? (
+              <p className="text-[10px] text-muted-foreground/70 flex items-center gap-1.5">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                추출 → 요약 → 번역 처리 중… 긴 영상은 30초 이상 걸릴 수 있어요
+              </p>
+            ) : (
+              <p className="text-[10px] text-muted-foreground/40">
+                YouTube/기사 URL · 영어도 OK · 최장 2시간 영상까지 자동 번역
+              </p>
+            )}
+          </>
         ) : (
           <div className="space-y-2">
             <input
@@ -1337,40 +1799,15 @@ function ContentSourceSection({
       {sources.length > 0 && (
         <div className="border-t border-border divide-y divide-border">
           {sources.map(src => (
-            <div key={src.id} className="px-4 py-2.5 flex items-start gap-3">
-              <div className="flex-shrink-0 mt-0.5">
-                {src.type === 'text' ? (
-                  <FileText className="w-3.5 h-3.5 text-muted-foreground/40" />
-                ) : (
-                  <Link2 className="w-3.5 h-3.5 text-muted-foreground/40" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-foreground truncate">
-                  {src.title ?? src.url ?? '텍스트 메모'}
-                </p>
-                {src.summary && (
-                  <p className="text-[11px] text-muted-foreground/60 mt-0.5 line-clamp-2">{src.summary}</p>
-                )}
-                {src.type === 'url' && src.url && (
-                  <a
-                    href={src.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[10px] text-muted-foreground/40 hover:text-primary flex items-center gap-0.5 mt-0.5 w-fit"
-                  >
-                    <ExternalLink className="w-2.5 h-2.5" />
-                    {src.url.slice(0, 50)}{src.url.length > 50 ? '...' : ''}
-                  </a>
-                )}
-              </div>
-              <button
-                onClick={() => onDelete(src.id)}
-                className="p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground/40 hover:text-red-400 transition-colors flex-shrink-0"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
+            <SourceRow
+              key={src.id}
+              src={src}
+              onDelete={onDelete}
+              onResummarize={onResummarize}
+              onUpdateCategories={onUpdateCategories}
+              onGenerateFromSource={onGenerateFromSource}
+              generating={generating}
+            />
           ))}
         </div>
       )}
@@ -1444,6 +1881,35 @@ export default function ScenarioPage() {
   const handleDeleteSource = async (id: string) => {
     await deleteContentSource(id)
     setSources(prev => prev.filter(s => s.id !== id))
+  }
+
+  const handleResummarize = async (id: string) => {
+    const res = await resummarizeContentSource(id)
+    if (res.success && res.data) {
+      const updated = res.data
+      setSources(prev => prev.map(s => s.id === id ? updated : s))
+      if (updated.summaryStatus === 'success') {
+        toast.success('요약을 새로 생성했습니다')
+      } else {
+        toast.error(updated.summaryError ?? '요약 실패')
+      }
+    } else {
+      toast.error(res.error ?? '재요약 실패')
+    }
+  }
+
+  const handleUpdateCategories = async (id: string, categories: string[]) => {
+    // 옵티미스틱 업데이트
+    setSources(prev => prev.map(s => s.id === id ? { ...s, categories } : s))
+    const res = await updateContentSourceCategories(id, categories)
+    if (!res.success) {
+      toast.error(res.error ?? '카테고리 저장 실패')
+    }
+  }
+
+  const handleGenerateFromSource = (src: ContentSourceData) => {
+    const cats = src.categories.length > 0 ? src.categories : [...SCENARIO_CATEGORIES]
+    handleGenerate(cats, [src.id], '')
   }
 
   const handleGenerate = async (categories: string[], sourceIds: string[], directive: string) => {
@@ -1526,6 +1992,10 @@ export default function ScenarioPage() {
         sources={sources}
         onAdd={handleAddContent}
         onDelete={handleDeleteSource}
+        onResummarize={handleResummarize}
+        onUpdateCategories={handleUpdateCategories}
+        onGenerateFromSource={handleGenerateFromSource}
+        generating={generating}
         adding={adding}
       />
 

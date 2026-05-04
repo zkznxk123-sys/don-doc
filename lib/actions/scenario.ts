@@ -1,13 +1,16 @@
 'use server'
 
+import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
-import { chat } from '@/lib/ai'
+import { chat, chatJSON } from '@/lib/ai'
 import { formatLargeNumber } from '@/lib/utils'
 import { YoutubeTranscript } from 'youtube-transcript'
-import { SCENARIO_CATEGORIES } from '@/lib/scenario-constants'
+import { SCENARIO_CATEGORIES, type ScenarioCategory } from '@/lib/scenario-constants'
 
 // ── 타입 ────────────────────────────────────────────────────────────────────
+
+export type SummaryStatus = 'success' | 'failed' | 'too_short' | 'fetch_failed'
 
 export interface ContentSourceData {
   id: string
@@ -15,6 +18,14 @@ export interface ContentSourceData {
   url: string | null
   title: string | null
   summary: string | null
+  summaryStatus: SummaryStatus | null
+  summaryError: string | null
+  extractedLength: number | null
+  extractedPreview: string | null
+  extractedText: string | null
+  extractedTextKo: string | null
+  summarizedAt: Date | null
+  categories: string[]
   createdAt: Date
 }
 
@@ -89,7 +100,8 @@ async function extractYouTubeContent(url: string): Promise<{ title: string; rawT
       .join(' ')
       .replace(/\s+/g, ' ')
       .trim()
-      .slice(0, 6000)
+      // 2시간짜리 영상까지 커버 (1시간 ≈ 25~30k자)
+      .slice(0, 60_000)
   } catch (e) {
     console.warn('[extractYouTubeContent] transcript unavailable:', e)
   }
@@ -125,7 +137,32 @@ function extractFromHtml(html: string): { title: string; rawText: string } {
 
   const desc = ogDesc || metaDesc
   const rawText = (desc ? desc + '\n\n' : '') + bodyText
-  return { title, rawText: rawText.slice(0, 4000) }
+  return { title, rawText: rawText.slice(0, 20_000) }
+}
+
+/**
+ * 긴 텍스트를 자연스러운 경계(문장 끝/줄바꿈/공백)에서 잘라 청크 배열로 반환.
+ */
+function chunkText(text: string, targetSize: number): string[] {
+  if (text.length <= targetSize) return [text]
+  const chunks: string[] = []
+  let i = 0
+  while (i < text.length) {
+    let end = Math.min(i + targetSize, text.length)
+    if (end < text.length) {
+      const slice = text.slice(i, end + 200) // 살짝 여유두고 경계 찾기
+      const lastPeriod = Math.max(slice.lastIndexOf('. '), slice.lastIndexOf('. '))
+      const lastNewline = slice.lastIndexOf('\n')
+      const lastSpace = slice.lastIndexOf(' ')
+      const candidate = Math.max(lastPeriod, lastNewline, lastSpace)
+      // 청크 절반보다 뒤에서 자른 경계만 사용 (너무 앞이면 그냥 targetSize에서 자름)
+      if (candidate > targetSize / 2) end = i + candidate + 1
+    }
+    const piece = text.slice(i, end).trim()
+    if (piece) chunks.push(piece)
+    i = end
+  }
+  return chunks
 }
 
 // ── 재무 컨텍스트 수집 ────────────────────────────────────────────────────────
@@ -284,80 +321,335 @@ async function buildFeedbackContext(familyId: string): Promise<string> {
 
 // ── ContentSource CRUD ───────────────────────────────────────────────────────
 
+// 입력 → 추출/요약 진단 정보 모두 포함된 객체. 실패해도 던지지 않고 status로 표현.
+interface SummarizeResult {
+  title: string
+  summary: string
+  categories: ScenarioCategory[]
+  summaryStatus: SummaryStatus
+  summaryError: string | null
+  extractedLength: number
+  extractedPreview: string
+  extractedText: string
+  extractedTextKo: string  // 비한국어 원문일 때만 채워짐. 빈 문자열이면 한국어 원문.
+  url: string | null
+}
+
+// 메타 호출: summary + categories + sourceLanguage. 번역은 별도 호출로 분리.
+const SummaryMetaSchema = z.object({
+  summary: z.string(),
+  categories: z.array(z.string()).default([]),
+  sourceLanguage: z.string().default(''),
+})
+
+async function summarizeSource(
+  input: { type: 'url'; url: string } | { type: 'text'; title: string; text: string },
+  aiMode: 'api' | 'claude' | 'chatgpt' | 'gemini',
+  familyId: string,
+): Promise<SummarizeResult> {
+  const aiOpts = { mode: aiMode, sessionId: familyId, tier: 'fast' as const, maxTokens: 300, timeoutMs: 15_000 }
+  let title = ''
+  let rawText = ''
+  let url: string | null = null
+  let extractError: string | null = null
+
+  // ── 1단계: 추출 ────────────────────────────────────────────────────
+  try {
+    if (input.type === 'text') {
+      title = input.title
+      rawText = input.text.slice(0, 4000)
+    } else {
+      url = input.url
+      if (isYouTubeUrl(url)) {
+        const ext = await extractYouTubeContent(url)
+        title = ext.title
+        rawText = ext.rawText
+      } else {
+        const res = await fetch(url, {
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DonDoc/1.0)' },
+          signal: AbortSignal.timeout(10_000),
+        })
+        if (!res.ok) {
+          extractError = `HTTP ${res.status}`
+        } else {
+          const html = await res.text()
+          const ext = extractFromHtml(html)
+          title = ext.title
+          rawText = ext.rawText
+        }
+      }
+    }
+  } catch (e) {
+    extractError = e instanceof Error ? e.message : String(e)
+    console.error('[summarizeSource] extraction failed:', e)
+  }
+
+  const extractedPreview = rawText.slice(0, 500)
+  const extractedText = rawText
+  const extractedLength = rawText.length
+
+  // ── 추출 실패 ─────────────────────────────────────────────────────
+  if (extractError) {
+    return {
+      title, summary: '', categories: [], url,
+      summaryStatus: 'fetch_failed',
+      summaryError: extractError,
+      extractedLength, extractedPreview, extractedText, extractedTextKo: '',
+    }
+  }
+
+  // ── 본문 너무 짧음 ─────────────────────────────────────────────────
+  if (rawText.length <= 30) {
+    return {
+      title,
+      summary: rawText,
+      categories: [],
+      url,
+      summaryStatus: 'too_short',
+      summaryError: input.type === 'url'
+        ? (isYouTubeUrl(url ?? '')
+          ? 'YouTube 자막을 가져오지 못했거나 제목 외 정보가 없습니다.'
+          : '페이지에서 본문을 추출하지 못했습니다.')
+        : '메모 내용이 너무 짧습니다.',
+      extractedLength, extractedPreview, extractedText, extractedTextKo: '',
+    }
+  }
+
+  // ── 2단계: AI 메타 호출 (summary + categories + sourceLanguage) ────
+  const sourceLabel = input.type === 'text'
+    ? '사용자 메모'
+    : isYouTubeUrl(url ?? '') ? 'YouTube 영상 자막' : '기사/페이지'
+
+  let summary = ''
+  let validCategories: ScenarioCategory[] = []
+  let sourceLanguage = ''
+
+  try {
+    // 콘텐츠 길이에 따라 인사이트 개수 가이드 동적 조정
+    const insightCountHint =
+      rawText.length < 3_000 ? '3~4개'
+      : rawText.length < 10_000 ? '5~7개'
+      : rawText.length < 25_000 ? '7~10개'
+      : '10~14개'
+
+    const metaPrompt =
+      `당신은 가계부 앱 "돈독"의 콘텐츠 분석 AI입니다. ` +
+      `사용자가 등록한 ${sourceLabel}을 분석해 다음 3개 키를 포함한 JSON을 반환하세요:\n\n` +
+      `1. sourceLanguage: 원문 주 언어 ISO 코드 ("ko", "en", "ja", "zh" 등). 자막 본문 기준.\n` +
+      `2. summary: **한국어 마크다운**으로, 다음 3개 섹션을 정확한 헤딩 그대로 작성:\n` +
+      `   ## 핵심 주장\n` +
+      `   1~2문장으로 콘텐츠가 말하려는 한 줄 요지.\n\n` +
+      `   ## 주요 인사이트\n` +
+      `   불릿 ${insightCountHint}. 각 불릿은 "- " 로 시작. ` +
+      `구체 숫자·사례·인명·고유명사·프레임워크 이름은 그대로 보존 (의역하지 말고 명사는 살리기). ` +
+      `단순 일반론 금지. "ABC 전략은 X 상황에서 Y 결과를 냈다" 식으로 구체적으로.\n\n` +
+      `   ## 가계 재무 연결\n` +
+      `   1~2문장. 이 내용을 사용자의 가계 재무·자산 의사결정에 어떻게 적용/참고할 수 있는지. ` +
+      `재무·투자·부동산이 아닌 주제면 "직접 연관은 약하지만 ○○ 측면에서 참고 가능"처럼 솔직히. ` +
+      `대상 아님으로 거절 금지.\n\n` +
+      `3. categories: 시나리오 카테고리(0~3개). ${JSON.stringify([...SCENARIO_CATEGORIES])} 중에서만 선택. 관련 없으면 빈 배열.\n\n` +
+      `예시: {"sourceLanguage":"en","summary":"## 핵심 주장\\n...\\n\\n## 주요 인사이트\\n- ...\\n- ...\\n\\n## 가계 재무 연결\\n...","categories":["투자"]}`
+
+    const metaInput = input.type === 'text'
+      ? `${metaPrompt}\n\n[메모 제목] ${input.title}\n[메모 내용]\n${rawText}`
+      : `${metaPrompt}\n\n[출처] ${url}\n[내용]\n${rawText}`
+
+    const meta = await chatJSON(
+      [{ role: 'user', content: metaInput }],
+      SummaryMetaSchema,
+      // 구조화 요약 + 길이 가변 인사이트 수용 위해 3000으로 상향
+      { ...aiOpts, maxTokens: 3000, timeoutMs: 45_000 },
+    )
+
+    summary = meta.summary?.trim() ?? ''
+    sourceLanguage = (meta.sourceLanguage ?? '').toLowerCase().trim()
+    validCategories = (meta.categories ?? [])
+      .filter((c): c is ScenarioCategory => (SCENARIO_CATEGORIES as readonly string[]).includes(c))
+  } catch (e) {
+    console.error('[summarizeSource] meta call failed:', e)
+    return {
+      title, summary: '', categories: [], url,
+      summaryStatus: 'failed',
+      summaryError: e instanceof Error ? e.message : String(e),
+      extractedLength, extractedPreview, extractedText, extractedTextKo: '',
+    }
+  }
+
+  if (!summary || summary.length < 10) {
+    return {
+      title, summary, categories: [], url,
+      summaryStatus: 'failed',
+      summaryError: 'AI가 빈 요약을 반환했습니다.',
+      extractedLength, extractedPreview, extractedText, extractedTextKo: '',
+    }
+  }
+
+  // ── 3단계: 비한국어면 청크로 분할 번역 (병렬) ─────────────────────
+  let extractedTextKo = ''
+  if (sourceLanguage && sourceLanguage !== 'ko') {
+    try {
+      // 청크 1개당 ~10000자 → 한국어 번역 시 ~12000 토큰 출력 (gpt-4o-mini 16k 한도 내)
+      const chunks = chunkText(rawText, 10_000)
+      const translatedChunks = await Promise.all(
+        chunks.map(async (chunk, i) => {
+          const translatePrompt =
+            `다음 ${sourceLabel} 원문을 자연스러운 한국어로 번역하세요. ` +
+            `의역 OK, 원문 길이/순서 유지. ` +
+            `광고/네비게이션 노이즈는 생략 가능. ` +
+            `**번역문만 반환하세요. 머리말, 설명, 따옴표, 코드블록 모두 금지.** ` +
+            `(${chunks.length > 1 ? `청크 ${i + 1}/${chunks.length}` : '단일 청크'})\n\n` +
+            `[원문]\n${chunk}`
+          return await chat(
+            [{ role: 'user', content: translatePrompt }],
+            { ...aiOpts, maxTokens: 16_000, timeoutMs: 120_000 },
+          )
+        }),
+      )
+      extractedTextKo = translatedChunks.map(t => t.trim()).join('\n\n')
+    } catch (e) {
+      // 번역 실패해도 summary는 살림 — translation은 옵셔널
+      console.error('[summarizeSource] translation failed:', e)
+      extractedTextKo = ''
+    }
+  }
+
+  return {
+    title, summary, categories: validCategories, url,
+    summaryStatus: 'success',
+    summaryError: null,
+    extractedLength, extractedPreview, extractedText, extractedTextKo,
+  }
+}
+
+function toContentSourceData(row: {
+  id: string; type: string; url: string | null; title: string | null; summary: string | null;
+  summaryStatus: string | null; summaryError: string | null;
+  extractedLength: number | null; extractedPreview: string | null;
+  extractedText: string | null; extractedTextKo: string | null;
+  summarizedAt: Date | null; categories: string[]; createdAt: Date;
+}): ContentSourceData {
+  return {
+    id: row.id,
+    type: (row.type ?? 'url') as 'url' | 'text',
+    url: row.url,
+    title: row.title,
+    summary: row.summary,
+    summaryStatus: (row.summaryStatus as SummaryStatus | null) ?? null,
+    summaryError: row.summaryError,
+    extractedLength: row.extractedLength,
+    extractedPreview: row.extractedPreview,
+    extractedText: row.extractedText,
+    extractedTextKo: row.extractedTextKo,
+    summarizedAt: row.summarizedAt,
+    categories: row.categories ?? [],
+    createdAt: row.createdAt,
+  }
+}
+
 export async function addContentSource(
   input: { type: 'url'; url: string } | { type: 'text'; title: string; text: string },
 ): Promise<{ success: boolean; data?: ContentSourceData; error?: string }> {
   const user = await getAuthUser()
   if (!user?.familyId) return { success: false, error: 'Unauthorized' }
 
-  let title = ''
-  let summary = ''
-  let url: string | null = null
-
-  try {
-    if (input.type === 'text') {
-      title = input.title
-      const rawText = input.text.slice(0, 4000)
-      if (rawText.length > 30) {
-        summary = await chat(
-          [{ role: 'user', content: `당신은 가계부 앱의 재무 메모 요약 AI입니다. 아래 사용자 메모에서 핵심 재무/투자 인사이트를 3~5문장으로 요약하세요.\n\n[메모 제목] ${input.title}\n[메모 내용]\n${rawText}\n\n[요약]` }],
-          { mode: user.familyAiMode, sessionId: user.familyId ?? undefined, tier: 'fast', maxTokens: 300, timeoutMs: 15_000 },
-        )
-      } else {
-        summary = rawText
-      }
-    } else {
-      url = input.url
-      let rawText = ''
-      if (isYouTubeUrl(url)) {
-        const { title: ytTitle, rawText: ytText } = await extractYouTubeContent(url)
-        title = ytTitle
-        rawText = ytText
-      } else {
-        const res = await fetch(url, {
-          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DonDoc/1.0)' },
-          signal: AbortSignal.timeout(10_000),
-        })
-        const html = await res.text()
-        const extracted = extractFromHtml(html)
-        title = extracted.title
-        rawText = extracted.rawText
-      }
-      if (rawText.length > 30) {
-        const roleDesc = isYouTubeUrl(url)
-          ? '당신은 가계부 앱의 재무 콘텐츠 요약 AI입니다. YouTube 자막에서 투자/부동산 핵심 인사이트를 3~5문장으로 요약하세요.'
-          : '당신은 가계부 앱의 재무 콘텐츠 요약 AI입니다. 아래 기사/페이지에서 투자/재무/부동산 핵심 인사이트만 3~5문장으로 요약하세요.'
-        summary = await chat(
-          [{ role: 'user', content: `${roleDesc}\n\n[출처] ${url}\n[내용]\n${rawText}\n\n[요약]` }],
-          { mode: user.familyAiMode, sessionId: user.familyId ?? undefined, tier: 'fast', maxTokens: 300, timeoutMs: 15_000 },
-        )
-      }
-    }
-  } catch (e) {
-    console.error('[addContentSource] error:', e)
-  }
+  const result = await summarizeSource(input, user.familyAiMode, user.familyId)
 
   const row = await prisma.contentSource.create({
     data: {
       familyId: user.familyId,
       type: input.type,
-      url,
-      title: title || null,
-      summary: summary || null,
+      url: result.url,
+      title: result.title || null,
+      summary: result.summary || null,
+      summaryStatus: result.summaryStatus,
+      summaryError: result.summaryError,
+      extractedLength: result.extractedLength,
+      extractedPreview: result.extractedPreview || null,
+      extractedText: result.extractedText || null,
+      extractedTextKo: result.extractedTextKo || null,
+      summarizedAt: new Date(),
+      categories: result.categories,
     },
   })
 
-  return {
-    success: true,
-    data: {
-      id: row.id,
-      type: row.type as 'url' | 'text',
-      url: row.url,
-      title: row.title,
-      summary: row.summary,
-      createdAt: row.createdAt,
-    },
+  return { success: true, data: toContentSourceData(row) }
+}
+
+/**
+ * 기존 ContentSource를 다시 추출·요약 (실패했거나 결과가 만족스럽지 않을 때).
+ * - URL 타입이면 재fetch 후 재요약
+ * - text 타입이면 기존 extractedPreview/저장된 본문이 없어 재요약 불가 → 안내
+ */
+export async function resummarizeContentSource(
+  id: string,
+): Promise<{ success: boolean; data?: ContentSourceData; error?: string }> {
+  const user = await getAuthUser()
+  if (!user?.familyId) return { success: false, error: 'Unauthorized' }
+
+  const existing = await prisma.contentSource.findFirst({
+    where: { id, familyId: user.familyId },
+  })
+  if (!existing) return { success: false, error: '컨텐츠를 찾을 수 없습니다.' }
+
+  // 텍스트 메모는 원문이 DB에 없어 재요약 불가 (extractedPreview 500자만 있음).
+  // 향후 ContentSource에 originalText 필드를 추가하면 지원 가능.
+  if (existing.type === 'text') {
+    return { success: false, error: '텍스트 메모는 재요약을 지원하지 않습니다. 삭제 후 다시 추가해주세요.' }
   }
+  if (!existing.url) {
+    return { success: false, error: 'URL 정보가 없습니다.' }
+  }
+
+  const result = await summarizeSource(
+    { type: 'url', url: existing.url },
+    user.familyAiMode,
+    user.familyId,
+  )
+
+  const row = await prisma.contentSource.update({
+    where: { id },
+    data: {
+      title: result.title || existing.title,
+      summary: result.summary || null,
+      summaryStatus: result.summaryStatus,
+      summaryError: result.summaryError,
+      extractedLength: result.extractedLength,
+      extractedPreview: result.extractedPreview || null,
+      extractedText: result.extractedText || null,
+      extractedTextKo: result.extractedTextKo || null,
+      summarizedAt: new Date(),
+      // 재요약 시 사용자가 수동 수정한 카테고리는 보존 — AI 결과로 덮어쓰지 않음
+      ...(existing.categories.length === 0 ? { categories: result.categories } : {}),
+    },
+  })
+
+  return { success: true, data: toContentSourceData(row) }
+}
+
+/**
+ * 사용자가 카테고리를 수동으로 수정할 때 호출.
+ * SCENARIO_CATEGORIES에 정확히 포함되는 값만 저장.
+ */
+export async function updateContentSourceCategories(
+  id: string,
+  categories: string[],
+): Promise<{ success: boolean; error?: string }> {
+  const user = await getAuthUser()
+  if (!user?.familyId) return { success: false, error: 'Unauthorized' }
+
+  const valid = categories.filter(c => (SCENARIO_CATEGORIES as readonly string[]).includes(c))
+
+  const existing = await prisma.contentSource.findFirst({
+    where: { id, familyId: user.familyId },
+    select: { id: true },
+  })
+  if (!existing) return { success: false, error: '컨텐츠를 찾을 수 없습니다.' }
+
+  await prisma.contentSource.update({
+    where: { id },
+    data: { categories: valid },
+  })
+  return { success: true }
 }
 
 export async function getContentSources(): Promise<ContentSourceData[]> {
@@ -369,14 +661,7 @@ export async function getContentSources(): Promise<ContentSourceData[]> {
     orderBy: { createdAt: 'desc' },
   })
 
-  return rows.map(r => ({
-    id: r.id,
-    type: (r.type ?? 'url') as 'url' | 'text',
-    url: r.url,
-    title: r.title,
-    summary: r.summary,
-    createdAt: r.createdAt,
-  }))
+  return rows.map(toContentSourceData)
 }
 
 export async function deleteContentSource(id: string): Promise<{ success: boolean }> {
