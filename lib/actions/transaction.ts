@@ -327,6 +327,7 @@ async function findOrCreateAccount(
  * 엑셀/CSV에서 파싱한 내역을 일괄 저장하는 Server Action
  * - row.accountName으로 계좌 자동 매칭/생성
  * - accountBalances 제공 시 계좌 잔액 강제 동기화
+ * - 거래·잔액 변경을 UploadBatch로 묶어 추적
  * - 월별 통계(MonthStat[]) 반환
  */
 export async function createManyTransactions(
@@ -335,6 +336,7 @@ export async function createManyTransactions(
   rows: BulkTransactionRow[],
   options?: {
     accountBalances?: { name: string; balance: number; type?: 'CASH' | 'INVESTMENT' | 'PENSION' | 'REAL_ESTATE' | 'DEBT' }[]
+    fileName?: string
   }
 ): Promise<{
   success: boolean
@@ -342,6 +344,7 @@ export async function createManyTransactions(
   skippedCount?: number
   monthStats?: MonthStat[]
   syncedAccountCount?: number
+  batchId?: string
   error?: string
 }> {
   if (rows.length === 0) return { success: false, error: '등록할 내역이 없습니다.' }
@@ -411,7 +414,23 @@ export async function createManyTransactions(
       return { success: true, count: 0, skippedCount, monthStats: [], syncedAccountCount: 0 }
     }
 
-    // ── 5. Transaction 일괄 저장 (originalHash 포함) ──
+    // ── 5. accountBalances 적용 전, 변경될 계좌의 옛 잔액 미리 캡처 ──
+    type PendingBalance = { accountId: string; oldBalance: number; newBalance: number }
+    const pendingBalances: PendingBalance[] = []
+    if (options?.accountBalances && options.accountBalances.length > 0) {
+      for (const ab of options.accountBalances) {
+        const id = await findOrCreateAccount(ab.name, familyId, ab.type ?? 'CASH', userId)
+        const acc = await prisma.account.findUnique({ where: { id }, select: { balance: true } })
+        pendingBalances.push({ accountId: id, oldBalance: acc?.balance ?? 0, newBalance: ab.balance })
+      }
+    }
+
+    // ── 6. UploadBatch 생성 (count들은 마지막에 업데이트) ──
+    const batch = await prisma.uploadBatch.create({
+      data: { familyId, userId, fileName: options?.fileName, source: 'excel' },
+    })
+
+    // ── 7. Transaction 일괄 저장 (uploadBatchId 포함) ──
     await prisma.transaction.createMany({
       data: newRows.map(row => {
         const accountId = accountNameMap.get(row._accountName)!
@@ -425,22 +444,39 @@ export async function createManyTransactions(
           userId,
           accountId,
           originalHash: row._originalHash,
+          uploadBatchId: batch.id,
         }
       }),
     })
 
-    // ── 6. 계좌 잔액 강제 동기화 (뱅샐현황 데이터만 반영) ──
-    // delta 방식 자동 잔액 업데이트 제거 — 잔액은 뱅샐현황 업로드와 자산 페이지에서만 관리
+    // ── 8. 계좌 잔액 강제 동기화 + BalanceChangeLog 기록 ──
     let syncedAccountCount = 0
-    if (options?.accountBalances && options.accountBalances.length > 0) {
-      for (const ab of options.accountBalances) {
-        const id = await findOrCreateAccount(ab.name, familyId, ab.type ?? 'CASH', userId)
-        await prisma.account.update({ where: { id }, data: { balance: ab.balance } })
-        syncedAccountCount++
+    const balanceLogs: { accountId: string; oldBalance: number; newBalance: number; delta: number; source: string; uploadBatchId: string }[] = []
+    for (const pb of pendingBalances) {
+      await prisma.account.update({ where: { id: pb.accountId }, data: { balance: pb.newBalance } })
+      syncedAccountCount++
+      if (pb.oldBalance !== pb.newBalance) {
+        balanceLogs.push({
+          accountId: pb.accountId,
+          oldBalance: pb.oldBalance,
+          newBalance: pb.newBalance,
+          delta: pb.newBalance - pb.oldBalance,
+          source: 'excel',
+          uploadBatchId: batch.id,
+        })
       }
     }
+    if (balanceLogs.length > 0) {
+      await prisma.balanceChangeLog.createMany({ data: balanceLogs })
+    }
 
-    // ── 8. 월별 통계 집계 ──
+    // ── 9. 배치 카운트 갱신 ──
+    await prisma.uploadBatch.update({
+      where: { id: batch.id },
+      data: { txAdded: newRows.length, txSkipped: skippedCount, syncedAccounts: syncedAccountCount },
+    })
+
+    // ── 10. 월별 통계 집계 ──
     const monthMap = new Map<string, MonthStat>()
     for (const row of newRows) {
       const [y, m] = row.date.split('-')
@@ -458,7 +494,7 @@ export async function createManyTransactions(
 
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/transactions')
-    return { success: true, count: newRows.length, skippedCount, monthStats, syncedAccountCount }
+    return { success: true, count: newRows.length, skippedCount, monthStats, syncedAccountCount, batchId: batch.id }
   } catch (e) {
     console.error('[createManyTransactions] ERROR:', e)
     return { success: false, error: '저장 중 오류가 발생했습니다.' }
@@ -488,25 +524,63 @@ export async function checkTransactionDuplicates(
 /**
  * 계좌 잔액만 강제 동기화 (거래 저장 없음)
  * - 뱅샐현황 데이터로 자산 잔액만 업데이트할 때 사용
+ * - UploadBatch + BalanceChangeLog로 변경 이력 추적
  */
 export async function syncAccountBalancesOnly(
   familyId: string,
   userId: string,
-  accountBalances: { name: string; balance: number; type?: 'CASH' | 'INVESTMENT' | 'PENSION' | 'REAL_ESTATE' | 'DEBT' }[]
-): Promise<{ success: boolean; syncedCount?: number; error?: string }> {
+  accountBalances: { name: string; balance: number; type?: 'CASH' | 'INVESTMENT' | 'PENSION' | 'REAL_ESTATE' | 'DEBT' }[],
+  options?: { fileName?: string }
+): Promise<{ success: boolean; syncedCount?: number; batchId?: string; error?: string }> {
   const user = await getAuthUser()
   if (!user) return { success: false, error: 'Unauthorized' }
 
+  if (accountBalances.length === 0) return { success: true, syncedCount: 0 }
+
   try {
-    let syncedCount = 0
+    // 1. 업데이트 전 옛 잔액 캡처
+    type PendingBalance = { accountId: string; oldBalance: number; newBalance: number }
+    const pending: PendingBalance[] = []
     for (const ab of accountBalances) {
       const id = await findOrCreateAccount(ab.name, familyId, ab.type ?? 'CASH', userId)
-      await prisma.account.update({ where: { id }, data: { balance: ab.balance } })
-      syncedCount++
+      const acc = await prisma.account.findUnique({ where: { id }, select: { balance: true } })
+      pending.push({ accountId: id, oldBalance: acc?.balance ?? 0, newBalance: ab.balance })
     }
+
+    // 2. 배치 생성 (자산만 업로드 모드 → source='manual-sync')
+    const batch = await prisma.uploadBatch.create({
+      data: { familyId, userId, fileName: options?.fileName, source: 'manual-sync' },
+    })
+
+    // 3. 잔액 업데이트 + 로그
+    let syncedCount = 0
+    const logs: { accountId: string; oldBalance: number; newBalance: number; delta: number; source: string; uploadBatchId: string }[] = []
+    for (const pb of pending) {
+      await prisma.account.update({ where: { id: pb.accountId }, data: { balance: pb.newBalance } })
+      syncedCount++
+      if (pb.oldBalance !== pb.newBalance) {
+        logs.push({
+          accountId: pb.accountId,
+          oldBalance: pb.oldBalance,
+          newBalance: pb.newBalance,
+          delta: pb.newBalance - pb.oldBalance,
+          source: 'manual-sync',
+          uploadBatchId: batch.id,
+        })
+      }
+    }
+    if (logs.length > 0) {
+      await prisma.balanceChangeLog.createMany({ data: logs })
+    }
+
+    await prisma.uploadBatch.update({
+      where: { id: batch.id },
+      data: { syncedAccounts: syncedCount },
+    })
+
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/assets')
-    return { success: true, syncedCount }
+    return { success: true, syncedCount, batchId: batch.id }
   } catch (e) {
     console.error('[syncAccountBalancesOnly] ERROR:', e)
     return { success: false, error: '잔액 동기화 중 오류가 발생했습니다.' }

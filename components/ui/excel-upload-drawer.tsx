@@ -386,7 +386,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
     try {
       // ── 자산만 업데이트 모드 ──
       if (uploadMode === 'assets') {
-        const result = await syncAccountBalancesOnly(familyId, userId, accountBalances)
+        const result = await syncAccountBalancesOnly(familyId, userId, accountBalances, { fileName: fileName ?? undefined })
         if (result.success) {
           toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료`)
           handleClose(); onSuccess()
@@ -400,7 +400,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
       if (validRows.length === 0) {
         // 신규 거래 없어도 both 모드에서 자산 잔액은 업데이트
         if (uploadMode === 'both' && accountBalances.length > 0) {
-          const result = await syncAccountBalancesOnly(familyId, userId, accountBalances)
+          const result = await syncAccountBalancesOnly(familyId, userId, accountBalances, { fileName: fileName ?? undefined })
           if (result.success) {
             toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료`, { description: '새로 등록할 거래 내역이 없습니다.' })
             handleClose(); onSuccess()
@@ -422,10 +422,11 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         visibility,
         accountName: r.accountName || r._paymentMethod || '기본 계좌',
       }))
-      const balancesForSync = uploadMode === 'both' && accountBalances.length > 0
-        ? { accountBalances }
-        : undefined
-      const result = await createManyTransactions(userId, familyId, submitRows, balancesForSync)
+      const submitOptions = {
+        ...(uploadMode === 'both' && accountBalances.length > 0 ? { accountBalances } : {}),
+        ...(fileName ? { fileName } : {}),
+      }
+      const result = await createManyTransactions(userId, familyId, submitRows, submitOptions)
 
       if (result.success) {
         const total = validRows.length

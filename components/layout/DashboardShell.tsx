@@ -6,6 +6,7 @@ import { AppSidebar } from './AppSidebar'
 import { TopBar } from './TopBar'
 import { TransactionDrawer, type EditTransactionData } from '@/components/ui/transaction-drawer'
 import { ExcelUploadDrawer } from '@/components/ui/excel-upload-drawer'
+import { FloatingChatButton } from '@/components/chat/FloatingChatButton'
 import { AlertCircle, X } from 'lucide-react'
 import Link from 'next/link'
 import type { AppRole } from '@/lib/roles'
@@ -126,6 +127,8 @@ export function DashboardShell({
         familyId={user.familyId ?? ''}
         onSuccess={handleDrawerSuccess}
       />
+
+      <FloatingChatButton />
     </DashboardActionsContext.Provider>
   )
 }

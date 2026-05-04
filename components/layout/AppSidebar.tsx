@@ -17,6 +17,7 @@ import {
   X,
   Sparkles,
   MessageSquare,
+  History,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { BrandMark } from '@/components/ui/brand-mark'
@@ -33,6 +34,7 @@ export const NAV_ITEMS = [
   { href: '/dashboard/budget',     label: '예산 관리',      icon: Calculator },
   { href: '/dashboard/scenario',   label: '시나리오 허브',  icon: Sparkles },
   { href: '/dashboard/feed',       label: '가족 피드',      icon: MessageSquare },
+  { href: '/dashboard/uploads',    label: '업로드 이력',    icon: History },
   { href: '/dashboard/settings',   label: '설정',           icon: Settings },
 ]
 

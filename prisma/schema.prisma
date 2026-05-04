@@ -94,6 +94,7 @@ model FamilyGroup {
   familyPosts       FamilyPost[]
   oauthAccounts     FamilyOAuthAccount[]
   oauthSessions     FamilyOAuthSession[]
+  uploadBatches     UploadBatch[]
   createdAt         DateTime             @default(now())
 }
 
@@ -138,6 +139,7 @@ model User {
   taggedInPosts          FamilyPost[]             @relation("FamilyPostTaggedUsers")
   oauthAccountsConnected FamilyOAuthAccount[]
   oauthSessionsStarted   FamilyOAuthSession[]
+  uploadBatches          UploadBatch[]
 
   @@index([familyId])
 }
@@ -201,6 +203,7 @@ model Account {
   pensionDetail        PensionDetail?
   holdings             InvestmentHolding[] // INVESTMENT/CRYPTO 계좌 종목 목록
   priceHistory         RealEstatePriceHistory[] // REAL_ESTATE 시세 이력
+  balanceChanges       BalanceChangeLog[]
 
   @@index([familyId, parentAccountId])
   @@index([userId])
@@ -227,10 +230,50 @@ model Transaction {
   parent            Transaction?  @relation("SubTransactions", fields: [parentId], references: [id], onDelete: Cascade)
   subItems          Transaction[] @relation("SubTransactions")
   familyPosts       FamilyPost[]
+  uploadBatchId     String?
+  uploadBatch       UploadBatch?  @relation(fields: [uploadBatchId], references: [id], onDelete: SetNull)
 
   @@index([userId, date])
   @@index([accountId])
   @@index([parentId])
+  @@index([uploadBatchId])
+}
+
+// 엑셀 업로드 / 잔액 동기화 1건 단위 추적 (어떤 거래·잔액 변경이 같은 업로드에서 일어났는지)
+model UploadBatch {
+  id             String             @id @default(cuid())
+  familyId       String
+  family         FamilyGroup        @relation(fields: [familyId], references: [id])
+  userId         String
+  user           User               @relation(fields: [userId], references: [id])
+  fileName       String?
+  source         String             @default("excel") // 'excel' | 'banksalad' | 'manual-sync'
+  txAdded        Int                @default(0)
+  txSkipped      Int                @default(0)
+  syncedAccounts Int                @default(0)
+  uploadedAt     DateTime           @default(now())
+  transactions   Transaction[]
+  balanceChanges BalanceChangeLog[]
+
+  @@index([familyId, uploadedAt])
+  @@index([userId])
+}
+
+// 계좌 잔액 변경 이력 — 자산 추적용
+model BalanceChangeLog {
+  id            String       @id @default(cuid())
+  accountId     String
+  account       Account      @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  oldBalance    Float
+  newBalance    Float
+  delta         Float        // newBalance - oldBalance
+  source        String       @default("excel") // 'excel' | 'manual' | 'auto'
+  uploadBatchId String?
+  uploadBatch   UploadBatch? @relation(fields: [uploadBatchId], references: [id], onDelete: SetNull)
+  changedAt     DateTime     @default(now())
+
+  @@index([accountId, changedAt])
+  @@index([uploadBatchId])
 }
 
 model RealEstateDetail {
@@ -404,14 +447,23 @@ model TargetProperty {
 // ── 시나리오 허브 ──────────────────────────────────────────────────────────────
 
 model ContentSource {
-  id        String      @id @default(cuid())
-  familyId  String
-  family    FamilyGroup @relation(fields: [familyId], references: [id])
-  type      String      @default("url") // "url" | "text"
-  url       String? // type=url일 때만 사용
-  title     String?
-  summary   String?
-  createdAt DateTime    @default(now())
+  id               String      @id @default(cuid())
+  familyId         String
+  family           FamilyGroup @relation(fields: [familyId], references: [id])
+  type             String      @default("url") // "url" | "text"
+  url              String? // type=url일 때만 사용
+  title            String?
+  summary          String?
+  // 요약 진단 정보
+  summaryStatus    String?     // 'success' | 'failed' | 'too_short' | 'fetch_failed'
+  summaryError     String?     // 실패 사유 텍스트
+  extractedLength  Int?        // 추출된 원문 글자수
+  extractedPreview String?     // 추출 원문 첫 500자 (빠른 표시용)
+  extractedText    String?     // 추출 원문 전문 (AI에 보낸 그대로)
+  extractedTextKo  String?     // 비한국어 원문일 때 한국어 번역. 한국어 원문이면 null.
+  summarizedAt     DateTime?
+  categories       String[]    @default([]) // SCENARIO_CATEGORIES 중 0~다수, AI 자동 분류 + 사용자 수정 가능
+  createdAt        DateTime    @default(now())
 
   @@index([familyId])
 }

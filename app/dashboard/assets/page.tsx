@@ -48,6 +48,7 @@ import {
   type HoldingData,
 } from '@/lib/actions/investments'
 import { HoldingDrawer } from '@/components/ui/holding-drawer'
+import { RecentBalanceChanges } from '@/components/ui/recent-balance-changes'
 import { TradeDrawer } from '@/components/ui/trade-drawer'
 import { PriceHistoryChart } from '@/components/ui/price-history-chart'
 import { TargetPropertyDrawer } from '@/components/ui/target-property-drawer'
@@ -385,6 +386,8 @@ export default function AssetsPage() {
             onAdd={openAdd}
             currentUserId={shellUser?.id}
           />
+
+          <RecentBalanceChanges days={30} limit={8} />
         </TabsContent>
 
         {/* 부동산 탭 */}
