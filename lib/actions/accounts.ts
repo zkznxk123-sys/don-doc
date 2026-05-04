@@ -550,6 +550,9 @@ export async function updateAccount(
       update: data,
       create: { accountId: id, ...data },
     })
+    // currentPrice 가 변경됐을 수 있으니 Account.balance 도 동기화
+    const { syncRealEstateBalanceFromCurrentPrice } = await import('@/lib/actions/realestate')
+    await syncRealEstateBalanceFromCurrentPrice(id)
   }
 
   if (['CASH', 'INVESTMENT', 'CRYPTO', 'STO'].includes(type) && input.financialAssetDetail !== undefined) {

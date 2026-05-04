@@ -3,6 +3,24 @@
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
 
+/**
+ * Account.balance 를 RealEstateDetail.currentPrice 와 동기화.
+ * - 부동산 계좌의 자산 합계가 항상 최신 시세를 반영하도록.
+ * - currentPrice 가 null 이면 balance 안 건드림 (사용자 직접 입력값 보존).
+ * - 시세 update가 발생하는 모든 지점(국토부 가져오기 / 수동 입력 / 계좌 편집)에서 호출.
+ */
+export async function syncRealEstateBalanceFromCurrentPrice(accountId: string): Promise<void> {
+  const detail = await prisma.realEstateDetail.findUnique({
+    where: { accountId },
+    select: { currentPrice: true },
+  })
+  if (!detail || detail.currentPrice == null) return
+  await prisma.account.update({
+    where: { id: accountId },
+    data: { balance: detail.currentPrice },
+  })
+}
+
 // ── 타입 ────────────────────────────────────────────────────────────────────
 
 export interface PriceHistoryPoint {
@@ -81,6 +99,9 @@ export async function upsertPriceHistory(
     create: { accountId, currentPrice: price, priceUpdatedAt: new Date() },
   })
 
+  // Account.balance 도 시세에 맞춰 동기화 (자산 합계에서 사용)
+  await syncRealEstateBalanceFromCurrentPrice(accountId)
+
   return { success: true }
 }
 
@@ -124,6 +145,7 @@ export async function saveMolitPriceHistory(
       update: { currentPrice: latest.price, priceUpdatedAt: new Date() },
       create: { accountId, currentPrice: latest.price, priceUpdatedAt: new Date() },
     })
+    await syncRealEstateBalanceFromCurrentPrice(accountId)
   }
 
   return { success: true, saved }

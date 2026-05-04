@@ -7,6 +7,7 @@ import { getRealEstateWithDebts, updateDebtLtvInclusion, type RealEstateWithDebt
 import { Switch } from '@/components/ui/switch'
 import type { AccountInitialData } from '@/components/ui/account-drawer'
 import { RealEstateTaxCalc } from '@/components/ui/real-estate-tax-calc'
+import { useDashboardActions } from '@/components/layout/DashboardShell'
 
 interface RealEstateCardProps {
   account: AccountInitialData
@@ -71,13 +72,14 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
   const [data, setData] = useState<RealEstateWithDebts | null>(null)
   const [loading, setLoading] = useState(true)
   const [debtExpanded, setDebtExpanded] = useState(false)
+  const { refreshKey } = useDashboardActions()
 
   useEffect(() => {
     getRealEstateWithDebts(account.id).then(d => {
       setData(d)
       setLoading(false)
     })
-  }, [account.id])
+  }, [account.id, refreshKey])
 
   async function handleToggleLtv(debtId: string, val: boolean) {
     if (!data) return

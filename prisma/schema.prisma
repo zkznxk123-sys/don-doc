@@ -485,6 +485,7 @@ model Scenario {
   status           String                @default("active") // active | interested | dismissed | archived
   generationBatch  String                @default("") // 같은 생성 회차 그룹핑 (cuid)
   expansion        Json? // 상세 실행 계획 (expandScenario 호출 후)
+  embedding        Float[]               @default([]) // title+rationale 임베딩 (text-embedding-3-small) — 유사도 기반 대체 판단
   generatedAt      DateTime              @default(now())
   chatMessages     ScenarioChatMessage[]
 
@@ -583,4 +584,12 @@ model FamilyOAuthSession {
   expiresAt DateTime
 
   @@index([familyId, provider])
+}
+
+// 환율 — 글로벌 단일 row per pair. USDKRW 등.
+// 시세 새로고침 시 클라이언트가 yahoo에서 fetch 후 서버에 저장해서, 서버 측 자산 합산 로직도 변환 가능.
+model ExchangeRate {
+  pair      String   @id // "USDKRW" 같은 식별자
+  rate      Float
+  updatedAt DateTime @updatedAt
 }

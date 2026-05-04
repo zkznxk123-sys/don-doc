@@ -76,28 +76,40 @@ export function RecentBalanceChanges({ days = 30, limit = 8 }: { days?: number; 
         </Link>
       </div>
 
-      <ul className="space-y-1.5">
+      <ul className="divide-y divide-border/40">
         {items.map(it => {
           const up = it.delta > 0
           const flat = it.delta === 0
+          const isNewAsset = it.oldBalance === 0 && it.delta > 0
           return (
-            <li key={it.id} className="flex items-center gap-2 text-xs py-1">
-              <span className="font-medium truncate w-32 sm:w-40">{it.accountName}</span>
-              <span className="hidden sm:inline text-muted-foreground tabular-nums">{formatCurrency(it.oldBalance)}</span>
-              <span className="hidden sm:inline text-muted-foreground/40">→</span>
-              <span className="tabular-nums font-medium flex-1 sm:flex-none">{formatCurrency(it.newBalance)}</span>
+            <li
+              key={it.id}
+              className="grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)_auto_auto_auto] gap-x-3 gap-y-0.5 items-center text-xs py-2"
+            >
+              <span className="font-medium truncate">{it.accountName}</span>
+              <span className="hidden sm:flex items-center gap-1.5 tabular-nums whitespace-nowrap text-muted-foreground">
+                {isNewAsset ? (
+                  <span className="text-[10px] text-muted-foreground/60">신규</span>
+                ) : (
+                  <>
+                    <span>{formatCurrency(it.oldBalance)}</span>
+                    <span className="text-muted-foreground/40">→</span>
+                  </>
+                )}
+                <span className="font-medium text-foreground/90">{formatCurrency(it.newBalance)}</span>
+              </span>
               <span className={cn(
-                'flex items-center gap-0.5 tabular-nums w-24 text-right justify-end',
-                flat ? 'text-muted-foreground' : up ? 'text-income' : 'text-expense'
+                'flex items-center gap-1 tabular-nums whitespace-nowrap text-right justify-end',
+                flat ? 'text-muted-foreground' : up ? 'text-income' : 'text-expense',
               )}>
-                {!flat && (up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />)}
-                {up ? '+' : ''}{formatCurrency(it.delta)}
+                {!flat && (up ? <TrendingUp className="h-3 w-3 flex-shrink-0" /> : <TrendingDown className="h-3 w-3 flex-shrink-0" />)}
+                <span>{up ? '+' : flat ? '' : '−'}{formatCurrency(Math.abs(it.delta))}</span>
               </span>
-              <span className="text-[10px] text-muted-foreground/70 w-14 text-right hidden sm:inline">
-                {relativeTime(it.changedAt)}
-              </span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground/70 hidden md:inline">
-                {SOURCE_LABEL[it.source] ?? it.source}
+              <span className="hidden sm:flex items-center gap-1.5 text-[10px] text-muted-foreground/60 whitespace-nowrap justify-end">
+                <span>{relativeTime(it.changedAt)}</span>
+                <span className="px-1.5 py-0.5 rounded bg-muted">
+                  {SOURCE_LABEL[it.source] ?? it.source}
+                </span>
               </span>
             </li>
           )

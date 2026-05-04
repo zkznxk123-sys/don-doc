@@ -43,6 +43,7 @@ import {
   updateHolding,
   deleteHolding,
   updateHoldingPrices,
+  saveUsdKrwRate,
   migrateSubAccountsToHoldings,
   type InvestmentAccountSummary,
   type HoldingData,
@@ -83,7 +84,7 @@ function getCurrentYearMonth(): string {
 }
 
 export default function AssetsPage() {
-  const { refreshKey, setPageActions, shellUser } = useDashboardActions()
+  const { refreshKey, bumpRefresh, setPageActions, shellUser } = useDashboardActions()
   const searchParams = useSearchParams()
   const [accounts, setAccounts] = useState<AccountInitialData[]>([])
   const [liabilities, setLiabilities] = useState<AccountInitialData[]>([])
@@ -413,6 +414,8 @@ export default function AssetsPage() {
                   await saveMolitPriceHistory(accountId, data.history)
                   const updated = await getPriceHistory(accountId)
                   setRePriceHistories(prev => ({ ...prev, [accountId]: updated }))
+                  // RealEstateDetail.currentPrice 가 갱신되었으니 카드 재로드 트리거
+                  bumpRefresh()
                   toast.success(`${data.history.length}개월 시세 데이터 업데이트됐습니다`)
                 } else {
                   toast.error('실거래가 데이터를 찾지 못했습니다')
@@ -1951,11 +1954,13 @@ function FinancialTab({
       const data = await res.json()
       if (!data.success) { if (!silent) toast.error('시세 조회 실패'); return }
 
-      // 환율 저장
+      // 환율 저장 (클라이언트 + 서버 DB 양쪽)
       const rate = data.results['USDKRW=X']?.price
       if (rate) {
         setUsdKrwRate(rate)
         localStorage.setItem('don-doc:usdkrw-rate', String(rate))
+        // 서버에도 저장 — 모든 USD holdings 보유 계좌의 balance가 자동 재계산됨
+        saveUsdKrwRate(rate).catch(e => console.warn('[saveUsdKrwRate]', e))
       }
 
       const updates: { holdingId: string; currentPrice: number }[] = []

@@ -24,6 +24,7 @@ interface DashboardActionsContextType {
   openTransactionDrawer: (editData?: EditTransactionData | null) => void
   openExcelDrawer: () => void
   refreshKey: number
+  bumpRefresh: () => void
   shellUser: ShellUser | null
   pageActions: React.ReactNode | null
   setPageActions: (node: React.ReactNode | null) => void
@@ -33,6 +34,7 @@ export const DashboardActionsContext = createContext<DashboardActionsContextType
   openTransactionDrawer: () => {},
   openExcelDrawer: () => {},
   refreshKey: 0,
+  bumpRefresh: () => {},
   shellUser: null,
   pageActions: null,
   setPageActions: () => {},
@@ -69,9 +71,11 @@ export function DashboardShell({
     setRefreshKey(k => k + 1)
   }, [])
 
+  const bumpRefresh = useCallback(() => setRefreshKey(k => k + 1), [])
+
   const contextValue = useMemo(
-    () => ({ openTransactionDrawer, openExcelDrawer, refreshKey, shellUser: user, pageActions, setPageActions }),
-    [openTransactionDrawer, openExcelDrawer, refreshKey, user, pageActions, setPageActions]
+    () => ({ openTransactionDrawer, openExcelDrawer, refreshKey, bumpRefresh, shellUser: user, pageActions, setPageActions }),
+    [openTransactionDrawer, openExcelDrawer, refreshKey, bumpRefresh, user, pageActions, setPageActions]
   )
 
   return (

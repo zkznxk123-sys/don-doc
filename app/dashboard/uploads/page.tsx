@@ -114,7 +114,7 @@ export default function UploadsPage() {
                         {detail.balanceChanges.length > 0 && (
                           <section>
                             <h3 className="text-xs font-semibold text-muted-foreground mb-2">자산 변경</h3>
-                            <ul className="space-y-1.5">
+                            <ul className="divide-y divide-border/40 rounded-lg border border-border/40 bg-background/40 px-3">
                               {detail.balanceChanges.map(c => (
                                 <BalanceChangeRow key={c.id} change={c} />
                               ))}
@@ -127,17 +127,17 @@ export default function UploadsPage() {
                             <h3 className="text-xs font-semibold text-muted-foreground mb-2">
                               추가된 거래 ({detail.txAdded > detail.transactions.length ? `${detail.transactions.length}/${detail.txAdded}` : detail.txAdded}건)
                             </h3>
-                            <ul className="space-y-1">
+                            <ul className="divide-y divide-border/40 rounded-lg border border-border/40 bg-background/40 px-3">
                               {detail.transactions.map(tx => (
-                                <li key={tx.id} className="flex items-center gap-2 text-xs">
-                                  <span className="text-muted-foreground tabular-nums w-20">{tx.date}</span>
+                                <li key={tx.id} className="flex items-center gap-2 text-xs py-2">
+                                  <span className="text-muted-foreground tabular-nums w-20 flex-shrink-0">{tx.date}</span>
                                   <span className="text-muted-foreground/70 truncate flex-1">{tx.description}</span>
-                                  <span className="text-muted-foreground/50 px-1.5 py-0.5 rounded bg-muted text-[10px]">{tx.category}</span>
+                                  <span className="text-muted-foreground/50 px-1.5 py-0.5 rounded bg-muted text-[10px] flex-shrink-0">{tx.category}</span>
                                   <span className={cn(
-                                    'tabular-nums font-medium w-24 text-right',
+                                    'tabular-nums font-medium w-24 text-right whitespace-nowrap flex-shrink-0',
                                     tx.amount >= 0 ? 'text-income' : 'text-expense'
                                   )}>
-                                    {tx.amount >= 0 ? '+' : ''}{formatCurrency(tx.amount)}
+                                    {tx.amount >= 0 ? '+' : '−'}{formatCurrency(Math.abs(tx.amount))}
                                   </span>
                                 </li>
                               ))}
@@ -161,25 +161,40 @@ export default function UploadsPage() {
   )
 }
 
+function formatPercent(pct: number | null, up: boolean): string | null {
+  if (pct == null) return null
+  // 옛 잔액이 매우 작은데 변동이 크면 1000%+가 흔함 — 의미 없는 큰 수는 capping
+  if (Math.abs(pct) > 999) return up ? '+999%↑' : '−999%↓'
+  return `${up ? '+' : ''}${pct}%`
+}
+
 function BalanceChangeRow({ change }: { change: { accountName: string; oldBalance: number; newBalance: number; delta: number; deltaPercent: number | null } }) {
   const up = change.delta > 0
   const flat = change.delta === 0
+  const pctLabel = formatPercent(change.deltaPercent, up)
+  const isNewAsset = change.oldBalance === 0 && change.delta > 0
   return (
-    <li className="flex items-center gap-2 text-xs">
-      <span className="font-medium truncate flex-1">{change.accountName}</span>
-      <span className="text-muted-foreground tabular-nums">{formatCurrency(change.oldBalance)}</span>
-      <span className="text-muted-foreground/40">→</span>
-      <span className="tabular-nums font-medium">{formatCurrency(change.newBalance)}</span>
+    <li className="grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)_auto_auto] gap-x-3 gap-y-0.5 items-center text-xs py-2">
+      <span className="font-medium truncate">{change.accountName}</span>
+      <span className="hidden sm:flex items-center gap-1.5 tabular-nums whitespace-nowrap text-muted-foreground">
+        {isNewAsset ? (
+          <span className="text-[10px] text-muted-foreground/60">신규</span>
+        ) : (
+          <>
+            <span>{formatCurrency(change.oldBalance)}</span>
+            <span className="text-muted-foreground/40">→</span>
+          </>
+        )}
+        <span className="font-medium text-foreground/90">{formatCurrency(change.newBalance)}</span>
+      </span>
       <span className={cn(
-        'flex items-center gap-0.5 tabular-nums w-24 text-right justify-end',
-        flat ? 'text-muted-foreground' : up ? 'text-income' : 'text-expense'
+        'flex items-center gap-1 tabular-nums whitespace-nowrap text-right justify-end',
+        flat ? 'text-muted-foreground' : up ? 'text-income' : 'text-expense',
       )}>
-        {!flat && (up ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />)}
-        {up ? '+' : ''}{formatCurrency(change.delta)}
-        {change.deltaPercent != null && (
-          <span className="opacity-60 ml-1 text-[10px]">
-            ({up ? '+' : ''}{change.deltaPercent}%)
-          </span>
+        {!flat && (up ? <TrendingUp className="h-3 w-3 flex-shrink-0" /> : <TrendingDown className="h-3 w-3 flex-shrink-0" />)}
+        <span>{up ? '+' : flat ? '' : '−'}{formatCurrency(Math.abs(change.delta))}</span>
+        {pctLabel && (
+          <span className="opacity-60 text-[10px]">({pctLabel})</span>
         )}
       </span>
     </li>

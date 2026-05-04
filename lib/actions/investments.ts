@@ -6,6 +6,72 @@ import { isCFOLevel } from '@/lib/roles'
 // TradeType을 여기서 정의 — 클라이언트 컴포넌트에서도 재사용 가능
 export type TradeType = 'BUY' | 'SELL' | 'DIVIDEND' | 'SPLIT'
 
+// USD-KRW 기본 환율 (DB에 저장된 값이 없거나 stale할 때 fallback)
+const DEFAULT_USDKRW = 1450
+
+async function getUsdKrwRate(): Promise<number> {
+  const row = await prisma.exchangeRate.findUnique({ where: { pair: 'USDKRW' } })
+  return row?.rate ?? DEFAULT_USDKRW
+}
+
+/**
+ * 클라이언트가 시세 새로고침 시점에 가져온 USD-KRW 환율을 서버 DB에 저장.
+ * 이 값은 추후 모든 자산 합산 시 USD holdings 변환에 사용됨.
+ *
+ * 호출 후 영향 받은 모든 USD holdings 보유 계좌의 balance 자동 재계산됨.
+ */
+export async function saveUsdKrwRate(rate: number): Promise<{ success: boolean }> {
+  const user = await getAuthUser()
+  if (!user) return { success: false }
+  if (!Number.isFinite(rate) || rate <= 0) return { success: false }
+  await prisma.exchangeRate.upsert({
+    where: { pair: 'USDKRW' },
+    update: { rate },
+    create: { pair: 'USDKRW', rate },
+  })
+
+  // USD holdings 보유한 모든 계좌 balance 재계산
+  const accountIds = await prisma.investmentHolding.findMany({
+    where: { currency: 'USD' },
+    distinct: ['accountId'],
+    select: { accountId: true },
+  })
+  await Promise.all(accountIds.map(({ accountId }) => recalcAccountBalanceFromHoldings(accountId)))
+
+  return { success: true }
+}
+
+/**
+ * Account.balance 를 해당 계좌 holdings 합산값으로 재계산.
+ * - balance = Σ (quantity × (currentPrice ?? avgPrice))  (KRW 환산)
+ * - USD holdings는 DB에 저장된 USD-KRW 환율로 변환. 환율 없으면 1450 fallback.
+ * - holdings 있는 계좌(INVESTMENT/CRYPTO/PENSION 등)에서 어떤 mutation이든 일어날 때마다 호출.
+ * - holdings 없으면 balance 안 건드림 (사용자가 직접 입력한 잔액 보존).
+ */
+async function recalcAccountBalanceFromHoldings(accountId: string): Promise<void> {
+  const holdings = await prisma.investmentHolding.findMany({
+    where: { accountId },
+    select: { quantity: true, avgPrice: true, currentPrice: true, currency: true },
+  })
+  if (holdings.length === 0) return
+
+  // USD holding이 있을 때만 환율 lookup (불필요한 DB hit 회피)
+  const hasUsd = holdings.some(h => h.currency === 'USD')
+  const usdKrw = hasUsd ? await getUsdKrwRate() : 1
+
+  const balance = holdings.reduce((sum, h) => {
+    const price = h.currentPrice ?? h.avgPrice
+    const raw = h.quantity * price
+    const krw = h.currency === 'USD' ? raw * usdKrw : raw
+    return sum + krw
+  }, 0)
+
+  await prisma.account.update({
+    where: { id: accountId },
+    data: { balance },
+  })
+}
+
 export interface HoldingData {
   id: string
   accountId: string
@@ -190,6 +256,7 @@ export async function addHolding(data: {
     },
   })
 
+  await recalcAccountBalanceFromHoldings(data.accountId)
   return { success: true, holdingId: holding.id }
 }
 
@@ -232,6 +299,7 @@ export async function updateHolding(
     },
   })
 
+  await recalcAccountBalanceFromHoldings(holding.accountId)
   return { success: true }
 }
 
@@ -252,6 +320,7 @@ export async function deleteHolding(holdingId: string) {
   }
 
   await prisma.investmentHolding.delete({ where: { id: holdingId } })
+  await recalcAccountBalanceFromHoldings(holding.accountId)
   return { success: true }
 }
 
@@ -305,6 +374,7 @@ export async function addTradeRecord(data: {
     })
   }
 
+  await recalcAccountBalanceFromHoldings(holding.accountId)
   return { success: true }
 }
 
@@ -322,6 +392,7 @@ export async function deleteTradeRecord(tradeId: string) {
   }
 
   await prisma.tradeRecord.delete({ where: { id: tradeId } })
+  await recalcAccountBalanceFromHoldings(trade.holding.accountId)
   return { success: true }
 }
 
@@ -332,6 +403,16 @@ export async function updateHoldingPrices(
   const user = await getAuthUser()
   if (!user) return { success: false, error: '인증이 필요합니다.' }
 
+  if (updates.length === 0) return { success: true }
+
+  // 가격 업데이트 + 영향 받은 accountId 수집
+  const holdingIds = updates.map(u => u.holdingId)
+  const affected = await prisma.investmentHolding.findMany({
+    where: { id: { in: holdingIds } },
+    select: { accountId: true },
+  })
+  const affectedAccountIds = Array.from(new Set(affected.map(h => h.accountId)))
+
   await Promise.all(
     updates.map(u =>
       prisma.investmentHolding.updateMany({
@@ -340,6 +421,9 @@ export async function updateHoldingPrices(
       })
     )
   )
+
+  // 영향 받은 모든 계좌의 balance 재계산
+  await Promise.all(affectedAccountIds.map(id => recalcAccountBalanceFromHoldings(id)))
 
   return { success: true }
 }
