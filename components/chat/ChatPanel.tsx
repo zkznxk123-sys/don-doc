@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Send, Sparkles, Loader2, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useDashboardActions } from '@/components/layout/DashboardShell'
+import { Markdown } from '@/components/ui/markdown'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -170,13 +171,15 @@ export function ChatPanel({ open, onClose }: { open: boolean; onClose: () => voi
                 >
                   <div
                     className={cn(
-                      'max-w-[85%] whitespace-pre-wrap rounded-2xl px-3 py-2 text-sm leading-relaxed',
+                      'max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed',
                       m.role === 'user'
-                        ? 'bg-indigo-500 text-white'
+                        ? 'bg-indigo-500 text-white whitespace-pre-wrap'
                         : 'bg-muted text-foreground',
                     )}
                   >
-                    {m.content || (
+                    {m.content
+                      ? (m.role === 'assistant' ? <Markdown text={m.content} /> : m.content)
+                      : (
                       <span className="inline-flex items-center gap-1.5 text-muted-foreground">
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                         생각하는 중…

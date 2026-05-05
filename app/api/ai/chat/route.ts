@@ -39,10 +39,10 @@ export async function POST(req: NextRequest) {
   const system = buildSystemPrompt({ user, pathname: body.pathname, today: new Date() })
   const tools = buildAgentTools(user)
 
-  // chat agent는 OpenAI 직통('api' 모드)으로 강제.
-  // - CLIProxy 경유는 tool calling 형식 제공자별 차이로 불안정
-  // - tier='smart' = gpt-4o, mini보다 도구 호출 결정 더 안정적
-  // 가족 AI 모드는 무시 — 다른 AI 기능(요약/시나리오 생성)은 가족 설정 그대로 사용함
+  // chat agent는 OpenAI 직통('api', gpt-4o) 강제.
+  // 사유: CLIProxy 경유 Claude/Gemini는 tool calling multi-turn에서 tool_use ↔ tool_result
+  //      매핑이 깨짐 (Vercel AI SDK ↔ Anthropic format 변환 문제).
+  // 다른 AI 기능(시나리오 생성/요약/번역/시나리오 챗)은 tool 안 쓰니까 가족 모드 그대로 사용.
   const model = proxyModel('smart', 'api')
 
   try {
