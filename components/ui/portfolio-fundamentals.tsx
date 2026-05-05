@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Activity, Loader2, RefreshCw, TrendingUp, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { InvestmentAccountSummary } from '@/lib/actions/investments'
+import { SECTOR_LABEL_KO } from '@/lib/data/sector-mapping'
 
 interface FundamentalData {
   ticker: string
@@ -52,19 +53,7 @@ interface EnrichedHolding {
   fundamental: FundamentalData | null
 }
 
-const SECTOR_KO: Record<string, string> = {
-  Technology: '기술',
-  'Financial Services': '금융',
-  Healthcare: '헬스케어',
-  'Consumer Cyclical': '소비재(경기민감)',
-  'Consumer Defensive': '소비재(필수)',
-  Industrials: '산업재',
-  'Communication Services': '커뮤니케이션',
-  Energy: '에너지',
-  Utilities: '유틸리티',
-  'Real Estate': '부동산',
-  'Basic Materials': '소재',
-}
+const SECTOR_KO = SECTOR_LABEL_KO
 
 export function PortfolioFundamentals({ investmentSummary, usdKrwRate }: Props) {
   const [fundamentals, setFundamentals] = useState<Record<string, FundamentalData | null>>({})

@@ -217,3 +217,176 @@ export async function getKoreanFundamentalFromDart(
 export function isDartConfigured(): boolean {
   return !!getApiKey()
 }
+
+// ─── 5년 재무 시계열 + 성장률·수익성·재무건전성 ─────────────────────────────
+
+export interface YearlyFinancials {
+  year: number
+  revenue: number | null            // 매출액
+  operatingIncome: number | null    // 영업이익
+  netIncome: number | null          // 당기순이익
+  totalEquity: number | null        // 자본총계
+  totalAssets: number | null        // 자산총계
+  totalLiabilities: number | null   // 부채총계
+  currentAssets: number | null      // 유동자산
+  currentLiabilities: number | null // 유동부채
+}
+
+export interface DartHistoryAnalysis {
+  stockCode: string
+  corpCode: string
+  corpName: string
+  /** 시계열 데이터 (오래된 → 최근 순) */
+  yearly: YearlyFinancials[]
+  /** 가장 최근 연도 */
+  latestYear: number | null
+  /** YoY 성장률 (%) — 최근 → 1년 전 */
+  revenueGrowthYoY: number | null
+  operatingIncomeGrowthYoY: number | null
+  netIncomeGrowthYoY: number | null
+  /** 5년 CAGR (%) — 가능한 경우만 */
+  revenueCagr5y: number | null
+  /** 수익성 */
+  operatingMargin: number | null    // 영업이익률
+  netMargin: number | null          // 순이익률
+  roe: number | null                // 자기자본이익률
+  roa: number | null                // 총자산이익률
+  /** 재무건전성 */
+  debtRatio: number | null          // 부채비율 = 부채/자본 × 100
+  currentRatio: number | null       // 유동비율 = 유동자산/유동부채 × 100
+}
+
+const yearlyCache = new Map<string, { data: YearlyFinancials | null; ts: number }>()
+const CACHE_TTL_MS = 24 * 60 * 60 * 1000
+
+/**
+ * 특정 연도 사업보고서(11011) 재무제표 fetch.
+ * Returns null on miss/error.
+ */
+async function fetchYearlyFinancials(corpCode: string, year: number): Promise<YearlyFinancials | null> {
+  const cacheKey = `${corpCode}-${year}`
+  const cached = yearlyCache.get(cacheKey)
+  if (cached && Date.now() - cached.ts < CACHE_TTL_MS) return cached.data
+
+  const key = getApiKey()
+  if (!key) return null
+
+  try {
+    // CFS(연결재무제표) 우선, 없으면 OFS(별도재무제표) fallback
+    let items: DartFinancialItem[] | null = null
+    for (const fsDiv of ['CFS', 'OFS'] as const) {
+      const url = `${DART_BASE}/fnlttSinglAcntAll.json?crtfc_key=${key}&corp_code=${corpCode}&bsns_year=${year}&reprt_code=11011&fs_div=${fsDiv}`
+      const res = await fetch(url, { next: { revalidate: 86400 } })
+      if (!res.ok) continue
+      const data = await res.json()
+      if (data.status === '000' && data.list?.length) {
+        items = data.list as DartFinancialItem[]
+        break
+      }
+    }
+    if (!items) {
+      yearlyCache.set(cacheKey, { data: null, ts: Date.now() })
+      return null
+    }
+
+    const result: YearlyFinancials = {
+      year,
+      revenue:            pickAmount(items, ['ifrs-full_Revenue', 'ifrs_Revenue', '매출액', '수익(매출액)']),
+      operatingIncome:    pickAmount(items, ['dart_OperatingIncomeLoss', '영업이익', '영업이익(손실)']),
+      netIncome:          pickAmount(items, ['ifrs-full_ProfitLoss', 'ifrs_ProfitLoss', '당기순이익', '당기순이익(손실)']),
+      totalEquity:        pickAmount(items, ['ifrs-full_Equity', 'ifrs_Equity', '자본총계']),
+      totalAssets:        pickAmount(items, ['ifrs-full_Assets', 'ifrs_Assets', '자산총계']),
+      totalLiabilities:   pickAmount(items, ['ifrs-full_Liabilities', 'ifrs_Liabilities', '부채총계']),
+      currentAssets:      pickAmount(items, ['ifrs-full_CurrentAssets', 'ifrs_CurrentAssets', '유동자산']),
+      currentLiabilities: pickAmount(items, ['ifrs-full_CurrentLiabilities', 'ifrs_CurrentLiabilities', '유동부채']),
+    }
+    yearlyCache.set(cacheKey, { data: result, ts: Date.now() })
+    return result
+  } catch (e) {
+    console.warn(`[fetchYearlyFinancials] ${corpCode} ${year}`, e)
+    yearlyCache.set(cacheKey, { data: null, ts: Date.now() })
+    return null
+  }
+}
+
+/**
+ * 한국 종목 5년 재무 분석 — 시계열 + 성장률 + 수익성 + 재무건전성.
+ * 가장 최근 사업보고서 + 그 이전 4년치 시도. fetch 실패 연도는 빈 항목.
+ */
+export async function getKoreanFinancialHistory(
+  stockCode: string,
+  options?: { years?: number },  // 기본 5년
+): Promise<DartHistoryAnalysis | null> {
+  if (!isKoreanStockCode(stockCode)) return null
+  if (!getApiKey()) return null
+
+  const corp = await getDartCorpCode(stockCode)
+  if (!corp) return null
+
+  const yearsBack = Math.max(2, Math.min(options?.years ?? 5, 7))
+  // 사업보고서는 다음해 3월 발표 — 올해 사업보고서 없으면 작년부터
+  const now = new Date()
+  const lastConfirmedYear = now.getMonth() >= 3 ? now.getFullYear() - 1 : now.getFullYear() - 2
+  const candidateYears: number[] = []
+  for (let y = lastConfirmedYear; y > lastConfirmedYear - yearsBack; y--) candidateYears.push(y)
+
+  // 병렬 fetch
+  const fetched = await Promise.all(candidateYears.map(y => fetchYearlyFinancials(corp.corpCode, y)))
+  const yearly: YearlyFinancials[] = fetched
+    .filter((f): f is YearlyFinancials => f !== null)
+    .sort((a, b) => a.year - b.year)  // 오래된 → 최근
+
+  if (yearly.length === 0) return null
+
+  const latest = yearly[yearly.length - 1]
+  const prev = yearly.length >= 2 ? yearly[yearly.length - 2] : null
+  const oldest = yearly[0]
+
+  const yoy = (curr: number | null, prev: number | null): number | null => {
+    if (curr == null || prev == null || prev === 0) return null
+    return ((curr - Math.abs(prev)) / Math.abs(prev)) * 100
+  }
+  const cagr = (latest: number | null, oldest: number | null, years: number): number | null => {
+    if (latest == null || oldest == null || oldest <= 0 || latest <= 0 || years < 1) return null
+    return (Math.pow(latest / oldest, 1 / years) - 1) * 100
+  }
+
+  const operatingMargin = latest.operatingIncome != null && latest.revenue && latest.revenue > 0
+    ? (latest.operatingIncome / latest.revenue) * 100
+    : null
+  const netMargin = latest.netIncome != null && latest.revenue && latest.revenue > 0
+    ? (latest.netIncome / latest.revenue) * 100
+    : null
+  const roe = latest.netIncome != null && latest.totalEquity && latest.totalEquity > 0
+    ? (latest.netIncome / latest.totalEquity) * 100
+    : null
+  const roa = latest.netIncome != null && latest.totalAssets && latest.totalAssets > 0
+    ? (latest.netIncome / latest.totalAssets) * 100
+    : null
+  const debtRatio = latest.totalLiabilities != null && latest.totalEquity && latest.totalEquity > 0
+    ? (latest.totalLiabilities / latest.totalEquity) * 100
+    : null
+  const currentRatio = latest.currentAssets != null && latest.currentLiabilities && latest.currentLiabilities > 0
+    ? (latest.currentAssets / latest.currentLiabilities) * 100
+    : null
+
+  return {
+    stockCode,
+    corpCode: corp.corpCode,
+    corpName: corp.corpName,
+    yearly,
+    latestYear: latest.year,
+    revenueGrowthYoY:         prev ? yoy(latest.revenue, prev.revenue) : null,
+    operatingIncomeGrowthYoY: prev ? yoy(latest.operatingIncome, prev.operatingIncome) : null,
+    netIncomeGrowthYoY:       prev ? yoy(latest.netIncome, prev.netIncome) : null,
+    revenueCagr5y: yearly.length >= 3
+      ? cagr(latest.revenue, oldest.revenue, yearly.length - 1)
+      : null,
+    operatingMargin,
+    netMargin,
+    roe,
+    roa,
+    debtRatio,
+    currentRatio,
+  }
+}

@@ -6,7 +6,10 @@ import { prisma } from '@/lib/prisma'
 import { isCFOLevel } from '@/lib/roles'
 import type { AuthUser } from '@/lib/auth'
 import { fetchFundamentalsBatch, toYahooTicker } from '@/lib/utils/yahoo-fundamental'
+import { getKoreanFinancialHistory, isDartConfigured } from '@/lib/utils/dart-fundamental'
+import { getMomentumIndicators } from '@/lib/utils/yahoo-momentum'
 import { UNIVERSE_KR, UNIVERSE_US, UNIVERSE_ALL } from '@/lib/data/stock-universe'
+import { normalizeSectorKeyword } from '@/lib/data/sector-mapping'
 
 const won = (n: number) => `${Math.round(n).toLocaleString('ko-KR')}원`
 
@@ -790,12 +793,134 @@ export function buildAgentTools(user: AuthUser) {
       },
     }),
 
+    getStockMomentum: tool({
+      description:
+        '단일 종목 모멘텀·기술 지표. N영업일/N개월 수익률, 52주 신고가/신저가 위치, RSI(14), ' +
+        '연환산 변동성, 이동평균선(5/20/60/120일) 정배열 여부. ' +
+        '"삼성전자 최근 3개월 수익률", "TSLA 52주 신고가 대비 어디?", "현대차 RSI 알려줘" 같은 질문. ' +
+        'ticker: Yahoo 형식 (예: AAPL, 005930.KS) 또는 6자리 한국 종목코드 (자동 .KS 또는 universe lookup).',
+      inputSchema: z.object({
+        ticker: z.string().describe('Yahoo ticker 또는 6자리 한국 종목코드'),
+      }),
+      execute: async ({ ticker }) => {
+        let yh = ticker.trim()
+        if (/^\d{6}$/.test(yh)) {
+          // universe에서 .KS/.KQ 정확히 찾기, 없으면 .KS 추정
+          const found = UNIVERSE_ALL.find(s => s.stockCode === yh)
+          yh = found?.yahooTicker ?? `${yh}.KS`
+        }
+        const data = await getMomentumIndicators(yh)
+        if (!data) return { error: `${ticker} 의 모멘텀 데이터를 못 찾았습니다.` }
+
+        const round = (n: number | null, d = 1) =>
+          n == null ? null : Math.round(n * Math.pow(10, d)) / Math.pow(10, d)
+
+        return {
+          ticker: data.ticker,
+          currency: data.currency,
+          currentPrice: round(data.currentPrice, 2),
+          returns: {
+            '1d':  round(data.returns.d1, 2),
+            '5d':  round(data.returns.d5, 2),
+            '1mo': round(data.returns.mo1, 2),
+            '3mo': round(data.returns.mo3, 2),
+            '6mo': round(data.returns.mo6, 2),
+            '1y':  round(data.returns.y1, 2),
+          },
+          fiftyTwoWeek: {
+            high: round(data.fiftyTwoWeek.high, 2),
+            low: round(data.fiftyTwoWeek.low, 2),
+            pctFromHigh: round(data.fiftyTwoWeek.pctFromHigh, 2),
+            pctFromLow: round(data.fiftyTwoWeek.pctFromLow, 2),
+          },
+          rsi14: round(data.rsi14),
+          rsiSignal: data.rsi14 <= 30 ? '과매도' : data.rsi14 >= 70 ? '과매수' : '중립',
+          annualizedVolatility: round(data.annualizedVolatility),
+          movingAverages: {
+            ma5: round(data.movingAverages.ma5, 2),
+            ma20: round(data.movingAverages.ma20, 2),
+            ma60: round(data.movingAverages.ma60, 2),
+            ma120: round(data.movingAverages.ma120, 2),
+          },
+          trend: data.trend === 'bullish' ? '정배열 (단기>중기>장기)'
+               : data.trend === 'bearish' ? '역배열 (단기<중기<장기)'
+               : '혼조',
+        }
+      },
+    }),
+
+    getStockFinancialHistory: tool({
+      description:
+        '한국 종목 1개의 5년 재무 시계열 + 성장률·수익성·재무건전성 분석 (DART 사업보고서 기반). ' +
+        '"삼성전자 매출 5년 추이", "현대차 ROE 어떻게 변했어?", "셀트리온 부채비율 알려줘" 같은 질문에 사용. ' +
+        '지표: 매출/영업이익/순이익/자본/자산/부채 시계열 + YoY 성장률 + CAGR + 영업이익률·순이익률·ROE·ROA + 부채비율·유동비율. ' +
+        '한국 종목(KOSPI/KOSDAQ)만 지원. 미국 종목은 fetchFundamental로.',
+      inputSchema: z.object({
+        stockCode: z.string().regex(/^\d{6}$/).describe('한국 6자리 종목코드 (예: 005930 = 삼성전자)'),
+        years: z.number().int().min(2).max(7).default(5).describe('분석할 연도 수'),
+      }),
+      execute: async ({ stockCode, years }) => {
+        if (!isDartConfigured()) {
+          return { error: 'DART API 키가 설정되지 않았습니다 (DART_API_KEY env). 한국 종목 깊은 분석 불가.' }
+        }
+        const data = await getKoreanFinancialHistory(stockCode, { years })
+        if (!data) {
+          return { error: `${stockCode} 종목의 DART 재무제표를 찾지 못했습니다.` }
+        }
+
+        const won = (n: number | null) => n == null
+          ? '—'
+          : Math.abs(n) >= 1_0000_0000
+          ? `${(n / 1_0000_0000).toFixed(0)}억`
+          : `${Math.round(n / 10_000).toLocaleString()}만`
+        const pct = (n: number | null) => n == null ? null : Math.round(n * 10) / 10
+
+        return {
+          stockCode: data.stockCode,
+          corpName: data.corpName,
+          latestYear: data.latestYear,
+          summary: {
+            revenueGrowthYoY: pct(data.revenueGrowthYoY),
+            operatingIncomeGrowthYoY: pct(data.operatingIncomeGrowthYoY),
+            netIncomeGrowthYoY: pct(data.netIncomeGrowthYoY),
+            revenueCagr: pct(data.revenueCagr5y),
+            operatingMargin: pct(data.operatingMargin),
+            netMargin: pct(data.netMargin),
+            roe: pct(data.roe),
+            roa: pct(data.roa),
+            debtRatio: pct(data.debtRatio),
+            currentRatio: pct(data.currentRatio),
+          },
+          yearly: data.yearly.map(y => {
+            // 각 연도별 derived ratio 계산 (% 단위)
+            const ratio = (num: number | null, den: number | null) =>
+              num != null && den != null && den > 0 ? Math.round((num / den) * 1000) / 10 : null
+            return {
+              year: y.year,
+              revenue: won(y.revenue),
+              operatingIncome: won(y.operatingIncome),
+              netIncome: won(y.netIncome),
+              totalEquity: won(y.totalEquity),
+              totalAssets: won(y.totalAssets),
+              totalLiabilities: won(y.totalLiabilities),
+              roe: ratio(y.netIncome, y.totalEquity),
+              roa: ratio(y.netIncome, y.totalAssets),
+              operatingMargin: ratio(y.operatingIncome, y.revenue),
+              netMargin: ratio(y.netIncome, y.revenue),
+              debtRatio: ratio(y.totalLiabilities, y.totalEquity),
+              currentRatio: ratio(y.currentAssets, y.currentLiabilities),
+            }
+          }),
+        }
+      },
+    }),
+
     screenUniverse: tool({
       description:
-        '보유 외 종목 후보 검색. 한국(KOSPI 시총 상위 30) + 미국(시총 상위 50) universe에서 ' +
-        'PER/PBR/배당수익률/ROE/섹터 조건으로 필터·정렬한 후보 종목 반환. ' +
-        '"PER 10 이하 + 배당 3% 이상인 미국 종목" "ROE 높은 한국주" 같은 자연어 쿼리에 매핑. ' +
-        '※ universe는 정적 list (대표 종목만). 보유 종목 검색은 screenHoldings 사용.',
+        '보유 외 종목 후보 검색. 한국 KOSPI 200 + 미국 S&P 500 universe(약 700종목)에서 ' +
+        'PER/PBR/배당수익률/ROE/섹터 조건으로 필터, fundamental 또는 모멘텀(N개월 수익률)로 정렬. ' +
+        '"PER 10 이하 + 배당 3% 이상인 미국 종목", "최근 3개월 수익률 좋은 종목 5개", "ROE 높은 한국 기술주" 같은 자연어 쿼리. ' +
+        'sortBy=return3m 등으로 모멘텀 정렬 시 후보들에 추가 chart fetch (시간 더 걸림).',
       inputSchema: z.object({
         market: z.enum(['kr', 'us', 'all']).default('all').describe('대상 시장'),
         minPer: z.number().optional(),
@@ -804,9 +929,12 @@ export function buildAgentTools(user: AuthUser) {
         maxPbr: z.number().optional(),
         minDividendYield: z.number().optional().describe('배당수익률 하한 (%)'),
         minRoe: z.number().optional().describe('ROE 하한 (%)'),
-        sectorContains: z.string().optional().describe('섹터 부분일치 (영문, 예: "Tech", "Healthcare")'),
+        sectorContains: z.string().optional().describe('섹터 부분일치. 영문("Tech", "Healthcare") 또는 한국어("기술", "금융", "바이오", "에너지" 등) 가능'),
         excludeHoldings: z.boolean().default(true).describe('이미 보유 중인 종목 제외 (기본 true)'),
-        sortBy: z.enum(['per', 'pbr', 'dividendYield', 'roe', 'marketCap']).default('marketCap'),
+        sortBy: z.enum([
+          'per', 'pbr', 'dividendYield', 'roe', 'marketCap',
+          'return1m', 'return3m', 'return6m', 'return1y',
+        ]).default('marketCap').describe('정렬 기준. fundamental(per/pbr/...) 또는 모멘텀(return1m/3m/6m/1y).'),
         sortDesc: z.boolean().default(true),
         limit: z.number().int().min(1).max(20).default(10),
       }),
@@ -856,10 +984,34 @@ export function buildAgentTools(user: AuthUser) {
           return true
         })
 
-        const sortKey = params.sortBy
+        // 모멘텀 정렬이면 후보들에 추가로 chart fetch (concurrency 10)
+        const isMomentumSort = (['return1m', 'return3m', 'return6m', 'return1y'] as const).includes(
+          params.sortBy as 'return1m' | 'return3m' | 'return6m' | 'return1y',
+        )
+        const momentumKey: Record<string, 'mo1' | 'mo3' | 'mo6' | 'y1'> = {
+          return1m: 'mo1', return3m: 'mo3', return6m: 'mo6', return1y: 'y1',
+        }
+        const momentumByTicker: Record<string, number | null> = {}
+        if (isMomentumSort && filtered.length > 0) {
+          const k = momentumKey[params.sortBy]
+          const tickers = filtered.map(e => e.stock.yahooTicker)
+          for (let i = 0; i < tickers.length; i += 10) {
+            const chunk = tickers.slice(i, i + 10)
+            const moms = await Promise.all(chunk.map(t => getMomentumIndicators(t).catch(() => null)))
+            chunk.forEach((t, j) => {
+              momentumByTicker[t] = moms[j]?.returns[k] ?? null
+            })
+          }
+        }
+
+        const getSortVal = (e: typeof filtered[0]): number | null => {
+          if (isMomentumSort) return momentumByTicker[e.stock.yahooTicker] ?? null
+          const k = params.sortBy as 'per' | 'pbr' | 'dividendYield' | 'roe' | 'marketCap'
+          return e.fundamental?.[k] ?? null
+        }
         filtered.sort((a, b) => {
-          const av = a.fundamental?.[sortKey] ?? null
-          const bv = b.fundamental?.[sortKey] ?? null
+          const av = getSortVal(a)
+          const bv = getSortVal(b)
           if (av == null && bv == null) return 0
           if (av == null) return 1
           if (bv == null) return -1
@@ -872,6 +1024,7 @@ export function buildAgentTools(user: AuthUser) {
           universeSize: candidates.length,
           fundamentalCovered,
           matched: filtered.length,
+          sortedBy: params.sortBy,
           candidates: filtered.slice(0, params.limit).map(e => {
             const f = e.fundamental!
             return {
@@ -885,6 +1038,11 @@ export function buildAgentTools(user: AuthUser) {
               sector: f.sector ?? null,
               marketCap: f.marketCap ?? null,
               currency: f.currency,
+              ...(isMomentumSort
+                ? { [params.sortBy]: momentumByTicker[e.stock.yahooTicker] != null
+                    ? Math.round(momentumByTicker[e.stock.yahooTicker]! * 10) / 10
+                    : null }
+                : {}),
             }
           }),
         }
@@ -904,7 +1062,7 @@ export function buildAgentTools(user: AuthUser) {
         maxPbr: z.number().optional(),
         minDividendYield: z.number().optional().describe('배당수익률 하한 (% 단위, 예: 3 = 3%)'),
         minRoe: z.number().optional().describe('ROE 하한 (% 단위)'),
-        sectorContains: z.string().optional().describe('섹터 부분일치 (영문, 예: "Tech", "Financial")'),
+        sectorContains: z.string().optional().describe('섹터 부분일치. 영문("Tech", "Financial") 또는 한국어("기술주", "금융", "헬스케어", "반도체" 등) 가능'),
         sortBy: z.enum(['per', 'pbr', 'dividendYield', 'roe', 'evalKrw']).default('evalKrw'),
         sortDesc: z.boolean().default(true),
         limit: z.number().int().min(1).max(20).default(10),
@@ -944,7 +1102,10 @@ export function buildAgentTools(user: AuthUser) {
           if (params.maxPbr != null && (f?.pbr == null || f.pbr > params.maxPbr)) return false
           if (params.minDividendYield != null && (f?.dividendYield == null || f.dividendYield < params.minDividendYield)) return false
           if (params.minRoe != null && (f?.roe == null || f.roe < params.minRoe)) return false
-          if (params.sectorContains != null && (f?.sector == null || !f.sector.toLowerCase().includes(params.sectorContains.toLowerCase()))) return false
+          if (params.sectorContains != null) {
+            const needle = normalizeSectorKeyword(params.sectorContains).toLowerCase()
+            if (!f?.sector || !f.sector.toLowerCase().includes(needle)) return false
+          }
           return true
         })
 

@@ -103,8 +103,17 @@ export async function fetchFundamentalsBatch(
 
   const modules = 'summaryDetail,defaultKeyStatistics,assetProfile,financialData,price'
 
-  await Promise.all(
-    tickers.map(async (ticker) => {
+  // Yahoo rate limit 회피 위해 concurrency 10으로 제한 (700개 → 70 batch × ~500ms = ~35초)
+  // Next.js fetch revalidate 1시간이라 두 번째 호출부터 즉시.
+  const CONCURRENCY = 10
+  const batches: string[][] = []
+  for (let i = 0; i < tickers.length; i += CONCURRENCY) {
+    batches.push(tickers.slice(i, i + CONCURRENCY))
+  }
+
+  for (const batch of batches) {
+    await Promise.all(
+      batch.map(async (ticker) => {
       try {
         const url = `https://query1.finance.yahoo.com/v10/finance/quoteSummary/${encodeURIComponent(ticker)}?modules=${modules}&crumb=${encodeURIComponent(auth.crumb)}`
         const res = await fetch(url, {
@@ -148,8 +157,9 @@ export async function fetchFundamentalsBatch(
         console.error(`[fetchFundamentalsBatch] ${ticker} failed:`, e)
         results[ticker] = null
       }
-    }),
-  )
+      }),
+    )
+  }
 
   // ── 한국 종목 PER/PBR/ROE missing 시 DART로 보강 (DART_API_KEY 있을 때만) ──
   await enrichKoreanWithDart(results)
