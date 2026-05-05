@@ -587,8 +587,15 @@ export async function updateAccount(
 }
 
 export async function deleteAccount(
-  id: string
-): Promise<{ success: boolean; error?: string }> {
+  id: string,
+  options?: { force?: boolean },
+): Promise<{
+  success: boolean
+  error?: string
+  transactionCount?: number
+  holdingCount?: number
+  subAccountCount?: number
+}> {
   const user = await getAuthUser()
   if (!user) return { success: false, error: '인증이 필요합니다.' }
 
@@ -597,7 +604,48 @@ export async function deleteAccount(
   })
   if (!account) return { success: false, error: '계좌를 찾을 수 없습니다.' }
 
-  await prisma.account.delete({ where: { id } })
+  // dependent 사전 조회
+  const [transactionCount, holdingCount, subAccountCount] = await Promise.all([
+    prisma.transaction.count({ where: { accountId: id } }),
+    prisma.investmentHolding.count({ where: { accountId: id } }),
+    prisma.account.count({ where: { parentAccountId: id } }),
+  ])
+
+  // dependent 있는데 force 안 주면 reject (호출 측이 확인 후 다시 force=true로 호출)
+  if ((transactionCount > 0 || holdingCount > 0 || subAccountCount > 0) && !options?.force) {
+    const parts: string[] = []
+    if (transactionCount > 0) parts.push(`거래 ${transactionCount}건`)
+    if (holdingCount > 0) parts.push(`보유 종목 ${holdingCount}개`)
+    if (subAccountCount > 0) parts.push(`하위 계좌 ${subAccountCount}개`)
+    return {
+      success: false,
+      error: `이 계좌에 ${parts.join(', ')}이 있습니다. 다시 한 번 클릭하면 모두 함께 삭제됩니다.`,
+      transactionCount,
+      holdingCount,
+      subAccountCount,
+    }
+  }
+
+  // cascade 삭제 — 트랜잭션으로 atomicity 보장
+  await prisma.$transaction(async (tx) => {
+    if (transactionCount > 0) {
+      // sub-transaction(parentId) cascade는 schema에 이미 있어서 자동
+      await tx.transaction.deleteMany({ where: { accountId: id } })
+    }
+    if (holdingCount > 0) {
+      // TradeRecord는 holding과 cascade
+      await tx.investmentHolding.deleteMany({ where: { accountId: id } })
+    }
+    if (subAccountCount > 0) {
+      // 하위 계좌는 unlink (보존) — 사용자 의도 확인 없으므로 안전
+      await tx.account.updateMany({
+        where: { parentAccountId: id },
+        data: { parentAccountId: null },
+      })
+    }
+    // BalanceChangeLog / RealEstateDetail / DebtDetail / FinancialAssetDetail / PensionDetail 등은 schema에 onDelete: Cascade 박혀 있어 자동
+    await tx.account.delete({ where: { id } })
+  })
 
   revalidatePath('/dashboard')
   return { success: true }

@@ -446,17 +446,30 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
 
   const handleDelete = async () => {
     if (!initialData) return
-    if (!confirmDelete) { setConfirmDelete(true); return }
     setIsDeleting(true)
     try {
-      const result = await deleteAccount(initialData.id)
-      if (!result.success) { toast.error(result.error || '삭제에 실패했습니다.'); return }
-      toast.success(`"${initialData.name}" 계좌가 삭제되었습니다.`)
-      onSuccess(); onClose()
+      // 첫 클릭(confirmDelete=false): probe만. dependent 있으면 reject + counts 반환
+      // 두 번째 클릭(confirmDelete=true): force=true 로 cascade 삭제
+      const result = await deleteAccount(initialData.id, confirmDelete ? { force: true } : undefined)
+
+      if (result.success) {
+        toast.success(`"${initialData.name}" 계좌가 삭제되었습니다.`)
+        onSuccess(); onClose()
+        setConfirmDelete(false)
+        return
+      }
+
+      // dependent 있어서 reject된 경우 — confirm 단계로 전환
+      if (result.transactionCount || result.holdingCount || result.subAccountCount) {
+        setConfirmDelete(true)
+        toast.warning(result.error ?? '연결된 데이터가 있습니다.', { duration: 6000 })
+      } else {
+        toast.error(result.error || '삭제에 실패했습니다.')
+      }
     } catch {
       toast.error('오류가 발생했습니다. 다시 시도해주세요.')
     } finally {
-      setIsDeleting(false); setConfirmDelete(false)
+      setIsDeleting(false)
     }
   }
 

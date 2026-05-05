@@ -265,7 +265,8 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
           }))
           const months = Array.from(new Set(parsed.map(r => r.date.slice(0, 7)))).sort()
           setAvailableMonths(months)
-          setSelectedMonths(new Set(months))
+          // 기본: 가장 최근 1개월만 선택 (전체 선택은 사용자가 직접)
+          setSelectedMonths(new Set(months.length > 0 ? [months[months.length - 1]] : []))
 
           setIsBanksalad(true)
           setBanksaladMeta({ skipped: banksaladResult.skippedCount, sheet: banksaladResult.sheetName })
@@ -578,146 +579,160 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                 </div>
               )}
 
-              {/* ── 업로드 설정 (월 선택 + 업데이트 범위) ── */}
-              {isBanksalad && (availableMonths.length > 1 || accountBalances.length > 0) && (
-                <div className="rounded-xl border border-border overflow-hidden divide-y divide-border">
-
-                  {/* 월 선택 */}
-                  {availableMonths.length > 1 && (
-                    <div className="p-3 space-y-2.5">
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs font-semibold text-foreground/70">
-                          업로드할 월
-                          <span className="ml-1.5 font-normal text-muted-foreground/60">
-                            ({selectedMonths.size}/{availableMonths.length}개월)
-                          </span>
-                        </p>
-                        <button
-                          onClick={() => {
-                            setSelectedMonths(
-                              selectedMonths.size === availableMonths.length
-                                ? new Set([availableMonths[availableMonths.length - 1]])
-                                : new Set(availableMonths)
-                            )
-                            resetAiForReselection()
-                          }}
-                          className="text-[10px] text-muted-foreground/60 hover:text-foreground transition-colors"
-                        >
-                          {selectedMonths.size === availableMonths.length ? '전체 해제' : '전체 선택'}
-                        </button>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {availableMonths.map(month => {
-                          const [y, m] = month.split('-')
-                          const label = `${y}년 ${parseInt(m)}월`
-                          const active = selectedMonths.has(month)
-                          return (
-                            <button
-                              key={month}
-                              onClick={() => toggleMonth(month)}
-                              className={cn(
-                                'px-2.5 py-1 rounded-lg text-xs font-medium transition-colors border',
-                                active
-                                  ? 'bg-foreground text-background border-foreground'
-                                  : 'bg-muted text-muted-foreground border-border hover:border-foreground/40'
-                              )}
-                            >
-                              {label}
-                            </button>
-                          )
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* 업데이트 범위 */}
-                  {accountBalances.length > 0 && (
-                    <div className="p-3 space-y-2">
-                      <p className="text-xs font-semibold text-foreground/70">업데이트 범위</p>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {([
-                          { value: 'both',     label: '전체',      desc: '거래 + 자산' },
-                          { value: 'cashflow', label: '현금흐름만', desc: '거래 내역만' },
-                          { value: 'assets',   label: '자산만',    desc: `잔액 ${accountBalances.length}개` },
-                        ] as { value: UploadMode; label: string; desc: string }[]).map(opt => (
-                          <button
-                            key={opt.value}
-                            onClick={() => setUploadMode(opt.value)}
-                            className={cn(
-                              'flex flex-col items-center py-2 px-1 rounded-lg border text-center transition-colors',
-                              uploadMode === opt.value
-                                ? 'bg-foreground text-background border-foreground'
-                                : 'bg-muted/50 text-muted-foreground border-border hover:border-foreground/30'
-                            )}
-                          >
-                            <span className="text-xs font-semibold">{opt.label}</span>
-                            <span className={cn('text-[10px] mt-0.5', uploadMode === opt.value ? 'text-background/70' : 'text-muted-foreground/60')}>{opt.desc}</span>
-                          </button>
-                        ))}
-                      </div>
-
-                      {/* 자산 잔액 diff 미리보기 */}
-                      {uploadMode !== 'cashflow' && (
-                        <AccountBalanceDiff accountBalances={accountBalances} dbAccounts={dbAccounts} />
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* ── AI 매핑 상태 (자산만 모드에선 불필요) ── */}
-              {uploadMode !== 'assets' && (
-                <AiMappingStatus
-                  status={aiStatus}
-                  mappedCount={aiMappedCount}
-                  totalUnique={filteredRows.filter(r => !r._error && r.description).length}
-                  onStart={() => runAiMapping(filteredRows)}
-                  onAbort={() => aiAbortRef.current?.abort()}
-                  onRetry={() => runAiMapping(filteredRows)}
-                />
-              )}
-
-              {/* ── 미리보기 테이블 ── */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <p className="text-xs font-semibold text-muted-foreground">미리보기</p>
-                  <p className="text-xs text-muted-foreground/60">
-                    {duplicateRows.length > 0
-                      ? <>신규 <span className="text-foreground font-medium">{validRows.length}</span>건 · 이미 등록 <span className="text-muted-foreground/50">{duplicateRows.length}</span>건</>
-                      : filteredRows.length > PREVIEW_LIMIT ? `상위 ${PREVIEW_LIMIT}행 / 전체 ${filteredRows.length}행` : `${filteredRows.length}행`
-                    }
-                  </p>
-                </div>
-                <div className="rounded-xl border border-border overflow-hidden">
-                  {/* 헤더 */}
-                  {isBanksalad ? (
-                    <div className="grid grid-cols-[86px_1fr_76px_100px] bg-card border-b border-border px-3 py-2">
-                      {['날짜·시간', '내용 / 결제수단', '금액', 'AI 분류'].map(h => (
-                        <span key={h} className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{h}</span>
-                      ))}
-                    </div>
-                  ) : colMap ? (
-                    <div className="grid grid-cols-[100px_1fr_90px_80px] bg-card border-b border-border">
-                      <ColSelect label="날짜"     value={colMap.date ?? ''}        options={headerOptions} onChange={v => handleColChange('date', v)}        hasValue={!!colMap.date} />
-                      <ColSelect label="내용"     value={colMap.description ?? ''} options={headerOptions} onChange={v => handleColChange('description', v)} hasValue={!!colMap.description} />
-                      <ColSelect label="금액"     value={colMap.amount ?? colMap.withdraw ?? ''} options={headerOptions} onChange={v => handleColChange('amount', v)} hasValue={!!(colMap.amount || colMap.withdraw)} />
-                      <ColSelect label="카테고리" value={colMap.category ?? ''}    options={headerOptions} onChange={v => handleColChange('category', v)}    hasValue={!!colMap.category} />
-                    </div>
-                  ) : null}
-
-                  {/* 바디 — 신규 항목 먼저, 중복 항목 뒤로 */}
-                  <div className="divide-y divide-border/60 max-h-[300px] overflow-y-auto">
-                    {[...filteredRows]
-                      .sort((a, b) => (a._isDuplicate ? 1 : 0) - (b._isDuplicate ? 1 : 0))
-                      .slice(0, PREVIEW_LIMIT)
-                      .map((row, i) =>
-                      isBanksalad
-                        ? <BanksaladPreviewRow key={i} row={row} aiStatus={aiStatus} />
-                        : <GenericPreviewRow key={i} row={row} aiStatus={aiStatus} />
-                    )}
+              {/* ── 1. 업데이트 범위 — 최상위 결정 ── */}
+              {isBanksalad && accountBalances.length > 0 && (
+                <div className="rounded-xl border border-border p-3 space-y-2">
+                  <p className="text-xs font-semibold text-foreground/70">업데이트 범위</p>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {([
+                      { value: 'both',     label: '전체',      desc: '거래 + 자산' },
+                      { value: 'cashflow', label: '현금흐름만', desc: '거래 내역만' },
+                      { value: 'assets',   label: '자산만',    desc: `잔액 ${accountBalances.length}개` },
+                    ] as { value: UploadMode; label: string; desc: string }[]).map(opt => (
+                      <button
+                        key={opt.value}
+                        onClick={() => setUploadMode(opt.value)}
+                        className={cn(
+                          'flex flex-col items-center py-2 px-1 rounded-lg border text-center transition-colors',
+                          uploadMode === opt.value
+                            ? 'bg-foreground text-background border-foreground'
+                            : 'bg-muted/50 text-muted-foreground border-border hover:border-foreground/30'
+                        )}
+                      >
+                        <span className="text-xs font-semibold">{opt.label}</span>
+                        <span className={cn('text-[10px] mt-0.5', uploadMode === opt.value ? 'text-background/70' : 'text-muted-foreground/60')}>{opt.desc}</span>
+                      </button>
+                    ))}
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* ── 2. 💸 현금흐름 카드 — 월 + AI 매핑 + 미리보기 (uploadMode !== 'assets') ── */}
+              {uploadMode !== 'assets' && (
+                <section className="rounded-xl border border-border overflow-hidden">
+                  <header className="flex items-center gap-2 px-3 py-2 bg-muted/40 border-b border-border">
+                    <span className="text-base">💸</span>
+                    <span className="text-xs font-semibold text-foreground/80">현금흐름 — 거래 내역</span>
+                  </header>
+                  <div className="divide-y divide-border">
+
+                    {/* 업로드할 월 */}
+                    {isBanksalad && availableMonths.length > 1 && (
+                      <div className="p-3 space-y-2.5">
+                        <div className="flex items-center justify-between">
+                          <p className="text-xs font-semibold text-foreground/70">
+                            업로드할 월
+                            <span className="ml-1.5 font-normal text-muted-foreground/60">
+                              ({selectedMonths.size}/{availableMonths.length}개월)
+                            </span>
+                          </p>
+                          <button
+                            onClick={() => {
+                              setSelectedMonths(
+                                selectedMonths.size === availableMonths.length
+                                  ? new Set([availableMonths[availableMonths.length - 1]])
+                                  : new Set(availableMonths)
+                              )
+                              resetAiForReselection()
+                            }}
+                            className="text-[10px] text-muted-foreground/60 hover:text-foreground transition-colors"
+                          >
+                            {selectedMonths.size === availableMonths.length ? '전체 해제' : '전체 선택'}
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          {availableMonths.map(month => {
+                            const [y, m] = month.split('-')
+                            const label = `${y}년 ${parseInt(m)}월`
+                            const active = selectedMonths.has(month)
+                            return (
+                              <button
+                                key={month}
+                                onClick={() => toggleMonth(month)}
+                                className={cn(
+                                  'px-2.5 py-1 rounded-lg text-xs font-medium transition-colors border',
+                                  active
+                                    ? 'bg-foreground text-background border-foreground'
+                                    : 'bg-muted text-muted-foreground border-border hover:border-foreground/40'
+                                )}
+                              >
+                                {label}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* AI 매핑 상태 */}
+                    <div className="p-3">
+                      <AiMappingStatus
+                        status={aiStatus}
+                        mappedCount={aiMappedCount}
+                        totalUnique={filteredRows.filter(r => !r._error && r.description).length}
+                        onStart={() => runAiMapping(filteredRows)}
+                        onAbort={() => aiAbortRef.current?.abort()}
+                        onRetry={() => runAiMapping(filteredRows)}
+                      />
+                    </div>
+
+                    {/* 미리보기 표 */}
+                    <div className="p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-semibold text-muted-foreground">미리보기</p>
+                        <p className="text-xs text-muted-foreground/60">
+                          {duplicateRows.length > 0
+                            ? <>신규 <span className="text-foreground font-medium">{validRows.length}</span>건 · 이미 등록 <span className="text-muted-foreground/50">{duplicateRows.length}</span>건</>
+                            : filteredRows.length > PREVIEW_LIMIT ? `상위 ${PREVIEW_LIMIT}행 / 전체 ${filteredRows.length}행` : `${filteredRows.length}행`
+                          }
+                        </p>
+                      </div>
+                      <div className="rounded-xl border border-border overflow-hidden">
+                        {/* 헤더 */}
+                        {isBanksalad ? (
+                          <div className="grid grid-cols-[86px_1fr_76px_100px] bg-card border-b border-border px-3 py-2">
+                            {['날짜·시간', '내용 / 결제수단', '금액', 'AI 분류'].map(h => (
+                              <span key={h} className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">{h}</span>
+                            ))}
+                          </div>
+                        ) : colMap ? (
+                          <div className="grid grid-cols-[100px_1fr_90px_80px] bg-card border-b border-border">
+                            <ColSelect label="날짜"     value={colMap.date ?? ''}        options={headerOptions} onChange={v => handleColChange('date', v)}        hasValue={!!colMap.date} />
+                            <ColSelect label="내용"     value={colMap.description ?? ''} options={headerOptions} onChange={v => handleColChange('description', v)} hasValue={!!colMap.description} />
+                            <ColSelect label="금액"     value={colMap.amount ?? colMap.withdraw ?? ''} options={headerOptions} onChange={v => handleColChange('amount', v)} hasValue={!!(colMap.amount || colMap.withdraw)} />
+                            <ColSelect label="카테고리" value={colMap.category ?? ''}    options={headerOptions} onChange={v => handleColChange('category', v)}    hasValue={!!colMap.category} />
+                          </div>
+                        ) : null}
+
+                        {/* 바디 — 신규 항목 먼저, 중복 항목 뒤로 */}
+                        <div className="divide-y divide-border/60 max-h-[300px] overflow-y-auto">
+                          {[...filteredRows]
+                            .sort((a, b) => (a._isDuplicate ? 1 : 0) - (b._isDuplicate ? 1 : 0))
+                            .slice(0, PREVIEW_LIMIT)
+                            .map((row, i) =>
+                            isBanksalad
+                              ? <BanksaladPreviewRow key={i} row={row} aiStatus={aiStatus} />
+                              : <GenericPreviewRow key={i} row={row} aiStatus={aiStatus} />
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+              {/* ── 3. 🏦 자산 카드 — 계좌별 잔액 변경 (uploadMode !== 'cashflow') ── */}
+              {isBanksalad && accountBalances.length > 0 && uploadMode !== 'cashflow' && (
+                <section className="rounded-xl border border-border overflow-hidden">
+                  <header className="flex items-center gap-2 px-3 py-2 bg-muted/40 border-b border-border">
+                    <span className="text-base">🏦</span>
+                    <span className="text-xs font-semibold text-foreground/80">자산 — 계좌 잔액 변경</span>
+                  </header>
+                  <div className="p-3">
+                    <AccountBalanceDiff accountBalances={accountBalances} dbAccounts={dbAccounts} />
+                  </div>
+                </section>
+              )}
 
               {/* ── 오류 안내 ── */}
               {errorRows.length > 0 && (
