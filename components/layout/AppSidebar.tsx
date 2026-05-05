@@ -18,6 +18,7 @@ import {
   Sparkles,
   MessageSquare,
   History,
+  TrendingUp,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { BrandMark } from '@/components/ui/brand-mark'
@@ -31,6 +32,7 @@ export const NAV_ITEMS = [
   { href: '/dashboard',            label: '대시보드',       icon: LayoutDashboard, exact: true },
   { href: '/dashboard/cashflow',   label: '현금흐름 관리',  icon: ArrowLeftRight },
   { href: '/dashboard/assets',     label: '자산 관리',      icon: Wallet },
+  { href: '/dashboard/screen',     label: '종목 검색',      icon: TrendingUp },
   { href: '/dashboard/budget',     label: '예산 관리',      icon: Calculator },
   { href: '/dashboard/scenario',   label: '시나리오 허브',  icon: Sparkles },
   { href: '/dashboard/feed',       label: '가족 피드',      icon: MessageSquare },
