@@ -7,9 +7,10 @@ import { isCFOLevel } from '@/lib/roles'
 import type { AuthUser } from '@/lib/auth'
 import { fetchFundamentalsBatch, toYahooTicker } from '@/lib/utils/yahoo-fundamental'
 import { getKoreanFinancialHistory, isDartConfigured } from '@/lib/utils/dart-fundamental'
-import { getMomentumIndicators } from '@/lib/utils/yahoo-momentum'
+import { getMomentumIndicators, type MomentumIndicators } from '@/lib/utils/yahoo-momentum'
 import { UNIVERSE_KR, UNIVERSE_US, UNIVERSE_ALL } from '@/lib/data/stock-universe'
 import { normalizeSectorKeyword } from '@/lib/data/sector-mapping'
+import { SCREEN_PRESETS, presetCatalogDescription, type PresetKey, type PresetDef } from '@/lib/data/screen-presets'
 
 const won = (n: number) => `${Math.round(n).toLocaleString('ko-KR')}원`
 
@@ -909,6 +910,154 @@ export function buildAgentTools(user: AuthUser) {
               netMargin: ratio(y.netIncome, y.revenue),
               debtRatio: ratio(y.totalLiabilities, y.totalEquity),
               currentRatio: ratio(y.currentAssets, y.currentLiabilities),
+            }
+          }),
+        }
+      },
+    }),
+
+    runScreenPreset: tool({
+      description:
+        '사전 정의된 스크리닝 전략(preset) 빠른 실행. 사용자 자연어 → 적절한 preset 키로 매핑해 호출.\n\n' +
+        '사용 가능한 preset:\n' + presetCatalogDescription() + '\n\n' +
+        '사용자가 정확히 매핑되는 preset이 없는 의도(예: "PER 5 이하만")를 말하면 screenUniverse를 직접 사용.',
+      inputSchema: z.object({
+        preset: z.enum([
+          'undervalued_growth', 'cheap_value', 'quality_value',
+          'high_dividend', 'quality_blue_chip',
+          'uptrend', 'near_52w_high', 'oversold',
+        ] as const),
+        market: z.enum(['kr', 'us', 'all']).default('all'),
+        sectorContains: z.string().optional().describe('섹터 추가 필터 (영문 또는 한국어)'),
+        excludeHoldings: z.boolean().default(true),
+        limit: z.number().int().min(1).max(20).default(10),
+      }),
+      execute: async (params) => {
+        const def: PresetDef = SCREEN_PRESETS[params.preset as PresetKey]
+        const universe = params.market === 'kr' ? UNIVERSE_KR
+          : params.market === 'us' ? UNIVERSE_US
+          : UNIVERSE_ALL
+
+        const heldTickers = new Set<string>()
+        if (params.excludeHoldings) {
+          const accounts = await prisma.account.findMany({
+            where: { familyId, holdings: { some: {} } },
+            include: { holdings: { select: { ticker: true, market: true } } },
+          })
+          for (const a of accounts) {
+            for (const h of a.holdings) {
+              if (h.ticker) heldTickers.add(toYahooTicker(h.ticker, h.market))
+            }
+          }
+        }
+
+        const candidates = universe.filter(s => !heldTickers.has(s.yahooTicker))
+        if (candidates.length === 0) {
+          return { preset: def.label, matched: 0, candidates: [], note: '검색 대상이 없습니다.' }
+        }
+
+        const fundamentals = await fetchFundamentalsBatch(candidates.map(c => c.yahooTicker))
+
+        const enriched = candidates.map(c => ({ stock: c, fundamental: fundamentals[c.yahooTicker] }))
+
+        // 기본 fundamental 필터 (preset 정의)
+        const sectorNeedle = params.sectorContains
+          ? normalizeSectorKeyword(params.sectorContains).toLowerCase()
+          : null
+        const filtered = enriched.filter(e => {
+          const f = e.fundamental
+          if (!f) return false
+          const fl = def.filters
+          if (fl.minPer != null && (f.per == null || f.per < fl.minPer)) return false
+          if (fl.maxPer != null && (f.per == null || f.per > fl.maxPer)) return false
+          if (fl.minPbr != null && (f.pbr == null || f.pbr < fl.minPbr)) return false
+          if (fl.maxPbr != null && (f.pbr == null || f.pbr > fl.maxPbr)) return false
+          if (fl.minDividendYield != null && (f.dividendYield == null || f.dividendYield < fl.minDividendYield)) return false
+          if (fl.minRoe != null && (f.roe == null || f.roe < fl.minRoe)) return false
+          if (sectorNeedle && (f.sector == null || !f.sector.toLowerCase().includes(sectorNeedle))) return false
+          return true
+        })
+
+        // 모멘텀 정렬 또는 postFilter 필요하면 chart fetch
+        const isMomentumSort = (['return1m', 'return3m', 'return6m', 'return1y'] as const).includes(
+          def.sortBy as 'return1m' | 'return3m' | 'return6m' | 'return1y',
+        )
+        const needsMomentum = isMomentumSort || !!def.postFilter
+        const momentumKey: Record<string, 'mo1' | 'mo3' | 'mo6' | 'y1'> = {
+          return1m: 'mo1', return3m: 'mo3', return6m: 'mo6', return1y: 'y1',
+        }
+        const momByTicker: Record<string, MomentumIndicators | null> = {}
+        if (needsMomentum && filtered.length > 0) {
+          const tickers = filtered.map(e => e.stock.yahooTicker)
+          for (let i = 0; i < tickers.length; i += 10) {
+            const chunk = tickers.slice(i, i + 10)
+            const moms = await Promise.all(chunk.map(t => getMomentumIndicators(t).catch(() => null)))
+            chunk.forEach((t, j) => { momByTicker[t] = moms[j] })
+          }
+        }
+
+        // postFilter 적용
+        const postFiltered = def.postFilter
+          ? filtered.filter(e => {
+              const m = momByTicker[e.stock.yahooTicker]
+              if (!m) return false
+              const k = momentumKey[def.sortBy as string] ?? 'mo3'
+              if (def.postFilter!.minReturnPct != null) {
+                const v = m.returns[k]
+                if (v == null || v < def.postFilter!.minReturnPct) return false
+              }
+              if (def.postFilter!.maxFromFiftyTwoHigh != null) {
+                if (m.fiftyTwoWeek.pctFromHigh < def.postFilter!.maxFromFiftyTwoHigh) return false
+              }
+              if (def.postFilter!.maxRsi != null) {
+                if (m.rsi14 > def.postFilter!.maxRsi) return false
+              }
+              return true
+            })
+          : filtered
+
+        const getSortVal = (e: typeof filtered[0]): number | null => {
+          if (isMomentumSort) {
+            const m = momByTicker[e.stock.yahooTicker]
+            if (!m) return null
+            return m.returns[momentumKey[def.sortBy as string]] ?? null
+          }
+          const k = def.sortBy as 'per' | 'pbr' | 'dividendYield' | 'roe' | 'marketCap'
+          return e.fundamental?.[k] ?? null
+        }
+        postFiltered.sort((a, b) => {
+          const av = getSortVal(a)
+          const bv = getSortVal(b)
+          if (av == null && bv == null) return 0
+          if (av == null) return 1
+          if (bv == null) return -1
+          return def.sortDesc ? bv - av : av - bv
+        })
+
+        return {
+          preset: def.label,
+          presetDescription: def.description,
+          universeSize: candidates.length,
+          matched: postFiltered.length,
+          candidates: postFiltered.slice(0, params.limit).map(e => {
+            const f = e.fundamental!
+            const m = momByTicker[e.stock.yahooTicker]
+            return {
+              ticker: e.stock.yahooTicker,
+              name: e.stock.name,
+              market: e.stock.market,
+              per: f.per != null ? Math.round(f.per * 10) / 10 : null,
+              pbr: f.pbr != null ? Math.round(f.pbr * 100) / 100 : null,
+              dividendYield: f.dividendYield ?? null,
+              roe: f.roe ?? null,
+              sector: f.sector ?? null,
+              ...(needsMomentum && m
+                ? {
+                    return3m: m.returns.mo3 != null ? Math.round(m.returns.mo3 * 10) / 10 : null,
+                    rsi14: Math.round(m.rsi14),
+                    pctFromFiftyTwoHigh: Math.round(m.fiftyTwoWeek.pctFromHigh * 10) / 10,
+                  }
+                : {}),
             }
           }),
         }
