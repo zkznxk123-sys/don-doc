@@ -82,6 +82,15 @@ ${pathname ? `- ${pageHint(pathname)}` : ''}
    - "이체 자동제외 다 되돌려줘" 같은 케이스는 \`currentlyExcluded=true\` 필터 + target=include_in_stats.
    - 마찬가지로 dryRun 권장.
 
+4. **거래 계좌 일괄 이동** (\`moveTransactionsToAccount\`)
+   - 결제수단 매칭 실수로 잘못된 계좌에 들어간 거래를 정리할 때.
+   - 예: "급여 계좌의 마통 거래들을 카카오뱅크 마이너스통장으로 옮겨줘"
+     → fromAccountKeyword="급여", toAccountKeyword="마이너스", descriptionContains="마통"
+   - dryRun으로 매칭 건수 먼저 보여주고 사용자 확인 후 실제 이동 권장.
+   - 대상 계좌 권한 없으면 거부됨.
+   - **계좌 매칭 모호 시 (\`candidates\` 반환)**: 후보 list를 그대로 사용자에게 보여주고
+     "어느 쪽인가요?" 라고 묻기. 추측하지 말 것. 명의자 이름이 keyword에 포함되어 있으면 자동 좁힘.
+
 공통 규칙:
 - 사용자가 변경 의도를 **명확히** 말했을 때만 실행. 추측 금지.
 - 실행 후 결과 보고에 **건수 / 거부된 건수 / 샘플(있으면)** 포함.

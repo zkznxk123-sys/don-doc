@@ -100,8 +100,20 @@ export function ChatPanel({ open, onClose }: { open: boolean; onClose: () => voi
     } finally {
       abortRef.current = null
       setIsStreaming(false)
+      // 빈 응답(rate limit, tool error 등으로 stream이 텍스트 없이 종료) 감지 → fallback 메시지
+      setMessages(prev => {
+        const last = prev[prev.length - 1]
+        if (last?.role === 'assistant' && !last.content.trim()) {
+          const u = [...prev]
+          u[u.length - 1] = {
+            role: 'assistant',
+            content: '⚠️ 응답을 받지 못했습니다. OpenAI 분당 토큰 한도(TPM)에 걸렸을 수 있어요. 30초~1분 후 다시 시도해주세요.',
+          }
+          return u
+        }
+        return prev
+      })
       // AI가 mutation tool을 호출했을 수 있으므로 streaming 끝나면 항상 페이지 데이터 갱신.
-      // 데이터 변경 없는 단순 조회에도 fetch 한 번 더 발생하지만 비용 작음.
       bumpRefresh()
     }
   }, [messages, isStreaming, pathname, bumpRefresh])
@@ -214,7 +226,7 @@ export function ChatPanel({ open, onClose }: { open: boolean; onClose: () => voi
             </button>
           </div>
           <p className="mt-2 text-[11px] text-muted-foreground">
-            잔액·거래 카테고리·제외 토글 일괄 수정 가능 · 거래 추가/예산은 화면에서
+            잔액·거래 카테고리·제외·계좌 이동 일괄 수정 가능 · 거래 추가/예산은 화면에서
           </p>
         </form>
       </aside>

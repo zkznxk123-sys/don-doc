@@ -54,6 +54,11 @@ export async function POST(req: NextRequest) {
       stopWhen: stepCountIs(8),
       // 0.1 — tool calling 결정론적으로
       temperature: 0.1,
+      // rate limit / 일시 오류 자동 재시도
+      maxRetries: 3,
+      onError: ({ error }) => {
+        console.error('[streamText onError]', error)
+      },
     })
     return result.toTextStreamResponse()
   } catch (e) {

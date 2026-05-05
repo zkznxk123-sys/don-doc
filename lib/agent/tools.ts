@@ -6,6 +6,7 @@ import { prisma } from '@/lib/prisma'
 import { isCFOLevel } from '@/lib/roles'
 import type { AuthUser } from '@/lib/auth'
 import { fetchFundamentalsBatch, toYahooTicker } from '@/lib/utils/yahoo-fundamental'
+import { UNIVERSE_KR, UNIVERSE_US, UNIVERSE_ALL } from '@/lib/data/stock-universe'
 
 const won = (n: number) => `${Math.round(n).toLocaleString('ko-KR')}원`
 
@@ -789,6 +790,107 @@ export function buildAgentTools(user: AuthUser) {
       },
     }),
 
+    screenUniverse: tool({
+      description:
+        '보유 외 종목 후보 검색. 한국(KOSPI 시총 상위 30) + 미국(시총 상위 50) universe에서 ' +
+        'PER/PBR/배당수익률/ROE/섹터 조건으로 필터·정렬한 후보 종목 반환. ' +
+        '"PER 10 이하 + 배당 3% 이상인 미국 종목" "ROE 높은 한국주" 같은 자연어 쿼리에 매핑. ' +
+        '※ universe는 정적 list (대표 종목만). 보유 종목 검색은 screenHoldings 사용.',
+      inputSchema: z.object({
+        market: z.enum(['kr', 'us', 'all']).default('all').describe('대상 시장'),
+        minPer: z.number().optional(),
+        maxPer: z.number().optional(),
+        minPbr: z.number().optional(),
+        maxPbr: z.number().optional(),
+        minDividendYield: z.number().optional().describe('배당수익률 하한 (%)'),
+        minRoe: z.number().optional().describe('ROE 하한 (%)'),
+        sectorContains: z.string().optional().describe('섹터 부분일치 (영문, 예: "Tech", "Healthcare")'),
+        excludeHoldings: z.boolean().default(true).describe('이미 보유 중인 종목 제외 (기본 true)'),
+        sortBy: z.enum(['per', 'pbr', 'dividendYield', 'roe', 'marketCap']).default('marketCap'),
+        sortDesc: z.boolean().default(true),
+        limit: z.number().int().min(1).max(20).default(10),
+      }),
+      execute: async (params) => {
+        const universe = params.market === 'kr' ? UNIVERSE_KR
+          : params.market === 'us' ? UNIVERSE_US
+          : UNIVERSE_ALL
+
+        // 보유 중인 ticker 수집 (제외용)
+        const heldTickers = new Set<string>()
+        if (params.excludeHoldings) {
+          const accounts = await prisma.account.findMany({
+            where: { familyId, holdings: { some: {} } },
+            include: { holdings: { select: { ticker: true, market: true } } },
+          })
+          for (const a of accounts) {
+            for (const h of a.holdings) {
+              if (h.ticker) heldTickers.add(toYahooTicker(h.ticker, h.market))
+            }
+          }
+        }
+
+        const candidates = universe.filter(s => !heldTickers.has(s.yahooTicker))
+        if (candidates.length === 0) {
+          return { matched: 0, candidates: [], note: '검색 대상이 없습니다.' }
+        }
+
+        // fundamental 일괄 fetch (캐시 활용)
+        const fundamentals = await fetchFundamentalsBatch(candidates.map(c => c.yahooTicker))
+
+        // enrich + filter
+        const enriched = candidates.map(c => {
+          const f = fundamentals[c.yahooTicker]
+          return { stock: c, fundamental: f }
+        })
+
+        const filtered = enriched.filter(e => {
+          const f = e.fundamental
+          if (!f) return false
+          if (params.minPer != null && (f.per == null || f.per < params.minPer)) return false
+          if (params.maxPer != null && (f.per == null || f.per > params.maxPer)) return false
+          if (params.minPbr != null && (f.pbr == null || f.pbr < params.minPbr)) return false
+          if (params.maxPbr != null && (f.pbr == null || f.pbr > params.maxPbr)) return false
+          if (params.minDividendYield != null && (f.dividendYield == null || f.dividendYield < params.minDividendYield)) return false
+          if (params.minRoe != null && (f.roe == null || f.roe < params.minRoe)) return false
+          if (params.sectorContains != null && (f.sector == null || !f.sector.toLowerCase().includes(params.sectorContains.toLowerCase()))) return false
+          return true
+        })
+
+        const sortKey = params.sortBy
+        filtered.sort((a, b) => {
+          const av = a.fundamental?.[sortKey] ?? null
+          const bv = b.fundamental?.[sortKey] ?? null
+          if (av == null && bv == null) return 0
+          if (av == null) return 1
+          if (bv == null) return -1
+          return params.sortDesc ? bv - av : av - bv
+        })
+
+        const fundamentalCovered = enriched.filter(e => e.fundamental).length
+
+        return {
+          universeSize: candidates.length,
+          fundamentalCovered,
+          matched: filtered.length,
+          candidates: filtered.slice(0, params.limit).map(e => {
+            const f = e.fundamental!
+            return {
+              ticker: e.stock.yahooTicker,
+              name: e.stock.name,
+              market: e.stock.market,
+              per: f.per != null ? Math.round(f.per * 10) / 10 : null,
+              pbr: f.pbr != null ? Math.round(f.pbr * 100) / 100 : null,
+              dividendYield: f.dividendYield ?? null,
+              roe: f.roe ?? null,
+              sector: f.sector ?? null,
+              marketCap: f.marketCap ?? null,
+              currency: f.currency,
+            }
+          }),
+        }
+      },
+    }),
+
     screenHoldings: tool({
       description:
         '보유 주식·ETF를 PER/PBR/배당수익률/ROE/섹터 같은 fundamental 기준으로 필터·정렬. ' +
@@ -878,6 +980,188 @@ export function buildAgentTools(user: AuthUser) {
               sector: f?.sector ?? null,
             }
           }),
+        }
+      },
+    }),
+
+    moveTransactionsToAccount: tool({
+      description:
+        '거래의 연결 계좌(accountId)를 일괄 변경. 결제수단 매칭 실수로 잘못된 계좌에 들어간 거래를 정리할 때 사용. ' +
+        '예: "급여 계좌의 마통 거래들을 카카오뱅크 마이너스통장으로 옮겨줘". ' +
+        '권한: 본인 거래 또는 CFO + 공유 거래만 (PRIVATE 거래는 본인만). ' +
+        '계좌 잔액(Account.balance)은 자동 변경되지 않음 — 잔액은 별도 동기화.',
+      inputSchema: z.object({
+        fromAccountKeyword: z.string().describe('현재 거래가 연결된 계좌명 부분일치 (예: "급여")'),
+        toAccountKeyword: z.string().describe('이동할 대상 계좌명 부분일치 (예: "마이너스")'),
+        descriptionContains: z.string().optional().describe('거래 description 부분일치 필터'),
+        categoryEquals: z.string().optional().describe('카테고리명 정확 매칭'),
+        from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe('기간 시작 (YYYY-MM-DD)'),
+        to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe('기간 종료 (YYYY-MM-DD, 포함)'),
+        dryRun: z.boolean().default(false),
+      }),
+      execute: async (params) => {
+        const isCFO = isCFOLevel(user.role)
+
+        // 1. fromAccount / toAccount 매칭 (명의자 정보 포함 + token 기반 좁힘)
+        // 사용자가 "안혜빈 카카오뱅크 마이너스" 같이 명의자 이름을 keyword에 섞어도 매칭되도록,
+        // keyword token 중 하나가 명의자 이름과 일치하면 narrowing.
+        const findAccount = async (keyword: string) => {
+          const tokens = keyword.split(/\s+/).map(t => t.trim()).filter(Boolean)
+
+          // 1차: 모든 토큰이 account.name 또는 user.name 어디에든 포함되어야 함
+          const allFamilyAccounts = await prisma.account.findMany({
+            where: {
+              familyId,
+              parentAccountId: null,
+              OR: [
+                { userId: user.id },
+                { shareLevel: { not: 'PRIVATE' } },
+              ],
+            },
+            select: {
+              id: true, name: true, userId: true, isShared: true, shareLevel: true, balance: true,
+              user: { select: { name: true } },
+            },
+          })
+
+          const lowerInclude = (haystack: string | null | undefined, needle: string) =>
+            !!haystack && haystack.toLowerCase().includes(needle.toLowerCase())
+
+          // token 모두 (account.name OR user.name) 안에 포함되는 계좌만
+          const matched = allFamilyAccounts.filter(acc =>
+            tokens.every(tok =>
+              lowerInclude(acc.name, tok) || lowerInclude(acc.user?.name, tok)
+            )
+          )
+
+          // token이 비었으면 그냥 단순 contains
+          if (tokens.length === 0) {
+            return allFamilyAccounts.filter(acc => lowerInclude(acc.name, keyword))
+          }
+          return matched
+        }
+
+        const describeCandidate = (a: { name: string; balance: number; user: { name: string | null } | null; isShared: boolean }) => {
+          const owner = a.isShared && !a.user ? '공유' : (a.user?.name ?? '소유자 미지정')
+          const bal = `잔액 ${Math.round(a.balance).toLocaleString('ko-KR')}원`
+          return `${a.name} (${owner}, ${bal})`
+        }
+
+        const fromMatches = await findAccount(params.fromAccountKeyword)
+        const toMatches = await findAccount(params.toAccountKeyword)
+
+        if (fromMatches.length === 0) return { error: `from 계좌 "${params.fromAccountKeyword}" 매칭 없음` }
+        if (fromMatches.length > 1) {
+          return {
+            error: `from 계좌 "${params.fromAccountKeyword}"에 매칭되는 계좌가 ${fromMatches.length}개입니다. 명의자를 명시해주세요.`,
+            candidates: fromMatches.map(describeCandidate),
+            hint: 'fromAccountKeyword에 명의자 이름을 포함시키거나, 사용자에게 어느 계좌인지 다시 물어봐주세요.',
+          }
+        }
+        if (toMatches.length === 0) return { error: `to 계좌 "${params.toAccountKeyword}" 매칭 없음` }
+        if (toMatches.length > 1) {
+          return {
+            error: `to 계좌 "${params.toAccountKeyword}"에 매칭되는 계좌가 ${toMatches.length}개입니다. 명의자를 명시해주세요.`,
+            candidates: toMatches.map(describeCandidate),
+            hint: 'toAccountKeyword에 명의자 이름을 포함시키거나, 사용자에게 어느 계좌인지 다시 물어봐주세요.',
+          }
+        }
+
+        const fromAcc = fromMatches[0]
+        const toAcc = toMatches[0]
+        if (fromAcc.id === toAcc.id) return { error: '같은 계좌입니다.' }
+
+        // toAccount 쓰기 권한
+        const canWriteTo = toAcc.userId === user.id || (isCFO && toAcc.shareLevel !== 'PRIVATE')
+        if (!canWriteTo) return { error: `대상 계좌 "${toAcc.name}" 에 거래를 옮길 권한이 없습니다.` }
+
+        // 2. 거래 검색
+        const dateFilter: { gte?: Date; lt?: Date } = {}
+        if (params.from) dateFilter.gte = new Date(`${params.from}T00:00:00.000Z`)
+        if (params.to) {
+          const t = new Date(`${params.to}T00:00:00.000Z`)
+          t.setUTCDate(t.getUTCDate() + 1)
+          dateFilter.lt = t
+        }
+
+        const txs = await prisma.transaction.findMany({
+          where: {
+            accountId: fromAcc.id,
+            ...(params.descriptionContains ? { description: { contains: params.descriptionContains, mode: 'insensitive' } } : {}),
+            ...(params.categoryEquals ? { category: params.categoryEquals } : {}),
+            ...(dateFilter.gte || dateFilter.lt ? { date: dateFilter } : {}),
+          },
+          include: { user: { select: { name: true } } },
+          orderBy: { date: 'desc' },
+        })
+
+        // 3. 권한 분리
+        const allowedIds: string[] = []
+        let deniedCount = 0
+        const sample: { date: string; description: string; amount: number; category: string; userName: string | null }[] = []
+        for (const tx of txs) {
+          const isOwner = tx.userId === user.id
+          if (!isOwner && !isCFO) { deniedCount++; continue }
+          if (!isOwner && tx.visibility === 'PRIVATE') { deniedCount++; continue }
+          allowedIds.push(tx.id)
+          if (sample.length < 5) {
+            sample.push({
+              date: tx.date.toISOString().slice(0, 10),
+              description: tx.description,
+              amount: tx.amount,
+              category: tx.category,
+              userName: tx.user.name,
+            })
+          }
+        }
+
+        if (params.dryRun) {
+          return {
+            dryRun: true,
+            from: fromAcc.name,
+            to: toAcc.name,
+            matchedCount: allowedIds.length,
+            deniedCount,
+            sample,
+          }
+        }
+
+        if (allowedIds.length === 0) {
+          return { from: fromAcc.name, to: toAcc.name, movedCount: 0, deniedCount, message: '이동할 거래가 없습니다.' }
+        }
+
+        // 4. UploadBatch 묶음 (감사용)
+        const batch = await prisma.uploadBatch.create({
+          data: {
+            familyId,
+            userId: user.id,
+            fileName: `AI 어시스턴트: ${fromAcc.name} → ${toAcc.name} 거래 이동`,
+            source: 'chat-ai-move',
+          },
+        })
+
+        // 5. 일괄 이동
+        await prisma.transaction.updateMany({
+          where: { id: { in: allowedIds } },
+          data: { accountId: toAcc.id, uploadBatchId: batch.id },
+        })
+
+        await prisma.uploadBatch.update({
+          where: { id: batch.id },
+          data: { txAdded: allowedIds.length },
+        })
+
+        revalidatePath('/dashboard')
+        revalidatePath('/dashboard/cashflow')
+        revalidatePath('/dashboard/assets')
+
+        return {
+          from: fromAcc.name,
+          to: toAcc.name,
+          movedCount: allowedIds.length,
+          deniedCount,
+          batchId: batch.id,
+          sample,
         }
       },
     }),

@@ -87,7 +87,9 @@ async function getYahooAuth(): Promise<{ cookie: string; crumb: string } | null>
 
 /**
  * 여러 ticker의 fundamental 데이터를 병렬 조회.
- * 캐시(1시간) 적용. 실패한 ticker는 null.
+ * - Yahoo v10 quoteSummary 우선
+ * - 한국 종목(.KS/.KQ) 중 PER/PBR/ROE missing 항목은 DART로 자동 보강 (DART_API_KEY 있을 때)
+ * - 캐시(1시간) 적용. 실패한 ticker는 null.
  */
 export async function fetchFundamentalsBatch(
   tickers: string[],
@@ -149,7 +151,46 @@ export async function fetchFundamentalsBatch(
     }),
   )
 
+  // ── 한국 종목 PER/PBR/ROE missing 시 DART로 보강 (DART_API_KEY 있을 때만) ──
+  await enrichKoreanWithDart(results)
+
   return results
+}
+
+async function enrichKoreanWithDart(
+  results: Record<string, FundamentalData | null>,
+): Promise<void> {
+  // 동적 import — DART 모듈 로드 실패해도 Yahoo 단독 동작 유지
+  let dartModule: typeof import('./dart-fundamental')
+  try {
+    dartModule = await import('./dart-fundamental')
+  } catch {
+    return
+  }
+  if (!dartModule.isDartConfigured()) return
+
+  const krTickers = Object.keys(results).filter(t => {
+    if (!t.endsWith('.KS') && !t.endsWith('.KQ')) return false
+    const f = results[t]
+    if (!f) return false
+    return f.per == null || f.pbr == null || f.roe == null
+  })
+  if (krTickers.length === 0) return
+
+  await Promise.all(krTickers.map(async (yahooTicker) => {
+    const stockCode = yahooTicker.replace(/\.(KS|KQ)$/, '')
+    const f = results[yahooTicker]
+    if (!f) return
+    try {
+      const dart = await dartModule.getKoreanFundamentalFromDart(stockCode, f.marketCap)
+      if (!dart) return
+      if (f.per == null && dart.per != null) f.per = dart.per
+      if (f.pbr == null && dart.pbr != null) f.pbr = dart.pbr
+      if (f.roe == null && dart.roe != null) f.roe = dart.roe
+    } catch (e) {
+      console.warn(`[enrichKoreanWithDart] ${yahooTicker}`, e)
+    }
+  }))
 }
 
 /**
