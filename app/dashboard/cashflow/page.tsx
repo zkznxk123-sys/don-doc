@@ -11,7 +11,8 @@ import {
 import { cn, formatCurrency, formatLargeNumber } from '@/lib/utils'
 import { useDashboardActions } from '@/components/layout/DashboardShell'
 import { toast } from 'sonner'
-import { bulkUpdateTransactions, detectAutoExcludeItems, type DetectedGroup } from '@/lib/actions/transaction'
+import { bulkUpdateTransactions } from '@/lib/actions/transaction'
+import { detectAutoExcludeItems, type DetectedGroup } from '@/lib/actions/transactions/cleanup'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'

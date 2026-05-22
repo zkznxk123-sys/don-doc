@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { GitMerge, RotateCcw, Copy, Check, Loader2, X } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
-import { applyAutoExclusions, type DetectedGroup, type DetectedGroupType } from '@/lib/actions/transaction'
+import { applyAutoExclusions, type DetectedGroup, type DetectedGroupType } from '@/lib/actions/transactions/cleanup'
 import { toast } from 'sonner'
 
 interface Props {

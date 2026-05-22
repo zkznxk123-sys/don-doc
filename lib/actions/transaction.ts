@@ -1084,9 +1084,3 @@ export async function upsertSubTransactions(
   return { success: true }
 }
 
-// ── cleanup 함수 재내보내기 (lib/actions/transactions/cleanup.ts에서 분리) ────
-export {
-  detectAutoExcludeItems,
-  applyAutoExclusions,
-} from './transactions/cleanup'
-export type { DetectedTx, DetectedGroupType, DetectedGroup } from './transactions/cleanup'
