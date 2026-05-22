@@ -16,7 +16,6 @@ import {
   Loader2,
   X,
   Sparkles,
-  MessageSquare,
   History,
   TrendingUp,
 } from 'lucide-react'
@@ -25,20 +24,31 @@ import { BrandMark } from '@/components/ui/brand-mark'
 import type { ShellUser } from './DashboardShell'
 import { useState, useEffect, useRef } from 'react'
 import { getLatestInviteCode } from '@/lib/actions/family'
-import { getRecentFeedPreview } from '@/lib/actions/feed'
 import { toast } from 'sonner'
 
-export const NAV_ITEMS = [
-  { href: '/dashboard',            label: '대시보드',       icon: LayoutDashboard, exact: true },
-  { href: '/dashboard/cashflow',   label: '현금흐름 관리',  icon: ArrowLeftRight },
-  { href: '/dashboard/assets',     label: '자산 관리',      icon: Wallet },
-  { href: '/dashboard/screen',     label: '종목 검색',      icon: TrendingUp },
-  { href: '/dashboard/budget',     label: '예산 관리',      icon: Calculator },
-  { href: '/dashboard/scenario',   label: '시나리오 허브',  icon: Sparkles },
-  { href: '/dashboard/feed',       label: '가족 피드',      icon: MessageSquare },
-  { href: '/dashboard/uploads',    label: '업로드 이력',    icon: History },
-  { href: '/dashboard/settings',   label: '설정',           icon: Settings },
+type NavGroup = 'core' | 'beta' | 'admin'
+type NavItem = {
+  href: string
+  label: string
+  icon: typeof LayoutDashboard
+  exact?: boolean
+  beta?: boolean
+  group: NavGroup
+}
+
+// 5/10 정체성 결정: 본질 4개 → Beta 그룹 → admin 순. 가족 피드는 nav에서 제거(설정 또는 대시보드 위젯으로 이동 예정).
+export const NAV_ITEMS: NavItem[] = [
+  { href: '/dashboard',          label: '대시보드',      icon: LayoutDashboard, exact: true, group: 'core' },
+  { href: '/dashboard/cashflow', label: '현금흐름 관리', icon: ArrowLeftRight,  group: 'core' },
+  { href: '/dashboard/assets',   label: '자산 관리',     icon: Wallet,          group: 'core' },
+  { href: '/dashboard/budget',   label: '예산 관리',     icon: Calculator,      group: 'core' },
+  { href: '/dashboard/scenario', label: '시나리오 허브', icon: Sparkles,        group: 'beta', beta: true },
+  { href: '/dashboard/screen',   label: '종목 검색',     icon: TrendingUp,      group: 'beta', beta: true },
+  { href: '/dashboard/uploads',  label: '업로드 이력',   icon: History,         group: 'admin' },
+  { href: '/dashboard/settings', label: '설정',          icon: Settings,        group: 'admin' },
 ]
+
+const NAV_GROUP_ORDER: NavGroup[] = ['core', 'beta', 'admin']
 
 interface AppSidebarProps {
   open: boolean
@@ -49,20 +59,8 @@ interface AppSidebarProps {
 
 export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
   const pathname = usePathname()
-  const [hasUnreadFeed, setHasUnreadFeed] = useState(false)
 
-  useEffect(() => {
-    let cancelled = false
-    getRecentFeedPreview(1).then(posts => {
-      if (cancelled || posts.length === 0) return
-      const lastRead = localStorage.getItem('don-doc:lastFeedRead')
-      const since = lastRead ? new Date(lastRead) : new Date(0)
-      setHasUnreadFeed(new Date(posts[0].createdAt) > since)
-    }).catch(() => {/* 로그아웃 중 인증 만료 무시 */})
-    return () => { cancelled = true }
-  }, [pathname]) // pathname 바뀔 때마다 재확인 (피드 방문 후 점 사라짐)
-
-  const isActive = (item: typeof NAV_ITEMS[number]) =>
+  const isActive = (item: NavItem) =>
     item.exact ? pathname === item.href : pathname.startsWith(item.href)
 
   const handleNavClick = () => {
@@ -105,62 +103,69 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
         )}
       </div>
 
-      {/* 메뉴 */}
-      <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden">
-        {NAV_ITEMS.map((item) => {
-          const active = isActive(item)
-          const Icon = item.icon
-          const isFeed = item.href === '/dashboard/feed'
-          const showDot = isFeed && hasUnreadFeed && !active
+      {/* 메뉴 — core / beta / admin 3그룹, 사이에 구분선 */}
+      <nav className="flex-1 px-2 py-3 overflow-y-auto overflow-x-hidden">
+        {NAV_GROUP_ORDER.map((groupId, groupIdx) => {
+          const items = NAV_ITEMS.filter(i => i.group === groupId)
+          if (items.length === 0) return null
           return (
-            <Link
-              key={item.href}
-              href={item.href}
-              onClick={handleNavClick}
+            <div
+              key={groupId}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors group relative',
-                active
-                  ? 'bg-muted text-foreground'
-                  : 'text-muted-foreground hover:text-foreground/80 hover:bg-muted',
-                !open && 'lg:justify-center lg:px-0',
+                'space-y-0.5',
+                groupIdx > 0 && 'mt-3 pt-3 border-t border-border/40',
               )}
             >
-              <div className="relative flex-shrink-0">
-                <Icon className="w-4 h-4" />
-                {showDot && (
-                  <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-blue-400 border border-background" />
-                )}
-              </div>
-              {open && <span className="truncate flex-1">{item.label}</span>}
-              {open && showDot && (
-                <span className="text-[10px] font-semibold text-blue-400 bg-blue-400/10 px-1.5 py-0.5 rounded-full leading-none">
-                  NEW
-                </span>
+              {items.map((item) => {
+                const active = isActive(item)
+                const Icon = item.icon
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={handleNavClick}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
+                      active
+                        ? 'bg-muted text-foreground'
+                        : 'text-muted-foreground hover:text-foreground/80 hover:bg-muted',
+                      !open && 'lg:justify-center lg:px-0',
+                    )}
+                  >
+                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    {open && <span className="truncate flex-1">{item.label}</span>}
+                    {open && item.beta && (
+                      <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/70 bg-muted px-1.5 py-0.5 rounded leading-none border border-border/40">
+                        Beta
+                      </span>
+                    )}
+                  </Link>
+                )
+              })}
+
+              {/* CFO 전용: 가족 관리·초대 코드는 admin 그룹에 묶음 */}
+              {groupId === 'admin' && user.role === 'CFO' && (
+                <>
+                  <Link
+                    href="/dashboard/family"
+                    onClick={handleNavClick}
+                    className={cn(
+                      'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
+                      pathname.startsWith('/dashboard/family')
+                        ? 'bg-muted text-foreground'
+                        : 'text-muted-foreground hover:text-foreground/80 hover:bg-muted',
+                      !open && 'lg:justify-center lg:px-0',
+                    )}
+                  >
+                    <Users className="w-4 h-4 flex-shrink-0" />
+                    {open && <span>가족 관리</span>}
+                  </Link>
+                  {open && <InviteCodeButton />}
+                </>
               )}
-            </Link>
+            </div>
           )
         })}
-
-        {/* CFO 전용: 가족 */}
-        {user.role === 'CFO' && (
-          <Link
-            href="/dashboard/family"
-            onClick={handleNavClick}
-            className={cn(
-              'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
-              pathname.startsWith('/dashboard/family')
-                ? 'bg-muted text-foreground'
-                : 'text-muted-foreground hover:text-foreground/80 hover:bg-muted',
-              !open && 'lg:justify-center lg:px-0',
-            )}
-          >
-            <Users className="w-4 h-4 flex-shrink-0" />
-            {open && <span>가족 관리</span>}
-          </Link>
-        )}
-
-        {/* CFO 전용: 초대 코드 */}
-        {user.role === 'CFO' && open && <InviteCodeButton />}
       </nav>
 
       {/* 유저 프로필 + 로그아웃 */}
