@@ -22,15 +22,18 @@ export function Header({
   onExcelUpload,
   onLogout,
 }: HeaderProps) {
+  const linkClass =
+    'flex items-center gap-2 px-3 py-2 md:px-4 bg-card rounded-lg border border-border text-xs md:text-sm font-medium text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+
   return (
     <div className="flex items-center justify-between mb-8">
       {/* 좌측: 가족 이름 + 유저 이름 */}
       <div>
-        <h1 className="text-3xl font-bold text-white tracking-tight">
+        <h1 className="text-3xl font-bold text-foreground tracking-tight">
           {familyName || '돈Doc'}
         </h1>
-        <p className="text-zinc-500 text-sm mt-1">
-          {userName ? `${userName}님의 패밀리오피스` : '패밀리오피스'}
+        <p className="text-muted-foreground text-sm mt-1">
+          {userName ? `${userName}님의 자산 본부` : '자산 본부'}
         </p>
       </div>
 
@@ -47,10 +50,7 @@ export function Header({
         <FamilyAction userRole={userRole} />
 
         {/* ── 내역 ── */}
-        <Link
-          href="/dashboard/transactions"
-          className="flex items-center gap-2 px-3 py-2 md:px-4 bg-zinc-900 rounded-lg border border-zinc-800 text-xs md:text-sm font-medium text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors"
-        >
+        <Link href="/dashboard/transactions" className={linkClass}>
           <List className="w-4 h-4" />
           <span className="hidden sm:inline">내역</span>
         </Link>
@@ -58,17 +58,11 @@ export function Header({
         {/* ── CFO 전용 ── */}
         {userRole === 'CFO' && (
           <>
-            <Link
-              href="/dashboard/budget"
-              className="flex items-center gap-2 px-3 py-2 md:px-4 bg-zinc-900 rounded-lg border border-zinc-800 text-xs md:text-sm font-medium text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors"
-            >
+            <Link href="/dashboard/budget" className={linkClass}>
               <Calculator className="w-4 h-4" />
               <span className="hidden sm:inline">예산</span>
             </Link>
-            <Link
-              href="/dashboard/settings"
-              className="flex items-center gap-2 px-3 py-2 md:px-4 bg-zinc-900 rounded-lg border border-zinc-800 text-xs md:text-sm font-medium text-zinc-400 hover:text-white hover:border-zinc-600 transition-colors"
-            >
+            <Link href="/dashboard/settings" className={linkClass}>
               <Settings className="w-4 h-4" />
               <span className="hidden sm:inline">설정</span>
             </Link>
@@ -78,7 +72,7 @@ export function Header({
         {/* ── 로그아웃 ── */}
         <button
           onClick={onLogout}
-          className="flex items-center gap-2 px-3 py-2 md:px-4 bg-zinc-900 rounded-lg border border-zinc-800 text-xs md:text-sm font-medium text-zinc-400 hover:text-red-400 hover:border-red-500/30 transition-colors"
+          className="flex items-center gap-2 px-3 py-2 md:px-4 bg-card rounded-lg border border-border text-xs md:text-sm font-medium text-muted-foreground hover:text-destructive hover:border-destructive/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           <LogOut className="w-4 h-4" />
           <span className="hidden sm:inline">로그아웃</span>
