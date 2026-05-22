@@ -24,11 +24,14 @@ const SYSTEM_CATEGORIES = [
   { name: '미용',     icon: '💇',  type: 'EXPENSE' as const },
   { name: '경조사',   icon: '🎁',  type: 'EXPENSE' as const },
   { name: '용돈',     icon: '💸',  type: 'EXPENSE' as const },
+  { name: '매매수수료', icon: '🧾', type: 'EXPENSE' as const }, // 투자 — 매매수수료/세금
+  { name: '투자손실', icon: '📉',  type: 'EXPENSE' as const }, // 투자 — 실현손실
   { name: '기타',     icon: '📋',  type: 'EXPENSE' as const },
   // 수입
   { name: '급여',     icon: '💰',  type: 'INCOME' as const },
   { name: '부업',     icon: '📦',  type: 'INCOME' as const },
-  { name: '투자수익', icon: '📈',  type: 'INCOME' as const },
+  { name: '투자수익', icon: '📈',  type: 'INCOME' as const }, // 투자 — 실현수익
+  { name: '배당',     icon: '💵',  type: 'INCOME' as const }, // 투자 — 배당/분배금
   { name: '용돈/이체', icon: '💸', type: 'INCOME' as const },
   { name: '기타수입', icon: '🪙',  type: 'INCOME' as const },
 ]

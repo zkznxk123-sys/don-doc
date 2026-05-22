@@ -232,11 +232,15 @@ model Transaction {
   familyPosts       FamilyPost[]
   uploadBatchId     String?
   uploadBatch       UploadBatch?  @relation(fields: [uploadBatchId], references: [id], onDelete: SetNull)
+  // 매매내역(TradeRecord)으로 인해 자동 생성된 거래 — trade 삭제 시 cascade
+  tradeRecordId     String?
+  tradeRecord       TradeRecord?  @relation(fields: [tradeRecordId], references: [id], onDelete: Cascade)
 
   @@index([userId, date])
   @@index([accountId])
   @@index([parentId])
   @@index([uploadBatchId])
+  @@index([tradeRecordId])
 }
 
 // 엑셀 업로드 / 잔액 동기화 1건 단위 추적 (어떤 거래·잔액 변경이 같은 업로드에서 일어났는지)
@@ -266,7 +270,7 @@ model BalanceChangeLog {
   account       Account      @relation(fields: [accountId], references: [id], onDelete: Cascade)
   oldBalance    Float
   newBalance    Float
-  delta         Float        // newBalance - oldBalance
+  delta         Float // newBalance - oldBalance
   source        String       @default("excel") // 'excel' | 'manual' | 'auto'
   uploadBatchId String?
   uploadBatch   UploadBatch? @relation(fields: [uploadBatchId], references: [id], onDelete: SetNull)
@@ -392,16 +396,18 @@ model InvestmentHolding {
 }
 
 model TradeRecord {
-  id        String            @id @default(cuid())
-  holdingId String
-  holding   InvestmentHolding @relation(fields: [holdingId], references: [id], onDelete: Cascade)
-  type      TradeType // BUY, SELL, DIVIDEND, SPLIT
-  quantity  Float // 수량 (DIVIDEND는 금액)
-  price     Float // 단가 (DIVIDEND는 주당 배당금)
-  fee       Float? // 수수료/세금
-  date      DateTime
-  memo      String?
-  createdAt DateTime          @default(now())
+  id           String            @id @default(cuid())
+  holdingId    String
+  holding      InvestmentHolding @relation(fields: [holdingId], references: [id], onDelete: Cascade)
+  type         TradeType // BUY, SELL, DIVIDEND, SPLIT
+  quantity     Float // 수량 (DIVIDEND는 금액)
+  price        Float // 단가 (DIVIDEND는 주당 배당금)
+  fee          Float? // 수수료/세금
+  date         DateTime
+  memo         String?
+  // 이 매매로 인해 가계부에 자동 생성된 거래 (손익, 배당, 수수료 등)
+  transactions Transaction[]
+  createdAt    DateTime          @default(now())
 
   @@index([holdingId])
 }
@@ -455,12 +461,12 @@ model ContentSource {
   title            String?
   summary          String?
   // 요약 진단 정보
-  summaryStatus    String?     // 'success' | 'failed' | 'too_short' | 'fetch_failed'
-  summaryError     String?     // 실패 사유 텍스트
-  extractedLength  Int?        // 추출된 원문 글자수
-  extractedPreview String?     // 추출 원문 첫 500자 (빠른 표시용)
-  extractedText    String?     // 추출 원문 전문 (AI에 보낸 그대로)
-  extractedTextKo  String?     // 비한국어 원문일 때 한국어 번역. 한국어 원문이면 null.
+  summaryStatus    String? // 'success' | 'failed' | 'too_short' | 'fetch_failed'
+  summaryError     String? // 실패 사유 텍스트
+  extractedLength  Int? // 추출된 원문 글자수
+  extractedPreview String? // 추출 원문 첫 500자 (빠른 표시용)
+  extractedText    String? // 추출 원문 전문 (AI에 보낸 그대로)
+  extractedTextKo  String? // 비한국어 원문일 때 한국어 번역. 한국어 원문이면 null.
   summarizedAt     DateTime?
   categories       String[]    @default([]) // SCENARIO_CATEGORIES 중 0~다수, AI 자동 분류 + 사용자 수정 가능
   createdAt        DateTime    @default(now())

@@ -161,6 +161,52 @@ export function TradeDrawer({ isOpen, onClose, onSuccess, holding }: TradeDrawer
                 className="w-full px-3 py-2 text-sm bg-background rounded-lg border border-border focus:outline-none"
               />
 
+              {/* 가계부 영향 미리보기 */}
+              {(() => {
+                const qty = Number(quantity)
+                const prc = Number(price)
+                const f = Number(fee) || 0
+                const validQty = qty > 0
+                const validPrc = prc > 0
+                if (!validQty && !validPrc && !f) {
+                  return (
+                    <div className="text-[10.5px] text-muted-foreground/60 leading-relaxed bg-background/40 rounded-lg px-3 py-2 border border-border/50">
+                      💡 매매 기록 등록 시 손익·배당·수수료가 가계부에도 자동 반영됩니다.
+                    </div>
+                  )
+                }
+                const lines: { color: string; label: string }[] = []
+                if (tradeType === 'SELL' && validQty && validPrc) {
+                  const pnl = (prc - holding.avgPrice) * qty
+                  if (Math.abs(pnl) >= 1) {
+                    if (pnl > 0) lines.push({ color: 'text-emerald-500', label: `투자수익 +${currency}${Math.round(pnl).toLocaleString()} (예산 포함)` })
+                    else lines.push({ color: 'text-red-500', label: `투자손실 ${currency}${Math.round(pnl).toLocaleString()} (예산 포함)` })
+                  } else {
+                    lines.push({ color: 'text-muted-foreground/70', label: '손익 ≈ 0' })
+                  }
+                } else if (tradeType === 'DIVIDEND' && validQty && validPrc) {
+                  const div = qty * prc
+                  if (div >= 1) lines.push({ color: 'text-emerald-500', label: `배당 +${currency}${Math.round(div).toLocaleString()} (예산 제외)` })
+                } else if (tradeType === 'BUY') {
+                  lines.push({ color: 'text-muted-foreground/70', label: '매수는 가계부 변동 없음 (자산 이동)' })
+                }
+                if (f > 0) {
+                  lines.push({ color: 'text-orange-500', label: `매매수수료 -${currency}${Math.round(f).toLocaleString()} (예산 제외)` })
+                }
+                if (lines.length === 0) return null
+                return (
+                  <div className="text-[11px] leading-relaxed bg-background/40 rounded-lg px-3 py-2 border border-border/50 space-y-0.5">
+                    <p className="text-muted-foreground/70 text-[10px]">가계부 자동 반영</p>
+                    {lines.map((l, i) => (
+                      <p key={i} className={`${l.color} tabular-nums`}>· {l.label}</p>
+                    ))}
+                    {holding.currency === 'USD' && (
+                      <p className="text-muted-foreground/50 text-[9.5px] pt-0.5">※ 가계부엔 현재 환율로 환산되어 원화 기록됩니다.</p>
+                    )}
+                  </div>
+                )
+              })()}
+
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={handleAdd}
