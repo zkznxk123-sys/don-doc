@@ -426,7 +426,8 @@ export async function addTradeRecord(data: {
       userId: user.id,
       accountId: holding.accountId,
       tradeRecordId: created.id,
-      visibility: 'SHARED' as const,
+      // 매매·실현손익은 개인 정보 — default PRIVATE. 가족·동업자와 공유하려면 사용자가 명시적으로 SHARED 토글.
+      visibility: 'PRIVATE' as const,
     }
     const memoSuffix = data.memo ? ` · ${data.memo}` : ''
 
