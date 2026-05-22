@@ -28,12 +28,11 @@ import {
 } from '@/lib/actions/networth'
 import {
   getFamilyRealEstateSummary,
-  getFamilyPensionAccounts,
   getFamilyDebtSummary,
   type RealEstateSummaryData,
-  type PensionSummaryData,
   type FamilyDebtSummary,
 } from '@/lib/actions/accounts'
+import { getFamilyPensionAccounts, type PensionSummaryData } from '@/lib/actions/accounts/pension'
 import { getFamilyInfo, type FamilyMember } from '@/lib/actions/family'
 import {
   getFamilyInvestmentSummary,

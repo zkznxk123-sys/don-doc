@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import type { PensionSummaryData, PensionAccountData } from '@/lib/actions/accounts'
+import type { PensionSummaryData, PensionAccountData } from '@/lib/actions/accounts/pension'
 import type { AccountInitialData } from '@/components/ui/account-drawer'
 import type { FamilyMember } from '@/lib/actions/family'
 import { formatLargeNumber, cn } from '@/lib/utils'
