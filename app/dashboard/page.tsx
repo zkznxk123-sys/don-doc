@@ -26,133 +26,18 @@ import { FileSpreadsheet, Plus } from 'lucide-react'
 import { useDashboardActions } from '@/components/layout/DashboardShell'
 import { createSnapshotFromCurrentBalances, type NetWorthSnapshotData } from '@/lib/actions/networth'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { getRecentFeedPreview } from '@/lib/actions/feed'
-
-// ── 피드 알림 배너 ────────────────────────────────────────────────────────────
-
-const FEED_READ_KEY = 'don-doc:lastFeedRead'
-
-function FeedNewBanner() {
-  const [newCount, setNewCount] = useState(0)
-
-  useEffect(() => {
-    getRecentFeedPreview(10).then(data => {
-      const lastRead = localStorage.getItem(FEED_READ_KEY)
-      const since = lastRead ? new Date(lastRead) : new Date(0)
-      setNewCount(data.filter(p => new Date(p.createdAt) > since).length)
-    }).catch(() => {/* 로그아웃 중 인증 만료 무시 */})
-  }, [])
-
-  if (newCount === 0) return null
-
-  return (
-    <Link
-      href="/dashboard/feed"
-      className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-blue-500/8 border border-blue-500/20 hover:bg-blue-500/12 transition-colors"
-    >
-      <span className="relative flex-shrink-0">
-        <MessageSquare className="w-4 h-4 text-blue-400" />
-        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-blue-400" />
-      </span>
-      <p className="text-sm text-blue-300 flex-1">
-        가족 피드에 새 글이 <span className="font-semibold text-blue-200">{newCount}개</span> 올라왔어요
-      </p>
-      <span className="text-xs text-blue-400/60 flex-shrink-0">보러가기 →</span>
-    </Link>
-  )
-}
-
-// ── 유틸 ──────────────────────────────────────────────────────────────────────
-
-function getCurrentYearMonth(): string {
-  const now = new Date()
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-}
-
-/** 대시보드용: 10만원 미만이면서 비중 1% 미만인 자산은 표시하지 않음 */
-function filterDashboardAssets(data: AssetTypeData[]): AssetTypeData[] {
-  return data.filter(d => d.isLiability || d.balance >= 100_000 || d.percentage >= 1)
-}
-
-// ── 타입 ──────────────────────────────────────────────────────────────────────
-
-interface Transaction {
-  id: string
-  amount: number
-  description: string
-  category: string
-  date: string
-  userId: string
-  userName: string | null
-  isMasked: boolean
-  isExcluded: boolean
-  excludeFromBudget?: boolean
-  subItems?: { id: string; description: string; amount: number; category: string; isExcluded: boolean; excludeFromBudget: boolean }[]
-}
-
-
-interface BudgetData {
-  familyBudget: number
-  familySpent: number
-  members: { id: string; name: string; budget: number; spent: number }[]
-}
-
-interface Insights {
-  expenseVsAvgPercent: number
-  savingsRateVsAvgPercent: number
-  historicalMonthCount: number
-}
-
+import { FeedNewBanner } from '@/components/dashboard/FeedNewBanner'
+import { MonthPicker } from '@/components/dashboard/MonthPicker'
+import {
+  getCurrentYearMonth, filterDashboardAssets,
+  type Transaction, type BudgetData, type Insights,
+} from '@/components/dashboard/utils'
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 // 실제 컴포넌트
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-function MonthPicker({ value, onChange }: { value: string; onChange: (m: string) => void }) {
-  const [y, m] = value.split('-').map(Number)
-  const now = new Date()
-  const isCurrentMonth = y === now.getFullYear() && m === now.getMonth() + 1
-
-  const prev = () => {
-    const d = new Date(y, m - 2, 1)
-    onChange(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
-  }
-  const next = () => {
-    if (isCurrentMonth) return
-    const d = new Date(y, m, 1)
-    onChange(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`)
-  }
-
-  return (
-    <div className="flex items-center gap-1.5">
-      <button
-        onClick={prev}
-        className="p-1.5 rounded-lg bg-card border border-border text-muted-foreground hover:text-foreground hover:border-ring transition-colors"
-      >
-        <ChevronLeft className="w-4 h-4" />
-      </button>
-      <div className="flex items-center gap-1.5 whitespace-nowrap">
-        <span className="text-xs sm:text-sm font-bold text-foreground tabular-nums">
-          {y}년 {String(m).padStart(2, '0')}월
-        </span>
-        {isCurrentMonth && (
-          <span className="hidden sm:inline text-[10px] text-muted-foreground bg-card px-2 py-0.5 rounded-full border border-border">
-            이번 달
-          </span>
-        )}
-      </div>
-      <button
-        onClick={next}
-        disabled={isCurrentMonth}
-        className="p-1.5 rounded-lg bg-card border border-border text-muted-foreground hover:text-foreground hover:border-ring transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-      >
-        <ChevronRight className="w-4 h-4" />
-      </button>
-    </div>
-  )
-}
 
 function KpiCard({
   icon, label, value, sub, subColor = 'text-muted-foreground', onClick, active, accentColor,
