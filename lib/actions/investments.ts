@@ -358,40 +358,14 @@ export async function addTradeRecord(data: {
   const usdKrw = holding.currency === 'USD' ? await getUsdKrwRate() : 1
   const toKrw = (v: number) => v * usdKrw
 
-  // 1) TradeRecord 생성
-  const created = await prisma.tradeRecord.create({
-    data: {
-      holdingId: data.holdingId,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      type: data.type as any,
-      quantity: data.quantity,
-      price: data.price,
-      fee: data.fee ?? null,
-      date: data.date,
-      memo: data.memo || null,
-    },
-  })
+  // 실현손익 = (매도가 - 평균단가) * 수량 — fee는 별도 트랜잭션이라 여기서는 빼지 않음
+  // 트랜잭션 진입 전에 변경 전 avgPrice 기준으로 사전 계산
+  const realizedPnLKrw =
+    data.type === 'SELL'
+      ? toKrw((data.price - holding.avgPrice) * data.quantity)
+      : null
 
-  // 2) BUY/SELL 시 holding의 평균단가·수량 갱신 (Transaction 만들기 전에 avgPrice를 BUY로 갱신해도 되지만, SELL은 변경 전 avgPrice 기준이어야 함)
-  let realizedPnLKrw: number | null = null
-  if (data.type === 'BUY') {
-    const newQty = holding.quantity + data.quantity
-    const newAvg = (holding.quantity * holding.avgPrice + data.quantity * data.price) / newQty
-    await prisma.investmentHolding.update({
-      where: { id: data.holdingId },
-      data: { quantity: newQty, avgPrice: newAvg },
-    })
-  } else if (data.type === 'SELL') {
-    // 실현손익 = (매도가 - 평균단가) * 수량 — fee는 별도 트랜잭션이라 여기서는 빼지 않음
-    realizedPnLKrw = toKrw((data.price - holding.avgPrice) * data.quantity)
-    const newQty = Math.max(0, holding.quantity - data.quantity)
-    await prisma.investmentHolding.update({
-      where: { id: data.holdingId },
-      data: { quantity: newQty },
-    })
-  }
-
-  // 3) Transaction 자동 생성 — 카테고리 ID 매핑
+  // 카테고리 ID 매핑 (read-only, 트랜잭션 외부)
   const neededCatNames = new Set<string>()
   if (data.type === 'SELL') { neededCatNames.add('투자수익'); neededCatNames.add('투자손실') }
   if (data.type === 'DIVIDEND') neededCatNames.add('배당')
@@ -414,75 +388,106 @@ export async function addTradeRecord(data: {
     }
   }
 
-  const txCommon = {
-    date: data.date,
-    userId: user.id,
-    accountId: holding.accountId,
-    tradeRecordId: created.id,
-    visibility: 'SHARED' as const,
-  }
-  const memoSuffix = data.memo ? ` · ${data.memo}` : ''
+  // 모든 write를 단일 트랜잭션으로 묶어 원자성 보장 — 도중 실패 시 holding·TradeRecord·Transaction이 함께 롤백
+  await prisma.$transaction(async (tx) => {
+    // 1) TradeRecord 생성
+    const created = await tx.tradeRecord.create({
+      data: {
+        holdingId: data.holdingId,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        type: data.type as any,
+        quantity: data.quantity,
+        price: data.price,
+        fee: data.fee ?? null,
+        date: data.date,
+        memo: data.memo || null,
+      },
+    })
 
-  const txns: Array<Promise<unknown>> = []
-
-  if (data.type === 'SELL' && realizedPnLKrw !== null && Math.abs(realizedPnLKrw) >= 1) {
-    if (realizedPnLKrw > 0) {
-      txns.push(prisma.transaction.create({
-        data: {
-          ...txCommon,
-          amount: Math.round(realizedPnLKrw),
-          category: '투자수익',
-          categoryId: catMap.get('투자수익') ?? null,
-          description: `${holding.name} 매도 (${data.quantity}주)${memoSuffix}`,
-          excludeFromBudget: false,
-        },
-      }))
-    } else {
-      txns.push(prisma.transaction.create({
-        data: {
-          ...txCommon,
-          amount: -Math.abs(Math.round(realizedPnLKrw)),
-          category: '투자손실',
-          categoryId: catMap.get('투자손실') ?? null,
-          description: `${holding.name} 매도 손실 (${data.quantity}주)${memoSuffix}`,
-          excludeFromBudget: false,
-        },
-      }))
+    // 2) BUY/SELL 시 holding의 평균단가·수량 갱신
+    if (data.type === 'BUY') {
+      const newQty = holding.quantity + data.quantity
+      const newAvg = (holding.quantity * holding.avgPrice + data.quantity * data.price) / newQty
+      await tx.investmentHolding.update({
+        where: { id: data.holdingId },
+        data: { quantity: newQty, avgPrice: newAvg },
+      })
+    } else if (data.type === 'SELL') {
+      const newQty = Math.max(0, holding.quantity - data.quantity)
+      await tx.investmentHolding.update({
+        where: { id: data.holdingId },
+        data: { quantity: newQty },
+      })
     }
-  }
 
-  if (data.type === 'DIVIDEND') {
-    const dividendKrw = toKrw(data.price * data.quantity)
-    if (dividendKrw >= 1) {
-      txns.push(prisma.transaction.create({
+    // 3) Transaction 자동 생성
+    const txCommon = {
+      date: data.date,
+      userId: user.id,
+      accountId: holding.accountId,
+      tradeRecordId: created.id,
+      visibility: 'SHARED' as const,
+    }
+    const memoSuffix = data.memo ? ` · ${data.memo}` : ''
+
+    if (data.type === 'SELL' && realizedPnLKrw !== null && Math.abs(realizedPnLKrw) >= 1) {
+      if (realizedPnLKrw > 0) {
+        await tx.transaction.create({
+          data: {
+            ...txCommon,
+            amount: Math.round(realizedPnLKrw),
+            category: '투자수익',
+            categoryId: catMap.get('투자수익') ?? null,
+            description: `${holding.name} 매도 (${data.quantity}주)${memoSuffix}`,
+            excludeFromBudget: false,
+          },
+        })
+      } else {
+        await tx.transaction.create({
+          data: {
+            ...txCommon,
+            amount: -Math.abs(Math.round(realizedPnLKrw)),
+            category: '투자손실',
+            categoryId: catMap.get('투자손실') ?? null,
+            description: `${holding.name} 매도 손실 (${data.quantity}주)${memoSuffix}`,
+            excludeFromBudget: false,
+          },
+        })
+      }
+    }
+
+    if (data.type === 'DIVIDEND') {
+      const dividendKrw = toKrw(data.price * data.quantity)
+      if (dividendKrw >= 1) {
+        await tx.transaction.create({
+          data: {
+            ...txCommon,
+            amount: Math.round(dividendKrw),
+            category: '배당',
+            categoryId: catMap.get('배당') ?? null,
+            description: `${holding.name} 배당${memoSuffix}`,
+            excludeFromBudget: true,
+          },
+        })
+      }
+    }
+
+    if (data.fee && data.fee > 0) {
+      const feeKrw = toKrw(data.fee)
+      await tx.transaction.create({
         data: {
           ...txCommon,
-          amount: Math.round(dividendKrw),
-          category: '배당',
-          categoryId: catMap.get('배당') ?? null,
-          description: `${holding.name} 배당${memoSuffix}`,
+          amount: -Math.abs(Math.round(feeKrw)),
+          category: '매매수수료',
+          categoryId: catMap.get('매매수수료') ?? null,
+          description: `${holding.name} 매매수수료${memoSuffix}`,
           excludeFromBudget: true,
         },
-      }))
+      })
     }
-  }
+  })
 
-  if (data.fee && data.fee > 0) {
-    const feeKrw = toKrw(data.fee)
-    txns.push(prisma.transaction.create({
-      data: {
-        ...txCommon,
-        amount: -Math.abs(Math.round(feeKrw)),
-        category: '매매수수료',
-        categoryId: catMap.get('매매수수료') ?? null,
-        description: `${holding.name} 매매수수료${memoSuffix}`,
-        excludeFromBudget: true,
-      },
-    }))
-  }
-
-  if (txns.length > 0) await Promise.all(txns)
-
+  // 잔액 재계산은 트랜잭션 외부 — 실패해도 매매↔가계부는 원자적으로 일관 유지
   await recalcAccountBalanceFromHoldings(holding.accountId)
   return { success: true }
 }
