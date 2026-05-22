@@ -3,7 +3,8 @@
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
 import { isCFOLevel } from '@/lib/roles'
-// TradeType을 여기서 정의 — 클라이언트 컴포넌트에서도 재사용 가능
+import type { TradeType as PrismaTradeType } from '@prisma/client'
+// TradeType을 여기서 정의 — 클라이언트 컴포넌트에서도 재사용 가능 (prisma client는 server-only라 별도 type alias 유지)
 export type TradeType = 'BUY' | 'SELL' | 'DIVIDEND' | 'SPLIT'
 
 // USD-KRW 기본 환율 (DB에 저장된 값이 없거나 stale할 때 fallback)
@@ -394,8 +395,7 @@ export async function addTradeRecord(data: {
     const created = await tx.tradeRecord.create({
       data: {
         holdingId: data.holdingId,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        type: data.type as any,
+        type: data.type as PrismaTradeType,
         quantity: data.quantity,
         price: data.price,
         fee: data.fee ?? null,
@@ -581,8 +581,7 @@ export async function migrateSubAccountsToHoldings(parentAccountId: string) {
       await prisma.tradeRecord.create({
         data: {
           holdingId: holding.id,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          type: 'BUY' as any,
+          type: 'BUY' satisfies PrismaTradeType,
           quantity: 1,
           price: balance,
           date: new Date(),
