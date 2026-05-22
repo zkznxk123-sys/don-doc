@@ -167,7 +167,7 @@ function Hero() {
             {[
               { l: 'AI 자동분류 정확도', v: <CountUp to={92} suffix="%" /> },
               { l: '월 거래 분류 시간', v: <><span style={{ fontVariantNumeric: 'tabular-nums' }}><CountUp to={3} /></span><span style={{ fontSize: '0.55em', color: CREAM_DIM, fontWeight: 400 }}> h → </span><span style={{ fontVariantNumeric: 'tabular-nums' }}><CountUp to={30} /></span><span style={{ fontSize: '0.55em', color: CREAM_DIM, fontWeight: 400 }}> 분</span></> },
-              { l: 'AI 호출 비용', v: <><span style={{ fontSize: '0.65em', fontWeight: 400 }}>₩</span><CountUp to={0.15} decimals={2} /><span style={{ fontSize: '0.55em', color: CREAM_DIM, fontWeight: 400 }}> /건</span></> },
+              { l: '통합 자산', v: <><span style={{ fontVariantNumeric: 'tabular-nums' }}><CountUp to={5} /></span><span style={{ fontSize: '0.55em', color: CREAM_DIM, fontWeight: 400 }}> 종 · 현금·금융·부동산·연금·부채</span></> },
             ].map(s => (
               <div key={s.l}>
                 <p
@@ -510,7 +510,7 @@ export function LandingPage() {
         >
           데모
         </span>
-        <span style={{ color: CREAM_DIM }}>2026 디지털 혁신 AI 경진대회 출품작 · 데모 즉시 체험 가능</span>
+        <span style={{ color: 'rgba(241,236,227,0.78)' }}>2026 디지털 혁신 AI 경진대회 출품작 · 데모 즉시 체험 가능</span>
         <a
           href="/demo"
           className="underline font-medium hover:opacity-80"
@@ -577,7 +577,7 @@ export function LandingPage() {
         <div className="overflow-hidden whitespace-nowrap">
           <div
             className="inline-flex gap-14 items-center"
-            style={{ animation: 'cpTicker 35s linear infinite' }}
+            style={{ animation: 'cpTicker 24s linear infinite' }}
           >
             {[...Array(2)].flatMap((_, copy) =>
               ['Next.js 14', 'Prisma 5', 'PostgreSQL', 'Clerk', 'Vercel AI SDK', 'CLIProxyAPI', 'Tailwind', 'shadcn/ui', 'Zod', 'Recharts'].map((p, i) => (
