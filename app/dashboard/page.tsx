@@ -1144,6 +1144,7 @@ export default function Dashboard() {
           await loadDashboard(selectedMonth, currentUserId)
           setIsAccountDrawerOpen(false)
         }}
+        currentUserId={currentUserId}
       />
     </div>
   )

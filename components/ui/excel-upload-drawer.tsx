@@ -313,7 +313,8 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         setRawHeaders(headers); setRawData(json)
         setDetectedPreset(preset); setColMap(col)
         setRows(parsed)
-        runAiMapping(parsed)
+        // 컬럼 매핑 확인/수정할 시간을 주고 사용자가 직접 AI 분류 시작하도록
+        setAiStatus('pending')
       } catch {
         toast.error('파일을 읽는 중 오류가 발생했습니다.')
       }
@@ -331,6 +332,9 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
       setRows(newRows)
       return next
     })
+    // 컬럼 매핑 바꾸면 이전 AI 결과는 무효 — pending으로 되돌림
+    setAiStatus(prev => (prev === 'done' || prev === 'skipped' || prev === 'error') ? 'pending' : prev)
+    setAiMappedCount(0)
   }, [rawData])
 
   const handleDrop = useCallback((e: React.DragEvent) => {

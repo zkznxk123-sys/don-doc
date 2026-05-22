@@ -248,12 +248,21 @@ export default function CashflowPage() {
 
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth() + 1
 
+  const confirmLeaveEdit = () => {
+    const pending = Object.keys(drafts).length
+    if (!pending) return true
+    if (typeof window === 'undefined') return true
+    return window.confirm(`저장하지 않은 수정 ${pending}건이 있습니다. 이동하면 변경사항이 사라집니다. 계속할까요?`)
+  }
+
   const prevMonth = () => {
+    if (!confirmLeaveEdit()) return
     if (month === 1) { setYear(y => y - 1); setMonth(12) }
     else setMonth(m => m - 1)
   }
   const nextMonth = () => {
     if (isCurrentMonth) return
+    if (!confirmLeaveEdit()) return
     if (month === 12) { setYear(y => y + 1); setMonth(1) }
     else setMonth(m => m + 1)
   }
@@ -435,9 +444,13 @@ export default function CashflowPage() {
   const startEdit = useCallback(() => setIsEditing(true), [])
 
   const cancelEdit = useCallback(() => {
+    const pending = Object.keys(drafts).length
+    if (pending > 0 && typeof window !== 'undefined') {
+      if (!window.confirm(`저장하지 않은 수정 ${pending}건이 사라집니다. 취소할까요?`)) return
+    }
     setDrafts({})
     setIsEditing(false)
-  }, [])
+  }, [drafts])
 
   const saveEdit = async () => {
     if (draftCount === 0) { setIsEditing(false); return }
@@ -477,6 +490,26 @@ export default function CashflowPage() {
     }
   }
 
+  // 편집 모드 키보드 단축키: Cmd/Ctrl+S 저장, Esc 취소
+  useEffect(() => {
+    if (!isEditing) return
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault()
+        if (!saving && draftCount > 0) saveEdit()
+      } else if (e.key === 'Escape') {
+        const target = e.target as HTMLElement | null
+        const tag = target?.tagName
+        // input/textarea/select 안에서는 무시 (해당 셀의 편집 취소가 우선)
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+        if (!saving) cancelEdit()
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditing, saving, draftCount, cancelEdit])
+
   // TopBar에 편집 버튼 주입
   useEffect(() => {
     if (isEditing) {
@@ -490,6 +523,7 @@ export default function CashflowPage() {
           <button
             onClick={cancelEdit}
             disabled={saving}
+            title="Esc로 취소"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-ring transition-colors disabled:opacity-50"
           >
             <X className="w-3.5 h-3.5" />
@@ -498,6 +532,7 @@ export default function CashflowPage() {
           <button
             onClick={saveEdit}
             disabled={saving || draftCount === 0}
+            title="⌘+S로 저장"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 dark:bg-emerald-600 hover:bg-emerald-600 dark:hover:bg-emerald-500 text-xs text-white font-semibold transition-colors disabled:opacity-40"
           >
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}

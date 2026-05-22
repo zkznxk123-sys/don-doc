@@ -507,6 +507,7 @@ export default function AssetsPage() {
         initialData={selectedAccount}
         familyMembers={familyMembers}
         parentInfo={drawerParentInfo}
+        currentUserId={shellUser?.id}
       />
 
       {/* 목표 단지 드로어 */}
@@ -792,9 +793,11 @@ function RealEstateTab({
                       </button>
                       <button
                         onClick={() => {
-                          if (confirm(`'${target.name}' 목표 단지를 삭제하시겠습니까?`)) {
-                            onDeleteTarget(target.id)
-                          }
+                          toast.warning(`'${target.name}' 목표 단지를 삭제할까요?`, {
+                            action: { label: '삭제', onClick: () => onDeleteTarget(target.id) },
+                            cancel: { label: '취소', onClick: () => {} },
+                            duration: 8000,
+                          })
                         }}
                         className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                       >
@@ -1906,15 +1909,20 @@ function FinancialTab({
   const holdingsByAccount: Record<string, HoldingData[]> = {}
   investmentSummary.forEach(s => { holdingsByAccount[s.accountId] = s.holdings })
 
-  const handleMigrateSubAccounts = async (accountId: string, accountName: string) => {
-    if (!confirm(`'${accountName}'의 서브계좌를 종목으로 변환할까요?\n\n수량=1, 평균단가=잔액으로 설정됩니다. 이후 수정 가능합니다.`)) return
-    const res = await migrateSubAccountsToHoldings(accountId)
-    if (res.success) {
-      toast.success(`${res.count}개 종목으로 변환됐습니다.`)
-      onReload()
-    } else {
-      toast.error(res.error ?? '변환 실패')
-    }
+  const handleMigrateSubAccounts = (accountId: string, accountName: string) => {
+    toast.warning(`'${accountName}'의 서브계좌를 종목으로 변환할까요?`, {
+      description: '수량=1, 평균단가=잔액으로 설정됩니다. 이후 수정 가능합니다.',
+      action: {
+        label: '변환',
+        onClick: async () => {
+          const res = await migrateSubAccountsToHoldings(accountId)
+          if (res.success) { toast.success(`${res.count}개 종목으로 변환됐습니다.`); onReload() }
+          else toast.error(res.error ?? '변환 실패')
+        },
+      },
+      cancel: { label: '취소', onClick: () => {} },
+      duration: 10000,
+    })
   }
 
   // 환율 적용 전체 P&L (USD → KRW 환산)
@@ -2399,11 +2407,19 @@ function InvestmentTab({
                                 <BookOpen className="w-2.5 h-2.5" />일지
                               </button>
                               <span className="text-muted-foreground/30">·</span>
-                              <button onClick={async () => {
-                                if (!confirm(`'${holding.name}' 종목을 삭제할까요?`)) return
-                                const res = await deleteHolding(holding.id)
-                                if (res.success) { toast.success('종목이 삭제되었습니다.'); onReload() }
-                                else toast.error(res.error)
+                              <button onClick={() => {
+                                toast.warning(`'${holding.name}' 종목을 삭제할까요?`, {
+                                  action: {
+                                    label: '삭제',
+                                    onClick: async () => {
+                                      const res = await deleteHolding(holding.id)
+                                      if (res.success) { toast.success('종목이 삭제되었습니다.'); onReload() }
+                                      else toast.error(res.error)
+                                    },
+                                  },
+                                  cancel: { label: '취소', onClick: () => {} },
+                                  duration: 8000,
+                                })
                               }} className="text-[10px] text-red-400/60 hover:text-red-400 transition-colors">삭제</button>
                             </div>
                           </div>

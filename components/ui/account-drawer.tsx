@@ -59,6 +59,7 @@ interface AccountDrawerProps {
   initialData?: AccountInitialData
   familyMembers?: FamilyMemberOption[]
   parentInfo?: ParentInfo
+  currentUserId?: string
 }
 
 const ACCOUNT_TYPES: {
@@ -203,7 +204,7 @@ function DateField({
 
 // ─── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
 
-export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyMembers = [], parentInfo }: AccountDrawerProps) {
+export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyMembers = [], parentInfo, currentUserId }: AccountDrawerProps) {
   const isEditMode = !!initialData
   const isProductMode = !!(parentInfo || initialData?.parentAccountId)
 
@@ -215,6 +216,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
   const [isLoading, setIsLoading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [deleteCounts, setDeleteCounts] = useState<{ transactionCount: number; holdingCount: number; subAccountCount: number } | null>(null)
 
   // 상위 계좌
   const [parentAccountId, setParentAccountId] = useState<string>('')
@@ -357,10 +359,55 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
     setDDebtType('ETC'); setDInterestRate(''); setDMaturityDate(''); setDRepaymentType(''); setDMonthlyPayment('')
     setPPensionType('PERSONAL_PENSION'); setPInstitutionName(''); setPExpectedMonthlyPension('')
     setPAccumulatedMonths(''); setPPensionStartAge(''); setPMonthlyPayment(''); setPOwnerBirthYear('')
-    setPOwnerId('')
+    // 신규 추가 시 명의자 디폴트는 본인(가족 멤버 목록에 있을 때)
+    const defaultOwnerId = currentUserId && familyMembers.some(m => m.id === currentUserId) ? currentUserId : ''
+    setPOwnerId(defaultOwnerId)
   }
 
-  const handleClose = () => { setConfirmDelete(false); onClose() }
+  // 모바일 키보드 가림 보정
+  const [keyboardOffset, setKeyboardOffset] = useState(0)
+  useEffect(() => {
+    if (!isOpen) return
+    if (typeof window === 'undefined' || !window.visualViewport) return
+    const vv = window.visualViewport
+    const handler = () => {
+      const diff = window.innerHeight - vv.height - vv.offsetTop
+      setKeyboardOffset(diff > 80 ? diff : 0)
+    }
+    vv.addEventListener('resize', handler)
+    vv.addEventListener('scroll', handler)
+    handler()
+    return () => {
+      vv.removeEventListener('resize', handler)
+      vv.removeEventListener('scroll', handler)
+      setKeyboardOffset(0)
+    }
+  }, [isOpen])
+
+  const isDirty = !isEditMode && (
+    name.trim().length > 0 ||
+    balance.trim().length > 0 ||
+    reComplexName.trim().length > 0 ||
+    rePurchasePrice.trim().length > 0 ||
+    reCurrentPrice.trim().length > 0 ||
+    faInterestRate.trim().length > 0 ||
+    faMonthlyPayment.trim().length > 0 ||
+    dInterestRate.trim().length > 0 ||
+    dMonthlyPayment.trim().length > 0 ||
+    pInstitutionName.trim().length > 0
+  )
+
+  const handleClose = () => {
+    if (isDirty && !isLoading) {
+      const ok = typeof window !== 'undefined'
+        ? window.confirm('입력한 내용이 저장되지 않습니다. 닫으시겠어요?')
+        : true
+      if (!ok) return
+    }
+    setConfirmDelete(false)
+    setDeleteCounts(null)
+    onClose()
+  }
 
   function buildDetailInput() {
     const realEstateDetail: RealEstateDetailInput | undefined = isRealEstate ? {
@@ -405,6 +452,8 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
   }
 
   const handleSubmit = async () => {
+    if (isLoading) return
+    if (!name.trim()) { toast.error('이름을 입력해주세요.'); return }
     const parsedBalance = parseFloat(balance.replace(/,/g, '')) || 0
     const { realEstateDetail, financialAssetDetail, debtDetail, pensionDetail } = buildDetailInput()
     const ownerIdInput = familyMembers.length > 0
@@ -454,15 +503,19 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
 
       if (result.success) {
         toast.success(`"${initialData.name}" 계좌가 삭제되었습니다.`)
+        setConfirmDelete(false); setDeleteCounts(null)
         onSuccess(); onClose()
-        setConfirmDelete(false)
         return
       }
 
       // dependent 있어서 reject된 경우 — confirm 단계로 전환
       if (result.transactionCount || result.holdingCount || result.subAccountCount) {
         setConfirmDelete(true)
-        toast.warning(result.error ?? '연결된 데이터가 있습니다.', { duration: 6000 })
+        setDeleteCounts({
+          transactionCount: result.transactionCount ?? 0,
+          holdingCount: result.holdingCount ?? 0,
+          subAccountCount: result.subAccountCount ?? 0,
+        })
       } else {
         toast.error(result.error || '삭제에 실패했습니다.')
       }
@@ -911,7 +964,10 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
           </div>}
         </div>
 
-        <DrawerFooter className="px-6 pb-8 pt-2 gap-2">
+        <DrawerFooter
+          className="px-6 pb-8 pt-2 gap-2"
+          style={keyboardOffset > 0 ? { paddingBottom: `calc(2rem + ${keyboardOffset}px)` } : undefined}
+        >
           <button
             onClick={handleSubmit}
             disabled={!isValid || isLoading}
@@ -928,6 +984,18 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
             }
           </button>
 
+          {isEditMode && confirmDelete && deleteCounts && (
+            <div className="rounded-xl border border-red-500/40 bg-red-500/5 dark:bg-red-500/10 px-4 py-3 text-xs space-y-1.5">
+              <p className="text-red-700 dark:text-red-300 font-semibold">⚠️ 연결된 데이터가 함께 삭제됩니다</p>
+              <ul className="text-red-700/90 dark:text-red-200/90 space-y-0.5 pl-1 tabular-nums">
+                {deleteCounts.transactionCount > 0 && <li>· 거래 내역 {deleteCounts.transactionCount.toLocaleString()}건</li>}
+                {deleteCounts.holdingCount > 0 && <li>· 보유 종목 {deleteCounts.holdingCount.toLocaleString()}개</li>}
+                {deleteCounts.subAccountCount > 0 && <li>· 하위 계좌 {deleteCounts.subAccountCount.toLocaleString()}개</li>}
+              </ul>
+              <p className="text-red-600/80 dark:text-red-300/70 pt-0.5">이 작업은 되돌릴 수 없습니다.</p>
+            </div>
+          )}
+
           {isEditMode && (
             <button
               onClick={handleDelete}
@@ -935,13 +1003,13 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
               className={cn(
                 'w-full h-11 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2',
                 confirmDelete
-                  ? 'bg-red-500/20 border border-red-500/40 text-red-400 hover:bg-red-500/30'
+                  ? 'bg-red-500 border border-red-500 text-white hover:bg-red-600'
                   : 'bg-card border border-border text-muted-foreground hover:text-red-400 hover:border-red-500/30'
               )}
             >
               {isDeleting
                 ? <><Loader2 className="w-4 h-4 animate-spin" />삭제 중...</>
-                : <><Trash2 className="w-4 h-4" />{confirmDelete ? '정말 삭제하시겠습니까?' : '계좌 삭제'}</>
+                : <><Trash2 className="w-4 h-4" />{confirmDelete ? '연결 데이터까지 모두 삭제' : '계좌 삭제'}</>
               }
             </button>
           )}

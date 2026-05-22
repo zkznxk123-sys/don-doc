@@ -238,6 +238,31 @@ export function TransactionDrawer({
     setError('')
   }, [isOpen, editTransaction])
 
+  // dirty 체크: 신규 모드에서 사용자가 입력한 흔적이 있는지
+  const isDirty = isEditMode
+    ? false
+    : !!(amount || description.trim() || category)
+
+  // 모바일 키보드 가림 보정: visualViewport 높이가 줄어들면 그만큼 footer 여백 확보
+  const [keyboardOffset, setKeyboardOffset] = useState(0)
+  useEffect(() => {
+    if (!isOpen) return
+    if (typeof window === 'undefined' || !window.visualViewport) return
+    const vv = window.visualViewport
+    const handler = () => {
+      const diff = window.innerHeight - vv.height - vv.offsetTop
+      setKeyboardOffset(diff > 80 ? diff : 0)
+    }
+    vv.addEventListener('resize', handler)
+    vv.addEventListener('scroll', handler)
+    handler()
+    return () => {
+      vv.removeEventListener('resize', handler)
+      vv.removeEventListener('scroll', handler)
+      setKeyboardOffset(0)
+    }
+  }, [isOpen])
+
   const resetForm = useCallback(() => {
     setAmount('')
     setDate(new Date().toISOString().split('T')[0])
@@ -254,21 +279,33 @@ export function TransactionDrawer({
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {
+      if (isDirty && !isSubmitting) {
+        const ok = typeof window !== 'undefined'
+          ? window.confirm('입력한 내용이 저장되지 않습니다. 닫으시겠어요?')
+          : true
+        if (!ok) return
+      }
       resetForm()
       onClose()
     }
   }
 
   const handleSubmit = async () => {
+    if (isSubmitting) return
     if (!amount || !category) {
       setError('금액과 카테고리를 입력해주세요.')
+      return
+    }
+    const numericAmount = Number(amount)
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      setError('금액은 0보다 커야 합니다.')
       return
     }
 
     setError('')
     setIsSubmitting(true)
     try {
-      const numAmount = isExpense ? -Math.abs(Number(amount)) : Math.abs(Number(amount))
+      const numAmount = isExpense ? -Math.abs(numericAmount) : Math.abs(numericAmount)
 
       if (isEditMode && editTransaction) {
         // 수정 모드 — accountId는 서버에서 기존 값 유지
@@ -427,13 +464,21 @@ export function TransactionDrawer({
                   const raw = e.target.value.replace(/[^0-9]/g, '')
                   setAmount(raw)
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && amount && category && !isSubmitting) {
+                    e.preventDefault()
+                    handleSubmit()
+                  }
+                }}
                 placeholder="0"
                 autoFocus
                 className={cn(
-                  "bg-transparent text-center font-bold placeholder-muted-foreground/40 outline-none tabular-nums tracking-tight text-4xl sm:text-5xl min-w-0 max-w-[calc(100vw-6rem)]",
+                  "bg-transparent text-center font-bold placeholder-muted-foreground/40 outline-none tabular-nums tracking-tight text-4xl sm:text-5xl min-w-0",
                   isExpense ? "text-foreground" : "text-emerald-400"
                 )}
-                style={{ width: `${Math.max(displayAmount.length, 1) * 1.8 + 1.5}rem` }}
+                style={{
+                  width: `min(${Math.max(displayAmount.length, 1) * 1.8 + 1.5}rem, calc(100vw - 6rem))`,
+                }}
               />
             </div>
             {amount && (
@@ -532,7 +577,10 @@ export function TransactionDrawer({
                           type="text"
                           value={newCatName}
                           onChange={e => setNewCatName(e.target.value)}
-                          onKeyDown={e => e.key === 'Enter' && handleAddCategory()}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') { e.preventDefault(); handleAddCategory() }
+                            else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setShowAddCategory(false); setAddCatError(''); setNewCatName(''); setNewCatIcon('') }
+                          }}
                           placeholder="카테고리 이름"
                           className="flex-1 h-9 bg-background border border-border rounded-lg px-3 text-sm outline-none focus:ring-1 focus:ring-ring"
                           autoFocus
@@ -577,6 +625,12 @@ export function TransactionDrawer({
                 type="text"
                 value={description}
                 onChange={(e) => handleDescriptionChange(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && amount && category && !isSubmitting) {
+                    e.preventDefault()
+                    handleSubmit()
+                  }
+                }}
                 placeholder="어디서, 무엇을 했나요? (예: 스타벅스)"
                 className="w-full h-11 bg-muted rounded-xl px-4 border border-border text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-all"
               />
@@ -845,8 +899,11 @@ export function TransactionDrawer({
             </div>
           )}
 
-          {/* Footer — sticky at bottom */}
-          <DrawerFooter className="sticky bottom-0 pt-3 pb-6 border-t border-border bg-card -mx-4 sm:-mx-6 px-4 sm:px-6">
+          {/* Footer — sticky at bottom (모바일 키보드 보정) */}
+          <DrawerFooter
+            className="sticky bottom-0 pt-3 pb-6 border-t border-border bg-card -mx-4 sm:-mx-6 px-4 sm:px-6"
+            style={keyboardOffset > 0 ? { paddingBottom: `calc(1.5rem + ${keyboardOffset}px)` } : undefined}
+          >
             <button
               onClick={handleSubmit}
               disabled={!amount || !category || isSubmitting}
