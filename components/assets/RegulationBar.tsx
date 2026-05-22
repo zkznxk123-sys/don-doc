@@ -3,9 +3,9 @@
 import { cn } from '@/lib/utils'
 
 export function regulationStyle(pct: number, limits: [number, number]) {
-  if (pct <= limits[0]) return { bar: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', label: '양호' }
-  if (pct <= limits[1]) return { bar: 'bg-amber-500',   text: 'text-amber-600 dark:text-amber-400',     label: '주의' }
-  return                        { bar: 'bg-red-500',    text: 'text-red-600 dark:text-red-400',         label: '위험' }
+  if (pct <= limits[0]) return { bar: 'bg-emerald-500', text: 'text-income dark:text-emerald-400', label: '양호' }
+  if (pct <= limits[1]) return { bar: 'bg-amber-500',   text: 'text-warning dark:text-amber-400',     label: '주의' }
+  return                        { bar: 'bg-red-500',    text: 'text-destructive dark:text-red-400',         label: '위험' }
 }
 
 interface RegulationBarProps {

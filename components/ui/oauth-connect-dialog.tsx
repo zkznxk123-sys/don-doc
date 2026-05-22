@@ -104,7 +104,7 @@ export function OAuthConnectDialog({ open, provider, providerLabel, onClose, onD
               </p>
             </div>
             {error && (
-              <p className="text-xs text-red-400">{error}</p>
+              <p className="text-xs text-destructive">{error}</p>
             )}
             <button
               onClick={handleStart}
@@ -156,7 +156,7 @@ export function OAuthConnectDialog({ open, provider, providerLabel, onClose, onD
               />
             </div>
             {error && (
-              <p className="text-xs text-red-400">{error}</p>
+              <p className="text-xs text-destructive">{error}</p>
             )}
             <div className="flex gap-2">
               <button
@@ -181,7 +181,7 @@ export function OAuthConnectDialog({ open, provider, providerLabel, onClose, onD
           <div className="space-y-4 py-4">
             <div className="flex flex-col items-center gap-2">
               <div className="w-12 h-12 rounded-full bg-emerald-500/15 flex items-center justify-center">
-                <Check className="w-6 h-6 text-emerald-400" />
+                <Check className="w-6 h-6 text-income" />
               </div>
               <p className="text-sm font-semibold text-foreground">연결 완료</p>
               {connectedEmail && (

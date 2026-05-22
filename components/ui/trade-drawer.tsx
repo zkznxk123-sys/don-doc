@@ -261,7 +261,7 @@ export function TradeDrawer({ isOpen, onClose, onSuccess, holding }: TradeDrawer
                     <button
                       onClick={() => handleDelete(trade.id)}
                       disabled={deletingId === trade.id}
-                      className="shrink-0 p-1 text-muted-foreground/40 hover:text-red-400 transition-colors disabled:opacity-30"
+                      className="shrink-0 p-1 text-muted-foreground/40 hover:text-destructive transition-colors disabled:opacity-30"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>

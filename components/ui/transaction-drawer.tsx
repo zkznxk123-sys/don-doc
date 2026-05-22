@@ -599,7 +599,7 @@ export function TransactionDrawer({
                           <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                      {addCatError && <p className="text-xs text-red-400">{addCatError}</p>}
+                      {addCatError && <p className="text-xs text-destructive">{addCatError}</p>}
                     </div>
                   )}
                   </>
@@ -652,7 +652,7 @@ export function TransactionDrawer({
               <div className="flex items-center gap-3">
                 <div className={cn(
                   "w-9 h-9 rounded-lg flex items-center justify-center",
-                  isShared ? "bg-emerald-500/10 text-emerald-400" : "bg-amber-500/10 text-amber-400"
+                  isShared ? "bg-emerald-500/10 text-income" : "bg-amber-500/10 text-warning"
                 )}>
                   {isShared ? <Globe className="w-4.5 h-4.5" /> : <Lock className="w-4.5 h-4.5" />}
                 </div>
@@ -827,7 +827,7 @@ export function TransactionDrawer({
                                 className={cn(
                                   'flex items-center gap-1.5 text-[10px] rounded-md px-2 py-1 transition-colors w-fit',
                                   item.excludeFromBudget
-                                    ? 'bg-orange-500/15 text-orange-400'
+                                    ? 'bg-orange-500/15 text-warning'
                                     : 'text-muted-foreground/50 hover:text-muted-foreground'
                                 )}
                               >

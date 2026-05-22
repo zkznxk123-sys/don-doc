@@ -435,7 +435,7 @@ export default function BudgetPage() {
           <div className="mt-4">
             <div className="flex justify-between text-xs text-muted-foreground mb-2">
               <span>이번 달 실제 지출</span>
-              <span className={cn(data && data.familySpent > parsedFamilyBudget ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground')}>
+              <span className={cn(data && data.familySpent > parsedFamilyBudget ? 'text-destructive dark:text-red-400' : 'text-muted-foreground')}>
                 {formatCurrency(data?.familySpent ?? 0)} / {formatCurrency(parsedFamilyBudget)}
               </span>
             </div>
@@ -457,7 +457,7 @@ export default function BudgetPage() {
         )}>
           <div className="flex items-center gap-2">
             {overAllocated
-              ? <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
+              ? <AlertCircle className="w-4 h-4 text-destructive dark:text-red-400" />
               : <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
             }
             <span className="text-sm text-muted-foreground">
@@ -465,7 +465,7 @@ export default function BudgetPage() {
             </span>
           </div>
           <div className="text-right">
-            <span className={cn('text-lg font-bold', overAllocated ? 'text-red-400' : 'text-foreground')}>
+            <span className={cn('text-lg font-bold', overAllocated ? 'text-destructive' : 'text-foreground')}>
               {overAllocated
                 ? `+${formatCurrency(totalAllocated - parsedFamilyBudget)}`
                 : formatCurrency(unallocated)
@@ -517,7 +517,7 @@ export default function BudgetPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-foreground">{member.name}</span>
                         {member.role === 'CFO' && (
-                          <span className="text-xs text-amber-600 dark:text-amber-500 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-md">CFO</span>
+                          <span className="text-xs text-warning dark:text-amber-500 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-md">CFO</span>
                         )}
                         {member.role === 'CO_CFO' && (
                           <span className="text-xs text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/30 px-1.5 py-0.5 rounded-md">공동CFO</span>
@@ -526,7 +526,7 @@ export default function BudgetPage() {
                       <div className="text-xs text-muted-foreground">
                         지출 {formatCurrency(member.spent)}
                         {memberBudget > 0 && (
-                          <span className={cn('ml-1', member.spent > memberBudget ? 'text-red-400' : 'text-muted-foreground')}>
+                          <span className={cn('ml-1', member.spent > memberBudget ? 'text-destructive' : 'text-muted-foreground')}>
                             {' '}/ {formatCurrency(memberBudget)}
                           </span>
                         )}
@@ -564,7 +564,7 @@ export default function BudgetPage() {
                   <div>
                     <div className="flex justify-between text-xs text-muted-foreground/60 mb-1">
                       <span>개인 예산 소진율</span>
-                      <span className={cn(spentPct > 80 ? 'text-red-400' : '')}>{Math.round(spentPct)}%</span>
+                      <span className={cn(spentPct > 80 ? 'text-destructive' : '')}>{Math.round(spentPct)}%</span>
                     </div>
                     <Progress
                       value={spentPct}

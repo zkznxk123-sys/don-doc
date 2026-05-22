@@ -141,7 +141,7 @@ export function AssetDonutChart({ data, totalAssets, manageLink, hideZeroAccount
           {activeIndex === null && (
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <span className="text-xs text-muted-foreground">총 순자산</span>
-              <span className={cn('text-lg font-bold', totalAssets >= 0 ? 'text-foreground' : 'text-red-600 dark:text-red-400')}>
+              <span className={cn('text-lg font-bold', totalAssets >= 0 ? 'text-foreground' : 'text-destructive dark:text-red-400')}>
                 {totalAssets < 0 ? '-' : ''}{formatLargeNumber(Math.abs(totalAssets))}
               </span>
               <span className="text-[10px] text-muted-foreground/60">
@@ -243,7 +243,7 @@ export function AssetDonutChart({ data, totalAssets, manageLink, hideZeroAccount
                           <span className="text-sm font-medium text-muted-foreground truncate">{item.label}</span>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <span className="text-xs text-muted-foreground/60 tabular-nums">{item.percentage}%</span>
-                            <span className="text-sm font-semibold text-red-400 tabular-nums">
+                            <span className="text-sm font-semibold text-destructive tabular-nums">
                               -{formatCurrency(item.balance)}
                             </span>
                           </div>
@@ -259,7 +259,7 @@ export function AssetDonutChart({ data, totalAssets, manageLink, hideZeroAccount
                         {item.accounts.filter(a => (!hideZeroAccounts || a.balance !== 0) && (!excludeSmall || a.balance >= threshold)).map(acc => (
                           <div key={acc.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-red-950/20">
                             <span className="text-xs text-muted-foreground truncate mr-2">{acc.name}</span>
-                            <span className="text-xs font-medium text-red-400/80 tabular-nums flex-shrink-0">
+                            <span className="text-xs font-medium text-destructive/80 tabular-nums flex-shrink-0">
                               -{formatCurrency(acc.balance)}
                             </span>
                           </div>

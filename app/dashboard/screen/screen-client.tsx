@@ -110,7 +110,7 @@ export function ScreenClient() {
       {/* 사전 preset 카드 */}
       <section className="space-y-2">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+          <Sparkles className="w-3.5 h-3.5 text-warning" />
           <h2 className="text-xs font-semibold text-foreground/80">사전 정의 전략</h2>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">
@@ -322,7 +322,7 @@ function ResultPanel({ result, presetLabel }: { result: ScreenResult; presetLabe
       <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+            <TrendingUp className="w-3.5 h-3.5 text-income" />
             <h2 className="text-sm font-semibold text-foreground">
               {presetLabel ? `${presetLabel} — ` : ''}검색 결과
             </h2>

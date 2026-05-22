@@ -13,8 +13,8 @@ const PENSION_TYPE_META: Record<string, { label: string; color: string; bg: stri
   RETIREMENT_DB:    { label: '퇴직DB',     color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-500/10' },
   RETIREMENT_DC:    { label: '퇴직DC',     color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500/10' },
   IRP:              { label: 'IRP',        color: 'text-teal-600 dark:text-teal-400',     bg: 'bg-teal-500/10' },
-  PERSONAL_PENSION: { label: '개인연금',   color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-500/10' },
-  HOME_PENSION:     { label: '주택연금',   color: 'text-amber-600 dark:text-amber-400',  bg: 'bg-amber-500/10' },
+  PERSONAL_PENSION: { label: '개인연금',   color: 'text-income dark:text-emerald-400', bg: 'bg-emerald-500/10' },
+  HOME_PENSION:     { label: '주택연금',   color: 'text-warning dark:text-amber-400',  bg: 'bg-amber-500/10' },
 }
 
 // IRP/개인연금 세액공제 한도 (2024)
@@ -72,7 +72,7 @@ export function PensionTab({
           <div className="flex items-center gap-1.5 mb-2">
             <PiggyBank className="w-3.5 h-3.5 text-teal-500" />
             <p className="text-[11px] text-muted-foreground font-medium">
-              예상 월 수령{hasEstimatedPension && <span className="text-amber-500 ml-1">(추정 포함)</span>}
+              예상 월 수령{hasEstimatedPension && <span className="text-warning ml-1">(추정 포함)</span>}
             </p>
           </div>
           {totalProjectedMonthly > 0 ? (
@@ -362,7 +362,7 @@ function PensionCard({
                 return null
               })()}
               {account.taxDeductible && (
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md text-amber-600 dark:text-amber-400 bg-amber-500/10">
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md text-warning dark:text-amber-400 bg-amber-500/10">
                   세액공제
                 </span>
               )}
@@ -392,7 +392,7 @@ function PensionCard({
           ? 'bg-teal-50 dark:bg-teal-900/20 border border-teal-200/50 dark:border-teal-800/30'
           : 'bg-muted/40')}>
           <p className="text-[10px] text-muted-foreground/60 mb-1">
-            예상 월 수령{isEstimated && <span className="text-amber-500 ml-1">추정</span>}
+            예상 월 수령{isEstimated && <span className="text-warning ml-1">추정</span>}
           </p>
           {displayMonthlyPension ? (
             <div className="flex items-end gap-3">
@@ -423,16 +423,16 @@ function PensionCard({
                   <p className="text-[9px] text-muted-foreground/40 mt-0.5">직접 입력 필요</p>
                 )
                 if (account.pensionType === 'PUBLIC_PENSION' && !account.monthlyPayment) return (
-                  <p className="text-[9px] text-amber-500/70 mt-0.5">월 납입액 필요</p>
+                  <p className="text-[9px] text-warning/70 mt-0.5">월 납입액 필요</p>
                 )
                 if (!account.ownerBirthYear && !account.pensionStartAge) return (
-                  <p className="text-[9px] text-amber-500/70 mt-0.5">출생연도·개시나이 필요</p>
+                  <p className="text-[9px] text-warning/70 mt-0.5">출생연도·개시나이 필요</p>
                 )
                 if (!account.ownerBirthYear) return (
-                  <p className="text-[9px] text-amber-500/70 mt-0.5">출생연도 필요</p>
+                  <p className="text-[9px] text-warning/70 mt-0.5">출생연도 필요</p>
                 )
                 if (!account.pensionStartAge) return (
-                  <p className="text-[9px] text-amber-500/70 mt-0.5">연금 개시나이 필요</p>
+                  <p className="text-[9px] text-warning/70 mt-0.5">연금 개시나이 필요</p>
                 )
                 return null
               })()}
@@ -474,19 +474,19 @@ function PensionCard({
           {projection.futureBalance > 0 && (
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1.5">
-                <TrendingUp className="w-3.5 h-3.5 text-amber-500" />
+                <TrendingUp className="w-3.5 h-3.5 text-warning" />
                 <span className="text-[11px] font-medium text-foreground">
                   {projection.yearsToRetirement > 0 ? `${projection.yearsToRetirement}년 후` : '현재'} 예상 잔액
                 </span>
               </div>
-              <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 tabular-nums">
+              <span className="text-[11px] font-bold text-warning dark:text-amber-400 tabular-nums">
                 {formatLargeNumber(projection.futureBalance)}
               </span>
             </div>
           )}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              {projection.futureBalance === 0 && <TrendingUp className="w-3.5 h-3.5 text-amber-500" />}
+              {projection.futureBalance === 0 && <TrendingUp className="w-3.5 h-3.5 text-warning" />}
               <span className="text-[11px] text-muted-foreground/70">
                 {projection.futureBalance > 0 ? '예상 월 수령액 (20년 분할)' : '예상 월 수령액'}
               </span>
@@ -542,10 +542,10 @@ function PensionCard({
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-              <BadgePercent className="w-3.5 h-3.5 text-amber-500" />
+              <BadgePercent className="w-3.5 h-3.5 text-warning" />
               <span className="text-[11px] font-medium text-foreground">올해 세액공제 납입 예상</span>
             </div>
-            <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400">
+            <span className="text-[11px] font-bold text-warning dark:text-amber-400">
               {formatLargeNumber(Math.min(annualContribution, taxLimit))} / {formatLargeNumber(taxLimit)}
             </span>
           </div>

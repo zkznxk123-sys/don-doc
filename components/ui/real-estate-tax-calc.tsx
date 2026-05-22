@@ -385,7 +385,7 @@ export function RealEstateTaxCalc({ data }: Props) {
 
           {/* 에러 */}
           {error[tab] && (
-            <p className="mt-2 text-xs text-red-400 text-center">{error[tab]}</p>
+            <p className="mt-2 text-xs text-destructive text-center">{error[tab]}</p>
           )}
 
           {/* 결과 */}

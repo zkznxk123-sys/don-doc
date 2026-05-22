@@ -105,7 +105,7 @@ export function FamilyAction({ userRole }: FamilyActionProps) {
                         className={cn(
                           'w-full flex items-center justify-center gap-2 h-10 rounded-xl border text-sm font-medium transition-all',
                           copied
-                            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+                            ? 'bg-emerald-500/10 border-emerald-500/30 text-income'
                             : 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-600'
                         )}
                       >
@@ -137,8 +137,8 @@ export function FamilyAction({ userRole }: FamilyActionProps) {
                       </div>
                       {m.role === 'CFO' && (
                         <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-900/30 border border-amber-800/40">
-                          <Crown className="w-2.5 h-2.5 text-amber-500" />
-                          <span className="text-[10px] text-amber-500 font-medium">CFO</span>
+                          <Crown className="w-2.5 h-2.5 text-warning" />
+                          <span className="text-[10px] text-warning font-medium">CFO</span>
                         </div>
                       )}
                     </div>

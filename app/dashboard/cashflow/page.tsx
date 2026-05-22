@@ -459,7 +459,7 @@ export default function CashflowPage() {
               'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors',
               hideExcluded
                 ? 'bg-card border-border text-muted-foreground hover:text-foreground hover:border-ring'
-                : 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400',
+                : 'bg-amber-500/10 border-amber-500/30 text-warning dark:text-amber-400',
             )}
           >
             {hideExcluded
@@ -531,7 +531,7 @@ export default function CashflowPage() {
           <div className="bg-card border border-border rounded-2xl w-full max-w-sm mx-4 p-8 flex flex-col items-center gap-6 shadow-2xl">
             {/* 아이콘 */}
             <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center">
-              <Sparkles className={cn('w-7 h-7', aiModal.done && !aiModal.error ? 'text-emerald-400' : 'text-foreground', !aiModal.done && 'animate-pulse')} />
+              <Sparkles className={cn('w-7 h-7', aiModal.done && !aiModal.error ? 'text-income' : 'text-foreground', !aiModal.done && 'animate-pulse')} />
             </div>
 
             {/* 타이틀 */}
@@ -573,7 +573,7 @@ export default function CashflowPage() {
               {aiModal.steps.map((step, i) => (
                 <div key={i} className="flex items-center gap-3 px-4 py-2.5">
                   {step.done ? (
-                    <Check className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0" />
+                    <Check className="w-3.5 h-3.5 text-income flex-shrink-0" />
                   ) : step.active ? (
                     <div className="w-3.5 h-3.5 flex items-center justify-center flex-shrink-0">
                       <div className="w-1.5 h-1.5 rounded-full bg-foreground animate-pulse" />
@@ -651,7 +651,7 @@ export default function CashflowPage() {
                 onClick={() => runRecategorize(true)}
                 className="w-full flex flex-col items-start gap-1 px-4 py-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/30 text-left transition-colors"
               >
-                <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">전체 강제 재분류</span>
+                <span className="text-sm font-semibold text-warning dark:text-amber-400">전체 강제 재분류</span>
                 <span className="text-[11px] text-muted-foreground">기존 분류 포함 전체 항목을 개인화 규칙 + AI로 재분류</span>
               </button>
             </div>
@@ -791,7 +791,7 @@ export default function CashflowPage() {
               {/* 잔여 항목 알림 */}
               {previewModal.remaining > 0 && (
                 <div className="px-5 py-2 flex-shrink-0 bg-amber-500/5 border-t border-amber-500/20">
-                  <p className="text-[11px] text-amber-600 dark:text-amber-400">
+                  <p className="text-[11px] text-warning dark:text-amber-400">
                     150건 초과로 나머지 {previewModal.remaining}건은 적용 후 다시 실행하세요
                   </p>
                 </div>

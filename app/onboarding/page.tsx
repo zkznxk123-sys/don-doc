@@ -169,7 +169,7 @@ function OnboardingContent() {
                     )}
                   />
                   {createForm.formState.errors.name && (
-                    <p className="mt-1.5 text-xs text-red-400 pl-1">
+                    <p className="mt-1.5 text-xs text-destructive pl-1">
                       {createForm.formState.errors.name.message}
                     </p>
                   )}
@@ -241,7 +241,7 @@ function OnboardingContent() {
                     )}
                   />
                   {joinForm.formState.errors.code && (
-                    <p className="mt-1.5 text-xs text-red-400 text-center">
+                    <p className="mt-1.5 text-xs text-destructive text-center">
                       {joinForm.formState.errors.code.message}
                     </p>
                   )}

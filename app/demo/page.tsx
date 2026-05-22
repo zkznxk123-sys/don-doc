@@ -79,8 +79,8 @@ const TYPE_LABEL: Record<string, string> = {
   PENSION: '연금', DEBT: '대출', CRYPTO: '가상자산',
 }
 const TYPE_COLOR: Record<string, string> = {
-  REAL_ESTATE: 'text-amber-500', INVESTMENT: 'text-blue-500', CASH: 'text-income',
-  PENSION: 'text-violet-500', DEBT: 'text-expense', CRYPTO: 'text-orange-400',
+  REAL_ESTATE: 'text-warning', INVESTMENT: 'text-blue-500', CASH: 'text-income',
+  PENSION: 'text-violet-500', DEBT: 'text-expense', CRYPTO: 'text-warning',
 }
 const TYPE_BG: Record<string, string> = {
   REAL_ESTATE: 'bg-amber-500/10', INVESTMENT: 'bg-blue-500/10', CASH: 'bg-income-soft',
@@ -223,7 +223,7 @@ function DashboardView({ data }: { data: DemoData }) {
                   </span>
                   <span className="text-xs text-foreground/80 truncate">{a.name}</span>
                 </div>
-                <span className={cn('text-xs font-semibold tabular-nums flex-shrink-0', a.balance < 0 ? 'text-red-400' : 'text-foreground')}>
+                <span className={cn('text-xs font-semibold tabular-nums flex-shrink-0', a.balance < 0 ? 'text-destructive' : 'text-foreground')}>
                   {a.balance < 0 ? '-' : ''}{formatLargeNumber(Math.abs(a.balance))}
                 </span>
               </div>
@@ -557,7 +557,7 @@ function AssetsView({ data }: { data: DemoData }) {
                   </span>
                   <span className="text-sm font-semibold">{acc.name}</span>
                 </div>
-                <span className={cn('text-sm font-bold tabular-nums', acc.balance < 0 ? 'text-red-400' : 'text-foreground')}>
+                <span className={cn('text-sm font-bold tabular-nums', acc.balance < 0 ? 'text-destructive' : 'text-foreground')}>
                   {acc.balance < 0 ? '-' : ''}{formatLargeNumber(Math.abs(acc.balance))}
                 </span>
               </div>
@@ -903,8 +903,8 @@ function FeedView({ data }: { data: DemoData }) {
           )}>
             {post.isPinned && (
               <div className="flex items-center gap-1.5 px-4 py-2 bg-amber-500/5 border-b border-amber-500/20">
-                <Pin className="w-3 h-3 text-amber-500" />
-                <span className="text-[10px] font-medium text-amber-500">고정 게시물</span>
+                <Pin className="w-3 h-3 text-warning" />
+                <span className="text-[10px] font-medium text-warning">고정 게시물</span>
               </div>
             )}
             <div className="p-4">
@@ -918,7 +918,7 @@ function FeedView({ data }: { data: DemoData }) {
                   <p className="text-[10px] text-muted-foreground/60">{formatRelative(post.createdAt)}</p>
                 </div>
                 {post.type === 'txn_ref' && (
-                  <span className="ml-auto text-[10px] bg-amber-500/10 text-amber-500 border border-amber-500/20 px-1.5 py-0.5 rounded-full">
+                  <span className="ml-auto text-[10px] bg-amber-500/10 text-warning border border-amber-500/20 px-1.5 py-0.5 rounded-full">
                     거래 공유
                   </span>
                 )}

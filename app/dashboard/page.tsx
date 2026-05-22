@@ -445,13 +445,13 @@ function MemberBudgetCard({
       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">{monthLabel} 남은 예산</p>
       {myBudget > 0 ? (
         <>
-          <p className={cn('numeric text-4xl mb-1', isOver ? 'text-red-600 dark:text-red-400' : isWarning ? 'text-amber-600 dark:text-amber-400' : 'text-foreground')}>
+          <p className={cn('numeric text-4xl mb-1', isOver ? 'text-destructive dark:text-red-400' : isWarning ? 'text-warning dark:text-amber-400' : 'text-foreground')}>
             {isOver ? '-' : ''}{formatCurrency(remaining)}
           </p>
           <p className="text-xs text-muted-foreground mb-4">{formatCurrency(myExpenses)} 사용 / {formatCurrency(myBudget)} 예산</p>
           <Progress value={pct} className="h-2 mb-2" indicatorClassName={cn(isOver || isWarning ? 'bg-red-500' : 'bg-emerald-500')} />
           <div className="flex justify-between text-xs">
-            <span className={cn(isOver ? 'text-red-600 dark:text-red-400' : isWarning ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground')}>
+            <span className={cn(isOver ? 'text-destructive dark:text-red-400' : isWarning ? 'text-warning dark:text-amber-400' : 'text-muted-foreground')}>
               {Math.round(pct)}% 사용{isOver ? ' — 예산 초과' : isWarning ? ' — 주의' : ''}
             </span>
             <span className="text-muted-foreground/60">{myTxCount}건</span>
@@ -782,7 +782,7 @@ export default function Dashboard() {
                         <div className="grid grid-cols-3 gap-2 mb-3">
                           {[
                             { label: '예산', value: budgetData.familyBudget, color: 'text-foreground' },
-                            { label: '사용', value: budgetData.familySpent, color: budgetData.familySpent > budgetData.familyBudget * 0.8 ? 'text-red-600 dark:text-red-400' : 'text-foreground' },
+                            { label: '사용', value: budgetData.familySpent, color: budgetData.familySpent > budgetData.familyBudget * 0.8 ? 'text-destructive dark:text-red-400' : 'text-foreground' },
                             { label: '잔여', value: Math.max(budgetData.familyBudget - budgetData.familySpent, 0), color: 'text-income' },
                           ].map(item => (
                             <div key={item.label} className="bg-muted rounded-xl p-3 text-center">

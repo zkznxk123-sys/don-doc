@@ -9,9 +9,9 @@ import { EmptyTab } from './EmptyTab'
 import { RegulationBar } from './RegulationBar'
 
 const DEBT_TYPE_META: Record<string, { label: string; color: string; bg: string }> = {
-  MORTGAGE:        { label: '주담대',   color: 'text-red-600 dark:text-red-400',     bg: 'bg-red-500/10' },
-  JEONSE_DEPOSIT:  { label: '전세대출', color: 'text-orange-600 dark:text-orange-400', bg: 'bg-orange-500/10' },
-  CREDIT_LOAN:     { label: '신용대출', color: 'text-rose-600 dark:text-rose-400',   bg: 'bg-rose-500/10' },
+  MORTGAGE:        { label: '주담대',   color: 'text-destructive dark:text-red-400',     bg: 'bg-red-500/10' },
+  JEONSE_DEPOSIT:  { label: '전세대출', color: 'text-warning dark:text-orange-400', bg: 'bg-orange-500/10' },
+  CREDIT_LOAN:     { label: '신용대출', color: 'text-destructive dark:text-rose-400',   bg: 'bg-rose-500/10' },
   OVERDRAFT:       { label: '마이너스통장', color: 'text-pink-600 dark:text-pink-400', bg: 'bg-pink-500/10' },
   ETC:             { label: '기타',     color: 'text-muted-foreground',              bg: 'bg-muted' },
 }
@@ -75,7 +75,7 @@ export function DebtTab({
         <div className="grid grid-cols-3 gap-3">
           <div className="bg-red-50 dark:bg-red-900/15 border border-red-200 dark:border-red-800/40 rounded-2xl p-4">
             <div className="flex items-center gap-1.5 mb-2">
-              <HandCoins className="w-3.5 h-3.5 text-red-400" />
+              <HandCoins className="w-3.5 h-3.5 text-destructive" />
               <p className="text-[11px] text-muted-foreground font-medium">총 대출 잔액</p>
             </div>
             <p className="text-lg font-bold tabular-nums text-expense">
@@ -87,10 +87,10 @@ export function DebtTab({
             <div className="flex items-center gap-1.5 mb-2">
               <CalendarClock className="w-3.5 h-3.5 text-muted-foreground/60" />
               <p className="text-[11px] text-muted-foreground font-medium">
-                월 납입 합계{hasEstimated && <span className="text-amber-500 ml-1">(예상 포함)</span>}
+                월 납입 합계{hasEstimated && <span className="text-warning ml-1">(예상 포함)</span>}
               </p>
             </div>
-            <p className={cn('text-lg font-bold tabular-nums', hasEstimated && summary.totalMonthlyPayment === 0 ? 'text-amber-600 dark:text-amber-400' : 'text-foreground')}>
+            <p className={cn('text-lg font-bold tabular-nums', hasEstimated && summary.totalMonthlyPayment === 0 ? 'text-warning dark:text-amber-400' : 'text-foreground')}>
               {totalEffectiveMonthly > 0 ? `${hasEstimated && summary.totalMonthlyPayment === 0 ? '~' : ''}${formatLargeNumber(totalEffectiveMonthly)}` : '—'}
             </p>
             <p className="text-[10px] text-muted-foreground/50 mt-1">
@@ -121,7 +121,7 @@ export function DebtTab({
               <span className="text-xs font-semibold text-foreground">DSR (총부채원리금상환비율)</span>
             </div>
             {avgMonthlyIncome == null && (
-              <span className="text-[10px] text-amber-600 dark:text-amber-400">소득 데이터 필요 (현금흐름 등록)</span>
+              <span className="text-[10px] text-warning dark:text-amber-400">소득 데이터 필요 (현금흐름 등록)</span>
             )}
           </div>
           {dsr != null ? (
@@ -240,7 +240,7 @@ function DebtCard({
       {/* 헤더 */}
       <div className="px-5 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
         <div className="flex items-center gap-2 min-w-0">
-          <HandCoins className="w-4 h-4 text-red-400 shrink-0" />
+          <HandCoins className="w-4 h-4 text-destructive shrink-0" />
           <span className="text-sm font-semibold text-foreground truncate">{debt.name}</span>
           <span className={cn('text-[10px] px-1.5 py-0.5 rounded-md font-medium shrink-0', meta.color, meta.bg)}>
             {meta.label}
@@ -281,8 +281,8 @@ function DebtCard({
             </div>
           ) : estimated != null ? (
             <div className="text-right">
-              <p className="text-[10px] text-amber-600 dark:text-amber-400 mb-0.5">예상 월 납입</p>
-              <p className="text-base font-bold tabular-nums text-amber-600 dark:text-amber-400">
+              <p className="text-[10px] text-warning dark:text-amber-400 mb-0.5">예상 월 납입</p>
+              <p className="text-base font-bold tabular-nums text-warning dark:text-amber-400">
                 ~{formatLargeNumber(estimated.amount)}
               </p>
               <p className="text-[10px] text-muted-foreground/50">{estimated.label}</p>
@@ -300,12 +300,12 @@ function DebtCard({
           </div>
           <div className={cn('rounded-xl p-3', isNearMaturity ? 'bg-amber-500/10 border border-amber-500/30' : 'bg-muted/40')}>
             <p className="text-[10px] text-muted-foreground/60 mb-1">만기일</p>
-            <p className={cn('text-sm font-bold tabular-nums', isNearMaturity ? 'text-amber-600 dark:text-amber-400' : 'text-foreground')}>
+            <p className={cn('text-sm font-bold tabular-nums', isNearMaturity ? 'text-warning dark:text-amber-400' : 'text-foreground')}>
               {debt.maturityDate
                 ? debt.maturityDate.slice(0, 7).replace('-', '.')
                 : '—'}
             </p>
-            {isNearMaturity && <p className="text-[9px] text-amber-500 mt-0.5">1년 이내</p>}
+            {isNearMaturity && <p className="text-[9px] text-warning mt-0.5">1년 이내</p>}
           </div>
           <div className="bg-muted/40 rounded-xl p-3">
             <p className="text-[10px] text-muted-foreground/60 mb-1">상환방식</p>

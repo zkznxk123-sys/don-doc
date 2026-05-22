@@ -124,7 +124,7 @@ export function RealEstateTab({
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Target className="w-4 h-4 text-amber-500" />
+            <Target className="w-4 h-4 text-warning" />
             <span className="text-sm font-semibold text-foreground">갈아타기 목표 단지</span>
             {targetProperties.length > 0 && (
               <span className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full">
@@ -229,7 +229,7 @@ export function RealEstateTab({
                         }}
                         className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                       >
-                        <AlertTriangle className="w-3.5 h-3.5 text-muted-foreground/50 hover:text-red-400" />
+                        <AlertTriangle className="w-3.5 h-3.5 text-muted-foreground/50 hover:text-destructive" />
                       </button>
                     </div>
                   </div>
@@ -343,7 +343,7 @@ function RealEstateAggregatePanel({
               <span className="text-xs font-semibold text-foreground">대출 규제 지표</span>
             </div>
             {avgMonthlyIncome == null && (
-              <span className="text-[10px] text-amber-600 dark:text-amber-400">소득 데이터 필요 (현금흐름 등록)</span>
+              <span className="text-[10px] text-warning dark:text-amber-400">소득 데이터 필요 (현금흐름 등록)</span>
             )}
           </div>
 

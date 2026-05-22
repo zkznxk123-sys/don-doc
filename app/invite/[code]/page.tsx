@@ -66,9 +66,9 @@ export default function InvitePage() {
             : "bg-zinc-900 border-zinc-800"
         )}>
           {status === 'success' ? (
-            <CheckCircle2 className="w-7 h-7 text-emerald-400" />
+            <CheckCircle2 className="w-7 h-7 text-income" />
           ) : status === 'error' ? (
-            <XCircle className="w-7 h-7 text-red-400" />
+            <XCircle className="w-7 h-7 text-destructive" />
           ) : (
             <Users className="w-7 h-7 text-zinc-400" />
           )}
@@ -94,7 +94,7 @@ export default function InvitePage() {
         {status === 'error' && (
           <>
             <h1 className="text-2xl font-bold text-white mb-2">합류 실패</h1>
-            <p className="text-sm text-red-400 mb-8">{error}</p>
+            <p className="text-sm text-destructive mb-8">{error}</p>
             <Link
               href="/dashboard"
               className="inline-flex items-center px-6 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-sm text-zinc-300 hover:text-white hover:border-zinc-600 transition-all"

@@ -194,14 +194,14 @@ export function HoldingDrawer({ isOpen, onClose, onSuccess, accountId, accountNa
                       <div className="flex items-center gap-1.5 flex-shrink-0">
                         <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md ${
                           r.market === 'KOSPI'  ? 'bg-blue-500/10 text-blue-500' :
-                          r.market === 'KOSDAQ' ? 'bg-emerald-500/10 text-emerald-500' :
+                          r.market === 'KOSDAQ' ? 'bg-emerald-500/10 text-income' :
                           r.market === 'NASDAQ' ? 'bg-violet-500/10 text-violet-500' :
-                          r.market === 'NYSE'   ? 'bg-orange-500/10 text-orange-500' :
+                          r.market === 'NYSE'   ? 'bg-orange-500/10 text-warning' :
                           r.market === 'ETF'    ? 'bg-teal-500/10 text-teal-500' :
                           'bg-muted text-muted-foreground'
                         }`}>{r.market}</span>
                         {r.currency === 'USD' && (
-                          <span className="text-[10px] text-amber-500/80">$</span>
+                          <span className="text-[10px] text-warning/80">$</span>
                         )}
                       </div>
                     </button>
@@ -288,7 +288,7 @@ export function HoldingDrawer({ isOpen, onClose, onSuccess, accountId, accountNa
 
           {/* 통화 (USD일 때만 표시) */}
           {currency === 'USD' && (
-            <div className="flex items-center gap-2 text-xs text-amber-500 bg-amber-500/10 rounded-lg px-3 py-2">
+            <div className="flex items-center gap-2 text-xs text-warning bg-amber-500/10 rounded-lg px-3 py-2">
               <span>💡</span>
               <span>USD 종목은 달러 기준 P&L 표시 · 환율 업데이트 시 원화 환산 합산됩니다.</span>
             </div>

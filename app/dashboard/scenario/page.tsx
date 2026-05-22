@@ -190,7 +190,7 @@ function CompareView({ scenarios }: { scenarios: ScenarioData[] }) {
                 </td>
                 <td className="py-3 pl-2 text-center align-top">
                   {s.risk ? (
-                    <span className="text-amber-400 inline-flex items-center" title={s.risk}>
+                    <span className="text-warning inline-flex items-center" title={s.risk}>
                       <AlertTriangle className="w-3.5 h-3.5" />
                     </span>
                   ) : (
@@ -289,7 +289,7 @@ function ExpansionView({ expansion }: { expansion: ScenarioExpansion }) {
           <div className="space-y-1.5">
             {expansion.risks.map((r, i) => (
               <div key={i} className="bg-amber-500/5 border border-amber-500/20 rounded-xl px-3 py-2">
-                <p className="text-xs font-medium text-amber-600 dark:text-amber-400 flex items-center gap-1">
+                <p className="text-xs font-medium text-warning dark:text-amber-400 flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3 flex-shrink-0" />{r.risk}
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">→ {r.mitigation}</p>
@@ -602,7 +602,7 @@ function ScenarioCard({
               )}
               {scenario.risk && (
                 <div className="flex items-center gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                  <AlertTriangle className="w-3.5 h-3.5 text-warning" />
                   <span className="text-xs text-muted-foreground">{scenario.risk}</span>
                 </div>
               )}

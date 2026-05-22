@@ -174,7 +174,7 @@ export function PortfolioFundamentals({ investmentSummary, usdKrwRate }: Props) 
           onClick={() => setExpanded(v => !v)}
           className="flex items-center gap-2 hover:text-foreground"
         >
-          <Activity className="w-4 h-4 text-emerald-500" />
+          <Activity className="w-4 h-4 text-income" />
           <span className="text-xs font-semibold text-muted-foreground">포트폴리오 fundamental</span>
           <span className="text-[10px] text-muted-foreground/40">
             ({fundamentalCount}/{allHoldings.length} 매칭)

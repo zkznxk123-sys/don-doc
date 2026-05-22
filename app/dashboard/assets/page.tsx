@@ -517,7 +517,7 @@ export default function AssetsPage() {
                   <strong className="text-foreground">{getCurrentYearMonth().replace('-', '년 ')}월</strong>{' '}
                   순자산 스냅샷을 저장합니다.
                 </p>
-                <p className="text-amber-400/80">
+                <p className="text-warning/80">
                   이미 이번 달에 기록된 스냅샷이 있다면, 현재 잔액으로 덮어씁니다. 계속하시겠습니까?
                 </p>
               </div>

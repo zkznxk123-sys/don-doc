@@ -536,13 +536,13 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
               {/* ── 파일 정보 ── */}
               <div className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
                 <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
-                  <FileSpreadsheet className={cn("w-4 h-4", isBanksalad ? "text-violet-400" : "text-emerald-400")} />
+                  <FileSpreadsheet className={cn("w-4 h-4", isBanksalad ? "text-violet-400" : "text-income")} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{fileName}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
                     총 {rows.length}행
-                    {errorRows.length > 0 && <span className="text-amber-400 ml-1">· {errorRows.length}행 오류</span>}
+                    {errorRows.length > 0 && <span className="text-warning ml-1">· {errorRows.length}행 오류</span>}
                     {banksaladMeta?.skipped ? <span className="text-muted-foreground/60 ml-1">· 이체 {banksaladMeta.skipped}건 제외</span> : null}
                   </p>
                 </div>
@@ -570,10 +570,10 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                 </div>
               ) : detectedPreset ? (
                 <div className="flex items-center gap-2.5 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800/40">
-                  <Sparkles className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                  <Sparkles className="w-4 h-4 text-income dark:text-emerald-400 flex-shrink-0" />
                   <div>
                     <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-400">{detectedPreset.name} 양식 감지됨</p>
-                    <p className="text-[10px] text-emerald-600 dark:text-emerald-700 mt-0.5">{detectedPreset.description}</p>
+                    <p className="text-[10px] text-income dark:text-emerald-700 mt-0.5">{detectedPreset.description}</p>
                   </div>
                 </div>
               ) : (
@@ -741,8 +741,8 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
               {/* ── 오류 안내 ── */}
               {errorRows.length > 0 && (
                 <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-950/20 border border-amber-800/40">
-                  <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                  <p className="text-xs text-amber-400">
+                  <AlertCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-warning">
                     {errorRows.length}행 오류 제외 · <strong className="text-foreground">{validRows.length}건</strong> 등록 예정
                   </p>
                 </div>
@@ -856,19 +856,19 @@ function BanksaladPreviewRow({ row, aiStatus }: { row: ParsedRow; aiStatus: AiSt
       row._error ? 'bg-red-950/20' : isDup ? 'opacity-40' : ''
     )}>
       <div>
-        <p className={cn('text-xs tabular-nums', row._error ? 'text-red-400' : 'text-muted-foreground')}>{row.date || '—'}</p>
+        <p className={cn('text-xs tabular-nums', row._error ? 'text-destructive' : 'text-muted-foreground')}>{row.date || '—'}</p>
         {row._time && <p className="text-[10px] text-muted-foreground/60">{row._time}</p>}
       </div>
       <div className="min-w-0 pr-2">
         <p className="text-xs text-foreground truncate">{row.description || <span className="text-muted-foreground/60 italic">내용 없음</span>}</p>
         {row._paymentMethod && <p className="text-[10px] text-muted-foreground/60 truncate">{row._paymentMethod}</p>}
       </div>
-      <p className={cn('text-xs tabular-nums text-right', row._error ? 'text-red-400' : row.amount > 0 ? 'text-emerald-400' : 'text-foreground')}>
+      <p className={cn('text-xs tabular-nums text-right', row._error ? 'text-destructive' : row.amount > 0 ? 'text-income' : 'text-foreground')}>
         {row._error ? '?' : (row.amount > 0 ? '+' : '') + formatCurrency(row.amount)}
       </p>
       <div className="pl-1 min-w-0">
         {row._error ? (
-          <span className="text-red-400 text-[10px]">{row._error}</span>
+          <span className="text-destructive text-[10px]">{row._error}</span>
         ) : isDup ? (
           <span className="text-[10px] text-muted-foreground/50">이미 등록됨</span>
         ) : row.categoryId ? (
@@ -894,14 +894,14 @@ function BanksaladPreviewRow({ row, aiStatus }: { row: ParsedRow; aiStatus: AiSt
 function GenericPreviewRow({ row, aiStatus }: { row: ParsedRow; aiStatus: AiStatus }) {
   return (
     <div className={cn('grid grid-cols-[100px_1fr_90px_80px] px-3 py-2.5', row._error && 'bg-red-950/20')}>
-      <span className={cn('text-xs tabular-nums', row._error === '날짜 오류' ? 'text-red-400' : 'text-muted-foreground')}>{row.date || '—'}</span>
+      <span className={cn('text-xs tabular-nums', row._error === '날짜 오류' ? 'text-destructive' : 'text-muted-foreground')}>{row.date || '—'}</span>
       <span className="text-xs text-foreground truncate pr-2">{row.description || <span className="text-muted-foreground/60 italic">내용 없음</span>}</span>
-      <span className={cn('text-xs tabular-nums text-right', row._error === '금액 오류' ? 'text-red-400' : row.amount > 0 ? 'text-emerald-400' : 'text-foreground')}>
+      <span className={cn('text-xs tabular-nums text-right', row._error === '금액 오류' ? 'text-destructive' : row.amount > 0 ? 'text-income' : 'text-foreground')}>
         {row._error === '금액 오류' ? '?' : (row.amount > 0 ? '+' : '') + formatCurrency(row.amount)}
       </span>
       <div className="pl-1 min-w-0">
         {row._error ? (
-          <span className="text-red-400 text-[10px]">{row._error}</span>
+          <span className="text-destructive text-[10px]">{row._error}</span>
         ) : row.categoryId ? (
           <span className="text-xs text-foreground">{row.categoryIcon} {row.categoryName}</span>
         ) : aiStatus === 'loading' ? (
@@ -968,7 +968,7 @@ function AccountBalanceDiff({
                   <>
                     <p className="text-xs text-foreground tabular-nums">{formatCurrency(d.newBalance)}</p>
                     {diff !== 0 && (
-                      <p className={cn('text-[10px] tabular-nums', diff > 0 ? 'text-emerald-400' : 'text-rose-400')}>
+                      <p className={cn('text-[10px] tabular-nums', diff > 0 ? 'text-income' : 'text-destructive')}>
                         {diff > 0 ? '+' : '-'}{formatCurrency(diffAbs)}
                       </p>
                     )}
@@ -994,7 +994,7 @@ function ColSelect({ label, value, options, onChange, hasValue }: {
   return (
     <div className="px-2 py-2 border-r border-border last:border-r-0">
       <div className="flex items-center gap-1 mb-1">
-        {hasValue ? <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500 flex-shrink-0" /> : <AlertCircle className="w-2.5 h-2.5 text-muted-foreground/60 flex-shrink-0" />}
+        {hasValue ? <CheckCircle2 className="w-2.5 h-2.5 text-income flex-shrink-0" /> : <AlertCircle className="w-2.5 h-2.5 text-muted-foreground/60 flex-shrink-0" />}
         <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wide truncate">{label}</span>
       </div>
       <select

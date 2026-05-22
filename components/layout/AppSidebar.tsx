@@ -182,7 +182,7 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
             </div>
             <button
               onClick={onLogout}
-              className="p-1.5 rounded-lg text-muted-foreground/60 hover:text-red-400 hover:bg-red-950/30 transition-colors flex-shrink-0"
+              className="p-1.5 rounded-lg text-muted-foreground/60 hover:text-destructive hover:bg-red-950/30 transition-colors flex-shrink-0"
               title="로그아웃"
             >
               <LogOut className="w-4 h-4" />
@@ -191,7 +191,7 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
         ) : (
           <button
             onClick={onLogout}
-            className="p-2 rounded-xl text-muted-foreground/60 hover:text-red-400 hover:bg-red-950/30 transition-colors"
+            className="p-2 rounded-xl text-muted-foreground/60 hover:text-destructive hover:bg-red-950/30 transition-colors"
             title="로그아웃"
           >
             <LogOut className="w-4 h-4" />

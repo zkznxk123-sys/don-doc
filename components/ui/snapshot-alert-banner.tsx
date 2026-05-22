@@ -35,7 +35,7 @@ export function SnapshotAlertBanner({ yearMonth, onSaved, onDismiss }: SnapshotA
     <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800/60 rounded-2xl px-4 py-3.5">
       {/* 아이콘 */}
       <div className="flex-shrink-0 mt-0.5">
-        <AlertTriangle className="w-4 h-4 text-amber-500 dark:text-amber-400" />
+        <AlertTriangle className="w-4 h-4 text-warning dark:text-amber-400" />
       </div>
 
       {/* 텍스트 + 버튼 */}
@@ -48,7 +48,7 @@ export function SnapshotAlertBanner({ yearMonth, onSaved, onDismiss }: SnapshotA
         </p>
 
         {error && (
-          <p className="text-xs text-red-400 mt-1">{error}</p>
+          <p className="text-xs text-destructive mt-1">{error}</p>
         )}
 
         <button
@@ -64,7 +64,7 @@ export function SnapshotAlertBanner({ yearMonth, onSaved, onDismiss }: SnapshotA
       {/* 닫기 */}
       <button
         onClick={onDismiss}
-        className="flex-shrink-0 p-1 text-amber-600 hover:text-amber-800 dark:hover:text-amber-300 rounded transition-colors"
+        className="flex-shrink-0 p-1 text-warning hover:text-amber-800 dark:hover:text-amber-300 rounded transition-colors"
         aria-label="닫기"
       >
         <X className="w-3.5 h-3.5" />

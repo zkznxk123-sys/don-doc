@@ -22,17 +22,17 @@ const REPAYMENT_LABELS: Record<string, string> = {
 }
 
 function ltvStyle(ltv: number) {
-  if (ltv < 40) return { bar: 'bg-emerald-500', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-800/40', bg: 'bg-emerald-50 dark:bg-emerald-900/15' }
-  if (ltv < 60) return { bar: 'bg-amber-500',   text: 'text-amber-600 dark:text-amber-400',     border: 'border-amber-200 dark:border-amber-800/40',   bg: 'bg-amber-50 dark:bg-amber-900/15'   }
-  if (ltv < 80) return { bar: 'bg-orange-500',  text: 'text-orange-600 dark:text-orange-400',   border: 'border-orange-200 dark:border-orange-800/40', bg: 'bg-orange-50 dark:bg-orange-900/15' }
-  return              { bar: 'bg-red-500',      text: 'text-red-600 dark:text-red-400',         border: 'border-red-200 dark:border-red-800/40',       bg: 'bg-red-50 dark:bg-red-900/15'       }
+  if (ltv < 40) return { bar: 'bg-emerald-500', text: 'text-income dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-800/40', bg: 'bg-emerald-50 dark:bg-emerald-900/15' }
+  if (ltv < 60) return { bar: 'bg-amber-500',   text: 'text-warning dark:text-amber-400',     border: 'border-amber-200 dark:border-amber-800/40',   bg: 'bg-amber-50 dark:bg-amber-900/15'   }
+  if (ltv < 80) return { bar: 'bg-orange-500',  text: 'text-warning dark:text-orange-400',   border: 'border-orange-200 dark:border-orange-800/40', bg: 'bg-orange-50 dark:bg-orange-900/15' }
+  return              { bar: 'bg-red-500',      text: 'text-destructive dark:text-red-400',         border: 'border-red-200 dark:border-red-800/40',       bg: 'bg-red-50 dark:bg-red-900/15'       }
 }
 
 function DebtRow({ debt, onToggleLtv }: { debt: LinkedDebt; onToggleLtv: (id: string, val: boolean) => void }) {
   return (
     <div className="flex items-center gap-3 py-2.5 border-b border-border/60 last:border-0">
       <div className="w-7 h-7 rounded-lg bg-red-400/10 flex items-center justify-center flex-shrink-0">
-        <HandCoins className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+        <HandCoins className="w-3.5 h-3.5 text-destructive dark:text-red-400" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs font-medium text-foreground/70 truncate">{debt.name}</p>
@@ -240,7 +240,7 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
                     <div className={cn('rounded-xl p-3 border col-span-1', st.bg, st.border)}>
                       <div className="flex items-center justify-between mb-1">
                         <p className="text-[10px] text-muted-foreground">LTV</p>
-                        {data.ltv >= 80 && <AlertTriangle className="w-3 h-3 text-red-500" />}
+                        {data.ltv >= 80 && <AlertTriangle className="w-3 h-3 text-destructive" />}
                       </div>
                       <p className={cn('text-sm font-bold tabular-nums', st.text)}>{data.ltv.toFixed(1)}%</p>
                       <div className="mt-2 w-full bg-muted/70 rounded-full h-1.5 overflow-hidden">
@@ -274,7 +274,7 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
                   className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted/40 transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <HandCoins className="w-3.5 h-3.5 text-red-600 dark:text-red-400" />
+                    <HandCoins className="w-3.5 h-3.5 text-destructive dark:text-red-400" />
                     <span className="text-xs font-medium text-muted-foreground">연결된 부채</span>
                     <span className="text-xs text-muted-foreground/60">{data.linkedDebts.length}건</span>
                   </div>

@@ -19,11 +19,11 @@ const TYPE_META: Record<string, { label: string; Icon: React.ElementType; color:
   CASH:        { label: '현금 · 예적금', Icon: Banknote,   color: 'text-blue-400',    bg: 'bg-blue-400/10' },
   INVESTMENT:  { label: '주식 · 펀드',   Icon: TrendingUp, color: 'text-income',      bg: 'bg-income-soft' },
   PENSION:     { label: '연금',           Icon: PiggyBank,  color: 'text-teal-400',    bg: 'bg-teal-400/10' },
-  CRYPTO:      { label: '가상자산',       Icon: Bitcoin,    color: 'text-amber-400',   bg: 'bg-amber-400/10' },
+  CRYPTO:      { label: '가상자산',       Icon: Bitcoin,    color: 'text-warning',   bg: 'bg-amber-400/10' },
   REAL_ESTATE: { label: '부동산',         Icon: Building2,  color: 'text-purple-400',  bg: 'bg-purple-400/10' },
   STO:         { label: '토큰증권',       Icon: Layers,     color: 'text-pink-400',    bg: 'bg-pink-400/10' },
-  DEBT:        { label: '대출',           Icon: HandCoins,  color: 'text-red-400',     bg: 'bg-red-400/10' },
-  CREDIT_CARD: { label: '신용카드',       Icon: CreditCard, color: 'text-rose-400',    bg: 'bg-rose-400/10' },
+  DEBT:        { label: '대출',           Icon: HandCoins,  color: 'text-destructive',     bg: 'bg-red-400/10' },
+  CREDIT_CARD: { label: '신용카드',       Icon: CreditCard, color: 'text-destructive',    bg: 'bg-rose-400/10' },
 }
 
 interface AssetListProps {
@@ -248,7 +248,7 @@ function LinkedDebtRow({ debt }: { debt: { id: string; name: string; balance: nu
     <div className="flex items-center gap-2 pl-[52px] pr-5 py-2 border-t border-border/40 bg-background/30">
       <CornerDownRight className="w-3 h-3 text-border flex-shrink-0" />
       <span className="text-xs text-muted-foreground flex-1 truncate">{debt.name}</span>
-      <span className="text-xs font-medium text-red-400/80 tabular-nums flex-shrink-0">
+      <span className="text-xs font-medium text-destructive/80 tabular-nums flex-shrink-0">
         -{formatCurrency(debt.balance)}
       </span>
     </div>
@@ -418,7 +418,7 @@ function HoldingSubRow({
         <button onClick={() => onViewTrades(holding)} className="p-1 text-muted-foreground/50 hover:text-foreground rounded transition-colors" title="매매일지">
           <BookOpen className="w-3 h-3" />
         </button>
-        <button onClick={() => onDelete(holding)} className="p-1 text-muted-foreground/50 hover:text-red-400 rounded transition-colors" title="삭제">
+        <button onClick={() => onDelete(holding)} className="p-1 text-muted-foreground/50 hover:text-destructive rounded transition-colors" title="삭제">
           <Trash2 className="w-3 h-3" />
         </button>
       </div>
@@ -624,7 +624,7 @@ export function LiabilityList({ liabilities, totalLiabilities, onEdit, onAdd, cu
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <span className="text-sm font-semibold text-red-400 tabular-nums">
+                <span className="text-sm font-semibold text-destructive tabular-nums">
                   -{formatCurrency(account.balance)}
                 </span>
                 <ChevronRight className="w-4 h-4 text-border group-hover:text-muted-foreground transition-colors" />
@@ -636,7 +636,7 @@ export function LiabilityList({ liabilities, totalLiabilities, onEdit, onAdd, cu
 
       <div className="flex items-center justify-between px-5 py-3 bg-background/50 border-t border-border">
         <span className="text-xs text-muted-foreground">총 부채</span>
-        <span className="text-sm font-bold text-red-400 tabular-nums">-{formatCurrency(totalLiabilities)}</span>
+        <span className="text-sm font-bold text-destructive tabular-nums">-{formatCurrency(totalLiabilities)}</span>
       </div>
     </div>
   )

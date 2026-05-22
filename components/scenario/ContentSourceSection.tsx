@@ -152,28 +152,28 @@ function ExtractedTextBlock({
 function SourceStatusBadge({ status }: { status: ContentSourceData['summaryStatus'] }) {
   if (status === 'success') {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-income dark:text-emerald-400">
         <CheckCircle2 className="w-2.5 h-2.5" />요약 완료
       </span>
     )
   }
   if (status === 'failed') {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-600 dark:text-red-400">
+      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-destructive dark:text-red-400">
         <AlertTriangle className="w-2.5 h-2.5" />요약 실패
       </span>
     )
   }
   if (status === 'fetch_failed') {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-600 dark:text-red-400">
+      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-destructive dark:text-red-400">
         <AlertTriangle className="w-2.5 h-2.5" />추출 실패
       </span>
     )
   }
   if (status === 'too_short') {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-400">
+      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-warning dark:text-amber-400">
         <AlertTriangle className="w-2.5 h-2.5" />본문 부족
       </span>
     )
@@ -260,7 +260,7 @@ function SourceRow({
             <p className="text-[11px] text-muted-foreground/60 mt-1.5 line-clamp-2">{plainPreview(src.summary)}</p>
           )}
           {!expanded && !src.summary && src.summaryError && (
-            <p className="text-[11px] text-red-500/70 mt-1.5 line-clamp-1">{src.summaryError}</p>
+            <p className="text-[11px] text-destructive/70 mt-1.5 line-clamp-1">{src.summaryError}</p>
           )}
         </div>
         <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -269,7 +269,7 @@ function SourceRow({
           )}
           <button
             onClick={(e) => { e.stopPropagation(); onDelete(src.id) }}
-            className="p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground/40 hover:text-red-400 transition-colors"
+            className="p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-muted-foreground/40 hover:text-destructive transition-colors"
             aria-label="삭제"
           >
             <Trash2 className="w-3.5 h-3.5" />
@@ -289,8 +289,8 @@ function SourceRow({
 
           {src.summaryError && (
             <div className="rounded-lg border border-red-500/30 bg-red-500/[0.04] px-3 py-2.5">
-              <div className="text-[10px] font-semibold text-red-500/80 mb-1">실패 사유</div>
-              <p className="text-[11px] text-red-500/80 whitespace-pre-wrap">{src.summaryError}</p>
+              <div className="text-[10px] font-semibold text-destructive/80 mb-1">실패 사유</div>
+              <p className="text-[11px] text-destructive/80 whitespace-pre-wrap">{src.summaryError}</p>
             </div>
           )}
 

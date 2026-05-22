@@ -120,7 +120,7 @@ export function NetWorthHistoryModal({
   }
 
   // yearMonth input: type=month ("YYYY-MM") 그대로 사용
-  const netWorthColor = netWorth >= 0 ? 'text-emerald-400' : 'text-red-400'
+  const netWorthColor = netWorth >= 0 ? 'text-income' : 'text-destructive'
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
@@ -204,7 +204,7 @@ export function NetWorthHistoryModal({
 
           {/* 에러 */}
           {error && (
-            <p className="text-xs text-red-400 px-1">{error}</p>
+            <p className="text-xs text-destructive px-1">{error}</p>
           )}
         </div>
 

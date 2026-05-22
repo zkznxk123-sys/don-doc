@@ -123,11 +123,11 @@ function SettingsClient() {
       sub: 'Anthropic Pro/Max · 최고 품질',
       letter: 'C',
       iconBg: 'bg-orange-500/15',
-      iconColor: 'text-orange-400',
+      iconColor: 'text-warning',
       activeBorder: 'border-orange-500/30',
       activeBg: 'bg-orange-500/5',
-      activeText: 'text-orange-400',
-      badgeBg: 'bg-orange-500/10 text-orange-400',
+      activeText: 'text-warning',
+      badgeBg: 'bg-orange-500/10 text-warning',
     },
     {
       id: 'chatgpt' as const,
@@ -135,11 +135,11 @@ function SettingsClient() {
       sub: 'OpenAI Plus/Pro · GPT-4o',
       letter: 'G',
       iconBg: 'bg-emerald-500/15',
-      iconColor: 'text-emerald-400',
+      iconColor: 'text-income',
       activeBorder: 'border-emerald-500/30',
       activeBg: 'bg-emerald-500/5',
-      activeText: 'text-emerald-400',
-      badgeBg: 'bg-emerald-500/10 text-emerald-400',
+      activeText: 'text-income',
+      badgeBg: 'bg-emerald-500/10 text-income',
     },
     {
       id: 'gemini' as const,
@@ -247,7 +247,7 @@ function SettingsClient() {
             <User className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-muted-foreground mb-1">표시 이름 <span className="text-amber-600 dark:text-amber-400 font-medium">· 이체 필터링에 사용됩니다</span></p>
+            <p className="text-xs text-muted-foreground mb-1">표시 이름 <span className="text-warning dark:text-amber-400 font-medium">· 이체 필터링에 사용됩니다</span></p>
             {isEditingName ? (
               <div className="flex items-center gap-2">
                 <input
@@ -510,7 +510,7 @@ function SettingsClient() {
                   <AlertDialogTitle>0원 계좌 일괄 삭제</AlertDialogTitle>
                   <AlertDialogDescription className="space-y-1.5">
                     <span className="block">잔액이 ₩0이고 <strong className="text-foreground">거래 내역이 없는</strong> 계좌를 모두 삭제합니다.</span>
-                    <span className="block text-amber-400/80">거래 내역이 있는 계좌는 건너뜁니다. 삭제된 계좌는 복구할 수 없습니다.</span>
+                    <span className="block text-warning/80">거래 내역이 있는 계좌는 건너뜁니다. 삭제된 계좌는 복구할 수 없습니다.</span>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>
@@ -531,8 +531,8 @@ function SettingsClient() {
       {/* Danger Zone */}
       <section className="rounded-2xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/10 p-6">
         <div className="flex items-center gap-2.5 mb-4">
-          <ShieldAlert className="w-5 h-5 text-red-500" />
-          <h2 className="text-base font-semibold text-red-600 dark:text-red-400">Danger Zone</h2>
+          <ShieldAlert className="w-5 h-5 text-destructive" />
+          <h2 className="text-base font-semibold text-destructive dark:text-red-400">Danger Zone</h2>
         </div>
 
         <div className="flex items-start justify-between gap-4">
@@ -557,12 +557,12 @@ function SettingsClient() {
               <AlertDialogHeader>
                 <div className="flex items-center gap-2.5 mb-1">
                   <div className="w-9 h-9 rounded-xl bg-red-100 dark:bg-red-950/60 flex items-center justify-center">
-                    <AlertTriangle className="w-4 h-4 text-red-500" />
+                    <AlertTriangle className="w-4 h-4 text-destructive" />
                   </div>
                   <AlertDialogTitle>정말 초기화하시겠습니까?</AlertDialogTitle>
                 </div>
                 <AlertDialogDescription className="space-y-2">
-                  <span className="block text-red-600 dark:text-red-400 font-medium text-sm">
+                  <span className="block text-destructive dark:text-red-400 font-medium text-sm">
                     이 작업은 되돌릴 수 없습니다. 모든 지출/수입 내역이 삭제됩니다.
                   </span>
                   <span className="block text-muted-foreground text-xs">

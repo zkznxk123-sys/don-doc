@@ -260,7 +260,7 @@ function CategoryRow({
         <button
           onClick={handleDelete}
           disabled={deleting}
-          className="p-1.5 rounded-lg text-muted-foreground/60 hover:text-red-400 hover:bg-red-950/30 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100 disabled:opacity-50"
+          className="p-1.5 rounded-lg text-muted-foreground/60 hover:text-destructive hover:bg-red-950/30 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100 disabled:opacity-50"
           title="삭제"
         >
           {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}

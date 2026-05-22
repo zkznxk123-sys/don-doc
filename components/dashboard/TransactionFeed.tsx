@@ -121,7 +121,7 @@ export function TransactionFeed({
             <span className={cn(
               'text-xs font-medium tabular-nums whitespace-nowrap',
               group.dailyNet > 0
-                ? 'text-emerald-600 dark:text-emerald-400'
+                ? 'text-income dark:text-emerald-400'
                 : group.dailyNet < 0
                 ? 'text-muted-foreground'
                 : 'text-muted-foreground/60'
@@ -196,7 +196,7 @@ export function TransactionFeed({
                   <span className={cn(
                     'text-sm font-semibold tabular-nums flex-shrink-0',
                     tx.isMasked ? 'text-muted-foreground'
-                    : tx.amount > 0 ? 'text-emerald-600 dark:text-emerald-400'
+                    : tx.amount > 0 ? 'text-income dark:text-emerald-400'
                     : 'text-foreground'
                   )}>
                     {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)}
