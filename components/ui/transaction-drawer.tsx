@@ -428,7 +428,7 @@ export function TransactionDrawer({
                 className={cn(
                   "px-5 py-2 rounded-full text-sm font-medium transition-all border",
                   isExpense
-                    ? "bg-red-500/10 border-red-500/30 text-red-400"
+                    ? "bg-expense-soft border-[var(--viz-red)]/30 text-expense"
                     : "bg-muted/50 border-border text-muted-foreground hover:border-ring"
                 )}
               >
@@ -440,7 +440,7 @@ export function TransactionDrawer({
                 className={cn(
                   "px-5 py-2 rounded-full text-sm font-medium transition-all border",
                   !isExpense
-                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                    ? "bg-income-soft border-[var(--viz-emerald)]/30 text-income"
                     : "bg-muted/50 border-border text-muted-foreground hover:border-ring"
                 )}
               >
@@ -452,7 +452,7 @@ export function TransactionDrawer({
             <div className="flex items-baseline justify-center gap-1 max-w-full overflow-hidden">
               <span className={cn(
                 "text-3xl font-light flex-shrink-0",
-                isExpense ? "text-red-400/60" : "text-emerald-400/60"
+                isExpense ? "text-expense/60" : "text-income/60"
               )}>
                 ₩
               </span>
@@ -474,7 +474,7 @@ export function TransactionDrawer({
                 autoFocus
                 className={cn(
                   "bg-transparent text-center font-bold placeholder-muted-foreground/40 outline-none tabular-nums tracking-tight text-4xl sm:text-5xl min-w-0",
-                  isExpense ? "text-foreground" : "text-emerald-400"
+                  isExpense ? "text-foreground" : "text-income"
                 )}
                 style={{
                   width: `min(${Math.max(displayAmount.length, 1) * 1.8 + 1.5}rem, calc(100vw - 6rem))`,
@@ -894,7 +894,7 @@ export function TransactionDrawer({
 
           {/* Error */}
           {error && (
-            <div className="mt-4 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl text-sm text-red-400">
+            <div className="mt-4 px-4 py-3 bg-expense-soft border border-[var(--viz-red)]/20 rounded-xl text-sm text-expense">
               {error}
             </div>
           )}
@@ -956,7 +956,7 @@ export function TransactionDrawer({
                 ) : (
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="w-full py-3.5 rounded-xl text-sm font-medium text-red-400 border border-red-500/20 bg-red-500/5 hover:bg-red-500/10 hover:border-red-500/40 transition-all flex items-center justify-center gap-2"
+                    className="w-full py-3.5 rounded-xl text-sm font-medium text-expense border border-[var(--viz-red)]/20 bg-[var(--viz-red)]/5 hover:bg-expense-soft hover:border-[var(--viz-red)]/40 transition-all flex items-center justify-center gap-2"
                   >
                     <Trash2 className="w-4 h-4" />
                     삭제하기
