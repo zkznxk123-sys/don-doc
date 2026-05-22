@@ -84,7 +84,7 @@
 | 에러 | 사실, 해결책 제시 | "연결이 끊어졌어요. 다시 시도해 주세요." |
 | 금액 표기 | Serif (hero) / Sans tabular (UI) | 7.3억 / ₩4,320,000 |
 
-**Golden rule**: "돈(money)" 보다 "가족(family)"을 먼저. 돈은 가족의 연결을 위한 **매개**이지 목적이 아닙니다.
+**Golden rule**: "돈(money)" 보다 "시간(time)"을 먼저. 돈 관리는 시간을 아끼기 위한 **매개**일 뿐, 목적은 자산 주도자의 시간 최소화입니다. 가족·동업자와의 선별 공유는 부수 차별점.
 
 ---
 
@@ -131,6 +131,22 @@ CSS 변수는 `app/globals.css` 에 이미 반영됨. 요약:
 | Card | `#FFFFFF` | `#1E293B` |
 
 **골드의 역할**: 브랜드 강조색. 제한적으로 — eyebrow 라벨, "돈독" 강조, hover ring, 데이터 viz 중 accent 지표.
+
+### Landing · Dark Luxury sub-palette
+
+랜딩 페이지는 product-app(warm off-white)과 컨텍스트가 다른 **에디토리얼 다크 럭셔리** 톤을 유지한다. 위 product-app 토큰과 별개의 인라인 상수로 사용 (`components/marketing/LandingPage.tsx`). 이 팔레트는 **랜딩 트리에서만** 허용 — 다른 페이지는 globals.css 토큰을 우회 금지.
+
+| 역할 | Hex / RGBA | 상수명 |
+|---|---|---|
+| Surface BG | `#0B0F0E` | `BG` |
+| Surface BG_2 | `#11171A` | `BG_2` |
+| Surface BG_3 | `#070A09` | `BG_3` |
+| Type CREAM | `#F1ECE3` | `CREAM` |
+| Type CREAM_DIM | `rgba(241,236,227,0.6)` | `CREAM_DIM` |
+| Type CREAM_FAINT | `rgba(241,236,227,0.12)` | `CREAM_FAINT` |
+| Accent Gold | `#B49B3E` | `ACCENT` |
+| Accent Forest | `#2F5D4F` | `FOREST` |
+| Positive | `#7CC9A9` | `POSITIVE` |
 
 ---
 
