@@ -14,7 +14,8 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select'
-import { createManyTransactions, syncAccountBalancesOnly, checkTransactionDuplicates, autoDetectAndExcludeTransfers, autoDetectAndExcludeCancellations, autoDetectAndExcludeSharedCardDuplicates, type BulkTransactionRow } from '@/lib/actions/transaction'
+import { createManyTransactions, syncAccountBalancesOnly, checkTransactionDuplicates, type BulkTransactionRow } from '@/lib/actions/transaction'
+import { autoDetectAndExcludeTransfers, autoDetectAndExcludeCancellations, autoDetectAndExcludeSharedCardDuplicates } from '@/lib/actions/transactions/auto-exclude'
 import { getFamilyCategories, syncBanksaladCategories, type CategoryOption } from '@/lib/actions/categories'
 import {
   type ColMap, type ExcelPreset,
