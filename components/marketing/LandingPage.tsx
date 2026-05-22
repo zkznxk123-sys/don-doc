@@ -139,14 +139,14 @@ function Hero() {
             transition={{ duration: 0.9, delay: 0.3, ease: 'easeOut' }}
             className="flex flex-wrap gap-2.5 mt-9"
           >
-            <a
+            <Link
               href="/sign-up"
               className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-[13px] font-semibold transition-all active:scale-[0.97] hover:opacity-90"
               style={{ background: CREAM, color: BG }}
             >
               무료로 시작하기
               <ArrowRight className="w-4 h-4" />
-            </a>
+            </Link>
             <a
               href="/demo"
               className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-[13px] font-medium transition-all hover:bg-white/5 active:scale-[0.97]"
@@ -544,20 +544,20 @@ export function LandingPage() {
           >
             데모
           </a>
-          <a
+          <Link
             href="/sign-in"
             className="text-[12px] px-3 py-1.5 hover:opacity-80"
             style={{ color: CREAM_DIM }}
           >
             로그인
-          </a>
-          <a
+          </Link>
+          <Link
             href="/sign-up"
             className="text-[12px] font-semibold px-[18px] py-2.5 rounded-full transition hover:opacity-90"
             style={{ background: CREAM, color: BG }}
           >
             무료 시작
-          </a>
+          </Link>
         </div>
       </nav>
 
@@ -1077,14 +1077,14 @@ export function LandingPage() {
           </p>
 
           <div className="flex flex-wrap gap-3 justify-center mt-14">
-            <a
+            <Link
               href="/sign-up"
               className="inline-flex items-center gap-2 px-9 py-4 rounded-full text-[14px] font-semibold transition active:scale-[0.97] hover:opacity-90"
               style={{ background: CREAM, color: BG }}
             >
               무료로 시작하기
               <ArrowRight className="w-4 h-4" />
-            </a>
+            </Link>
             <a
               href="/demo"
               className="inline-flex items-center gap-2 px-9 py-4 rounded-full text-[14px] font-medium transition hover:bg-white/5 active:scale-[0.97]"
@@ -1101,8 +1101,8 @@ export function LandingPage() {
             <span>© 2026 돈Doc · 한 사람의 자산 본부</span>
             <span className="flex gap-6">
               <a href="/demo" className="hover:opacity-80">데모</a>
-              <a href="/sign-in" className="hover:opacity-80">로그인</a>
-              <a href="/sign-up" className="hover:opacity-80">시작하기</a>
+              <Link href="/sign-in" className="hover:opacity-80">로그인</Link>
+              <Link href="/sign-up" className="hover:opacity-80">시작하기</Link>
             </span>
           </div>
         </div>

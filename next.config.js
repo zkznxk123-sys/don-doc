@@ -9,9 +9,6 @@ const nextConfig = {
   images: {
     formats: ['image/avif', 'image/webp'],
   },
-  // .eslintrc.json 추가 후 typescript-eslint 룰 정의가 깨져 Vercel build 실패. lint 단계를 빌드에서 분리.
-  // 로컬에서는 `npm run lint`로 명시적으로 검사 (viz 토큰 강제 룰 유효).
-  eslint: { ignoreDuringBuilds: true },
 }
 
 module.exports = nextConfig
