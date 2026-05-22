@@ -105,7 +105,7 @@ function Hero() {
                 animation: 'cpDot 1.6s ease-in-out infinite',
               }}
             />
-            AI 패밀리 오피스 · 의사결정 구조 설계
+            한 사람의 자산 본부 · AI 자동 분류
           </p>
 
           <h1
@@ -130,7 +130,7 @@ function Hero() {
             className="text-base lg:text-[16px] leading-[1.65] mt-7 max-w-[520px]"
             style={{ color: CREAM_DIM }}
           >
-            앱과 엑셀에 흩어진 가족 자산을 구조화하고, AI가 분류 → 분석 → 시나리오 → 실행까지 연결합니다. 가족 단위 재무 의사결정을 위한 통합 플랫폼.
+            흩어진 자산을 한 화면에, 시간은 최소로. 현금·금융·부동산·연금·부채와 가계부를 한 곳에 모으고, AI가 분류 → 분석 → 시나리오 → 실행까지 연결합니다. 혼자 써도 충분, 필요하면 가족·동업자와 선별 공유.
           </motion.p>
 
           <motion.div
@@ -534,12 +534,6 @@ export function LandingPage() {
             <span className="font-black text-[16px] tracking-[-0.02em]" style={{ color: CREAM }}>
               돈Doc
             </span>
-            <span
-              className="hidden sm:inline-block text-[10px] tracking-[0.14em] uppercase font-semibold ml-2 px-2 py-0.5 rounded"
-              style={{ color: ACCENT, background: `${ACCENT}1A`, border: `1px solid ${ACCENT}40` }}
-            >
-              AI 패밀리오피스
-            </span>
           </Link>
         </div>
         <div className="flex items-center gap-2">
@@ -668,7 +662,7 @@ export function LandingPage() {
             </span>
           </>
         }
-        body="가족 단위 자산을 한곳에 모으고, AI가 정리·분석·실행까지 연결하는 웹 기반 실행형 패밀리오피스 — 7개 화면으로 설계."
+        body="흩어진 자산을 한곳에 모으고, AI가 정리·분석·실행까지 연결하는 웹 기반 자산 운영 시스템. 혼자 써도 충분하고, 필요하면 가족·동업자와 선별 공유."
         bg={BG_2}
       >
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-12">
@@ -1104,7 +1098,7 @@ export function LandingPage() {
             className="mt-20 pt-8 flex flex-col sm:flex-row justify-between items-center gap-3 text-[11px]"
             style={{ borderTop: `1px solid ${CREAM_FAINT}`, color: CREAM_DIM }}
           >
-            <span>© 2026 돈Doc · AI 패밀리 오피스</span>
+            <span>© 2026 돈Doc · 한 사람의 자산 본부</span>
             <span className="flex gap-6">
               <a href="/demo" className="hover:opacity-80">데모</a>
               <a href="/sign-in" className="hover:opacity-80">로그인</a>

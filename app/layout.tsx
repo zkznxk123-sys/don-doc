@@ -17,11 +17,11 @@ const notoSerif = Noto_Serif({
 })
 
 export const metadata: Metadata = {
-  title: "돈Doc — 디지털 패밀리오피스",
-  description: "가족의 자산을 더 돈독하게 연결하다. 가족 간의 사생활은 존중하면서 자산은 투명하게 통합 관리하는 선별적 공유 기반 디지털 패밀리오피스.",
+  title: "돈Doc — 흩어진 자산을 한 화면에",
+  description: "흩어진 자산을 한 화면에. 시간은 최소로. 자산 관리를 책임진 한 사람이 통합 운영할 수 있는 자산 운영 시스템. 혼자 써도 충분, 필요하면 가족·동업자와 선별 공유.",
   openGraph: {
     title: "돈Doc",
-    description: "가족의 자산을 더 돈독하게 연결하다",
+    description: "흩어진 자산을 한 화면에. 시간은 최소로.",
     // images: ["/og-image.png"],  // 별도 제작 필요
     locale: "ko_KR",
     type: "website",

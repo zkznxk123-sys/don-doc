@@ -10,7 +10,7 @@ export function InputGuide() {
       </p>
       <Accordion type="multiple">
         <AccordionItem value="banksalad">
-          <AccordionTrigger>📥 뱅크샐러드 엑셀 추출 방법</AccordionTrigger>
+          <AccordionTrigger>뱅크샐러드 엑셀 추출 방법</AccordionTrigger>
           <AccordionContent>
             <ul className="space-y-1.5 text-xs leading-relaxed">
               <li>• <span className="text-foreground">매월 1일</span>에 지난달 전체 내역을 추출하는 것을 권장해요.</li>
@@ -20,7 +20,7 @@ export function InputGuide() {
         </AccordionItem>
 
         <AccordionItem value="routine">
-          <AccordionTrigger>🗓️ 추천하는 패밀리 오피스 기록 루틴</AccordionTrigger>
+          <AccordionTrigger>월 1회 엑셀 업로드 루틴</AccordionTrigger>
           <AccordionContent>
             <ul className="space-y-1.5 text-xs leading-relaxed">
               <li>• <span className="text-foreground">카드 내역</span>은 월 1회 엑셀 일괄 업로드로 처리</li>
@@ -32,7 +32,7 @@ export function InputGuide() {
         </AccordionItem>
 
         <AccordionItem value="category">
-          <AccordionTrigger>✏️ 카테고리 일괄 정리 팁</AccordionTrigger>
+          <AccordionTrigger>카테고리 일괄 정리 팁</AccordionTrigger>
           <AccordionContent>
             <ul className="space-y-1.5 text-xs leading-relaxed">
               <li>• 업로드 후 <span className="text-foreground">현금흐름 탭</span>으로 이동</li>

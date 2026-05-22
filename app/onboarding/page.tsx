@@ -159,7 +159,7 @@ function OnboardingContent() {
                   <input
                     {...createForm.register('name')}
                     type="text"
-                    placeholder="예: 우리집 패밀리오피스"
+                    placeholder="예: 우리집 자산 본부"
                     autoFocus
                     className={cn(
                       'w-full h-12 bg-zinc-900 border rounded-xl px-4 text-sm text-white placeholder-zinc-600 outline-none transition-all',

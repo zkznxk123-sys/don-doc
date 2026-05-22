@@ -23,17 +23,16 @@
 ## 2. Tagline & Mission
 
 ### Primary Tagline
-> **가족의 자산을 더 돈독하게 연결하다**
+> **흩어진 자산을 한 화면에. 시간은 최소로.**
 
 - Hero, SEO description, OG image, App Store description 에 사용
-- "**돈독**" 은 `<b>` 또는 `<span className="text-secondary">` 로 브랜드 골드 강조 가능
-- 영문 버전: *Weaving families closer through their wealth.*
+- 영문 버전: *Scattered assets, one view. Minimal time.*
 
 ### One-liner (elevator)
 > 돈 관리는 똑똑하게, 관계는 더 돈독하게.
 
 ### Mission
-> 가족 간의 사생활은 존중하면서 자산은 투명하게 통합 관리하는, **선별적 공유 기반 디지털 패밀리오피스**.
+> 자산 관리를 책임진 한 사람이 시간을 최소화하는 도구. 혼자 써도 충분하고, 필요하면 가족·동업자와 선별적으로 공유한다.
 
 ---
 
@@ -56,18 +55,19 @@
 새 카피 · 메시지 · 마케팅 자산의 톤 체크리스트.
 
 **Must-have (필수)**
+- Owner-first (자산 주도자 중심 — 한 사람이 시간 최소화)
 - Connected (연결된, 유대)
 - Trusted (신뢰, 프라이버시)
-- Family-first (가족 중심)
 
 **Should-have (지향)**
+- Family-first (가족 중심 — 부수 차별점)
 - Intelligent (AI 분류·자동화)
 - Premium (패밀리오피스급 품질)
 - Wealth-tech (자산 관리 기술)
 
 **Avoid (피할 것)**
 - "가계부" 단독 사용 (너무 소박) → "자산 통합 관리"
-- "앱" (흔한 IT 느낌) → "서비스", "플랫폼", "디지털 패밀리오피스"
+- "앱" (흔한 IT 느낌) → "서비스", "플랫폼", "자산 운영 시스템"
 - 과장된 수익 표현 ("돈 벌기", "재테크 꿀팁")
 - 지나친 이모지, 느낌표 남발
 
