@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser } from '@/lib/auth'
 
 // 카카오 로컬 키워드 검색 → 아파트 단지 목록 반환
 // 응답: [{ name, address, roadAddress, bjdCode, x, y }]
@@ -57,6 +58,9 @@ function extractBjdCode(address: string): string | null {
 }
 
 export async function GET(req: NextRequest) {
+  const authUser = await getAuthUser()
+  if (!authUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const query = req.nextUrl.searchParams.get('q')
   if (!query) return NextResponse.json({ results: [] })
 

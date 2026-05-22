@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser } from '@/lib/auth'
 
 // 국토교통부 아파트 매매 실거래가 상세 조회 (RTMSDataSvcAptTradeDev)
 // GET /api/realestate/price?bjdCode=11680&complexName=래미안원베일리&area=84&months=24
@@ -10,6 +11,9 @@ function parsePrice(str: string): number {
 }
 
 export async function GET(req: NextRequest) {
+  const authUser = await getAuthUser()
+  if (!authUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { searchParams } = req.nextUrl
   const bjdCode     = searchParams.get('bjdCode')
   const complexName = searchParams.get('complexName')

@@ -1,12 +1,16 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser } from '@/lib/auth'
 
 // 최근 실거래 데이터에서 단지명 목록 추출 (RTMSDataSvcAptTradeDev 재활용)
 // GET /api/realestate/complexes?bjdCode=11140
 // 응답: [{ name: '서울역센트럴자이', code: '' }]
 
 export async function GET(req: NextRequest) {
+  const authUser = await getAuthUser()
+  if (!authUser) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const bjdCode = req.nextUrl.searchParams.get('bjdCode')
   if (!bjdCode) return NextResponse.json({ complexes: [] })
 
