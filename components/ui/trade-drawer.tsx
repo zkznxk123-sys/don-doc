@@ -15,10 +15,10 @@ interface TradeDrawerProps {
 }
 
 const TRADE_TYPE_META: Record<TradeType, { label: string; color: string }> = {
-  BUY:      { label: '매수', color: 'text-blue-500' },
-  SELL:     { label: '매도', color: 'text-red-500' },
-  DIVIDEND: { label: '배당', color: 'text-emerald-500' },
-  SPLIT:    { label: '분할', color: 'text-amber-500' },
+  BUY:      { label: '매수', color: 'text-savings' },
+  SELL:     { label: '매도', color: 'text-expense' },
+  DIVIDEND: { label: '배당', color: 'text-income' },
+  SPLIT:    { label: '분할', color: 'text-warning' },
 }
 
 export function TradeDrawer({ isOpen, onClose, onSuccess, holding }: TradeDrawerProps) {
@@ -179,19 +179,19 @@ export function TradeDrawer({ isOpen, onClose, onSuccess, holding }: TradeDrawer
                 if (tradeType === 'SELL' && validQty && validPrc) {
                   const pnl = (prc - holding.avgPrice) * qty
                   if (Math.abs(pnl) >= 1) {
-                    if (pnl > 0) lines.push({ color: 'text-emerald-500', label: `투자수익 +${currency}${Math.round(pnl).toLocaleString()} (예산 포함)` })
-                    else lines.push({ color: 'text-red-500', label: `투자손실 ${currency}${Math.round(pnl).toLocaleString()} (예산 포함)` })
+                    if (pnl > 0) lines.push({ color: 'text-income', label: `투자수익 +${currency}${Math.round(pnl).toLocaleString()} (예산 포함)` })
+                    else lines.push({ color: 'text-expense', label: `투자손실 ${currency}${Math.round(pnl).toLocaleString()} (예산 포함)` })
                   } else {
                     lines.push({ color: 'text-muted-foreground/70', label: '손익 ≈ 0' })
                   }
                 } else if (tradeType === 'DIVIDEND' && validQty && validPrc) {
                   const div = qty * prc
-                  if (div >= 1) lines.push({ color: 'text-emerald-500', label: `배당 +${currency}${Math.round(div).toLocaleString()} (예산 제외)` })
+                  if (div >= 1) lines.push({ color: 'text-income', label: `배당 +${currency}${Math.round(div).toLocaleString()} (예산 제외)` })
                 } else if (tradeType === 'BUY') {
                   lines.push({ color: 'text-muted-foreground/70', label: '매수는 가계부 변동 없음 (자산 이동)' })
                 }
                 if (f > 0) {
-                  lines.push({ color: 'text-orange-500', label: `매매수수료 -${currency}${Math.round(f).toLocaleString()} (예산 제외)` })
+                  lines.push({ color: 'text-warning', label: `매매수수료 -${currency}${Math.round(f).toLocaleString()} (예산 제외)` })
                 }
                 if (lines.length === 0) return null
                 return (
