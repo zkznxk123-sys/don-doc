@@ -635,8 +635,8 @@ export function TransactionDrawer({
                 className="w-full h-11 bg-muted rounded-xl px-4 border border-border text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-all"
               />
               {autoSuggestedCategory && (
-                <p className="text-xs text-emerald-400/80 mt-1.5 pl-1 flex items-center gap-1">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                <p className="text-xs text-income/80 mt-1.5 pl-1 flex items-center gap-1">
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--viz-emerald)]" />
                   &lsquo;{description}&rsquo; → <span className="font-medium">{autoSuggestedCategory}</span> 카테고리 자동 선택됨
                 </p>
               )}
@@ -733,11 +733,11 @@ export function TransactionDrawer({
             )}
 
             {!isShared && (
-              <div className="flex items-start gap-2.5 rounded-xl px-4 py-3 bg-amber-500/5 border border-amber-500/15">
-                <Lock className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
-                <p className="text-xs text-amber-300/80 leading-relaxed">
+              <div className="flex items-start gap-2.5 rounded-xl px-4 py-3 bg-warning-soft/50 border border-[var(--viz-amber)]/15">
+                <Lock className="w-4 h-4 text-warning mt-0.5 flex-shrink-0" />
+                <p className="text-xs text-warning/80 leading-relaxed">
                   이 지출의 상세 내역은 가족에게 공개되지 않습니다.<br />
-                  <span className="text-amber-400/50">가족 대시보드에는 금액과 &lsquo;🔒 개인 지출&rsquo;만 표시됩니다.</span>
+                  <span className="text-warning/50">가족 대시보드에는 금액과 &lsquo;🔒 개인 지출&rsquo;만 표시됩니다.</span>
                 </p>
               </div>
             )}
@@ -847,7 +847,7 @@ export function TransactionDrawer({
                           </div>
                           <button
                             onClick={() => setSubItems(prev => prev.filter((_, i) => i !== idx))}
-                            className="mt-1 p-1 rounded-lg text-muted-foreground/40 hover:text-red-400 hover:bg-red-500/10 transition-colors flex-shrink-0"
+                            className="mt-1 p-1 rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors flex-shrink-0"
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
@@ -862,7 +862,7 @@ export function TransactionDrawer({
                         const allocated = subItems.reduce((s, i) => s + (Number(i.amount) || 0), 0)
                         const remaining = total - allocated
                         return (
-                          <p className={cn('text-[11px] tabular-nums', remaining === 0 ? 'text-emerald-500' : remaining < 0 ? 'text-red-400' : 'text-muted-foreground/60')}>
+                          <p className={cn('text-[11px] tabular-nums', remaining === 0 ? 'text-income' : remaining < 0 ? 'text-destructive' : 'text-muted-foreground/60')}>
                             배분 {allocated.toLocaleString()}원 / 전체 {total.toLocaleString()}원
                             {remaining !== 0 && ` (${remaining > 0 ? '미배분' : '초과'} ${Math.abs(remaining).toLocaleString()}원)`}
                           </p>
