@@ -985,14 +985,14 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
           </button>
 
           {isEditMode && confirmDelete && deleteCounts && (
-            <div className="rounded-xl border border-red-500/40 bg-red-500/5 dark:bg-red-500/10 px-4 py-3 text-xs space-y-1.5">
-              <p className="text-red-700 dark:text-red-300 font-semibold">⚠️ 연결된 데이터가 함께 삭제됩니다</p>
-              <ul className="text-red-700/90 dark:text-red-200/90 space-y-0.5 pl-1 tabular-nums">
+            <div className="rounded-xl border border-destructive/40 bg-expense-soft px-4 py-3 text-xs space-y-1.5">
+              <p className="text-destructive font-semibold">⚠️ 연결된 데이터가 함께 삭제됩니다</p>
+              <ul className="text-destructive/90 space-y-0.5 pl-1 tabular-nums">
                 {deleteCounts.transactionCount > 0 && <li>· 거래 내역 {deleteCounts.transactionCount.toLocaleString()}건</li>}
                 {deleteCounts.holdingCount > 0 && <li>· 보유 종목 {deleteCounts.holdingCount.toLocaleString()}개</li>}
                 {deleteCounts.subAccountCount > 0 && <li>· 하위 계좌 {deleteCounts.subAccountCount.toLocaleString()}개</li>}
               </ul>
-              <p className="text-red-600/80 dark:text-red-300/70 pt-0.5">이 작업은 되돌릴 수 없습니다.</p>
+              <p className="text-destructive/70 pt-0.5">이 작업은 되돌릴 수 없습니다.</p>
             </div>
           )}
 
@@ -1003,8 +1003,8 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
               className={cn(
                 'w-full h-11 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-2',
                 confirmDelete
-                  ? 'bg-red-500 border border-red-500 text-white hover:bg-red-600'
-                  : 'bg-card border border-border text-muted-foreground hover:text-red-400 hover:border-red-500/30'
+                  ? 'bg-destructive border border-destructive text-destructive-foreground hover:bg-destructive/90'
+                  : 'bg-card border border-border text-muted-foreground hover:text-destructive hover:border-destructive/30'
               )}
             >
               {isDeleting
