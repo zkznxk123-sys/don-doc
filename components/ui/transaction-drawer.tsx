@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { getFamilyCategories, addCustomCategory, type CategoryOption } from '@/lib/actions/categories'
 import { upsertSubTransactions, type SubTransactionInput } from '@/lib/actions/transaction'
+import { useDefaultVisibility } from '@/lib/hooks/useDefaultVisibility'
 
 export interface EditTransactionData {
   id: string
@@ -110,7 +111,8 @@ export function TransactionDrawer({
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [category, setCategory] = useState('')
   const [description, setDescription] = useState('')
-  const [isShared, setIsShared] = useState(true)
+  const { visibility: defaultVisibility } = useDefaultVisibility()
+  const [isShared, setIsShared] = useState(false) // 결정 ③: default PRIVATE — useEffect로 default visibility 반영
   const [isExpense, setIsExpense] = useState(true)
 
   // UI state
@@ -233,10 +235,13 @@ export function TransactionDrawer({
         setShowSplit(false)
         setSubItems([])
       }
+    } else {
+      // 신규 모드 — 설정의 default visibility 적용 (결정 ③)
+      setIsShared(defaultVisibility === 'SHARED')
     }
     setShowDeleteConfirm(false)
     setError('')
-  }, [isOpen, editTransaction])
+  }, [isOpen, editTransaction, defaultVisibility])
 
   // dirty 체크: 신규 모드에서 사용자가 입력한 흔적이 있는지
   const isDirty = isEditMode
@@ -268,14 +273,14 @@ export function TransactionDrawer({
     setDate(new Date().toISOString().split('T')[0])
     setCategory('')
     setDescription('')
-    setIsShared(true)
+    setIsShared(defaultVisibility === 'SHARED')
     setIsExpense(true)
     setError('')
     setAutoSuggestedCategory(null)
     setShowDeleteConfirm(false)
     setShowSplit(false)
     setSubItems([])
-  }, [])
+  }, [defaultVisibility])
 
   const handleOpenChange = (open: boolean) => {
     if (!open) {

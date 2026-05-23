@@ -17,6 +17,7 @@ import {
 import { createManyTransactions, syncAccountBalancesOnly, checkTransactionDuplicates, type BulkTransactionRow } from '@/lib/actions/transaction'
 import { autoDetectAndExcludeTransfers, autoDetectAndExcludeCancellations, autoDetectAndExcludeSharedCardDuplicates } from '@/lib/actions/transactions/auto-exclude'
 import { getFamilyCategories, syncBanksaladCategories, type CategoryOption } from '@/lib/actions/categories'
+import { useDefaultVisibility } from '@/lib/hooks/useDefaultVisibility'
 import {
   type ColMap, type ExcelPreset,
   detectPreset, buildColMap,
@@ -67,7 +68,7 @@ function parseNum(raw: unknown): number {
   return parseFloat(String(raw).replace(/[,\s원+]/g, ''))
 }
 
-function mapRow(raw: Record<string, unknown>, col: ColMap): ParsedRow {
+function mapRow(raw: Record<string, unknown>, col: ColMap, visibility: 'SHARED' | 'PRIVATE'): ParsedRow {
   const date = parseDate(col.date ? raw[col.date] : undefined)
   const description = col.description ? String(raw[col.description] ?? '').trim() : ''
   let amount = NaN
@@ -86,7 +87,7 @@ function mapRow(raw: Record<string, unknown>, col: ColMap): ParsedRow {
   let _error: string | undefined
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) _error = '날짜 오류'
   else if (isNaN(amount)) _error = '금액 오류'
-  return { date, description, amount: isNaN(amount) ? 0 : amount, category, visibility: 'SHARED', _error }
+  return { date, description, amount: isNaN(amount) ? 0 : amount, category, visibility, _error }
 }
 
 // ━━ 메인 컴포넌트 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -133,8 +134,9 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
   // 업로드 모드 (뱅크샐러드 + 계좌 잔액 있을 때)
   const [uploadMode, setUploadMode] = useState<UploadMode>('both')
 
-  // 가시성: 일괄 업로드는 SHARED 고정 (업로드 후 개별 수정)
-  const visibility = 'SHARED' as const
+  // 가시성: 결정 ③ — 설정의 default visibility 사용 (사용자 기본값, 업로드 후 개별 수정 가능)
+  const { visibility: defaultVisibility } = useDefaultVisibility()
+  const visibility = defaultVisibility
   const [isLoading, setIsLoading] = useState(false)
 
   // 가족 구성원 이름 (이체 필터링용)
@@ -258,7 +260,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         if (banksaladResult) {
           const parsed: ParsedRow[] = banksaladResult.rows.map((r: BanksaladRow) => ({
             date: r.date, description: r.description, amount: r.amount,
-            category: r.category, visibility: 'SHARED',
+            category: r.category, visibility,
             accountName: r.paymentMethod || '기본 계좌',
             _banksaladCategory: r.banksaladCategory,
             _paymentMethod: r.paymentMethod,
@@ -308,7 +310,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         const headers = Object.keys(json[0])
         const preset = detectPreset(headers)
         const col = buildColMap(headers, preset)
-        const parsed = json.map(r => mapRow(r, col))
+        const parsed = json.map(r => mapRow(r, col, visibility))
 
         setIsBanksalad(false); setBanksaladMeta(null)
         setRawHeaders(headers); setRawData(json)
@@ -329,7 +331,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
       const next = { ...prev, [field]: header || null }
       if (field === 'amount' && header) { next.withdraw = null; next.deposit = null }
       else if ((field === 'withdraw' || field === 'deposit') && header) next.amount = null
-      const newRows = rawData.map(r => mapRow(r, next))
+      const newRows = rawData.map(r => mapRow(r, next, visibility))
       setRows(newRows)
       return next
     })
