@@ -130,11 +130,18 @@ const categories = await getFamilyCategories()
 
 ### 역할
 - `CFO` — 전체 접근, 가족 관리
+- `CO_CFO` — 공동 관리자 (CFO와 동일한 접근 권한, 부부 공동 관리 등). `isCFOLevel(role)` helper로 CFO·CO_CFO 통합 판정
 - `MEMBER` — 본인 + SHARED 거래만
 
 ### 트랜잭션 가시성
 - `SHARED` — 가족 전체 공개
 - `PRIVATE` — 금액만 노출, 내용 마스킹
+- 자동 생성(매매·실현손익·배당·수수료) default = `PRIVATE` (5/22~)
+
+### 계좌 공유 (ShareLevel)
+- `PUBLIC` — 이름·금액·거래 내역 모두 공개
+- `BALANCE_ONLY` — 이름·금액만, 거래 마스킹
+- `PRIVATE` — 본인만
 
 ---
 
@@ -153,6 +160,17 @@ const categories = await getFamilyCategories()
 - **ExchangeRate** — USD-KRW 환율 스냅샷
 - **FeedPost** — 가족 피드 게시물
 - **Scenario** — 시나리오 분석 (임베딩 기반 부분 대체·비교 뷰)
+
+### Prisma enum
+- **Role** — CFO · CO_CFO · MEMBER
+- **AccountType** — CASH · INVESTMENT · CRYPTO · STO · PENSION · REAL_ESTATE · DEBT · CREDIT_CARD
+- **ShareLevel** — PUBLIC · BALANCE_ONLY · PRIVATE
+- **DebtType** — MORTGAGE · JEONSE_DEPOSIT · CREDIT_LOAN · OVERDRAFT · ETC
+- **RepaymentType** — EQUAL_PRINCIPAL_INTEREST · EQUAL_PRINCIPAL · BULLET · INTEREST_ONLY
+- **PensionType** — PUBLIC_PENSION · RETIREMENT_DB · RETIREMENT_DC · IRP · PERSONAL_PENSION · HOME_PENSION
+- **TradeType** — BUY · SELL · DIVIDEND · SPLIT
+- **CategoryType** — INCOME · EXPENSE
+- **Visibility** — SHARED · PRIVATE
 
 ---
 
