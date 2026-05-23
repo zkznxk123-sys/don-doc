@@ -1,7 +1,6 @@
 import { tool } from 'ai'
 import { z } from 'zod'
 import { AccountType } from '@prisma/client'
-import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { isCFOLevel } from '@/lib/roles'
 import { won } from '../helpers'
