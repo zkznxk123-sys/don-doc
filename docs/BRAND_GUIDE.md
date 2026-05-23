@@ -62,7 +62,7 @@
 **Should-have (지향)**
 - Family-first (가족 중심 — 부수 차별점)
 - Intelligent (AI 분류·자동화)
-- Premium (패밀리오피스급 품질)
+- Premium (전문가급 품질)
 - Wealth-tech (자산 관리 기술)
 
 **Avoid (피할 것)**

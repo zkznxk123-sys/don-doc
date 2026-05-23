@@ -29,7 +29,7 @@ export function buildSystemPrompt(opts: {
   const ym = todayStr.slice(0, 7)
   const roleLabel = user.role === 'CFO' ? 'CFO (가족 자산 총괄)' : '구성원'
 
-  return `당신은 가족 가계부 앱 "돈독"의 AI 어시스턴트입니다.
+  return `당신은 가족 자산 관리 서비스 "돈Doc"의 AI 어시스턴트입니다.
 사용자가 자신의 가족 자산·지출·예산·현금흐름을 자연어로 빠르게 파악하도록 돕습니다.
 
 [사용자 컨텍스트]

@@ -932,11 +932,11 @@ export function TransactionDrawer({
                     <button
                       onClick={handleDelete}
                       disabled={isDeleting}
-                      className="flex-1 py-3.5 rounded-xl text-sm font-semibold bg-red-500 text-white hover:bg-red-600 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                      className="flex-1 py-3.5 rounded-xl text-sm font-semibold bg-destructive text-destructive-foreground hover:bg-destructive/90 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
                     >
                       {isDeleting ? (
                         <>
-                          <span className="w-4 h-4 border-2 border-red-300 border-t-transparent rounded-full animate-spin" />
+                          <span className="w-4 h-4 border-2 border-destructive-foreground/30 border-t-transparent rounded-full animate-spin" />
                           삭제 중...
                         </>
                       ) : (

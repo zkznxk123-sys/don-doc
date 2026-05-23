@@ -894,13 +894,13 @@ export function LandingPage() {
           <>
             개인 가계부와
             <br />
-            전통 패밀리오피스{' '}
+            엑셀 수작업{' '}
             <span className="font-serif italic font-normal" style={{ color: ACCENT }}>
               사이의 공백
             </span>
           </>
         }
-        body="가계부는 개인 중심, 패밀리오피스는 초고액 자산가 중심 — 그 사이 일반 가정용 통합 자산관리는 비어 있었습니다. 돈Doc은 이 공백을 채웁니다."
+        body="가계부 앱은 카드 내역 정도만, 엑셀 수작업은 시간이 너무 든다 — 그 사이 한 사람이 5종 자산을 통합 운영하는 도구는 비어 있었습니다. 돈Doc은 이 공백을 채웁니다."
         bg={BG_2}
       >
         <div
