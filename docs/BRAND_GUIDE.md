@@ -77,7 +77,7 @@
 
 | 상황 | 톤 | 예시 |
 |---|---|---|
-| Hero / 헤드라인 | Confident, editorial, 짧음 | "가족의 자산을 더 돈독하게 연결하다" |
+| Hero / 헤드라인 | Confident, editorial, 짧음 | "흩어진 자산을 한 화면에. 시간은 최소로." |
 | 본문 설명 | Clear, 존댓말, 단정 | "가족 각자의 사생활은 지키면서, 자산은 한 화면에서 투명하게." |
 | CTA 버튼 | 동사 원형, 간결 | "무료로 시작하기", "데모 체험하기" |
 | 빈 상태 / 안내 | Warm, 부드러움 | "아직 가족이 초대되지 않았어요." |
@@ -130,7 +130,7 @@ CSS 변수는 `app/globals.css` 에 이미 반영됨. 요약:
 | Secondary (Gold) | `#735C00` muted editorial | `#B49B3E` luminous |
 | Card | `#FFFFFF` | `#1E293B` |
 
-**골드의 역할**: 브랜드 강조색. 제한적으로 — eyebrow 라벨, "돈독" 강조, hover ring, 데이터 viz 중 accent 지표.
+**골드의 역할**: 브랜드 강조색. 제한적으로 — eyebrow 라벨, "돈Doc" 강조, hover ring, 데이터 viz 중 accent 지표.
 
 ### Landing · Dark Luxury sub-palette
 

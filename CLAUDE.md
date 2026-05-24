@@ -75,13 +75,13 @@ lib/
     categories.ts   # getFamilyCategories, addCustomCategory
     accounts.ts
     budget.ts
-    scenario.ts
+    scenario/       # 도메인 분할 (types, helpers, content-sources, generate, manage)
     family.ts
     feed.ts
     wealth.ts
     preferences.ts  # 사용자 카테고리 학습 데이터
   agent/            # AI 채팅 어시스턴트
-    tools.ts        # tool calling 정의 (도메인별 분할 권장 — 1,700줄)
+    tools/          # tool calling 정의 (도메인별 분할 완료)
     system-prompt.ts
   data/             # 종목 universe·preset·섹터 매핑
     stock-universe.ts
