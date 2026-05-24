@@ -547,7 +547,7 @@ async function summarizeSource(
       : '10~14개'
 
     const metaPrompt =
-      `당신은 가계부 앱 "돈독"의 콘텐츠 분석 AI입니다. ` +
+      `당신은 가계부 앱 "돈Doc"의 콘텐츠 분석 AI입니다. ` +
       `사용자가 등록한 ${sourceLabel}을 분석해 다음 3개 키를 포함한 JSON을 반환하세요:\n\n` +
       `1. sourceLanguage: 원문 주 언어 ISO 코드 ("ko", "en", "ja", "zh" 등). 자막 본문 기준.\n` +
       `2. summary: **한국어 마크다운**으로, 다음 3개 섹션을 정확한 헤딩 그대로 작성:\n` +

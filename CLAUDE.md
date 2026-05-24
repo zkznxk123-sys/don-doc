@@ -1,4 +1,4 @@
-# 돈독 (Don-Doc) — CLAUDE.md
+# 돈Doc (Don-Doc) — CLAUDE.md
 
 가족 공유 자산/가계부 관리 앱. Next.js 14 App Router 기반.
 

@@ -7,7 +7,7 @@ const PROXY_URL = process.env.CLI_PROXY_URL ?? 'http://localhost:8317'
 const MGMT_SECRET = process.env.CLI_PROXY_MGMT_SECRET ?? ''
 const ADMIN_FAMILY_ID = process.env.ADMIN_FAMILY_ID ?? ''
 
-// CLIProxy provider 식별자 → 돈독 provider 식별자
+// CLIProxy provider 식별자 → 돈Doc provider 식별자
 const PROVIDER_MAP: Record<string, string> = {
   claude:     'claude',
   codex:      'chatgpt',
