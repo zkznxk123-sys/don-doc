@@ -135,8 +135,8 @@ export function NetWorthHistoryModal({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-blue-500/10 flex items-center justify-center">
-              <TrendingUp className="w-4 h-4 text-blue-400" />
+            <div className="w-7 h-7 rounded-lg bg-savings-soft flex items-center justify-center">
+              <TrendingUp className="w-4 h-4 text-savings" />
             </div>
             <h2 className="text-sm font-semibold text-foreground">순자산 기록 추가</h2>
           </div>
@@ -213,7 +213,7 @@ export function NetWorthHistoryModal({
           <button
             onClick={handleSave}
             disabled={saving || !yearMonth}
-            className="w-full bg-blue-600 hover:bg-blue-500 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed text-white text-sm font-semibold py-3 rounded-xl transition-colors"
+            className="w-full bg-primary hover:bg-primary/90 text-primary-foreground disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed text-sm font-semibold py-3 rounded-xl transition-colors"
           >
             {saving ? '저장 중...' : '저장'}
           </button>

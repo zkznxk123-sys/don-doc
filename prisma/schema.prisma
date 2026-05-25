@@ -78,7 +78,7 @@ enum PensionType {
 
 model FamilyGroup {
   id                String               @id @default(cuid())
-  name              String // 예: "우리집 패밀리오피스"
+  name              String // 예: "우리집", "공동 자산 운영"
   aiMode            String               @default("api") // "api" | "proxy"
   users             User[]
   accounts          Account[]
@@ -217,7 +217,7 @@ model Transaction {
   category          String // 카테고리 이름 (표시용, 하위호환)
   categoryId        String? // Category 모델 FK (선택)
   categoryRef       Category?     @relation(fields: [categoryId], references: [id])
-  visibility        Visibility    @default(SHARED)
+  visibility        Visibility    @default(PRIVATE)
   isExcluded        Boolean       @default(false) // 통계 제외 여부
   excludeFromBudget Boolean       @default(false) // 예산 집계 제외 여부
   originalHash      String?       @unique // 엑셀 원본 Row 식별자 SHA-256 (userId|date|amount|desc|accountName)

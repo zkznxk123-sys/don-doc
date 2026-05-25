@@ -651,8 +651,8 @@ export function TransactionDrawer({
             <div className={cn(
               "flex items-center justify-between rounded-xl p-4 border transition-colors",
               isShared
-                ? "bg-emerald-500/5 border-emerald-500/20"
-                : "bg-amber-500/5 border-amber-500/20"
+                ? "bg-income-soft border-[hsl(var(--viz-emerald))]/20"
+                : "bg-warning-soft border-[hsl(var(--viz-amber))]/20"
             )}>
               <div className="flex items-center gap-3">
                 <div className={cn(
@@ -694,7 +694,7 @@ export function TransactionDrawer({
                 </div>
                 <div className={cn(
                   'w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0',
-                  isExcluded ? 'bg-red-500 border-red-500' : 'border-muted-foreground/30'
+                  isExcluded ? 'bg-destructive border-destructive' : 'border-muted-foreground/30'
                 )}>
                   {isExcluded && (
                     <svg width="10" height="10" viewBox="0 0 10 10" fill="none">

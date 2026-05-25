@@ -112,15 +112,16 @@ function Hero() {
             className="font-serif font-medium leading-[1.05] tracking-[-0.025em] text-[44px] sm:text-[56px] lg:text-[68px]"
             style={{ color: CREAM }}
           >
-            분석하는 AI를 넘어,
+            흩어진 자산을
             <br />
             <span
               className="font-serif italic font-normal"
               style={{ color: ACCENT }}
             >
-              실행하는 AI
+              한 화면에.
             </span>
-            로.
+            <br />
+            시간은 최소로.
           </h1>
 
           <motion.p
@@ -130,7 +131,7 @@ function Hero() {
             className="text-base lg:text-[16px] leading-[1.65] mt-7 max-w-[520px]"
             style={{ color: CREAM_DIM }}
           >
-            흩어진 자산을 한 화면에, 시간은 최소로. 현금·금융·부동산·연금·부채와 가계부를 한 곳에 모으고, AI가 분류 → 분석 → 시나리오 → 실행까지 연결합니다. 혼자 써도 충분, 필요하면 가족·동업자와 선별 공유.
+            현금·금융·부동산·연금·부채와 가계부를 한 곳에 모으고, AI가 분류 → 분석 → 시나리오 → 실행까지 연결합니다. 혼자 써도 충분하고, 필요하면 가족·동업자와 선별적으로 공유합니다.
           </motion.p>
 
           <motion.div
@@ -217,7 +218,7 @@ function Hero() {
                 </span>
               </div>
               <div className="flex gap-1 text-[9px]">
-                {['대시보드', '현금흐름', '시나리오', '피드'].map((p, i) => (
+                {['대시보드', '현금흐름', '자산', '시나리오'].map((p, i) => (
                   <span
                     key={p}
                     className="px-2 py-1 rounded-md font-medium"
