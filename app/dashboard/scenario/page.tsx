@@ -88,8 +88,8 @@ function ProgressSummary({ scenarios }: { scenarios: ScenarioData[] }) {
               </div>
               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                 <div
-                  className={cn('h-full rounded-full transition-all', pct === 100 ? 'bg-[var(--viz-emerald)]' : 'bg-blue-400')}
-                  style={{ width: `${pct}%` }}
+                  className="h-full rounded-full transition-all"
+                  style={{ width: `${pct}%`, backgroundColor: pct === 100 ? 'var(--viz-emerald)' : 'var(--viz-blue)' }}
                 />
               </div>
               {pct === 100 && (
@@ -152,7 +152,7 @@ function CompareView({ scenarios }: { scenarios: ScenarioData[] }) {
                 <td className="py-3 pr-3 align-top">
                   <p className="font-medium text-foreground leading-snug line-clamp-2">{s.title}</p>
                   {s.status === 'interested' && (
-                    <span className="text-[9px] text-blue-400 font-semibold">관심있음</span>
+                    <span className="text-[9px] text-savings font-semibold">관심있음</span>
                   )}
                 </td>
                 <td className="py-3 px-2 text-center align-top">
@@ -494,11 +494,13 @@ function ScenarioCard({
   }
 
   return (
-    <div className={cn(
-      'bg-card border border-border rounded-2xl overflow-hidden transition-opacity',
-      dismissed && 'opacity-40',
-      interested && 'border-blue-500/30',
-    )}>
+    <div
+      className={cn(
+        'bg-card border border-border rounded-2xl overflow-hidden transition-opacity',
+        dismissed && 'opacity-40',
+      )}
+      style={interested ? { borderColor: 'rgba(59,130,246,0.3)' } : undefined}
+    >
       {/* 헤더 */}
       <button
         onClick={() => setExpanded(v => !v)}
@@ -512,7 +514,7 @@ function ScenarioCard({
               </span>
             )}
             {interested && (
-              <span className="flex items-center gap-1 text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
+              <span className="flex items-center gap-1 text-[10px] bg-savings-soft text-savings px-2 py-0.5 rounded-full">
                 <BookmarkCheck className="w-3 h-3" />관심있음
               </span>
             )}
@@ -678,7 +680,8 @@ function ScenarioCard({
           {!interested ? (
             <button
               onClick={onInterested}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500 dark:text-blue-400 text-xs font-medium hover:bg-blue-500/20 transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-savings-soft text-savings text-xs font-medium hover:bg-savings/20 transition-colors border"
+              style={{ borderColor: 'rgba(59,130,246,0.2)' }}
             >
               <BookmarkCheck className="w-3.5 h-3.5" />관심있음
             </button>

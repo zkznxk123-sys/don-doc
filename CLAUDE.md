@@ -217,11 +217,23 @@ DEMO_CFO_EMAIL=       # /api/demo/data 가 조회할 데모 가족 CFO 이메일
 ## 개발 명령어
 
 ```bash
+npm install            # 의존성 설치 (xlsx는 SheetJS CDN tarball 직접 의존 — 네트워크 필요)
 npm run dev            # 개발 서버 (localhost:3000)
+npm test               # vitest 단위 테스트
+npm run test:watch     # vitest watch 모드
 npx prisma studio      # DB GUI
 npx prisma migrate dev # 마이그레이션
 npx tsx prisma/seed-categories.ts  # 카테고리 시드
+npx tsx prisma/seed-demo.ts        # 데모 가족 시드 (가명 데이터)
 ```
+
+### xlsx (SheetJS)
+
+`package.json` 의 `xlsx` 의존성은 **npm 등록본이 아니라 SheetJS CDN tarball** 을 직접 가리킨다:
+`"xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"`
+
+이유: SheetJS는 0.18.5 이후 npm 배포를 중단하고 CDN 자체 배포로 전환했고, npm 0.18.5에는 high 취약점 2건(Prototype Pollution, ReDoS)이 fix 없이 남아 있다. CDN 0.20.3은 두 취약점 모두 해소.
+
 
 ---
 
