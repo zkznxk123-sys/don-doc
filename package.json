@@ -29,8 +29,6 @@
     "@radix-ui/react-select": "^2.2.6",
     "@radix-ui/react-switch": "^1.2.6",
     "@radix-ui/react-tabs": "^1.1.13",
-    "@supabase/auth-helpers-nextjs": "^0.10.0",
-    "@supabase/supabase-js": "^2.45.4",
     "ai": "^6.0.134",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",

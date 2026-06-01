@@ -161,7 +161,7 @@ export function TradeDrawer({ isOpen, onClose, onSuccess, holding }: TradeDrawer
                 className="w-full px-3 py-2 text-sm bg-background rounded-lg border border-border focus:outline-none"
               />
 
-              {/* 가계부 영향 미리보기 */}
+              {/* 거래 내역 영향 미리보기 */}
               {(() => {
                 const qty = Number(quantity)
                 const prc = Number(price)
@@ -171,7 +171,7 @@ export function TradeDrawer({ isOpen, onClose, onSuccess, holding }: TradeDrawer
                 if (!validQty && !validPrc && !f) {
                   return (
                     <div className="text-[10.5px] text-muted-foreground/60 leading-relaxed bg-background/40 rounded-lg px-3 py-2 border border-border/50">
-                      💡 매매 기록 등록 시 손익·배당·수수료가 가계부에도 자동 반영됩니다.
+                      매매 기록 등록 시 손익·배당·수수료가 거래 내역에도 자동 반영됩니다.
                     </div>
                   )
                 }
@@ -188,7 +188,7 @@ export function TradeDrawer({ isOpen, onClose, onSuccess, holding }: TradeDrawer
                   const div = qty * prc
                   if (div >= 1) lines.push({ color: 'text-income', label: `배당 +${currency}${Math.round(div).toLocaleString()} (예산 제외)` })
                 } else if (tradeType === 'BUY') {
-                  lines.push({ color: 'text-muted-foreground/70', label: '매수는 가계부 변동 없음 (자산 이동)' })
+                  lines.push({ color: 'text-muted-foreground/70', label: '매수는 거래 내역 변동 없음 (자산 이동)' })
                 }
                 if (f > 0) {
                   lines.push({ color: 'text-warning', label: `매매수수료 -${currency}${Math.round(f).toLocaleString()} (예산 제외)` })
@@ -196,12 +196,12 @@ export function TradeDrawer({ isOpen, onClose, onSuccess, holding }: TradeDrawer
                 if (lines.length === 0) return null
                 return (
                   <div className="text-[11px] leading-relaxed bg-background/40 rounded-lg px-3 py-2 border border-border/50 space-y-0.5">
-                    <p className="text-muted-foreground/70 text-[10px]">가계부 자동 반영</p>
+                    <p className="text-muted-foreground/70 text-[10px]">거래 내역 자동 반영</p>
                     {lines.map((l, i) => (
                       <p key={i} className={`${l.color} tabular-nums`}>· {l.label}</p>
                     ))}
                     {holding.currency === 'USD' && (
-                      <p className="text-muted-foreground/50 text-[9.5px] pt-0.5">※ 가계부엔 현재 환율로 환산되어 원화 기록됩니다.</p>
+                      <p className="text-muted-foreground/50 text-[9.5px] pt-0.5">※ 거래 내역엔 현재 환율로 환산되어 원화 기록됩니다.</p>
                     )}
                   </div>
                 )

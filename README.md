@@ -43,7 +43,7 @@ CFO(관리자)는 전체 자산 흐름을 파악하고, 구성원은 개인 지�
 
 | 영역 | 기술 |
 |---|---|
-| **Framework** | Next.js 14.2.5 (App Router, Turbo) |
+| **Framework** | Next.js 15.x (App Router, Turbo) |
 | **Auth** | Clerk |
 | **Database** | PostgreSQL + Prisma 5 |
 | **AI** | Vercel AI SDK + OpenAI gpt-4o-mini (LLM-Mux 경유) |

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useAuth } from '@clerk/nextjs'
 import { cn } from '@/lib/utils'
 import { Users, Loader2, CheckCircle2, XCircle } from 'lucide-react'
 import Link from 'next/link'
@@ -11,21 +11,16 @@ export default function InvitePage() {
   const router = useRouter()
   const params = useParams()
   const code = (params.code as string)?.toUpperCase()
-  const supabase = createClientComponentClient()
+  const { isLoaded, isSignedIn } = useAuth()
 
   const [status, setStatus] = useState<'checking' | 'ready' | 'joining' | 'success' | 'error'>('checking')
   const [error, setError] = useState('')
   const [familyName, setFamilyName] = useState('')
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const isLoggedIn = !!isSignedIn
 
   useEffect(() => {
-    async function checkAuth() {
-      const { data: { session } } = await supabase.auth.getSession()
-      setIsLoggedIn(!!session)
-      setStatus('ready')
-    }
-    checkAuth()
-  }, [supabase])
+    if (isLoaded) setStatus('ready')
+  }, [isLoaded])
 
   const handleJoin = async () => {
     setStatus('joining')

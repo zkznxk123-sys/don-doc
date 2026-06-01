@@ -70,7 +70,7 @@ export async function GET() {
     // 가족 구성원
     prisma.user.findMany({
       where: { familyId },
-      select: { id: true, name: true, role: true, email: true },
+      select: { id: true, name: true, role: true },
     }),
   ])
 

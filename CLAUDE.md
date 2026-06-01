@@ -39,7 +39,7 @@ app/
     scenario/       # chat · expand · generate (임베딩 기반 부분 대체)
     realestate/     # complexes · price · search (getAuthUser 가드 적용 — 외부 API 키 보호)
     stats/          # cashflow · insights
-    frankr/
+    frankr/         # fran.kr 세금 계산 API 프록시 (보유세·취득세·양도세·증여세·상속세)
   dashboard/        # 보호된 페이지
     cashflow/       # 현금흐름 관리
     assets/         # 자산 관리
@@ -207,6 +207,9 @@ NEXT_PUBLIC_POSTHOG_KEY=
 NEXT_PUBLIC_POSTHOG_HOST=
 # 선택
 LLM_MUX_URL=          # 기본값: http://localhost:8317
+FRANKR_CLIENT_ID=     # fran.kr 세금 계산 API (보유세·취득세·양도세 등)
+FRANKR_CLIENT_SECRET=
+DEMO_CFO_EMAIL=       # /api/demo/data 가 조회할 데모 가족 CFO 이메일
 ```
 
 ---

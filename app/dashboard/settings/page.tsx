@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Trash2, AlertTriangle, ShieldAlert, ArrowLeft, Tag, ChevronRight, User, Pencil, Check, X, Zap } from 'lucide-react'
+import { Trash2, AlertTriangle, ShieldAlert, ArrowLeft, Tag, ChevronRight, User, Pencil, Check, X, Zap, Lock, Globe } from 'lucide-react'
 import Link from 'next/link'
 import {
   AlertDialog,
@@ -283,11 +283,11 @@ function SettingsClient() {
 
       {/* 새 거래 default 공유 범위 */}
       <section className="rounded-2xl border border-border bg-card/30 p-5 mb-4">
-        <h2 className="text-sm font-semibold text-foreground/70 mb-3">새 거래 default 공유 범위</h2>
+        <h2 className="text-sm font-semibold text-foreground/70 mb-3">새 거래 기본 공유 범위</h2>
         <div className="px-3 py-2">
           <p className="text-sm font-medium text-foreground mb-1">자동 생성·엑셀 업로드·수동 입력 default</p>
           <p className="text-xs text-muted-foreground mb-4">
-            엑셀 업로드와 새 거래 입력 시 기본 공유 범위. PRIVATE = 금액만 가족 노출, SHARED = 내역까지 공개.
+            엑셀 업로드와 새 거래 입력 시 기본 공유 범위. PRIVATE — 금액 합계만 가족과 공유. SHARED — 상세 내역까지 투명하게 공개.
             매매 자동 생성(실현손익·배당·수수료)은 항상 PRIVATE 고정.
           </p>
           <div className="flex flex-wrap gap-2">
@@ -295,13 +295,14 @@ function SettingsClient() {
               <button
                 key={v}
                 onClick={() => setDefaultVisibility(v)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                   defaultVisibility === v
                     ? 'bg-foreground text-background border-foreground'
                     : 'bg-card border-border text-muted-foreground hover:text-foreground hover:border-ring'
                 }`}
               >
-                {v === 'PRIVATE' ? '🔒 PRIVATE' : '🌐 SHARED'}
+                {v === 'PRIVATE' ? <Lock className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
+                {v}
               </button>
             ))}
           </div>

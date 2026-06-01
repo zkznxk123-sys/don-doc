@@ -18,6 +18,7 @@ import {
   Sparkles,
   History,
   TrendingUp,
+  Rss,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { BrandMark } from '@/components/ui/brand-mark'
@@ -36,7 +37,7 @@ type NavItem = {
   group: NavGroup
 }
 
-// 5/10 정체성 결정: 본질 4개 → Beta 그룹 → admin 순. 가족 피드는 nav에서 제거(설정 또는 대시보드 위젯으로 이동 예정).
+// 5/10 정체성 결정: 본질 4개 → Beta 그룹 → admin 순. Feed는 Beta로 노출(6/1 임시 복귀).
 export const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard',          label: '대시보드',      icon: LayoutDashboard, exact: true, group: 'core' },
   { href: '/dashboard/cashflow', label: '현금흐름 관리', icon: ArrowLeftRight,  group: 'core' },
@@ -44,6 +45,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard/budget',   label: '예산 관리',     icon: Calculator,      group: 'core' },
   { href: '/dashboard/scenario', label: '시나리오 허브', icon: Sparkles,        group: 'beta', beta: true },
   { href: '/dashboard/screen',   label: '종목 검색',     icon: TrendingUp,      group: 'beta', beta: true },
+  { href: '/dashboard/feed',     label: '가족 피드',     icon: Rss,             group: 'beta', beta: true },
   { href: '/dashboard/uploads',  label: '업로드 이력',   icon: History,         group: 'admin' },
   { href: '/dashboard/settings', label: '설정',          icon: Settings,        group: 'admin' },
 ]
