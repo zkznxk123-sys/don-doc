@@ -13,6 +13,7 @@ import { Switch } from '@/components/ui/switch'
 import { getFamilyCategories, addCustomCategory, type CategoryOption } from '@/lib/actions/categories'
 import { upsertSubTransactions, type SubTransactionInput } from '@/lib/actions/transaction'
 import { useDefaultVisibility } from '@/lib/hooks/useDefaultVisibility'
+import { suggestCategory, QUICK_AMOUNTS } from './transaction-drawer/keywords'
 
 export interface EditTransactionData {
   id: string
@@ -54,42 +55,6 @@ export interface TransactionFormData {
   description: string
   visibility: 'SHARED' | 'PRIVATE'
 }
-
-const KEYWORD_CATEGORY_MAP: Record<string, string> = {
-  '스타벅스': '식비', '카페': '식비', '커피': '식비', '맥도날드': '식비', '배달': '식비',
-  '치킨': '식비', '피자': '식비', '편의점': '식비', '마트': '식비', '식당': '식비',
-  '점심': '식비', '저녁': '식비', '아침': '식비', '반찬': '식비', '쿠팡이츠': '식비',
-  '요기요': '식비', '배민': '식비', '버거킹': '식비', '서브웨이': '식비',
-  '택시': '교통', '버스': '교통', '지하철': '교통', '주유': '교통', '주차': '교통',
-  '카카오택시': '교통', '톨비': '교통', 'KTX': '교통', '기차': '교통', '하이패스': '교통',
-  '쿠팡': '쇼핑', '네이버': '쇼핑', '무신사': '쇼핑', '올리브영': '쇼핑', '다이소': '쇼핑',
-  '백화점': '쇼핑', '아울렛': '쇼핑', '옷': '쇼핑', '신발': '쇼핑',
-  '관리비': '주거', '월세': '주거', '전기': '주거', '가스': '주거', '수도': '주거',
-  '인터넷': '주거', '통신비': '주거',
-  '학원': '교육', '강의': '교육', '책': '교육', '수업': '교육', '등록금': '교육',
-  '인강': '교육', '유데미': '교육',
-  '병원': '건강', '약국': '건강', '헬스': '건강', '필라테스': '건강', '치과': '건강',
-  '안과': '건강', '한의원': '건강', '영양제': '건강',
-  '영화': '여가', '넷플릭스': '여가', '게임': '여가', '콘서트': '여가', '여행': '여가',
-  '호텔': '여가', '항공': '여가', '유튜브': '여가', '스포티파이': '여가',
-  '세탁': '생활', '이사': '생활', '청소': '생활', '미용실': '생활', '헤어': '생활',
-  '급여': '수입', '월급': '수입', '보너스': '수입', '용돈': '수입', '이자': '수입',
-  '배당': '수입', '환급': '수입',
-}
-
-function suggestCategory(text: string): string | null {
-  const lower = text.toLowerCase()
-  for (const [keyword, cat] of Object.entries(KEYWORD_CATEGORY_MAP)) {
-    if (lower.includes(keyword.toLowerCase())) return cat
-  }
-  return null
-}
-
-const QUICK_AMOUNTS = [
-  { label: '+1만', value: 10000 },
-  { label: '+5만', value: 50000 },
-  { label: '+10만', value: 100000 },
-]
 
 export function TransactionDrawer({
   isOpen,
