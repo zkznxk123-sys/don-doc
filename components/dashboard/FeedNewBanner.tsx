@@ -22,7 +22,7 @@ export function FeedNewBanner() {
   return (
     <Link
       href="/dashboard/feed"
-      className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-blue-500/8 border border-blue-500/20 hover:bg-blue-500/12 transition-colors"
+      className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-savings/8 border border-blue-500/20 hover:bg-savings/12 transition-colors"
     >
       <span className="relative flex-shrink-0">
         <MessageSquare className="w-4 h-4 text-blue-400" />

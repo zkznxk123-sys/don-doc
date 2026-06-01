@@ -198,6 +198,16 @@
   .bg-savings-soft { background: rgb(59 130 246 / 0.1); }
   .bg-warning-soft { background: rgb(245 158 11 / 0.1); }
 
+  /* Solid viz bg utilities — Progress bar·badge·아바타 등에서 사용 */
+  .bg-income   { background-color: var(--viz-emerald); }
+  .bg-expense  { background-color: var(--viz-red); }
+  .bg-savings  { background-color: var(--viz-blue); }
+  .bg-warning  { background-color: var(--viz-amber); }
+  .border-income  { border-color: var(--viz-emerald); }
+  .border-expense { border-color: var(--viz-red); }
+  .border-savings { border-color: var(--viz-blue); }
+  .border-warning { border-color: var(--viz-amber); }
+
   /* Eyebrow — uppercase label above sections */
   .eyebrow {
     font-size: 11px;

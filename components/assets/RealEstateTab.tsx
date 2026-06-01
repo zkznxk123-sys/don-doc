@@ -127,7 +127,7 @@ export function RealEstateTab({
             <Target className="w-4 h-4 text-warning" />
             <span className="text-sm font-semibold text-foreground">갈아타기 목표 단지</span>
             {targetProperties.length > 0 && (
-              <span className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-warning px-2 py-0.5 rounded-full">
+              <span className="text-[10px] bg-warning-soft dark:bg-amber-900/30 text-warning px-2 py-0.5 rounded-full">
                 {targetProperties.length}곳
               </span>
             )}

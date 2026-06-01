@@ -68,8 +68,8 @@ function groupByDate(txs: FeedTransaction[]) {
 
 // ━━ 유저 아바타 ━━
 const AVATAR_COLORS = [
-  'bg-violet-500', 'bg-blue-500', 'bg-emerald-500',
-  'bg-amber-500', 'bg-pink-500', 'bg-teal-500',
+  'bg-violet-500', 'bg-savings', 'bg-income',
+  'bg-warning', 'bg-pink-500', 'bg-teal-500',
 ]
 function UserAvatar({ name, userId, isMe }: { name: string | null; userId: string; isMe: boolean }) {
   const letter = name?.[0]?.toUpperCase() ?? '?'

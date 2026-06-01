@@ -217,7 +217,7 @@ export function PortfolioFundamentals({ investmentSummary, usdKrwRate }: Props) 
                   <div key={s.name} className="flex items-center gap-2 text-[11px]">
                     <span className="w-24 text-foreground/80 truncate">{s.name}</span>
                     <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                      <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${s.percent}%` }} />
+                      <div className="h-full bg-income rounded-full" style={{ width: `${s.percent}%` }} />
                     </div>
                     <span className="text-muted-foreground tabular-nums w-10 text-right">{s.percent}%</span>
                   </div>

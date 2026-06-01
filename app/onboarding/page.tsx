@@ -172,7 +172,7 @@ function OnboardingContent() {
                     className={cn(
                       'w-full h-12 bg-zinc-900 border rounded-xl px-4 text-sm text-white placeholder-zinc-600 outline-none transition-all',
                       createForm.formState.errors.name
-                        ? 'border-red-500/50 focus:border-red-500'
+                        ? 'border-destructive/50 focus:border-destructive'
                         : 'border-zinc-800 focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600'
                     )}
                   />
@@ -244,7 +244,7 @@ function OnboardingContent() {
                     className={cn(
                       'w-full h-12 bg-zinc-900 border rounded-xl px-4 text-sm text-white placeholder-zinc-600 outline-none transition-all tracking-[0.3em] uppercase text-center font-mono',
                       joinForm.formState.errors.code
-                        ? 'border-red-500/50 focus:border-red-500'
+                        ? 'border-destructive/50 focus:border-destructive'
                         : 'border-zinc-800 focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600'
                     )}
                   />

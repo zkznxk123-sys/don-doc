@@ -111,7 +111,7 @@ export function BrokerAgentPanel({
           <div className="flex items-center gap-2">
             <Bot className="w-4 h-4 text-violet-400" />
             <span className="text-sm font-semibold">AI 에이전트 실행</span>
-            <span className="text-[10px] bg-warning-soft text-warning border border-amber-500/20 px-1.5 py-0.5 rounded-full">
+            <span className="text-[10px] bg-warning-soft text-warning border border-warning/20 px-1.5 py-0.5 rounded-full">
               {process.env.NEXT_PUBLIC_KIS_IS_MOCK !== 'false' ? '모의투자' : '실계좌'}
             </span>
           </div>
@@ -158,7 +158,7 @@ export function BrokerAgentPanel({
               </div>
 
               {error && (
-                <div className="bg-expense-soft border border-red-500/30 rounded-xl px-3 py-2">
+                <div className="bg-expense-soft border border-destructive/30 rounded-xl px-3 py-2">
                   <p className="text-xs text-destructive">{error}</p>
                 </div>
               )}

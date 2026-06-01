@@ -14,8 +14,8 @@ interface Props {
 }
 
 const TYPE_META: Record<DetectedGroupType, { label: string; icon: typeof GitMerge; color: string; bg: string; desc: string }> = {
-  transfer:     { label: '이체',         icon: GitMerge,   color: 'text-blue-500',   bg: 'bg-blue-500/10 border-blue-500/20',   desc: '가족 간 이체로 수입·지출 상쇄' },
-  cancellation: { label: '결제 취소',    icon: RotateCcw,  color: 'text-warning',  bg: 'bg-warning-soft border-amber-500/20', desc: '결제 후 취소된 내역' },
+  transfer:     { label: '이체',         icon: GitMerge,   color: 'text-savings',   bg: 'bg-savings/10 border-blue-500/20',   desc: '가족 간 이체로 수입·지출 상쇄' },
+  cancellation: { label: '결제 취소',    icon: RotateCcw,  color: 'text-warning',  bg: 'bg-warning-soft border-warning/20', desc: '결제 후 취소된 내역' },
   duplicate:    { label: '공용 카드 중복', icon: Copy,      color: 'text-purple-500', bg: 'bg-purple-500/10 border-purple-500/20', desc: '구성원이 동일 내역을 중복 등록' },
 }
 

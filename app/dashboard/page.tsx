@@ -368,7 +368,7 @@ export default function Dashboard() {
                                 <span>소진율</span><span>{Math.round(pct)}%</span>
                               </div>
                               <div className="w-full bg-muted rounded-full h-1.5">
-                                <div className={cn('h-1.5 rounded-full transition-all', pct > 80 ? 'bg-red-500' : 'bg-emerald-500')} style={{ width: `${pct}%` }} />
+                                <div className={cn('h-1.5 rounded-full transition-all', pct > 80 ? 'bg-destructive' : 'bg-income')} style={{ width: `${pct}%` }} />
                               </div>
                             </>
                           )

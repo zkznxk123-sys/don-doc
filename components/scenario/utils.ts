@@ -17,7 +17,7 @@ const CATEGORY_STYLE: Record<string, string> = {
   '투자':   'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400',
   '부채':   'bg-red-100 dark:bg-red-900/30 text-red-600',
   '현금흐름': 'bg-income-soft text-income',
-  '연금/장기': 'bg-amber-100 dark:bg-amber-900/30 text-amber-600',
+  '연금/장기': 'bg-warning-soft dark:bg-amber-900/30 text-amber-600',
 }
 
 export function categoryStyle(c: string | null) {

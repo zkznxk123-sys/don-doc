@@ -182,7 +182,7 @@ export function NetWorthHistoryModal({
                 placeholder="0"
                 value={liabilitiesRaw}
                 onChange={e => handleLiabilitiesChange(e.target.value)}
-                className="w-full bg-muted border border-border rounded-xl pl-4 pr-8 py-3 text-sm text-foreground placeholder-muted-foreground/40 focus:outline-none focus:border-red-500 transition-colors tabular-nums"
+                className="w-full bg-muted border border-border rounded-xl pl-4 pr-8 py-3 text-sm text-foreground placeholder-muted-foreground/40 focus:outline-none focus:border-destructive transition-colors tabular-nums"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">원</span>
             </div>

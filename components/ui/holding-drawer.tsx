@@ -193,7 +193,7 @@ export function HoldingDrawer({ isOpen, onClose, onSuccess, accountId, accountNa
                       </div>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
                         <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md ${
-                          r.market === 'KOSPI'  ? 'bg-blue-500/10 text-blue-500' :
+                          r.market === 'KOSPI'  ? 'bg-savings/10 text-savings' :
                           r.market === 'KOSDAQ' ? 'bg-income-soft text-income' :
                           r.market === 'NASDAQ' ? 'bg-violet-500/10 text-violet-500' :
                           r.market === 'NYSE'   ? 'bg-warning-soft text-warning' :

@@ -57,7 +57,7 @@ export default function InvitePage() {
           status === 'success'
             ? "bg-income-soft border-emerald-500/20"
             : status === 'error'
-            ? "bg-expense-soft border-red-500/20"
+            ? "bg-expense-soft border-destructive/20"
             : "bg-zinc-900 border-zinc-800"
         )}>
           {status === 'success' ? (

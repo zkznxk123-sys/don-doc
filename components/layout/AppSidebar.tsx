@@ -206,7 +206,7 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
 
 function UserAvatar({ name }: { name: string | null }) {
   const initials = name ? name.slice(0, 1) : '?'
-  const colors = ['bg-blue-500', 'bg-violet-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500']
+  const colors = ['bg-savings', 'bg-violet-500', 'bg-income', 'bg-warning', 'bg-rose-500']
   const color = colors[(name?.charCodeAt(0) ?? 0) % colors.length]
   return (
     <div className={cn('w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold text-white', color)}>

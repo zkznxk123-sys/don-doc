@@ -101,9 +101,9 @@ interface QuickActionProps {
 
 export function QuickAction({ icon, label, onClick, color = 'blue' }: QuickActionProps) {
   const colorClasses = {
-    blue: 'bg-blue-600 hover:bg-blue-700',
+    blue: 'bg-primary hover:bg-blue-700',
     green: 'bg-green-600 hover:bg-green-700',
-    red: 'bg-red-600 hover:bg-red-700',
+    red: 'bg-destructive hover:bg-red-700',
     yellow: 'bg-yellow-600 hover:bg-yellow-700'
   }
 

@@ -160,7 +160,7 @@ export const BudgetManager = ({ month }: BudgetManagerProps) => {
               </div>
               <div className="w-full bg-accent rounded-full h-2">
                 <div
-                  className={cn('h-2 rounded-full transition-all', spentPercent > 80 ? 'bg-red-600 dark:bg-red-500' : 'bg-emerald-600 dark:bg-emerald-500')}
+                  className={cn('h-2 rounded-full transition-all', spentPercent > 80 ? 'bg-destructive dark:bg-destructive' : 'bg-income dark:bg-income')}
                   style={{ width: `${spentPercent}%` }}
                 />
               </div>
@@ -173,7 +173,7 @@ export const BudgetManager = ({ month }: BudgetManagerProps) => {
               </div>
               <div className="w-full bg-accent rounded-full h-2">
                 <div
-                  className="h-2 rounded-full bg-blue-600 dark:bg-blue-500 transition-all"
+                  className="h-2 rounded-full bg-primary dark:bg-savings transition-all"
                   style={{ width: `${allocatedPercent}%` }}
                 />
               </div>
@@ -205,7 +205,7 @@ export const BudgetManager = ({ month }: BudgetManagerProps) => {
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-medium text-foreground">{member.name || '이름 없음'}</span>
                       {member.role === 'CFO' && (
-                        <span className="text-xs text-warning bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">CFO</span>
+                        <span className="text-xs text-warning bg-warning-soft dark:bg-amber-900/30 px-1.5 py-0.5 rounded">CFO</span>
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground">지출 {formatCurrency(member.spent)}</div>
@@ -251,7 +251,7 @@ export const BudgetManager = ({ month }: BudgetManagerProps) => {
                     <div
                       className={cn(
                         'h-2 rounded-full transition-all',
-                        usedPercent > 80 ? 'bg-red-600 dark:bg-red-500' : usedPercent > 60 ? 'bg-amber-600 dark:bg-amber-500' : 'bg-blue-600 dark:bg-blue-500'
+                        usedPercent > 80 ? 'bg-destructive dark:bg-destructive' : usedPercent > 60 ? 'bg-warning dark:bg-warning' : 'bg-primary dark:bg-savings'
                       )}
                       style={{ width: `${usedPercent}%` }}
                     />

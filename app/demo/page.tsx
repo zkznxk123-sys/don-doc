@@ -746,7 +746,7 @@ function ScenarioView({ data }: { data: DemoData }) {
   const selectedSc = scenarios.find(s => s.id === selected)
 
   const STATUS_COLOR: Record<string, string> = {
-    active: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    active: 'bg-savings/10 text-blue-400 border-blue-500/20',
     interested: 'bg-income-soft text-income border-[var(--viz-emerald)]/20',
   }
   const STATUS_LABEL: Record<string, string> = { active: '검토 중', interested: '관심' }

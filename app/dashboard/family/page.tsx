@@ -10,7 +10,7 @@ interface FamilyMember { id: string; name: string | null; email: string; role: A
 interface FamilyInfo { id: string; name: string; members: FamilyMember[]; inviteCode: string | null }
 
 const ROLE_META: Record<AppRole, { label: string; badge: string; avatar: string; icon: React.ElementType }> = {
-  CFO:    { label: '대표 CFO',  badge: 'bg-warning-soft border-amber-500/20 text-warning',  avatar: 'bg-amber-100 dark:bg-warning-soft text-warning',  icon: Crown },
+  CFO:    { label: '대표 CFO',  badge: 'bg-warning-soft border-warning/20 text-warning',  avatar: 'bg-warning-soft dark:bg-warning-soft text-warning',  icon: Crown },
   CO_CFO: { label: '공동 CFO', badge: 'bg-violet-500/10 border-violet-500/20 text-violet-400', avatar: 'bg-violet-100 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400', icon: Shield },
   MEMBER: { label: '구성원',   badge: 'bg-muted border-border text-muted-foreground',           avatar: 'bg-muted text-muted-foreground',                                          icon: Users },
 }
