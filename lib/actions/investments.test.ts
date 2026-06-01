@@ -342,3 +342,45 @@ describe('addTradeRecord — 카테고리 fallback', () => {
     })
   })
 })
+
+describe('addTradeRecord — $transaction 원자성', () => {
+  it('propagates errors from $transaction and skips post-transaction balance recalc', async () => {
+    setupAuthAndHolding({ avgPrice: 1000 })
+
+    // $transaction 자체가 throw — TradeRecord/Transaction/holding update 어떤 것도 안 됨
+    const boom = new Error('DB write conflict')
+    vi.mocked(prisma.$transaction).mockRejectedValueOnce(boom)
+
+    await expect(
+      addTradeRecord({ holdingId: 'h1', type: 'BUY', quantity: 5, price: 2000, date: new Date() })
+    ).rejects.toThrow('DB write conflict')
+
+    // 트랜잭션 후 단계인 balance 재계산은 호출되지 않음
+    expect(prisma.account.findUnique).not.toHaveBeenCalled()
+    expect(prisma.account.update).not.toHaveBeenCalled()
+  })
+
+  it('propagates errors thrown inside the $transaction callback (e.g. partial write failure)', async () => {
+    setupAuthAndHolding({ avgPrice: 1000 })
+
+    // 콜백이 중간에 throw — Prisma는 트랜잭션을 롤백, 외부로 에러 전파
+    vi.mocked(prisma.$transaction).mockImplementationOnce(async (cb) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const fakeTx: any = {
+        tradeRecord: { create: vi.fn().mockRejectedValue(new Error('tradeRecord.create failed')) },
+        investmentHolding: { update: vi.fn() },
+        transaction: { create: vi.fn() },
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      return (cb as any)(fakeTx)
+    })
+
+    await expect(
+      addTradeRecord({ holdingId: 'h1', type: 'SELL', quantity: 5, price: 2000, date: new Date() })
+    ).rejects.toThrow('tradeRecord.create failed')
+
+    // 트랜잭션 후 balance 재계산은 호출되지 않음 — 후속 작업 보호
+    expect(prisma.account.findUnique).not.toHaveBeenCalled()
+    expect(prisma.account.update).not.toHaveBeenCalled()
+  })
+})

@@ -73,8 +73,59 @@ const MOMENTUM_KEY: Record<string, 'mo1' | 'mo3' | 'mo6' | 'y1'> = {
   return1m: 'mo1', return3m: 'mo3', return6m: 'mo6', return1y: 'y1',
 }
 
-function isMomentumSort(key: ScreenSortKey): boolean {
+export function isMomentumSort(key: ScreenSortKey): boolean {
   return key === 'return1m' || key === 'return3m' || key === 'return6m' || key === 'return1y'
+}
+
+/**
+ * Fundamental 필터링 — 순수 함수. universe·prisma 외부에서 추출해 단위 테스트 가능.
+ *
+ * 규칙: 비교 대상 값이 `null`인 종목은 해당 필터를 통과하지 못한다 (null = 미지의 값 → 안전하게 제외).
+ * `sectorContains`는 호출 측에서 normalizeSectorKeyword 적용 후 lowercase로 전달한다고 가정.
+ */
+export function applyFundamentalFilters<T extends { fundamental: FundamentalData | null }>(
+  items: T[],
+  filters: ScreenFilters & { sectorNeedle?: string | null }
+): T[] {
+  return items.filter(e => {
+    const f = e.fundamental
+    if (!f) return false
+    if (filters.minPer != null && (f.per == null || f.per < filters.minPer)) return false
+    if (filters.maxPer != null && (f.per == null || f.per > filters.maxPer)) return false
+    if (filters.minPbr != null && (f.pbr == null || f.pbr < filters.minPbr)) return false
+    if (filters.maxPbr != null && (f.pbr == null || f.pbr > filters.maxPbr)) return false
+    if (filters.minDividendYield != null && (f.dividendYield == null || f.dividendYield < filters.minDividendYield)) return false
+    if (filters.minRoe != null && (f.roe == null || f.roe < filters.minRoe)) return false
+    if (filters.sectorNeedle && (f.sector == null || !f.sector.toLowerCase().includes(filters.sectorNeedle))) return false
+    return true
+  })
+}
+
+/**
+ * Fundamental + (선택) momentum 기준 정렬. null 값은 항상 마지막으로 정렬 (sortDesc 무관).
+ */
+export function sortByScreenKey<T>(
+  items: T[],
+  sortBy: ScreenSortKey,
+  sortDesc: boolean,
+  getSortVal: (item: T) => number | null,
+): T[] {
+  const sorted = [...items]
+  sorted.sort((a, b) => {
+    const av = getSortVal(a)
+    const bv = getSortVal(b)
+    if (av == null && bv == null) return 0
+    if (av == null) return 1
+    if (bv == null) return -1
+    return sortDesc ? bv - av : av - bv
+  })
+  return sorted
+}
+
+export function roundOrNull(v: number | null | undefined, digits: number): number | null {
+  if (v == null) return null
+  const m = Math.pow(10, digits)
+  return Math.round(v * m) / m
 }
 
 export async function runScreener(input: ScreenInput, ctx: { familyId: string }): Promise<ScreenResult> {
@@ -114,17 +165,12 @@ export async function runScreener(input: ScreenInput, ctx: { familyId: string })
     ? normalizeSectorKeyword(input.sectorContains).toLowerCase()
     : null
 
-  const filtered = enriched.filter(e => {
-    const f = e.fundamental
-    if (!f) return false
-    if (input.minPer != null && (f.per == null || f.per < input.minPer)) return false
-    if (input.maxPer != null && (f.per == null || f.per > input.maxPer)) return false
-    if (input.minPbr != null && (f.pbr == null || f.pbr < input.minPbr)) return false
-    if (input.maxPbr != null && (f.pbr == null || f.pbr > input.maxPbr)) return false
-    if (input.minDividendYield != null && (f.dividendYield == null || f.dividendYield < input.minDividendYield)) return false
-    if (input.minRoe != null && (f.roe == null || f.roe < input.minRoe)) return false
-    if (sectorNeedle && (f.sector == null || !f.sector.toLowerCase().includes(sectorNeedle))) return false
-    return true
+  const filtered = applyFundamentalFilters(enriched, {
+    minPer: input.minPer, maxPer: input.maxPer,
+    minPbr: input.minPbr, maxPbr: input.maxPbr,
+    minDividendYield: input.minDividendYield,
+    minRoe: input.minRoe,
+    sectorNeedle,
   })
 
   const needsMomentum = isMomentumSort(sortBy) || !!input.postFilter
@@ -162,35 +208,22 @@ export async function runScreener(input: ScreenInput, ctx: { familyId: string })
     const k = sortBy as 'per' | 'pbr' | 'dividendYield' | 'roe' | 'marketCap'
     return e.fundamental?.[k] ?? null
   }
-  postFiltered.sort((a, b) => {
-    const av = getSortVal(a)
-    const bv = getSortVal(b)
-    if (av == null && bv == null) return 0
-    if (av == null) return 1
-    if (bv == null) return -1
-    return sortDesc ? bv - av : av - bv
-  })
-
-  const round = (v: number | null | undefined, digits: number): number | null => {
-    if (v == null) return null
-    const m = Math.pow(10, digits)
-    return Math.round(v * m) / m
-  }
+  const sorted = sortByScreenKey(postFiltered, sortBy, sortDesc, getSortVal)
 
   return {
     universeSize: candidates.length,
     fundamentalCovered,
-    matched: postFiltered.length,
+    matched: sorted.length,
     sortedBy: sortBy,
-    candidates: postFiltered.slice(0, limit).map(e => {
+    candidates: sorted.slice(0, limit).map(e => {
       const f = e.fundamental!
       const m = momByTicker[e.stock.yahooTicker]
       const out: ScreenCandidate = {
         ticker: e.stock.yahooTicker,
         name: e.stock.name,
         market: e.stock.market,
-        per: round(f.per, 1),
-        pbr: round(f.pbr, 2),
+        per: roundOrNull(f.per, 1),
+        pbr: roundOrNull(f.pbr, 2),
         dividendYield: f.dividendYield ?? null,
         roe: f.roe ?? null,
         sector: f.sector ?? null,
@@ -198,12 +231,12 @@ export async function runScreener(input: ScreenInput, ctx: { familyId: string })
         currency: f.currency,
       }
       if (needsMomentum) {
-        out.return1m = round(m?.returns.mo1, 1)
-        out.return3m = round(m?.returns.mo3, 1)
-        out.return6m = round(m?.returns.mo6, 1)
-        out.return1y = round(m?.returns.y1, 1)
+        out.return1m = roundOrNull(m?.returns.mo1, 1)
+        out.return3m = roundOrNull(m?.returns.mo3, 1)
+        out.return6m = roundOrNull(m?.returns.mo6, 1)
+        out.return1y = roundOrNull(m?.returns.y1, 1)
         out.rsi14 = m ? Math.round(m.rsi14) : null
-        out.pctFromFiftyTwoHigh = round(m?.fiftyTwoWeek.pctFromHigh, 1)
+        out.pctFromFiftyTwoHigh = roundOrNull(m?.fiftyTwoWeek.pctFromHigh, 1)
       }
       return out
     }),
