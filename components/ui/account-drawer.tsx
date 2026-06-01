@@ -1,10 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import {
-  Banknote, TrendingUp, Bitcoin, Building2, Users, Eye, EyeOff,
-  Loader2, Trash2, CreditCard, HandCoins, ChevronDown, PiggyBank,
-} from 'lucide-react'
+import { Loader2, Trash2, ChevronDown } from 'lucide-react'
 import { ApartmentSearchInput, type ApartmentResult } from '@/components/ui/apartment-search-input'
 import { cn, toKoreanUnit } from '@/lib/utils'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer'
@@ -62,145 +59,13 @@ interface AccountDrawerProps {
   currentUserId?: string
 }
 
-const ACCOUNT_TYPES: {
-  value: AccountType; label: string; desc: string; Icon: React.ElementType; color: string; isLiability?: boolean
-}[] = [
-  { value: 'CASH',        label: '현금 · 예적금', desc: '생활비, 비상금, 저축',         Icon: Banknote,   color: 'text-savings' },
-  { value: 'INVESTMENT',  label: '주식 · 펀드',   desc: '국내외 주식, 펀드, ETF',       Icon: TrendingUp, color: 'text-income' },
-  { value: 'PENSION',     label: '연금',           desc: 'IRP, 연금저축, 퇴직연금 등',  Icon: PiggyBank,  color: 'text-income' },
-  { value: 'CRYPTO',      label: '가상자산',       desc: '비트코인, 이더리움 등',        Icon: Bitcoin,    color: 'text-warning' },
-  { value: 'REAL_ESTATE', label: '부동산',         desc: '아파트, 토지, 상가',           Icon: Building2,  color: 'text-foreground' },
-  { value: 'DEBT',        label: '대출',           desc: '주택담보대출, 신용대출 등',    Icon: HandCoins,  color: 'text-destructive',  isLiability: true },
-  { value: 'CREDIT_CARD', label: '신용카드',       desc: '카드 사용액, 미결제 금액',     Icon: CreditCard, color: 'text-destructive',  isLiability: true },
-]
-
-const SHARE_LEVELS: {
-  value: ShareLevel; label: string; desc: string; icon: React.ElementType; color: string; bg: string
-}[] = [
-  { value: 'PUBLIC',       label: '내역까지 공개', desc: '이름·금액·거래 내역 모두 공개',         icon: Users,  color: 'text-income',            bg: 'bg-income-soft' },
-  { value: 'BALANCE_ONLY', label: '금액만 합산',   desc: '금액은 가족 합계에 포함, 내역은 숨김', icon: Eye,    color: 'text-savings',           bg: 'bg-savings-soft' },
-  { value: 'PRIVATE',      label: '나만 보기',     desc: '가족 리스트에서 완전히 제외됨',         icon: EyeOff, color: 'text-muted-foreground',  bg: 'bg-muted border-border' },
-]
-
-const REPAYMENT_TYPES: { value: RepaymentType; label: string }[] = [
-  { value: 'EQUAL_PRINCIPAL_INTEREST', label: '원리금균등' },
-  { value: 'EQUAL_PRINCIPAL',          label: '원금균등' },
-  { value: 'BULLET',                   label: '만기일시' },
-  { value: 'INTEREST_ONLY',            label: '이자만납부' },
-]
-
-const DEBT_TYPES: { value: DebtType; label: string }[] = [
-  { value: 'MORTGAGE',       label: '주택담보대출' },
-  { value: 'JEONSE_DEPOSIT', label: '전세보증금(수취)' },
-  { value: 'CREDIT_LOAN',    label: '신용대출' },
-  { value: 'OVERDRAFT',      label: '마이너스통장' },
-  { value: 'ETC',            label: '기타' },
-]
-
-const DEBT_TYPES_NEEDING_ASSET: DebtType[] = ['MORTGAGE', 'JEONSE_DEPOSIT']
-
-const PROPERTY_TYPES = ['아파트', '빌라', '오피스텔', '단독주택', '상가', '토지', '기타']
-
-const FINANCIAL_TYPES: AccountType[] = ['CASH', 'INVESTMENT', 'CRYPTO', 'STO']
-
-const PENSION_TYPES_LIST: { value: PensionType; label: string; taxDeductible: boolean }[] = [
-  { value: 'PUBLIC_PENSION',   label: '공적연금 (국민/공무원)',    taxDeductible: false },
-  { value: 'RETIREMENT_DB',    label: '퇴직연금 DB형',            taxDeductible: false },
-  { value: 'RETIREMENT_DC',    label: '퇴직연금 DC형',            taxDeductible: false },
-  { value: 'IRP',              label: 'IRP (개인형 퇴직연금)',     taxDeductible: true  },
-  { value: 'PERSONAL_PENSION', label: '개인연금 (연금저축/보험)',   taxDeductible: true  },
-  { value: 'HOME_PENSION',     label: '주택연금',                  taxDeductible: false },
-]
-
-// ─── 헬퍼 ─────────────────────────────────────────────────────────────────────
-
-function fmtNum(val: string): string {
-  const n = val.replace(/[^0-9]/g, '')
-  return n ? Number(n).toLocaleString() : ''
-}
-
-function parseNum(val: string): number | null {
-  const n = parseFloat(val.replace(/,/g, ''))
-  return isNaN(n) ? null : n
-}
-
-// ─── 서브 컴포넌트: 상세 필드 섹션 ────────────────────────────────────────────
-
-function SectionDivider({ label }: { label: string }) {
-  return (
-    <div className="flex items-center gap-2 pt-1">
-      <span className="text-xs font-semibold text-muted-foreground whitespace-nowrap">{label}</span>
-      <div className="flex-1 h-px bg-border" />
-      <span className="text-[10px] text-muted-foreground/40">선택</span>
-    </div>
-  )
-}
-
-function NumberField({
-  label, value, onChange, placeholder = '0', suffix = '원',
-}: {
-  label: string; value: string; onChange: (v: string) => void; placeholder?: string; suffix?: string
-}) {
-  return (
-    <div>
-      <Label className="text-muted-foreground text-xs mb-1.5 block">{label}</Label>
-      <div className="relative">
-        <input
-          type="text"
-          inputMode="numeric"
-          value={value}
-          onChange={e => onChange(fmtNum(e.target.value))}
-          placeholder={placeholder}
-          className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-10 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors tabular-nums"
-        />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/60">{suffix}</span>
-      </div>
-    </div>
-  )
-}
-
-function RateField({
-  label, value, onChange,
-}: {
-  label: string; value: string; onChange: (v: string) => void
-}) {
-  return (
-    <div>
-      <Label className="text-muted-foreground text-xs mb-1.5 block">{label}</Label>
-      <div className="relative">
-        <input
-          type="number"
-          step="0.01"
-          min="0"
-          max="100"
-          value={value}
-          onChange={e => onChange(e.target.value)}
-          placeholder="0.00"
-          className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-10 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors"
-        />
-        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/60">%</span>
-      </div>
-    </div>
-  )
-}
-
-function DateField({
-  label, value, onChange,
-}: {
-  label: string; value: string; onChange: (v: string) => void
-}) {
-  return (
-    <div>
-      <Label className="text-muted-foreground text-xs mb-1.5 block">{label}</Label>
-      <input
-        type="date"
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="w-full h-10 bg-card border border-border rounded-xl px-4 text-sm text-foreground outline-none focus:border-ring transition-colors [color-scheme:dark]"
-      />
-    </div>
-  )
-}
+import {
+  ACCOUNT_TYPES, SHARE_LEVELS, REPAYMENT_TYPES, DEBT_TYPES,
+  DEBT_TYPES_NEEDING_ASSET, PROPERTY_TYPES, FINANCIAL_TYPES, PENSION_TYPES_LIST,
+} from './account-drawer/constants'
+import {
+  fmtNum, parseNum, SectionDivider, NumberField, RateField, DateField,
+} from './account-drawer/fields'
 
 // ─── 메인 컴포넌트 ─────────────────────────────────────────────────────────────
 
