@@ -9,12 +9,12 @@ import { Banknote, PiggyBank, TrendingUp, Pencil, Clock, BadgePercent } from 'lu
 import { EmptyTab } from './EmptyTab'
 
 const PENSION_TYPE_META: Record<string, { label: string; color: string; bg: string }> = {
-  PUBLIC_PENSION:   { label: '공적연금',   color: 'text-blue-600',    bg: 'bg-blue-500/10' },
-  RETIREMENT_DB:    { label: '퇴직DB',     color: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-500/10' },
-  RETIREMENT_DC:    { label: '퇴직DC',     color: 'text-purple-600 dark:text-purple-400', bg: 'bg-purple-500/10' },
-  IRP:              { label: 'IRP',        color: 'text-teal-600 dark:text-teal-400',     bg: 'bg-teal-500/10' },
-  PERSONAL_PENSION: { label: '개인연금',   color: 'text-income', bg: 'bg-emerald-500/10' },
-  HOME_PENSION:     { label: '주택연금',   color: 'text-warning',  bg: 'bg-amber-500/10' },
+  PUBLIC_PENSION:   { label: '공적연금', color: 'text-savings',  bg: 'bg-savings-soft' },
+  RETIREMENT_DB:    { label: '퇴직DB',   color: 'text-foreground', bg: 'bg-muted' },
+  RETIREMENT_DC:    { label: '퇴직DC',   color: 'text-foreground', bg: 'bg-muted' },
+  IRP:              { label: 'IRP',      color: 'text-income',   bg: 'bg-income-soft' },
+  PERSONAL_PENSION: { label: '개인연금', color: 'text-income',   bg: 'bg-income-soft' },
+  HOME_PENSION:     { label: '주택연금', color: 'text-warning',  bg: 'bg-warning-soft' },
 }
 
 // IRP/개인연금 세액공제 한도 (2024)
@@ -362,7 +362,7 @@ function PensionCard({
                 return null
               })()}
               {account.taxDeductible && (
-                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md text-warning bg-amber-500/10">
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md text-warning bg-warning-soft">
                   세액공제
                 </span>
               )}
@@ -551,9 +551,8 @@ function PensionCard({
           </div>
           <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
             <div
-              className={cn('h-full rounded-full transition-all duration-700',
-                taxAchievement >= 100 ? 'bg-emerald-500' : 'bg-amber-500')}
-              style={{ width: `${taxAchievement}%` }}
+              className="h-full rounded-full transition-all duration-700"
+              style={{ width: `${taxAchievement}%`, backgroundColor: taxAchievement >= 100 ? 'var(--viz-emerald)' : 'var(--viz-amber)' }}
             />
           </div>
           <p className="text-[10px] text-muted-foreground/50">

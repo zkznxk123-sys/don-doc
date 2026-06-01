@@ -153,7 +153,7 @@ export function TransactionFeed({
                     tx.isMasked
                       ? 'bg-muted border border-dashed border-border'
                       : tx.amount > 0
-                      ? 'bg-emerald-500/10'
+                      ? 'bg-income-soft'
                       : 'bg-muted'
                   )}>
                     {tx.isMasked ? '🔒' : icon}

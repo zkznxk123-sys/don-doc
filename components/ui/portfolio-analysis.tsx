@@ -188,7 +188,7 @@ export function PortfolioAnalysis({ accounts, investmentSummary, usdKrwRate }: P
         <div className="flex items-center justify-between">
           <span className="text-xs font-semibold text-muted-foreground">자산군 분석</span>
           {showConcentrationWarning && (
-            <span className="flex items-center gap-1 text-[10px] text-warning bg-amber-500/10 px-2 py-0.5 rounded-full">
+            <span className="flex items-center gap-1 text-[10px] text-warning bg-warning-soft px-2 py-0.5 rounded-full">
               <AlertTriangle className="w-3 h-3" />
               {maxGroup.label} 집중 ({Math.round(maxPct)}%)
             </span>

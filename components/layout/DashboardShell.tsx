@@ -151,7 +151,7 @@ function NameWarningBanner({ name }: { name: string | null }) {
   return (
     <div className="mx-4 md:mx-6 mt-4 flex items-start gap-3 rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/20 px-4 py-3">
       <AlertCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
-      <p className="text-sm text-amber-800 dark:text-amber-300 flex-1">
+      <p className="text-sm text-warning dark:text-amber-300 flex-1">
         실제 이름으로 수정하지 않으면, 가족 간 이체 자동 제외가 작동하지 않을 수 있어요.{' '}
         <Link
           href="/dashboard/settings"
@@ -161,7 +161,7 @@ function NameWarningBanner({ name }: { name: string | null }) {
           이름 설정하기 →
         </Link>
       </p>
-      <button onClick={() => setDismissed(true)} className="text-warning hover:text-amber-700 dark:hover:text-amber-300 transition-colors flex-shrink-0">
+      <button onClick={() => setDismissed(true)} className="text-warning hover:text-warning dark:hover:text-amber-300 transition-colors flex-shrink-0">
         <X className="w-4 h-4" />
       </button>
     </div>

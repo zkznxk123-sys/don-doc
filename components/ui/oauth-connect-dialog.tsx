@@ -92,13 +92,13 @@ export function OAuthConnectDialog({ open, provider, providerLabel, onClose, onD
               본인의 {providerLabel} 구독 계정을 연결합니다.
               아래 버튼을 누르면 새 탭에서 로그인 페이지가 열립니다.
             </p>
-            <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 text-xs text-amber-300/90 space-y-1">
+            <div className="rounded-xl bg-warning-soft border border-amber-500/20 p-3 text-xs text-amber-300/90 space-y-1">
               <p className="font-semibold flex items-center gap-1.5">
                 <AlertTriangle className="w-3.5 h-3.5" />
                 이 흐름은 좀 특이합니다
               </p>
               <p>
-                로그인이 끝나면 브라우저가 <code className="text-xs px-1 rounded bg-amber-500/15">localhost:54545</code>로 이동하면서
+                로그인이 끝나면 브라우저가 <code className="text-xs px-1 rounded bg-warning-soft">localhost:54545</code>로 이동하면서
                 <strong> &quot;사이트에 연결할 수 없음&quot;</strong> 오류 페이지를 띄웁니다 — 정상입니다.
                 그 페이지의 <strong>주소창 URL을 복사</strong>해서 다음 단계에 붙여넣어 주세요.
               </p>
@@ -180,7 +180,7 @@ export function OAuthConnectDialog({ open, provider, providerLabel, onClose, onD
         {step === 'success' && (
           <div className="space-y-4 py-4">
             <div className="flex flex-col items-center gap-2">
-              <div className="w-12 h-12 rounded-full bg-emerald-500/15 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-income-soft flex items-center justify-center">
                 <Check className="w-6 h-6 text-income" />
               </div>
               <p className="text-sm font-semibold text-foreground">연결 완료</p>

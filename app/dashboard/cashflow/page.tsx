@@ -456,7 +456,7 @@ export default function CashflowPage() {
               'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-medium transition-colors',
               hideExcluded
                 ? 'bg-card border-border text-muted-foreground hover:text-foreground hover:border-ring'
-                : 'bg-amber-500/10 border-amber-500/30 text-warning',
+                : 'bg-warning-soft text-warning',
             )}
           >
             {hideExcluded
@@ -646,7 +646,7 @@ export default function CashflowPage() {
               </button>
               <button
                 onClick={() => runRecategorize(true)}
-                className="w-full flex flex-col items-start gap-1 px-4 py-3 rounded-xl bg-amber-500/10 hover:bg-amber-500/15 border border-amber-500/30 text-left transition-colors"
+                className="w-full flex flex-col items-start gap-1 px-4 py-3 rounded-xl bg-warning-soft hover:opacity-80 text-left transition-colors"
               >
                 <span className="text-sm font-semibold text-warning">전체 강제 재분류</span>
                 <span className="text-[11px] text-muted-foreground">기존 분류 포함 전체 항목을 개인화 규칙 + AI로 재분류</span>
@@ -787,7 +787,7 @@ export default function CashflowPage() {
 
               {/* 잔여 항목 알림 */}
               {previewModal.remaining > 0 && (
-                <div className="px-5 py-2 flex-shrink-0 bg-amber-500/5 border-t border-amber-500/20">
+                <div className="px-5 py-2 flex-shrink-0 bg-warning-soft border-t border-warning/20">
                   <p className="text-[11px] text-warning">
                     150건 초과로 나머지 {previewModal.remaining}건은 적용 후 다시 실행하세요
                   </p>
@@ -863,7 +863,7 @@ export default function CashflowPage() {
             label="수입" value={formatCurrency(effectiveSummary.income)}
             valueClass="text-income"
             isActive={typeFilter === 'INCOME'}
-            activeClass="bg-income-soft border-emerald-300 dark:border-emerald-500/50"
+            activeClass="bg-income-soft border-2"
             onClick={() => toggleFilter('INCOME')}
           />
           <SummaryCard
@@ -871,7 +871,7 @@ export default function CashflowPage() {
             label="지출" value={formatCurrency(effectiveSummary.expense)}
             valueClass="text-expense"
             isActive={typeFilter === 'EXPENSE'}
-            activeClass="bg-expense-soft border-red-300 dark:border-red-500/50"
+            activeClass="bg-expense-soft border-2"
             onClick={() => toggleFilter('EXPENSE')}
           />
           <SummaryCard icon={<PiggyBank className="w-3.5 h-3.5 text-savings" />} label="저축" value={formatCurrency(effectiveSummary.savings)} valueClass={effectiveSummary.savings >= 0 ? 'text-savings' : 'text-warning'} />

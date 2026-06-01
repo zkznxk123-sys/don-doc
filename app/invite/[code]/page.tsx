@@ -55,9 +55,9 @@ export default function InvitePage() {
         <div className={cn(
           "w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 border",
           status === 'success'
-            ? "bg-emerald-500/10 border-emerald-500/20"
+            ? "bg-income-soft border-emerald-500/20"
             : status === 'error'
-            ? "bg-red-500/10 border-red-500/20"
+            ? "bg-expense-soft border-red-500/20"
             : "bg-zinc-900 border-zinc-800"
         )}>
           {status === 'success' ? (

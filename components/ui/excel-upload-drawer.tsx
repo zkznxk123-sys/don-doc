@@ -572,8 +572,8 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                 <div className="flex items-center gap-2.5 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800/40">
                   <Sparkles className="w-4 h-4 text-income flex-shrink-0" />
                   <div>
-                    <p className="text-xs font-semibold text-emerald-700">{detectedPreset.name} 양식 감지됨</p>
-                    <p className="text-[10px] text-income dark:text-emerald-700 mt-0.5">{detectedPreset.description}</p>
+                    <p className="text-xs font-semibold text-income">{detectedPreset.name} 양식 감지됨</p>
+                    <p className="text-[10px] text-income dark:text-income mt-0.5">{detectedPreset.description}</p>
                   </div>
                 </div>
               ) : (

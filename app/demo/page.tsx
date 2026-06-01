@@ -79,12 +79,12 @@ const TYPE_LABEL: Record<string, string> = {
   PENSION: '연금', DEBT: '대출', CRYPTO: '가상자산',
 }
 const TYPE_COLOR: Record<string, string> = {
-  REAL_ESTATE: 'text-warning', INVESTMENT: 'text-blue-500', CASH: 'text-income',
-  PENSION: 'text-violet-500', DEBT: 'text-expense', CRYPTO: 'text-warning',
+  REAL_ESTATE: 'text-warning', INVESTMENT: 'text-savings',     CASH: 'text-income',
+  PENSION: 'text-income',     DEBT: 'text-expense',           CRYPTO: 'text-warning',
 }
 const TYPE_BG: Record<string, string> = {
-  REAL_ESTATE: 'bg-amber-500/10', INVESTMENT: 'bg-blue-500/10', CASH: 'bg-income-soft',
-  PENSION: 'bg-violet-500/10', DEBT: 'bg-expense-soft', CRYPTO: 'bg-orange-400/10',
+  REAL_ESTATE: 'bg-warning-soft', INVESTMENT: 'bg-savings-soft', CASH: 'bg-income-soft',
+  PENSION: 'bg-income-soft',     DEBT: 'bg-expense-soft',       CRYPTO: 'bg-warning-soft',
 }
 
 const NAV_ITEMS: { key: PageKey; label: string; icon: React.ElementType }[] = [
@@ -683,17 +683,18 @@ function BudgetView({ data }: { data: DemoData }) {
         <div className="space-y-3">
           {cashflow.categoryBreakdown.slice(0, 8).map((item, i) => {
             const pct = cashflow.monthlyExpense > 0 ? (item.amount / cashflow.monthlyExpense) * 100 : 0
-            const colors = ['bg-indigo-500', 'bg-violet-500', 'bg-blue-500', 'bg-purple-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-teal-500']
+            // viz palette 8색 — 카테고리 다색 차트용
+            const VIZ_COLORS = ['var(--viz-blue)', 'var(--viz-violet)', 'var(--viz-emerald)', 'var(--viz-amber)', 'var(--viz-pink)', 'var(--viz-sky)', 'var(--viz-red)', 'var(--viz-blue)']
             return (
               <div key={item.category} className="flex items-center gap-3">
-                <div className={cn('w-2 h-2 rounded-full flex-shrink-0', colors[i % colors.length])} />
+                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: VIZ_COLORS[i % VIZ_COLORS.length] }} />
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between mb-1">
                     <span className="text-xs text-foreground/80">{item.category}</span>
                     <span className="text-xs font-semibold tabular-nums">{formatLargeNumber(item.amount)} <span className="text-muted-foreground/60 font-normal">({pct.toFixed(0)}%)</span></span>
                   </div>
                   <div className="w-full bg-muted rounded-full h-1.5">
-                    <div className={cn('h-1.5 rounded-full', colors[i % colors.length])} style={{ width: `${pct}%` }} />
+                    <div className="h-1.5 rounded-full" style={{ width: `${pct}%`, backgroundColor: VIZ_COLORS[i % VIZ_COLORS.length] }} />
                   </div>
                 </div>
               </div>
@@ -897,12 +898,16 @@ function FeedView({ data }: { data: DemoData }) {
 
       <div className="space-y-3">
         {feedPosts.map(post => (
-          <div key={post.id} className={cn(
-            'bg-card rounded-2xl border overflow-hidden',
-            post.isPinned ? 'border-amber-500/30' : 'border-border',
-          )}>
+          <div
+            key={post.id}
+            className={cn('bg-card rounded-2xl border overflow-hidden', post.isPinned ? '' : 'border-border')}
+            style={post.isPinned ? { borderColor: 'rgba(245,158,11,0.3)' } : undefined}
+          >
             {post.isPinned && (
-              <div className="flex items-center gap-1.5 px-4 py-2 bg-amber-500/5 border-b border-amber-500/20">
+              <div
+                className="flex items-center gap-1.5 px-4 py-2 bg-warning-soft border-b"
+                style={{ borderColor: 'rgba(245,158,11,0.2)' }}
+              >
                 <Pin className="w-3 h-3 text-warning" />
                 <span className="text-[10px] font-medium text-warning">고정 게시물</span>
               </div>
@@ -910,7 +915,7 @@ function FeedView({ data }: { data: DemoData }) {
             <div className="p-4">
               {/* 헤더 */}
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center text-[10px] font-bold text-white">
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: 'var(--viz-blue)' }}>
                   {(post.authorName ?? '?').charAt(0)}
                 </div>
                 <div>
@@ -918,7 +923,10 @@ function FeedView({ data }: { data: DemoData }) {
                   <p className="text-[10px] text-muted-foreground/60">{formatRelative(post.createdAt)}</p>
                 </div>
                 {post.type === 'txn_ref' && (
-                  <span className="ml-auto text-[10px] bg-amber-500/10 text-warning border border-amber-500/20 px-1.5 py-0.5 rounded-full">
+                  <span
+                    className="ml-auto text-[10px] bg-warning-soft text-warning border px-1.5 py-0.5 rounded-full"
+                    style={{ borderColor: 'rgba(245,158,11,0.2)' }}
+                  >
                     거래 공유
                   </span>
                 )}

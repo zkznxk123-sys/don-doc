@@ -660,7 +660,7 @@ export function TransactionDrawer({
               <div className="flex items-center gap-3">
                 <div className={cn(
                   "w-9 h-9 rounded-lg flex items-center justify-center",
-                  isShared ? "bg-emerald-500/10 text-income" : "bg-amber-500/10 text-warning"
+                  isShared ? "bg-income-soft text-income" : "bg-warning-soft text-warning"
                 )}>
                   {isShared ? <Globe className="w-4.5 h-4.5" /> : <Lock className="w-4.5 h-4.5" />}
                 </div>
@@ -688,7 +688,7 @@ export function TransactionDrawer({
                 )}
               >
                 <div>
-                  <p className={cn('text-sm font-medium', isExcluded ? 'text-red-700 dark:text-red-300' : 'text-foreground')}>
+                  <p className={cn('text-sm font-medium', isExcluded ? 'text-destructive dark:text-red-300' : 'text-foreground')}>
                     이 내역 제외
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
@@ -729,7 +729,7 @@ export function TransactionDrawer({
                 </div>
                 <div className={cn(
                   'w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0',
-                  excludeFromBudget ? 'bg-orange-500 border-orange-500' : 'border-muted-foreground/30'
+                  excludeFromBudget ? 'bg-warning border-warning' : 'border-muted-foreground/30'
                 )}>
                   {excludeFromBudget && (
                     <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -835,13 +835,13 @@ export function TransactionDrawer({
                                 className={cn(
                                   'flex items-center gap-1.5 text-[10px] rounded-md px-2 py-1 transition-colors w-fit',
                                   item.excludeFromBudget
-                                    ? 'bg-orange-500/15 text-warning'
+                                    ? 'bg-warning-soft text-warning'
                                     : 'text-muted-foreground/50 hover:text-muted-foreground'
                                 )}
                               >
                                 <div className={cn(
                                   'w-3 h-3 rounded border flex items-center justify-center flex-shrink-0',
-                                  item.excludeFromBudget ? 'bg-orange-500 border-orange-500' : 'border-muted-foreground/30'
+                                  item.excludeFromBudget ? 'bg-warning border-warning' : 'border-muted-foreground/30'
                                 )}>
                                   {item.excludeFromBudget && (
                                     <svg width="7" height="7" viewBox="0 0 10 10" fill="none">

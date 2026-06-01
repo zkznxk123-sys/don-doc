@@ -152,28 +152,28 @@ function ExtractedTextBlock({
 function SourceStatusBadge({ status }: { status: ContentSourceData['summaryStatus'] }) {
   if (status === 'success') {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-income">
+      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-income-soft text-income">
         <CheckCircle2 className="w-2.5 h-2.5" />요약 완료
       </span>
     )
   }
   if (status === 'failed') {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-destructive">
+      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-expense-soft text-destructive">
         <AlertTriangle className="w-2.5 h-2.5" />요약 실패
       </span>
     )
   }
   if (status === 'fetch_failed') {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-destructive">
+      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-expense-soft text-destructive">
         <AlertTriangle className="w-2.5 h-2.5" />추출 실패
       </span>
     )
   }
   if (status === 'too_short') {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-warning">
+      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-warning-soft text-warning">
         <AlertTriangle className="w-2.5 h-2.5" />본문 부족
       </span>
     )
@@ -222,7 +222,7 @@ function SourceRow({
   }
 
   return (
-    <div className={cn('px-4 py-3', isFailed && 'bg-red-500/[0.02]')}>
+    <div className={cn('px-4 py-3', isFailed && 'bg-expense-soft')}>
       {/* ── 헤더: 제목 줄 + 메타 줄로 분리 (좁은 화면에서도 안 깨짐) ── */}
       <div
         className={cn('flex items-start gap-2.5', canExpand && 'cursor-pointer')}
@@ -288,7 +288,7 @@ function SourceRow({
           )}
 
           {src.summaryError && (
-            <div className="rounded-lg border border-red-500/30 bg-red-500/[0.04] px-3 py-2.5">
+            <div className="rounded-lg border bg-expense-soft px-3 py-2.5">
               <div className="text-[10px] font-semibold text-destructive/80 mb-1">실패 사유</div>
               <p className="text-[11px] text-destructive/80 whitespace-pre-wrap">{src.summaryError}</p>
             </div>

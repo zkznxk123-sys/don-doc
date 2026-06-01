@@ -15,7 +15,7 @@ interface Props {
 
 const TYPE_META: Record<DetectedGroupType, { label: string; icon: typeof GitMerge; color: string; bg: string; desc: string }> = {
   transfer:     { label: '이체',         icon: GitMerge,   color: 'text-blue-500',   bg: 'bg-blue-500/10 border-blue-500/20',   desc: '가족 간 이체로 수입·지출 상쇄' },
-  cancellation: { label: '결제 취소',    icon: RotateCcw,  color: 'text-warning',  bg: 'bg-amber-500/10 border-amber-500/20', desc: '결제 후 취소된 내역' },
+  cancellation: { label: '결제 취소',    icon: RotateCcw,  color: 'text-warning',  bg: 'bg-warning-soft border-amber-500/20', desc: '결제 후 취소된 내역' },
   duplicate:    { label: '공용 카드 중복', icon: Copy,      color: 'text-purple-500', bg: 'bg-purple-500/10 border-purple-500/20', desc: '구성원이 동일 내역을 중복 등록' },
 }
 
@@ -158,7 +158,7 @@ export function AutoCleanupDialog({ open, groups, onClose, onDone }: Props) {
                               <div key={tx.id} className="flex items-center justify-between gap-2">
                                 <div className="min-w-0 flex items-center gap-1.5">
                                   {!willExclude && (
-                                    <span className="shrink-0 text-[9px] px-1 py-0.5 rounded bg-emerald-500/10 text-income font-medium">유지</span>
+                                    <span className="shrink-0 text-[9px] px-1 py-0.5 rounded bg-income-soft text-income font-medium">유지</span>
                                   )}
                                   <span className="text-[10px] text-muted-foreground/60 shrink-0">{tx.userName}</span>
                                   <span className="text-xs truncate">{tx.description}</span>

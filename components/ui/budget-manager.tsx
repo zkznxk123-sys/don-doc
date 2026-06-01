@@ -135,7 +135,7 @@ export const BudgetManager = ({ month }: BudgetManagerProps) => {
                   if (e.key === 'Escape') setEditingFamily(false)
                 }}
               />
-              <button onClick={saveFamilyBudget} disabled={saving} className="p-1 text-income hover:text-emerald-700 dark:hover:text-income disabled:opacity-50">
+              <button onClick={saveFamilyBudget} disabled={saving} className="p-1 text-income hover:text-income dark:hover:text-income disabled:opacity-50">
                 <Check className="w-4 h-4" />
               </button>
             </div>
@@ -227,7 +227,7 @@ export const BudgetManager = ({ month }: BudgetManagerProps) => {
                         if (e.key === 'Escape') setEditingMember(null)
                       }}
                     />
-                    <button onClick={() => saveMemberBudget(member.id)} disabled={saving} className="p-1 text-income hover:text-emerald-700 dark:hover:text-income disabled:opacity-50">
+                    <button onClick={() => saveMemberBudget(member.id)} disabled={saving} className="p-1 text-income hover:text-income dark:hover:text-income disabled:opacity-50">
                       <Check className="w-4 h-4" />
                     </button>
                   </div>
