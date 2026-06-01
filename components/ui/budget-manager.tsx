@@ -135,7 +135,7 @@ export const BudgetManager = ({ month }: BudgetManagerProps) => {
                   if (e.key === 'Escape') setEditingFamily(false)
                 }}
               />
-              <button onClick={saveFamilyBudget} disabled={saving} className="p-1 text-income dark:text-emerald-500 hover:text-emerald-700 dark:hover:text-income disabled:opacity-50">
+              <button onClick={saveFamilyBudget} disabled={saving} className="p-1 text-income hover:text-emerald-700 dark:hover:text-income disabled:opacity-50">
                 <Check className="w-4 h-4" />
               </button>
             </div>
@@ -205,7 +205,7 @@ export const BudgetManager = ({ month }: BudgetManagerProps) => {
                     <div className="flex items-center gap-1.5">
                       <span className="text-sm font-medium text-foreground">{member.name || '이름 없음'}</span>
                       {member.role === 'CFO' && (
-                        <span className="text-xs text-warning dark:text-amber-500 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">CFO</span>
+                        <span className="text-xs text-warning bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded">CFO</span>
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground">지출 {formatCurrency(member.spent)}</div>
@@ -227,7 +227,7 @@ export const BudgetManager = ({ month }: BudgetManagerProps) => {
                         if (e.key === 'Escape') setEditingMember(null)
                       }}
                     />
-                    <button onClick={() => saveMemberBudget(member.id)} disabled={saving} className="p-1 text-income dark:text-emerald-500 hover:text-emerald-700 dark:hover:text-income disabled:opacity-50">
+                    <button onClick={() => saveMemberBudget(member.id)} disabled={saving} className="p-1 text-income hover:text-emerald-700 dark:hover:text-income disabled:opacity-50">
                       <Check className="w-4 h-4" />
                     </button>
                   </div>
@@ -258,7 +258,7 @@ export const BudgetManager = ({ month }: BudgetManagerProps) => {
                   </div>
                   <div className="flex justify-between text-xs">
                     <span className="text-muted-foreground">{Math.round(usedPercent)}% 사용</span>
-                    <span className={cn('font-medium', remaining === 0 ? 'text-destructive dark:text-red-400' : 'text-muted-foreground')}>
+                    <span className={cn('font-medium', remaining === 0 ? 'text-destructive' : 'text-muted-foreground')}>
                       {formatCurrency(remaining)} 남음
                     </span>
                   </div>

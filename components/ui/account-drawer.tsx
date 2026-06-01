@@ -65,21 +65,21 @@ interface AccountDrawerProps {
 const ACCOUNT_TYPES: {
   value: AccountType; label: string; desc: string; Icon: React.ElementType; color: string; isLiability?: boolean
 }[] = [
-  { value: 'CASH',        label: '현금 · 예적금', desc: '생활비, 비상금, 저축',         Icon: Banknote,   color: 'text-blue-600 dark:text-blue-400' },
-  { value: 'INVESTMENT',  label: '주식 · 펀드',   desc: '국내외 주식, 펀드, ETF',       Icon: TrendingUp, color: 'text-income dark:text-emerald-400' },
-  { value: 'PENSION',     label: '연금',           desc: 'IRP, 연금저축, 퇴직연금 등',  Icon: PiggyBank,  color: 'text-teal-600 dark:text-teal-400' },
-  { value: 'CRYPTO',      label: '가상자산',       desc: '비트코인, 이더리움 등',        Icon: Bitcoin,    color: 'text-warning dark:text-amber-400' },
-  { value: 'REAL_ESTATE', label: '부동산',         desc: '아파트, 토지, 상가',           Icon: Building2,  color: 'text-purple-600 dark:text-purple-400' },
-  { value: 'DEBT',        label: '대출',           desc: '주택담보대출, 신용대출 등',    Icon: HandCoins,  color: 'text-destructive dark:text-red-400',  isLiability: true },
-  { value: 'CREDIT_CARD', label: '신용카드',       desc: '카드 사용액, 미결제 금액',     Icon: CreditCard, color: 'text-destructive dark:text-rose-400', isLiability: true },
+  { value: 'CASH',        label: '현금 · 예적금', desc: '생활비, 비상금, 저축',         Icon: Banknote,   color: 'text-savings' },
+  { value: 'INVESTMENT',  label: '주식 · 펀드',   desc: '국내외 주식, 펀드, ETF',       Icon: TrendingUp, color: 'text-income' },
+  { value: 'PENSION',     label: '연금',           desc: 'IRP, 연금저축, 퇴직연금 등',  Icon: PiggyBank,  color: 'text-income' },
+  { value: 'CRYPTO',      label: '가상자산',       desc: '비트코인, 이더리움 등',        Icon: Bitcoin,    color: 'text-warning' },
+  { value: 'REAL_ESTATE', label: '부동산',         desc: '아파트, 토지, 상가',           Icon: Building2,  color: 'text-foreground' },
+  { value: 'DEBT',        label: '대출',           desc: '주택담보대출, 신용대출 등',    Icon: HandCoins,  color: 'text-destructive',  isLiability: true },
+  { value: 'CREDIT_CARD', label: '신용카드',       desc: '카드 사용액, 미결제 금액',     Icon: CreditCard, color: 'text-destructive',  isLiability: true },
 ]
 
 const SHARE_LEVELS: {
   value: ShareLevel; label: string; desc: string; icon: React.ElementType; color: string; bg: string
 }[] = [
-  { value: 'PUBLIC',       label: '내역까지 공개', desc: '이름·금액·거래 내역 모두 공개',         icon: Users,  color: 'text-income dark:text-emerald-400', bg: 'bg-emerald-100 border-emerald-300 dark:bg-emerald-500/10 dark:border-emerald-500/30' },
-  { value: 'BALANCE_ONLY', label: '금액만 합산',   desc: '금액은 가족 합계에 포함, 내역은 숨김', icon: Eye,    color: 'text-blue-600 dark:text-blue-400',    bg: 'bg-blue-100 border-blue-300 dark:bg-blue-500/10 dark:border-blue-500/30' },
-  { value: 'PRIVATE',      label: '나만 보기',     desc: '가족 리스트에서 완전히 제외됨',         icon: EyeOff, color: 'text-muted-foreground',    bg: 'bg-muted border-border' },
+  { value: 'PUBLIC',       label: '내역까지 공개', desc: '이름·금액·거래 내역 모두 공개',         icon: Users,  color: 'text-income',            bg: 'bg-income-soft' },
+  { value: 'BALANCE_ONLY', label: '금액만 합산',   desc: '금액은 가족 합계에 포함, 내역은 숨김', icon: Eye,    color: 'text-savings',           bg: 'bg-savings-soft' },
+  { value: 'PRIVATE',      label: '나만 보기',     desc: '가족 리스트에서 완전히 제외됨',         icon: EyeOff, color: 'text-muted-foreground',  bg: 'bg-muted border-border' },
 ]
 
 const REPAYMENT_TYPES: { value: RepaymentType; label: string }[] = [
@@ -835,19 +835,23 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
               </div>
 
               {/* 연결 자산 Select — 주담대/전세 시 강조 */}
-              <div className={cn(
-                'rounded-xl p-3 -mx-1 transition-all',
-                needsLinkedAsset
-                  ? 'bg-amber-50 dark:bg-amber-500/8 border border-amber-200 dark:border-amber-500/30'
-                  : 'bg-transparent border border-transparent'
-              )}>
+              <div
+                className={cn(
+                  'rounded-xl p-3 -mx-1 transition-all border',
+                  needsLinkedAsset ? 'bg-warning-soft' : 'bg-transparent border-transparent'
+                )}
+                style={needsLinkedAsset ? { borderColor: 'rgba(245,158,11,0.3)' } : undefined}
+              >
                 <Label className={cn(
                   'text-xs mb-1.5 flex items-center gap-1.5',
-                  needsLinkedAsset ? 'text-warning dark:text-amber-400 font-medium' : 'text-muted-foreground'
+                  needsLinkedAsset ? 'text-warning font-medium' : 'text-muted-foreground'
                 )}>
                   연결된 자산 (담보 등)
                   {needsLinkedAsset && (
-                    <span className="text-[10px] bg-amber-200 dark:bg-amber-400/40 text-amber-800 dark:text-amber-100 border border-amber-300 dark:border-amber-400/60 px-1.5 py-0.5 rounded-md font-semibold">
+                    <span
+                      className="text-[10px] bg-warning-soft text-warning border px-1.5 py-0.5 rounded-md font-semibold"
+                      style={{ borderColor: 'rgba(245,158,11,0.4)' }}
+                    >
                       {dDebtType === 'MORTGAGE' ? '주담대 담보 자산' : '전세 대상 자산'} 연결 권장
                     </span>
                   )}
@@ -856,12 +860,8 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
                   <select
                     value={linkedAssetId}
                     onChange={e => setLinkedAssetId(e.target.value)}
-                    className={cn(
-                      'w-full h-10 bg-card rounded-xl pl-4 pr-9 text-sm text-foreground outline-none transition-colors appearance-none',
-                      needsLinkedAsset && !linkedAssetId
-                        ? 'border border-amber-500/50 focus:border-amber-400'
-                        : 'border border-border focus:border-ring'
-                    )}
+                    className="w-full h-10 bg-card rounded-xl pl-4 pr-9 text-sm text-foreground outline-none transition-colors appearance-none border border-border focus:border-ring"
+                    style={needsLinkedAsset && !linkedAssetId ? { borderColor: 'rgba(245,158,11,0.5)' } : undefined}
                   >
                     <option value="">없음</option>
                     {(needsLinkedAsset
@@ -876,7 +876,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
                 {(needsLinkedAsset ? linkableAssets.filter(a => a.type === 'REAL_ESTATE') : linkableAssets).length === 0 ? (
                   <p className="text-xs text-muted-foreground/60 mt-1">{needsLinkedAsset ? '등록된 부동산이 없습니다.' : '등록된 자산이 없습니다.'}</p>
                 ) : needsLinkedAsset && !linkedAssetId ? (
-                  <p className="text-xs text-warning dark:text-amber-500/70 mt-1">LTV 분석을 위해 연결 자산을 선택하면 좋아요.</p>
+                  <p className="text-xs text-warning/80 mt-1">LTV 분석을 위해 연결 자산을 선택하면 좋아요.</p>
                 ) : null}
               </div>
 

@@ -118,42 +118,43 @@ function SettingsClient() {
     }
   }
 
+  // AI provider 카드 색상. Tailwind ad-hoc 색 대신 viz token 매칭.
   const PROVIDER_CONFIG = [
     {
       id: 'claude' as const,
       label: 'Claude',
       sub: 'Anthropic Pro/Max · 최고 품질',
       letter: 'C',
-      iconBg: 'bg-orange-500/15',
+      iconBg: 'bg-warning-soft',
       iconColor: 'text-warning',
-      activeBorder: 'border-orange-500/30',
-      activeBg: 'bg-orange-500/5',
+      activeBg: 'bg-warning-soft',
       activeText: 'text-warning',
-      badgeBg: 'bg-orange-500/10 text-warning',
+      activeBorderColor: 'rgba(245,158,11,0.3)',
+      badgeBg: 'bg-warning-soft text-warning',
     },
     {
       id: 'chatgpt' as const,
       label: 'ChatGPT',
       sub: 'OpenAI Plus/Pro · GPT-4o',
       letter: 'G',
-      iconBg: 'bg-emerald-500/15',
+      iconBg: 'bg-income-soft',
       iconColor: 'text-income',
-      activeBorder: 'border-emerald-500/30',
-      activeBg: 'bg-emerald-500/5',
+      activeBg: 'bg-income-soft',
       activeText: 'text-income',
-      badgeBg: 'bg-emerald-500/10 text-income',
+      activeBorderColor: 'rgba(16,185,129,0.3)',
+      badgeBg: 'bg-income-soft text-income',
     },
     {
       id: 'gemini' as const,
       label: 'Gemini',
       sub: 'Google Advanced · 멀티모달',
       letter: 'Gm',
-      iconBg: 'bg-blue-500/15',
-      iconColor: 'text-blue-400',
-      activeBorder: 'border-blue-500/30',
-      activeBg: 'bg-blue-500/5',
-      activeText: 'text-blue-400',
-      badgeBg: 'bg-blue-500/10 text-blue-400',
+      iconBg: 'bg-savings-soft',
+      iconColor: 'text-savings',
+      activeBg: 'bg-savings-soft',
+      activeText: 'text-savings',
+      activeBorderColor: 'rgba(59,130,246,0.3)',
+      badgeBg: 'bg-savings-soft text-savings',
     },
   ] as const
 
@@ -249,7 +250,7 @@ function SettingsClient() {
             <User className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-muted-foreground mb-1">표시 이름 <span className="text-warning dark:text-amber-400 font-medium">· 이체 필터링에 사용됩니다</span></p>
+            <p className="text-xs text-muted-foreground mb-1">표시 이름 <span className="text-warning font-medium">· 이체 필터링에 사용됩니다</span></p>
             {isEditingName ? (
               <div className="flex items-center gap-2">
                 <input
@@ -386,11 +387,12 @@ function SettingsClient() {
               title={tooltip}
               className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all mb-2 last:mb-0 ${
                 isActive
-                  ? `${cfg.activeBorder} ${cfg.activeBg}`
+                  ? cfg.activeBg
                   : isProxyOffline
                     ? 'border-border opacity-50 cursor-not-allowed'
                     : 'border-border hover:bg-muted/30 cursor-pointer disabled:opacity-40'
               }`}
+              style={isActive ? { borderColor: cfg.activeBorderColor } : undefined}
             >
               {/* 프로바이더 아이콘 */}
               <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors font-bold text-sm ${
@@ -547,7 +549,7 @@ function SettingsClient() {
                   <AlertDialogCancel>취소</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleDeleteZero}
-                    className="bg-red-600 hover:bg-red-500 text-white"
+                    className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
                   >
                     {isDeletingZero ? '삭제 중...' : '삭제'}
                   </AlertDialogAction>
@@ -559,10 +561,13 @@ function SettingsClient() {
       </section>
 
       {/* Danger Zone */}
-      <section className="rounded-2xl border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-950/10 p-6">
+      <section
+        className="rounded-2xl border bg-expense-soft p-6"
+        style={{ borderColor: 'rgba(239,68,68,0.2)' }}
+      >
         <div className="flex items-center gap-2.5 mb-4">
           <ShieldAlert className="w-5 h-5 text-destructive" />
-          <h2 className="text-base font-semibold text-destructive dark:text-red-400">Danger Zone</h2>
+          <h2 className="text-base font-semibold text-destructive">Danger Zone</h2>
         </div>
 
         <div className="flex items-start justify-between gap-4">
@@ -576,7 +581,8 @@ function SettingsClient() {
             <AlertDialogTrigger asChild>
               <button
                 disabled={isLoading}
-                className="flex-shrink-0 flex items-center gap-2 px-4 h-9 rounded-xl text-sm font-semibold bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-900/50 hover:bg-red-200 dark:hover:bg-red-900/40 hover:text-red-800 dark:hover:text-red-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-shrink-0 flex items-center gap-2 px-4 h-9 rounded-xl text-sm font-semibold bg-expense-soft text-destructive border transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80"
+                style={{ borderColor: 'rgba(239,68,68,0.3)' }}
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 초기화
@@ -586,13 +592,13 @@ function SettingsClient() {
             <AlertDialogContent>
               <AlertDialogHeader>
                 <div className="flex items-center gap-2.5 mb-1">
-                  <div className="w-9 h-9 rounded-xl bg-red-100 dark:bg-red-950/60 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-xl bg-expense-soft flex items-center justify-center">
                     <AlertTriangle className="w-4 h-4 text-destructive" />
                   </div>
                   <AlertDialogTitle>정말 초기화하시겠습니까?</AlertDialogTitle>
                 </div>
                 <AlertDialogDescription className="space-y-2">
-                  <span className="block text-destructive dark:text-red-400 font-medium text-sm">
+                  <span className="block text-destructive font-medium text-sm">
                     이 작업은 되돌릴 수 없습니다. 모든 지출/수입 내역이 삭제됩니다.
                   </span>
                   <span className="block text-muted-foreground text-xs">
@@ -606,7 +612,7 @@ function SettingsClient() {
                 <AlertDialogCancel>취소</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleReset}
-                  className="bg-red-600 text-white hover:bg-red-700"
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
                   {isLoading ? '초기화 중...' : '초기화 실행'}
                 </AlertDialogAction>

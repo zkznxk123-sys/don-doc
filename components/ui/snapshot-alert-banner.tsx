@@ -35,7 +35,7 @@ export function SnapshotAlertBanner({ yearMonth, onSaved, onDismiss }: SnapshotA
     <div className="flex items-start gap-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800/60 rounded-2xl px-4 py-3.5">
       {/* 아이콘 */}
       <div className="flex-shrink-0 mt-0.5">
-        <AlertTriangle className="w-4 h-4 text-warning dark:text-amber-400" />
+        <AlertTriangle className="w-4 h-4 text-warning" />
       </div>
 
       {/* 텍스트 + 버튼 */}
@@ -43,7 +43,7 @@ export function SnapshotAlertBanner({ yearMonth, onSaved, onDismiss }: SnapshotA
         <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
           {formatYearMonth(yearMonth)} 자산 스냅샷이 기록되지 않았습니다
         </p>
-        <p className="text-xs text-amber-700/80 dark:text-amber-400/80 mt-0.5">
+        <p className="text-xs text-amber-700/80/80 mt-0.5">
           현재 잔액 기준으로 지난달 순자산을 기록할 수 있습니다.
         </p>
 

@@ -289,7 +289,7 @@ function ExpansionView({ expansion }: { expansion: ScenarioExpansion }) {
           <div className="space-y-1.5">
             {expansion.risks.map((r, i) => (
               <div key={i} className="bg-amber-500/5 border border-amber-500/20 rounded-xl px-3 py-2">
-                <p className="text-xs font-medium text-warning dark:text-amber-400 flex items-center gap-1">
+                <p className="text-xs font-medium text-warning flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3 flex-shrink-0" />{r.risk}
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">→ {r.mitigation}</p>

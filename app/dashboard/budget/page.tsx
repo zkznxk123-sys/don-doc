@@ -434,7 +434,7 @@ export default function BudgetPage() {
           <div className="mt-4">
             <div className="flex justify-between text-xs text-muted-foreground mb-2">
               <span>이번 달 실제 지출</span>
-              <span className={cn(data && data.familySpent > parsedFamilyBudget ? 'text-destructive dark:text-red-400' : 'text-muted-foreground')}>
+              <span className={cn(data && data.familySpent > parsedFamilyBudget ? 'text-destructive' : 'text-muted-foreground')}>
                 {formatCurrency(data?.familySpent ?? 0)} / {formatCurrency(parsedFamilyBudget)}
               </span>
             </div>
@@ -461,7 +461,7 @@ export default function BudgetPage() {
         )}>
           <div className="flex items-center gap-2">
             {overAllocated
-              ? <AlertCircle className="w-4 h-4 text-destructive dark:text-red-400" />
+              ? <AlertCircle className="w-4 h-4 text-destructive" />
               : <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
             }
             <span className="text-sm text-muted-foreground">
@@ -521,7 +521,7 @@ export default function BudgetPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium text-foreground">{member.name}</span>
                         {member.role === 'CFO' && (
-                          <span className="text-xs text-warning dark:text-amber-500 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-md">CFO</span>
+                          <span className="text-xs text-warning bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-md">CFO</span>
                         )}
                         {member.role === 'CO_CFO' && (
                           <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-md">공동CFO</span>

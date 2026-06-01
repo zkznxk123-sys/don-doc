@@ -344,7 +344,7 @@ export default function Dashboard() {
                         <div className="grid grid-cols-3 gap-2 mb-3">
                           {[
                             { label: '예산', value: budgetData.familyBudget, color: 'text-foreground' },
-                            { label: '사용', value: budgetData.familySpent, color: budgetData.familySpent > budgetData.familyBudget * 0.8 ? 'text-destructive dark:text-red-400' : 'text-foreground' },
+                            { label: '사용', value: budgetData.familySpent, color: budgetData.familySpent > budgetData.familyBudget * 0.8 ? 'text-destructive' : 'text-foreground' },
                             { label: '잔여', value: Math.max(budgetData.familyBudget - budgetData.familySpent, 0), color: 'text-income' },
                           ].map(item => (
                             <div key={item.label} className="bg-muted rounded-xl p-3 text-center">

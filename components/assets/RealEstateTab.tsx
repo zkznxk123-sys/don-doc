@@ -127,7 +127,7 @@ export function RealEstateTab({
             <Target className="w-4 h-4 text-warning" />
             <span className="text-sm font-semibold text-foreground">갈아타기 목표 단지</span>
             {targetProperties.length > 0 && (
-              <span className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] bg-amber-100 dark:bg-amber-900/30 text-amber-700 px-2 py-0.5 rounded-full">
                 {targetProperties.length}곳
               </span>
             )}
@@ -343,7 +343,7 @@ function RealEstateAggregatePanel({
               <span className="text-xs font-semibold text-foreground">대출 규제 지표</span>
             </div>
             {avgMonthlyIncome == null && (
-              <span className="text-[10px] text-warning dark:text-amber-400">소득 데이터 필요 (현금흐름 등록)</span>
+              <span className="text-[10px] text-warning">소득 데이터 필요 (현금흐름 등록)</span>
             )}
           </div>
 

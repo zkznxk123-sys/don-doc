@@ -152,28 +152,28 @@ function ExtractedTextBlock({
 function SourceStatusBadge({ status }: { status: ContentSourceData['summaryStatus'] }) {
   if (status === 'success') {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-income dark:text-emerald-400">
+      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-income">
         <CheckCircle2 className="w-2.5 h-2.5" />요약 완료
       </span>
     )
   }
   if (status === 'failed') {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-destructive dark:text-red-400">
+      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-destructive">
         <AlertTriangle className="w-2.5 h-2.5" />요약 실패
       </span>
     )
   }
   if (status === 'fetch_failed') {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-destructive dark:text-red-400">
+      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-red-500/10 text-destructive">
         <AlertTriangle className="w-2.5 h-2.5" />추출 실패
       </span>
     )
   }
   if (status === 'too_short') {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-warning dark:text-amber-400">
+      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/10 text-warning">
         <AlertTriangle className="w-2.5 h-2.5" />본문 부족
       </span>
     )

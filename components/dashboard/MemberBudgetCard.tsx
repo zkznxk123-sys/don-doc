@@ -1,7 +1,6 @@
 'use client'
 
 import { cn, formatCurrency } from '@/lib/utils'
-import { Progress } from '@/components/ui/progress'
 
 export function MemberBudgetCard({
   monthLabel, myBudget, myExpenses, myTxCount,
@@ -14,22 +13,28 @@ export function MemberBudgetCard({
   const isWarning = pct >= 80
 
   return (
-    <div className={cn(
-      'rounded-2xl p-5 border',
-      isOver ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/50'
-        : isWarning ? 'bg-amber-50 dark:bg-amber-950/10 border-amber-200 dark:border-amber-900/40'
-        : 'bg-card border-border'
-    )}>
+    <div
+      className={cn(
+        'rounded-2xl p-5 border',
+        isOver ? 'bg-expense-soft' : isWarning ? 'bg-warning-soft' : 'bg-card border-border'
+      )}
+      style={isOver ? { borderColor: 'rgba(239,68,68,0.3)' } : isWarning ? { borderColor: 'rgba(245,158,11,0.3)' } : undefined}
+    >
       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">{monthLabel} 남은 예산</p>
       {myBudget > 0 ? (
         <>
-          <p className={cn('numeric text-4xl mb-1', isOver ? 'text-destructive dark:text-red-400' : isWarning ? 'text-warning dark:text-amber-400' : 'text-foreground')}>
+          <p className={cn('numeric text-4xl mb-1', isOver ? 'text-destructive' : isWarning ? 'text-warning' : 'text-foreground')}>
             {isOver ? '-' : ''}{formatCurrency(remaining)}
           </p>
           <p className="text-xs text-muted-foreground mb-4">{formatCurrency(myExpenses)} 사용 / {formatCurrency(myBudget)} 예산</p>
-          <Progress value={pct} className="h-2 mb-2" indicatorClassName={cn(isOver || isWarning ? 'bg-red-500' : 'bg-emerald-500')} />
+          <div className="h-2 mb-2 w-full bg-accent rounded-full overflow-hidden">
+            <div
+              className="h-full transition-all duration-300"
+              style={{ width: `${pct}%`, backgroundColor: isOver || isWarning ? 'var(--viz-red)' : 'var(--viz-emerald)' }}
+            />
+          </div>
           <div className="flex justify-between text-xs">
-            <span className={cn(isOver ? 'text-destructive dark:text-red-400' : isWarning ? 'text-warning dark:text-amber-400' : 'text-muted-foreground')}>
+            <span className={cn(isOver ? 'text-destructive' : isWarning ? 'text-warning' : 'text-muted-foreground')}>
               {Math.round(pct)}% 사용{isOver ? ' — 예산 초과' : isWarning ? ' — 주의' : ''}
             </span>
             <span className="text-muted-foreground/60">{myTxCount}건</span>

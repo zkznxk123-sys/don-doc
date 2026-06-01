@@ -141,7 +141,7 @@ export function AssetDonutChart({ data, totalAssets, manageLink, hideZeroAccount
           {activeIndex === null && (
             <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
               <span className="text-xs text-muted-foreground">총 순자산</span>
-              <span className={cn('text-lg font-bold', totalAssets >= 0 ? 'text-foreground' : 'text-destructive dark:text-red-400')}>
+              <span className={cn('text-lg font-bold', totalAssets >= 0 ? 'text-foreground' : 'text-destructive')}>
                 {totalAssets < 0 ? '-' : ''}{formatLargeNumber(Math.abs(totalAssets))}
               </span>
               <span className="text-[10px] text-muted-foreground/60">

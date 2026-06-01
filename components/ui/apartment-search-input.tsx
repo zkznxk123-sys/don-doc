@@ -333,12 +333,12 @@ export function ApartmentSearchInput({
       {/* 선택 완료 상태 */}
       {selected && activeBjdCode && (
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full">
+          <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 px-2 py-0.5 rounded-full">
             <MapPin className="w-2.5 h-2.5" />
             {sido} {sigungu} · 지역코드 {activeBjdCode}
           </span>
           {area && (
-            <span className="inline-flex items-center gap-1 text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full">
+            <span className="inline-flex items-center gap-1 text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 px-2 py-0.5 rounded-full">
               {area.toFixed(1)}㎡ ({Math.round(area / 3.305)}평)
             </span>
           )}
@@ -348,12 +348,12 @@ export function ApartmentSearchInput({
       {/* 기존 bjdCode만 있는 경우 (수정 시) */}
       {!activeBjdCode && bjdCode && value && (
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full">
+          <span className="inline-flex items-center gap-1 text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 px-2 py-0.5 rounded-full">
             <MapPin className="w-2.5 h-2.5" />
             지역코드 {bjdCode}
           </span>
           {area && (
-            <span className="inline-flex items-center gap-1 text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-full">
+            <span className="inline-flex items-center gap-1 text-[10px] bg-blue-100 dark:bg-blue-900/30 text-blue-700 px-2 py-0.5 rounded-full">
               {area.toFixed(1)}㎡ ({Math.round(area / 3.305)}평)
             </span>
           )}

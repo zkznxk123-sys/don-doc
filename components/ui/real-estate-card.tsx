@@ -21,18 +21,19 @@ const REPAYMENT_LABELS: Record<string, string> = {
   INTEREST_ONLY:            '이자만납부',
 }
 
-function ltvStyle(ltv: number) {
-  if (ltv < 40) return { bar: 'bg-emerald-500', text: 'text-income dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-800/40', bg: 'bg-emerald-50 dark:bg-emerald-900/15' }
-  if (ltv < 60) return { bar: 'bg-amber-500',   text: 'text-warning dark:text-amber-400',     border: 'border-amber-200 dark:border-amber-800/40',   bg: 'bg-amber-50 dark:bg-amber-900/15'   }
-  if (ltv < 80) return { bar: 'bg-orange-500',  text: 'text-warning dark:text-orange-400',   border: 'border-orange-200 dark:border-orange-800/40', bg: 'bg-orange-50 dark:bg-orange-900/15' }
-  return              { bar: 'bg-red-500',      text: 'text-destructive dark:text-red-400',         border: 'border-red-200 dark:border-red-800/40',       bg: 'bg-red-50 dark:bg-red-900/15'       }
+// LTV 단계별 viz var color (Tailwind opacity 회피 위해 var()와 inline rgba 혼용)
+function ltvStyle(ltv: number): { barColor: string; text: string; borderColor: string; bg: string } {
+  if (ltv < 40) return { barColor: 'var(--viz-emerald)', text: 'text-income',      borderColor: 'rgba(16,185,129,0.3)', bg: 'bg-income-soft' }
+  if (ltv < 60) return { barColor: 'var(--viz-amber)',   text: 'text-warning',     borderColor: 'rgba(245,158,11,0.3)', bg: 'bg-warning-soft' }
+  if (ltv < 80) return { barColor: 'var(--viz-amber)',   text: 'text-warning',     borderColor: 'rgba(245,158,11,0.4)', bg: 'bg-warning-soft' }
+  return              { barColor: 'var(--viz-red)',     text: 'text-destructive', borderColor: 'rgba(239,68,68,0.3)',  bg: 'bg-expense-soft' }
 }
 
 function DebtRow({ debt, onToggleLtv }: { debt: LinkedDebt; onToggleLtv: (id: string, val: boolean) => void }) {
   return (
     <div className="flex items-center gap-3 py-2.5 border-b border-border/60 last:border-0">
-      <div className="w-7 h-7 rounded-lg bg-red-400/10 flex items-center justify-center flex-shrink-0">
-        <HandCoins className="w-3.5 h-3.5 text-destructive dark:text-red-400" />
+      <div className="w-7 h-7 rounded-lg bg-expense-soft flex items-center justify-center flex-shrink-0">
+        <HandCoins className="w-3.5 h-3.5 text-destructive" />
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-xs font-medium text-foreground/70 truncate">{debt.name}</p>
@@ -237,7 +238,10 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
 
                   {/* LTV — 색상 프로그레스 바 */}
                   {data?.ltv != null && st && (
-                    <div className={cn('rounded-xl p-3 border col-span-1', st.bg, st.border)}>
+                    <div
+                      className={cn('rounded-xl p-3 border col-span-1', st.bg)}
+                      style={{ borderColor: st.borderColor }}
+                    >
                       <div className="flex items-center justify-between mb-1">
                         <p className="text-[10px] text-muted-foreground">LTV</p>
                         {data.ltv >= 80 && <AlertTriangle className="w-3 h-3 text-destructive" />}
@@ -245,8 +249,8 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
                       <p className={cn('text-sm font-bold tabular-nums', st.text)}>{data.ltv.toFixed(1)}%</p>
                       <div className="mt-2 w-full bg-muted/70 rounded-full h-1.5 overflow-hidden">
                         <div
-                          className={cn('h-full rounded-full transition-all duration-700', st.bar)}
-                          style={{ width: `${Math.min(data.ltv, 100)}%` }}
+                          className="h-full rounded-full transition-all duration-700"
+                          style={{ width: `${Math.min(data.ltv, 100)}%`, backgroundColor: st.barColor }}
                         />
                       </div>
                       <div className="flex justify-between text-[9px] text-muted-foreground/40 mt-0.5">
@@ -274,7 +278,7 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
                   className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-muted/40 transition-colors"
                 >
                   <div className="flex items-center gap-2">
-                    <HandCoins className="w-3.5 h-3.5 text-destructive dark:text-red-400" />
+                    <HandCoins className="w-3.5 h-3.5 text-destructive" />
                     <span className="text-xs font-medium text-muted-foreground">연결된 부채</span>
                     <span className="text-xs text-muted-foreground/60">{data.linkedDebts.length}건</span>
                   </div>

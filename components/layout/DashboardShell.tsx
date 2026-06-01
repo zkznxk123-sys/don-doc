@@ -150,7 +150,7 @@ function NameWarningBanner({ name }: { name: string | null }) {
 
   return (
     <div className="mx-4 md:mx-6 mt-4 flex items-start gap-3 rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-950/20 px-4 py-3">
-      <AlertCircle className="w-4 h-4 text-warning dark:text-amber-400 flex-shrink-0 mt-0.5" />
+      <AlertCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
       <p className="text-sm text-amber-800 dark:text-amber-300 flex-1">
         실제 이름으로 수정하지 않으면, 가족 간 이체 자동 제외가 작동하지 않을 수 있어요.{' '}
         <Link
