@@ -5,7 +5,7 @@ import { getAuthUser } from '@/lib/auth'
 import { chat, embed, cosineSimilarity } from '@/lib/ai'
 import { SCENARIO_CATEGORIES } from '@/lib/scenario-constants'
 import type { GenerateScenariosOptions } from './types'
-import { buildFinancialContext, buildFeedbackContext } from './helpers'
+import { buildFinancialContext, buildFeedbackContext, extractJsonBlock } from './helpers'
 
 export async function generateScenarios(
   options: GenerateScenariosOptions = {},
@@ -91,11 +91,9 @@ ${categoryRule}
     return { success: false, error: `AI 호출 실패: ${msg}` }
   }
 
-  let parsed: { scenarios: any[] }
+  let parsed: { scenarios: unknown[] }
   try {
-    const cleaned = raw.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim()
-    const jsonStr = cleaned.match(/\{[\s\S]*\}/)?.[0] ?? cleaned
-    parsed = JSON.parse(jsonStr)
+    parsed = JSON.parse(extractJsonBlock(raw))
   } catch {
     const partialMatches = raw.match(/\{[^{}]*"title"[^{}]*"rationale"[^{}]*\}/g) ?? []
     if (partialMatches.length > 0) {

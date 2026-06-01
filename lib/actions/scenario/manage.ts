@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
 import { chat } from '@/lib/ai'
 import type { ScenarioData, ScenarioExpansion, GenerationBatch, ScenarioChatMessageData } from './types'
-import { buildFinancialContext, mapScenario } from './helpers'
+import { buildFinancialContext, mapScenario, extractJsonBlock } from './helpers'
 
 // ── Scenario 조회/업데이트 ────────────────────────────────────────────────────
 
@@ -125,9 +125,7 @@ ${financialContext}
 
   let expansion: ScenarioExpansion
   try {
-    const cleaned = raw.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim()
-    const jsonStr = cleaned.match(/\{[\s\S]*\}/)?.[0] ?? cleaned
-    expansion = JSON.parse(jsonStr)
+    expansion = JSON.parse(extractJsonBlock(raw)) as ScenarioExpansion
   } catch {
     console.error('[expandScenario] parse error, raw length:', raw.length, 'preview:', raw.slice(0, 200))
     return { success: false, error: '계획 파싱 실패 — AI 응답이 예상 형식이 아닙니다' }

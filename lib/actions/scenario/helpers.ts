@@ -7,6 +7,17 @@ import { fetchFundamentalsBatch, toYahooTicker, type FundamentalData } from '@/l
 import type { SummarizeResult, SummaryStatus, ContentSourceData } from './types'
 import { SummaryMetaSchema } from './types'
 
+// ── AI 응답 JSON 추출 ────────────────────────────────────────────────────────
+
+/**
+ * AI 응답에서 코드펜스(```json``` 등) 제거 후 첫 `{...}` 또는 `[...]` 블록 추출.
+ * chatJSON()이 내부에서 비슷한 처리를 하지만, 일부 호출처는 partial recovery 필요해 chat() 직접 호출 후 이 헬퍼 사용.
+ */
+export function extractJsonBlock(raw: string): string {
+  const cleaned = raw.replace(/```(?:json)?\s*/gi, '').replace(/```/g, '').trim()
+  return cleaned.match(/[{[][\s\S]*[}\]]/)?.[0] ?? cleaned
+}
+
 // ── URL 컨텐츠 추출 ──────────────────────────────────────────────────────────
 
 export function isYouTubeUrl(url: string): boolean {
