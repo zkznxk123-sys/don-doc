@@ -90,21 +90,20 @@ export function TradeDrawer({ isOpen, onClose, onSuccess, holding }: TradeDrawer
             <div className="bg-muted rounded-xl p-4 space-y-3">
               {/* 거래 유형 */}
               <div className="flex gap-2">
-                {(['BUY', 'SELL', 'DIVIDEND'] as TradeType[]).map(t => (
-                  <button
-                    key={t}
-                    onClick={() => setTradeType(t)}
-                    className={`flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                      tradeType === t
-                        ? t === 'BUY' ? 'bg-blue-500 text-white'
-                          : t === 'SELL' ? 'bg-red-500 text-white'
-                          : 'bg-emerald-500 text-white'
-                        : 'bg-background text-muted-foreground'
-                    }`}
-                  >
-                    {TRADE_TYPE_META[t].label}
-                  </button>
-                ))}
+                {(['BUY', 'SELL', 'DIVIDEND'] as TradeType[]).map(t => {
+                  const isActive = tradeType === t
+                  const activeColor = t === 'BUY' ? 'var(--viz-blue)' : t === 'SELL' ? 'var(--viz-red)' : 'var(--viz-emerald)'
+                  return (
+                    <button
+                      key={t}
+                      onClick={() => setTradeType(t)}
+                      className="flex-1 py-1.5 rounded-lg text-xs font-semibold transition-colors bg-background text-muted-foreground"
+                      style={isActive ? { backgroundColor: activeColor, color: '#fff' } : undefined}
+                    >
+                      {TRADE_TYPE_META[t].label}
+                    </button>
+                  )
+                })}
               </div>
 
               <div className="grid grid-cols-2 gap-2">

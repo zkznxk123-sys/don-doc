@@ -16,7 +16,7 @@ import { useAssetThreshold } from '@/lib/hooks/useAssetThreshold'
 import { toast } from 'sonner'
 
 const TYPE_META: Record<string, { label: string; Icon: React.ElementType; color: string; bg: string }> = {
-  CASH:        { label: '현금 · 예적금', Icon: Banknote,   color: 'text-blue-400',    bg: 'bg-blue-400/10' },
+  CASH:        { label: '현금 · 예적금', Icon: Banknote,   color: 'text-savings',     bg: 'bg-savings-soft' },
   INVESTMENT:  { label: '주식 · 펀드',   Icon: TrendingUp, color: 'text-income',      bg: 'bg-income-soft' },
   PENSION:     { label: '연금',           Icon: PiggyBank,  color: 'text-teal-400',    bg: 'bg-teal-400/10' },
   CRYPTO:      { label: '가상자산',       Icon: Bitcoin,    color: 'text-warning',   bg: 'bg-amber-400/10' },

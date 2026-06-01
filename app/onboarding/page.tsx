@@ -9,6 +9,7 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Users, UserPlus, ArrowRight, Loader2, ChevronLeft } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import Image from 'next/image'
 import { createFamily, joinFamily } from '@/lib/actions/family'
 
 type Step = 'select' | 'create' | 'join'
@@ -75,11 +76,18 @@ function OnboardingContent() {
   }
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ backgroundColor: '#0B0F0E' }}>
       <div className="w-full max-w-sm">
         {/* Header */}
         <div className="mb-10 text-center">
-          <h1 className="text-3xl font-bold text-white tracking-tight">돈Doc</h1>
+          <Image
+            src="/logo-wordmark-dark.svg"
+            alt="돈Doc"
+            width={120}
+            height={32}
+            priority
+            className="mx-auto"
+          />
           <p className="text-sm text-zinc-500 mt-2">시작하기</p>
         </div>
 

@@ -433,9 +433,10 @@ export function TransactionDrawer({
                 className={cn(
                   "px-5 py-2 rounded-full text-sm font-medium transition-all border",
                   isExpense
-                    ? "bg-expense-soft border-[var(--viz-red)]/30 text-expense"
+                    ? "bg-expense-soft text-expense"
                     : "bg-muted/50 border-border text-muted-foreground hover:border-ring"
                 )}
+                style={isExpense ? { borderColor: 'rgba(239,68,68,0.3)' } : undefined}
               >
                 <Minus className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
                 지출
@@ -445,9 +446,10 @@ export function TransactionDrawer({
                 className={cn(
                   "px-5 py-2 rounded-full text-sm font-medium transition-all border",
                   !isExpense
-                    ? "bg-income-soft border-[var(--viz-emerald)]/30 text-income"
+                    ? "bg-income-soft text-income"
                     : "bg-muted/50 border-border text-muted-foreground hover:border-ring"
                 )}
+                style={!isExpense ? { borderColor: 'rgba(16,185,129,0.3)' } : undefined}
               >
                 <Plus className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
                 수입
@@ -648,12 +650,13 @@ export function TransactionDrawer({
             </div>
 
             {/* Visibility Toggle */}
-            <div className={cn(
-              "flex items-center justify-between rounded-xl p-4 border transition-colors",
-              isShared
-                ? "bg-income-soft border-[hsl(var(--viz-emerald))]/20"
-                : "bg-warning-soft border-[hsl(var(--viz-amber))]/20"
-            )}>
+            <div
+              className={cn(
+                "flex items-center justify-between rounded-xl p-4 border transition-colors",
+                isShared ? "bg-income-soft" : "bg-warning-soft"
+              )}
+              style={{ borderColor: isShared ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)' }}
+            >
               <div className="flex items-center gap-3">
                 <div className={cn(
                   "w-9 h-9 rounded-lg flex items-center justify-center",

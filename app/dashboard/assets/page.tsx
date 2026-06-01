@@ -527,7 +527,7 @@ export default function AssetsPage() {
             <AlertDialogAction
               onClick={handleManualSave}
               disabled={manualSaving}
-              className="bg-blue-600 hover:bg-blue-500 text-white"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {manualSaving ? '저장 중...' : '저장'}
             </AlertDialogAction>

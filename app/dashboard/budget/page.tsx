@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react'
 import { ArrowLeft, Users, Wallet, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, Target, TrendingUp, TrendingDown, PiggyBank } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
-import { Progress } from '@/components/ui/progress'
 import { formatCurrency, cn } from '@/lib/utils'
 import { useDashboardActions } from '@/components/layout/DashboardShell'
 
@@ -286,7 +285,7 @@ export default function BudgetPage() {
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-xl font-bold text-foreground">가족 예산 관리</h1>
+          <h1 className="text-xl font-sans font-bold text-foreground">가족 예산 관리</h1>
           <p className="text-xs text-muted-foreground">재무 목표를 설정하고 예산을 배분하세요</p>
         </div>
       </div>
@@ -313,7 +312,7 @@ export default function BudgetPage() {
       <div className="bg-card rounded-2xl p-6 border border-border mb-4">
         <div className="flex items-center gap-2 mb-5">
           <Target className="w-5 h-5 text-income" />
-          <h2 className="text-base font-semibold text-foreground">이번 달 재무 목표</h2>
+          <h3 className="text-base font-semibold text-foreground">이번 달 재무 목표</h3>
         </div>
 
         <div className="grid grid-cols-3 gap-4">
@@ -412,7 +411,7 @@ export default function BudgetPage() {
       <div className="bg-card rounded-2xl p-6 border border-border mb-4">
         <div className="flex items-center gap-2 mb-4">
           <Wallet className="w-5 h-5 text-income" />
-          <h2 className="text-base font-semibold text-foreground">가족 지출 한도</h2>
+          <h3 className="text-base font-semibold text-foreground">가족 지출 한도</h3>
           <span className="text-[10px] text-muted-foreground/60 bg-muted px-2 py-0.5 rounded-full ml-auto">구성원 배분 기준</span>
         </div>
 
@@ -439,10 +438,15 @@ export default function BudgetPage() {
                 {formatCurrency(data?.familySpent ?? 0)} / {formatCurrency(parsedFamilyBudget)}
               </span>
             </div>
-            <Progress
-              value={parsedFamilyBudget > 0 ? Math.min(((data?.familySpent ?? 0) / parsedFamilyBudget) * 100, 100) : 0}
-              className={cn('[&>div]:transition-all', data && data.familySpent / parsedFamilyBudget > 0.8 ? '[&>div]:bg-red-500' : '[&>div]:bg-emerald-500')}
-            />
+            {(() => {
+              const pct = parsedFamilyBudget > 0 ? Math.min(((data?.familySpent ?? 0) / parsedFamilyBudget) * 100, 100) : 0
+              const danger = data && data.familySpent / parsedFamilyBudget > 0.8
+              return (
+                <div className="relative h-2 w-full overflow-hidden rounded-full bg-accent">
+                  <div className="h-full transition-all duration-300" style={{ width: `${pct}%`, backgroundColor: danger ? 'var(--viz-red)' : 'var(--viz-emerald)' }} />
+                </div>
+              )
+            })()}
           </div>
         )}
       </div>
@@ -484,7 +488,7 @@ export default function BudgetPage() {
       <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border mb-6 overflow-hidden">
         <div className="flex items-center gap-2 px-6 py-4 border-b border-border">
           <Users className="w-4 h-4 text-muted-foreground" />
-          <h2 className="text-base font-semibold text-foreground">구성원별 예산 배분</h2>
+          <h3 className="text-base font-semibold text-foreground">구성원별 예산 배분</h3>
         </div>
 
         <div className="divide-y divide-border">
@@ -497,14 +501,14 @@ export default function BudgetPage() {
               ? Math.min((member.spent / memberBudget) * 100, 100)
               : 0
 
-            const MEMBER_COLORS = [
-              '[&>div]:bg-blue-500',
-              '[&>div]:bg-violet-500',
-              '[&>div]:bg-amber-500',
-              '[&>div]:bg-pink-500',
-              '[&>div]:bg-teal-500',
+            const MEMBER_VIZ = [
+              'var(--viz-blue)',
+              'var(--viz-violet)',
+              'var(--viz-amber)',
+              'var(--viz-pink)',
+              'var(--viz-emerald)',
             ]
-            const colorClass = MEMBER_COLORS[idx % MEMBER_COLORS.length]
+            const indicatorColor = MEMBER_VIZ[idx % MEMBER_VIZ.length]
 
             return (
               <div key={member.id} className="px-6 py-5">
@@ -520,7 +524,7 @@ export default function BudgetPage() {
                           <span className="text-xs text-warning dark:text-amber-500 bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 rounded-md">CFO</span>
                         )}
                         {member.role === 'CO_CFO' && (
-                          <span className="text-xs text-violet-600 dark:text-violet-400 bg-violet-100 dark:bg-violet-900/30 px-1.5 py-0.5 rounded-md">공동CFO</span>
+                          <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded-md">공동CFO</span>
                         )}
                       </div>
                       <div className="text-xs text-muted-foreground">
@@ -556,7 +560,9 @@ export default function BudgetPage() {
                       <span>전체 예산 중 배분율</span>
                       <span>{Math.round(allocationPct)}%</span>
                     </div>
-                    <Progress value={allocationPct} className={colorClass} />
+                    <div className="relative h-2 w-full overflow-hidden rounded-full bg-accent">
+                      <div className="h-full transition-all duration-300" style={{ width: `${allocationPct}%`, backgroundColor: indicatorColor }} />
+                    </div>
                   </div>
                 )}
 
@@ -566,10 +572,15 @@ export default function BudgetPage() {
                       <span>개인 예산 소진율</span>
                       <span className={cn(spentPct > 80 ? 'text-destructive' : '')}>{Math.round(spentPct)}%</span>
                     </div>
-                    <Progress
-                      value={spentPct}
-                      className={cn(spentPct > 80 ? '[&>div]:bg-red-500' : spentPct > 60 ? '[&>div]:bg-amber-500' : '[&>div]:bg-emerald-500')}
-                    />
+                    <div className="relative h-2 w-full overflow-hidden rounded-full bg-accent">
+                      <div
+                        className="h-full transition-all duration-300"
+                        style={{
+                          width: `${spentPct}%`,
+                          backgroundColor: spentPct > 80 ? 'var(--viz-red)' : spentPct > 60 ? 'var(--viz-amber)' : 'var(--viz-emerald)',
+                        }}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
@@ -587,12 +598,12 @@ export default function BudgetPage() {
               const memberBudget = parsedMemberBudgets[member.id] ?? 0
               const pct = parsedFamilyBudget > 0 ? (memberBudget / parsedFamilyBudget) * 100 : 0
               if (pct <= 0) return null
-              const BG = ['bg-blue-500', 'bg-violet-500', 'bg-amber-500', 'bg-pink-500', 'bg-teal-500']
+              const VIZ = ['var(--viz-blue)', 'var(--viz-violet)', 'var(--viz-amber)', 'var(--viz-pink)', 'var(--viz-emerald)']
               return (
                 <div
                   key={member.id}
-                  className={cn('h-full transition-all', BG[idx % BG.length])}
-                  style={{ width: `${Math.min(pct, 100)}%` }}
+                  className="h-full transition-all"
+                  style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: VIZ[idx % VIZ.length] }}
                   title={`${member.name}: ${formatCurrency(memberBudget)}`}
                 />
               )
@@ -608,11 +619,11 @@ export default function BudgetPage() {
             {(data?.members ?? []).map((member, idx) => {
               const memberBudget = parsedMemberBudgets[member.id] ?? 0
               if (memberBudget <= 0) return null
-              const BG = ['bg-blue-500', 'bg-violet-500', 'bg-amber-500', 'bg-pink-500', 'bg-teal-500']
+              const VIZ = ['var(--viz-blue)', 'var(--viz-violet)', 'var(--viz-amber)', 'var(--viz-pink)', 'var(--viz-emerald)']
               const pct = parsedFamilyBudget > 0 ? Math.round((memberBudget / parsedFamilyBudget) * 100) : 0
               return (
                 <div key={member.id} className="flex items-center gap-2">
-                  <div className={cn('w-3 h-3 rounded-sm flex-shrink-0', BG[idx % BG.length])} />
+                  <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: VIZ[idx % VIZ.length] }} />
                   <span className="text-xs text-muted-foreground truncate">{member.name}</span>
                   <span className="text-xs text-muted-foreground ml-auto">{pct}%</span>
                 </div>

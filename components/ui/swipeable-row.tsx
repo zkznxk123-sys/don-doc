@@ -81,7 +81,7 @@ export function SwipeableRow({
           <>
             <button
               onClick={() => handleActionClick(() => onVisibilityToggle?.())}
-              className="p-2 bg-blue-600 rounded-lg text-white"
+              className="p-2 bg-primary rounded-lg text-primary-foreground"
               title={isPrivate ? "공유로 변경" : "개인으로 변경"}
             >
               {isPrivate ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}

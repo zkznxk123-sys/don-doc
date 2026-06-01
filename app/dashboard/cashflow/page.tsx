@@ -444,7 +444,8 @@ export default function CashflowPage() {
             onClick={saveEdit}
             disabled={saving || draftCount === 0}
             title="⌘+S로 저장"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 dark:bg-emerald-600 hover:bg-emerald-600 dark:hover:bg-emerald-500 text-xs text-white font-semibold transition-colors disabled:opacity-40"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-colors disabled:opacity-40"
+            style={{ backgroundColor: 'var(--viz-emerald)' }}
           >
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
             저장
@@ -917,11 +918,12 @@ export default function CashflowPage() {
                 내용
                 {typeFilter && (
                   <span className={cn(
-                    'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-semibold normal-case tracking-normal',
+                    'inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-semibold normal-case tracking-normal border',
                     typeFilter === 'INCOME'
-                      ? 'bg-emerald-100 text-emerald-700 border border-emerald-300 dark:bg-emerald-500/15 dark:text-emerald-400 dark:border-emerald-500/30'
-                      : 'bg-red-100 text-red-700 border border-red-300 dark:bg-red-500/15 dark:text-red-400 dark:border-red-500/30',
-                  )}>
+                      ? 'bg-income-soft text-income'
+                      : 'bg-expense-soft text-expense',
+                  )}
+                  style={{ borderColor: typeFilter === 'INCOME' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)' }}>
                     {typeFilter === 'INCOME' ? '수입만 보기' : '지출만 보기'}
                     <button onClick={() => toggleFilter(typeFilter)} className="hover:opacity-70 transition-opacity">
                       <X className="w-2.5 h-2.5" />
