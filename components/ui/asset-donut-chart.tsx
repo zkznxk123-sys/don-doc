@@ -38,7 +38,18 @@ interface AssetDonutChartProps {
   showToggle?: boolean  // true 시 "10만원 이하 제외" 토글 표시
 }
 
-const renderActiveShape = (props: any) => {
+interface ActiveShapeProps {
+  cx: number; cy: number
+  innerRadius: number; outerRadius: number
+  startAngle: number; endAngle: number
+  fill: string
+  payload: { label: string; balance: number; isLiability?: boolean }
+  percent: number
+}
+
+// Recharts activeShape는 callback signature를 unknown으로 노출 — 진입 시 캐스트
+const renderActiveShape = (rawProps: unknown) => {
+  const props = rawProps as ActiveShapeProps
   const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent } = props
   const isLiability = payload.isLiability
   const displayBalance = isLiability ? -payload.balance : payload.balance

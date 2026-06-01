@@ -355,8 +355,8 @@ export function TransactionDrawer({
       onSuccess()
       resetForm()
       onClose()
-    } catch (e: any) {
-      setError(e?.message || String(e) || '알 수 없는 오류')
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e) || '알 수 없는 오류')
     } finally {
       setIsSubmitting(false)
     }
@@ -377,8 +377,8 @@ export function TransactionDrawer({
       onSuccess()
       resetForm()
       onClose()
-    } catch (e: any) {
-      setError(e?.message || String(e) || '알 수 없는 오류')
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e) || '알 수 없는 오류')
     } finally {
       setIsDeleting(false)
     }

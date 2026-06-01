@@ -39,9 +39,22 @@ function toEok(v: number) {
   return String(v)
 }
 
-function CustomTooltip({ active, payload, label, currentYMLabel }: any) {
+// Recharts custom 컴포넌트 payload 모양 — line/legend 공용
+type ChartPayload = {
+  dataKey?: string | number
+  value?: number | string
+  name?: string
+  color?: string
+}
+
+function CustomTooltip({ active, payload, label, currentYMLabel }: {
+  active?: boolean
+  payload?: ChartPayload[]
+  label?: string
+  currentYMLabel?: string
+}) {
   if (!active || !payload?.length) return null
-  const lines = payload.filter((p: any) => !p.dataKey?.toString().toLowerCase().includes('band'))
+  const lines = payload.filter(p => !p.dataKey?.toString().toLowerCase().includes('band'))
   if (!lines.length) return null
   const isCarryForward = label === currentYMLabel
   return (
@@ -52,14 +65,14 @@ function CustomTooltip({ active, payload, label, currentYMLabel }: any) {
           <span className="ml-1.5 text-[10px] text-muted-foreground/60 font-normal">(이전월 기준)</span>
         )}
       </p>
-      {lines.map((p: any) => (
+      {lines.map(p => (
         <div key={p.dataKey} className="flex items-center justify-between gap-4 text-xs">
           <span className="flex items-center gap-1.5">
             <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: p.color }} />
             <span className="text-muted-foreground truncate max-w-[110px]">{p.name}</span>
           </span>
           <span className="font-semibold tabular-nums" style={{ color: p.color }}>
-            {toEok(p.value)}
+            {toEok(Number(p.value) || 0)}
           </span>
         </div>
       ))}
@@ -67,12 +80,12 @@ function CustomTooltip({ active, payload, label, currentYMLabel }: any) {
   )
 }
 
-function CustomLegend({ payload }: any) {
+function CustomLegend({ payload }: { payload?: ChartPayload[] }) {
   if (!payload?.length) return null
-  const filtered = payload.filter((p: any) => !p.dataKey?.toString().toLowerCase().includes('band'))
+  const filtered = payload.filter(p => !p.dataKey?.toString().toLowerCase().includes('band'))
   return (
     <div className="flex flex-wrap gap-x-4 gap-y-1 px-2 pb-1 justify-center">
-      {filtered.map((p: any) => (
+      {filtered.map(p => (
         <span key={p.dataKey} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
           <span
             className="inline-block w-5 h-[2.5px] rounded-full flex-shrink-0"
@@ -125,7 +138,7 @@ export function PriceHistoryChart({ ownProperties, targetProperties }: PriceHist
   })
 
   const chartData = sortedYM.map(ym => {
-    const row: Record<string, any> = { yearMonth: formatYM(ym) }
+    const row: Record<string, string | number | undefined | [number, number]> = { yearMonth: formatYM(ym) }
 
     ownProperties.forEach(p => {
       const h = p.history.find(h => h.yearMonth === ym)

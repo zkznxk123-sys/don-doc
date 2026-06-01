@@ -26,11 +26,19 @@ function formatYearMonth(ym: string): string {
   return `${year.slice(2)}.${month}`
 }
 
-const CustomTooltip = ({ active, payload, label }: any) => {
+// Recharts payload entry shape — 차트 라이브러리 generic type 직접 임포트가 까다로워 작은 단위로 정의
+type RechartsPayload = { dataKey?: string; value?: number; name?: string; color?: string }
+interface CustomTooltipProps {
+  active?: boolean
+  payload?: RechartsPayload[]
+  label?: string
+}
+
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (!active || !payload?.length) return null
 
-  const netWorth = payload.find((p: any) => p.dataKey === 'netWorth')?.value ?? 0
-  const totalAssets = payload.find((p: any) => p.dataKey === 'totalAssets')?.value ?? 0
+  const netWorth = payload.find(p => p.dataKey === 'netWorth')?.value ?? 0
+  const totalAssets = payload.find(p => p.dataKey === 'totalAssets')?.value ?? 0
 
   return (
     <div className="bg-card border border-border rounded-xl px-4 py-3 shadow-xl min-w-[160px]">

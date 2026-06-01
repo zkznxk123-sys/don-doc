@@ -358,7 +358,7 @@ export default function CashflowPage() {
     setIsEditing(false)
   }, [drafts])
 
-  const saveEdit = async () => {
+  const saveEdit = useCallback(async () => {
     if (draftCount === 0) { setIsEditing(false); return }
     if (!shellUser) return
     setSaving(true)
@@ -394,7 +394,7 @@ export default function CashflowPage() {
     } finally {
       setSaving(false)
     }
-  }
+  }, [draftCount, shellUser, drafts, transactions, year, month, fetchData])
 
   // 편집 모드 키보드 단축키: Cmd/Ctrl+S 저장, Esc 취소
   useEffect(() => {
@@ -518,7 +518,7 @@ export default function CashflowPage() {
       )
     }
     return () => setPageActions(null)
-  }, [isEditing, draftCount, saving, cancelEdit, startEdit, setPageActions, openExcelDrawer, openTransactionDrawer])
+  }, [isEditing, draftCount, saving, cancelEdit, startEdit, setPageActions, openExcelDrawer, openTransactionDrawer, cleanupLoading, hideExcluded, saveEdit])
 
   return (
     <div className="max-w-3xl mx-auto">

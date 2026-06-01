@@ -113,7 +113,14 @@ export default function Dashboard() {
       // transactions
       const txData = json.transactions
       if (txData?.list) {
-        setTransactions(txData.list.map((tx: any) => ({
+        type RawSubItem = { id: string; description: string; amount: number; category: string; isExcluded: boolean; excludeFromBudget: boolean }
+        type RawTx = {
+          id: string; amount: number; description: string; category: string; date: string
+          userId: string; userName: string; isMasked: boolean
+          isExcluded?: boolean; excludeFromBudget?: boolean
+          subItems?: RawSubItem[]
+        }
+        setTransactions((txData.list as RawTx[]).map(tx => ({
           id: tx.id, amount: tx.amount, description: tx.description,
           category: tx.category, date: tx.date.split('T')[0],
           userId: tx.userId, userName: tx.userName, isMasked: tx.isMasked,
@@ -127,7 +134,7 @@ export default function Dashboard() {
       const b = json.budget
       if (b) {
         setBudgetData(b)
-        const me = b.members?.find((mem: any) => mem.id === uid)
+        const me = (b.members as { id: string; budget?: number }[] | undefined)?.find(mem => mem.id === uid)
         if (me?.budget) setMyBudgetFromDB(me.budget)
       }
 

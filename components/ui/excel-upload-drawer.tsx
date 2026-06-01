@@ -238,7 +238,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         setAiStatus('error')
       }
     }
-  }, [])
+  }, [userId])
 
   // ── 파일 파싱 ──
   const processFile = useCallback((file: File) => {
@@ -320,7 +320,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
       }
     }
     reader.readAsArrayBuffer(file)
-  }, [runAiMapping, familyMemberNames])
+  }, [familyMemberNames, visibility])
 
   const handleColChange = useCallback((field: keyof ColMap, header: string) => {
     setColMap(prev => {
@@ -335,7 +335,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
     // 컬럼 매핑 바꾸면 이전 AI 결과는 무효 — pending으로 되돌림
     setAiStatus(prev => (prev === 'done' || prev === 'skipped' || prev === 'error') ? 'pending' : prev)
     setAiMappedCount(0)
-  }, [rawData])
+  }, [rawData, visibility])
 
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault(); setIsDragging(false)

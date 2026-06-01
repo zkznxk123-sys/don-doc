@@ -76,7 +76,7 @@ export async function getRecentFeedPreview(limit = 5): Promise<FeedPreviewItem[]
     type: p.type,
     content: p.content,
     author: { id: p.author.id, name: p.author.name },
-    taggedUsers: p.taggedUsers.map((u: any) => ({ id: u.id, name: u.name })),
+    taggedUsers: p.taggedUsers.map((u: { id: string; name: string | null }) => ({ id: u.id, name: u.name })),
     createdAt: p.createdAt,
   }))
 }
@@ -122,7 +122,36 @@ export async function getFeedPosts(): Promise<FamilyPostData[]> {
   return posts.map(p => mapPost(p, user.id))
 }
 
-function mapPost(p: any, currentUserId: string): FamilyPostData {
+// Prisma include 결과 형태 — getFamilyFeed/createFamilyPost 양쪽이 같은 include 사용
+interface PrismaPostShape {
+  id: string
+  type: string
+  content: string
+  isPinned: boolean
+  authorId: string
+  createdAt: Date
+  updatedAt: Date
+  author: { id: string; name: string | null }
+  taggedUsers: { id: string; name: string | null }[]
+  reactions: { emoji: string; userId: string }[]
+  comments: {
+    id: string
+    content: string
+    createdAt: Date
+    authorId: string
+    author: { id: string; name: string | null }
+  }[]
+  transaction: {
+    id: string
+    amount: number
+    date: Date | string
+    description: string
+    category: string
+    visibility: string
+  } | null
+}
+
+function mapPost(p: PrismaPostShape, currentUserId: string): FamilyPostData {
   const emojiMap = new Map<string, { count: number; hasReacted: boolean }>()
   for (const r of p.reactions) {
     const cur = emojiMap.get(r.emoji) ?? { count: 0, hasReacted: false }
@@ -155,8 +184,8 @@ function mapPost(p: any, currentUserId: string): FamilyPostData {
     content: p.content,
     isPinned: p.isPinned,
     author: { id: p.author.id, name: p.author.name },
-    taggedUsers: (p.taggedUsers ?? []).map((u: any) => ({ id: u.id, name: u.name })),
-    comments: p.comments.map((c: any) => ({
+    taggedUsers: (p.taggedUsers ?? []).map((u: { id: string; name: string | null }) => ({ id: u.id, name: u.name })),
+    comments: p.comments.map(c => ({
       id: c.id,
       content: c.content,
       author: { id: c.author.id, name: c.author.name },
@@ -207,7 +236,7 @@ export async function createPost(
       content: post.content,
       isPinned: post.isPinned,
       author: { id: post.author.id, name: post.author.name },
-      taggedUsers: post.taggedUsers.map((u: any) => ({ id: u.id, name: u.name })),
+      taggedUsers: post.taggedUsers.map((u: { id: string; name: string | null }) => ({ id: u.id, name: u.name })),
       comments: [],
       reactions: [],
       txnRef: null,

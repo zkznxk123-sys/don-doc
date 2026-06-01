@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { DollarSign, Users, Check, Pencil } from 'lucide-react'
 import { formatCurrency, cn } from '@/lib/utils'
 
@@ -27,11 +27,7 @@ export const BudgetManager = ({ month }: BudgetManagerProps) => {
   const [isLoading, setIsLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    load()
-  }, [month])
-
-  const load = async () => {
+  const load = useCallback(async () => {
     setIsLoading(true)
     try {
       const res = await fetch(`/api/budget?month=${month}`)
@@ -46,7 +42,11 @@ export const BudgetManager = ({ month }: BudgetManagerProps) => {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [month])
+
+  useEffect(() => {
+    load()
+  }, [load])
 
   const saveFamilyBudget = async () => {
     const amount = Number(familyInput.replace(/[^0-9]/g, ''))

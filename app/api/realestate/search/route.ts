@@ -81,8 +81,18 @@ export async function GET(req: NextRequest) {
 
     const data = await res.json()
 
+    // Kakao 로컬 검색 응답 — 사용 필드만 좁혀서 타입화
+    type KakaoDoc = {
+      place_name?: string
+      category_name?: string
+      address_name?: string
+      road_address_name?: string
+      x?: string
+      y?: string
+    }
+
     // 아파트 관련 결과만 필터링 (place_name에 아파트/단지/APT 포함)
-    const filtered = (data.documents ?? []).filter((doc: any) => {
+    const filtered = ((data.documents ?? []) as KakaoDoc[]).filter(doc => {
       const name: string = doc.place_name ?? ''
       const cat: string = doc.category_name ?? ''
       return (
@@ -95,7 +105,7 @@ export async function GET(req: NextRequest) {
       )
     }).slice(0, 10)
 
-    const results = filtered.map((doc: any) => {
+    const results = filtered.map(doc => {
       const address = doc.road_address_name || doc.address_name || ''
       return {
         name: doc.place_name,
