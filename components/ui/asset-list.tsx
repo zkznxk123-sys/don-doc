@@ -3,13 +3,12 @@
 import { useState } from 'react'
 import {
   Banknote, TrendingUp, Bitcoin, Building2, Layers,
-  Users, User, Eye, EyeOff, ChevronRight, Plus, Lock,
+  Users, User, Eye, ChevronRight, Plus, Lock,
   CreditCard, HandCoins, CornerDownRight, PiggyBank, PackagePlus,
   BookOpen, Pencil, Trash2,
 } from 'lucide-react'
 import { cn, formatCurrency, formatLargeNumber } from '@/lib/utils'
 import type { AccountInitialData } from '@/components/ui/account-drawer'
-import type { ShareLevel } from '@/lib/actions/accounts'
 import type { HoldingData } from '@/lib/actions/investments'
 import { Switch } from '@/components/ui/switch'
 import { useAssetThreshold } from '@/lib/hooks/useAssetThreshold'

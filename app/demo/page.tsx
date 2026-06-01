@@ -3,15 +3,15 @@
 import { useState, useEffect } from 'react'
 import {
   LayoutDashboard, ArrowLeftRight, Wallet, Calculator,
-  Sparkles, MessageSquare, Users, User, ChevronLeft,
+  Sparkles, MessageSquare, ChevronLeft,
   ChevronRight, Loader2, TrendingUp, TrendingDown,
-  PiggyBank, ArrowUpRight, ArrowDownRight, Building2,
-  Landmark, CreditCard, Check, Menu, X, MessageCircle,
+  PiggyBank, ArrowUpRight, ArrowDownRight,
+  Check, Menu, X, MessageCircle,
   Pin,
 } from 'lucide-react'
 import {
   ComposedChart, Bar, Area, XAxis, YAxis, CartesianGrid,
-  ResponsiveContainer, Tooltip as RechartsTooltip, Cell,
+  ResponsiveContainer, Tooltip as RechartsTooltip,
 } from 'recharts'
 import { Progress } from '@/components/ui/progress'
 import { formatCurrency, formatLargeNumber, cn } from '@/lib/utils'

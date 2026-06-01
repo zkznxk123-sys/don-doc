@@ -4,18 +4,12 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import {
   Wallet, PiggyBank, ArrowUpRight, ArrowDownRight,
-  Users, User, ChevronLeft, ChevronRight, EyeOff, Calculator,
-  MessageSquare,
+  Users, User, Calculator,
 } from 'lucide-react'
-import {
-  ComposedChart, Bar, Line, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, ReferenceLine,
-} from 'recharts'
-import { formatCurrency, formatLargeNumber, cn } from '@/lib/utils'
+import { formatLargeNumber, cn } from '@/lib/utils'
 import { AssetDonutChart, type AssetTypeData } from '@/components/ui/asset-donut-chart'
 import { NetWorthChart } from '@/components/ui/networth-chart'
 import { AccountDrawer } from '@/components/ui/account-drawer'
-import { Progress } from '@/components/ui/progress'
 import { LoadingPrompt } from '@/components/ui/loading-prompt'
 import {
   KpiCardSkeleton, NetWorthChartSkeleton, CashflowChartSkeleton,

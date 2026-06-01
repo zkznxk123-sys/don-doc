@@ -3,7 +3,7 @@
 import type React from 'react'
 import { cn, formatCurrency } from '@/lib/utils'
 
-export function InsightCard({ label, icon, actual, target, type, suffix, isRate = false }: {
+export function InsightCard({ label, icon, actual, target, type, isRate = false }: {
   label: string; icon: React.ReactNode; actual: number; target: number
   type: 'income' | 'expense' | 'savings'; suffix: string; isRate?: boolean
 }) {

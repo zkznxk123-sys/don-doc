@@ -6,26 +6,21 @@ import {
   ChevronLeft, ChevronRight, TrendingUp, TrendingDown,
   PiggyBank, Eye, EyeOff, Pencil, Check, X, Save, Loader2,
   FileSpreadsheet, Plus, GitMerge, Sparkles, ArrowUpDown, ArrowDownUp,
-  Share2, Send,
 } from 'lucide-react'
-import { cn, formatCurrency, formatLargeNumber } from '@/lib/utils'
+import { cn, formatCurrency } from '@/lib/utils'
 import { useDashboardActions } from '@/components/layout/DashboardShell'
 import { toast } from 'sonner'
 import { bulkUpdateTransactions } from '@/lib/actions/transaction'
 import { detectAutoExcludeItems, type DetectedGroup } from '@/lib/actions/transactions/cleanup'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
 import { InputGuide } from '@/components/dashboard/InputGuide'
 import { getFamilyCategories, type CategoryOption } from '@/lib/actions/categories'
 import { AutoCleanupDialog } from '@/components/ui/auto-cleanup-dialog'
-import { createTxnRefPost, getFamilyMembersForTag, type PostAuthor } from '@/lib/actions/feed'
 
 // 신규 추출된 sub-components
 import {
-  groupSuggestions, toMonthParam, CAT_COLORS,
+  groupSuggestions, toMonthParam,
   type TypeFilter, type PreviewSuggestion, type PreviewGroup,
-  type SubItem, type Transaction, type Summary, type MonthlyGoal, type DraftItem,
+  type Transaction, type Summary, type MonthlyGoal, type DraftItem,
 } from '@/components/cashflow/utils'
 import { SummaryCard } from '@/components/cashflow/SummaryCard'
 import { InsightCard } from '@/components/cashflow/InsightCard'

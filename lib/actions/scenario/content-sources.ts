@@ -2,7 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
-import { SCENARIO_CATEGORIES, type ScenarioCategory } from '@/lib/scenario-constants'
+import { SCENARIO_CATEGORIES } from '@/lib/scenario-constants'
 import type { ContentSourceData } from './types'
 import { summarizeSource, toContentSourceData } from './helpers'
 

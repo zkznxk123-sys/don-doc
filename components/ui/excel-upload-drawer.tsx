@@ -5,15 +5,12 @@ import * as XLSX from 'xlsx'
 import { toast } from 'sonner'
 import {
   Upload, X, FileSpreadsheet, Loader2, AlertCircle,
-  CheckCircle2, Sparkles, SkipForward, Wand2, Link2,
+  CheckCircle2, Sparkles, SkipForward, Wand2,
 } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose,
 } from '@/components/ui/drawer'
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select'
 import { createManyTransactions, syncAccountBalancesOnly, checkTransactionDuplicates, type BulkTransactionRow } from '@/lib/actions/transaction'
 import { autoDetectAndExcludeTransfers, autoDetectAndExcludeCancellations, autoDetectAndExcludeSharedCardDuplicates } from '@/lib/actions/transactions/auto-exclude'
 import { getFamilyCategories, syncBanksaladCategories, type CategoryOption } from '@/lib/actions/categories'

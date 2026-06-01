@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { Building2, TrendingUp, TrendingDown, Edit2, HandCoins, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react'
-import { cn, formatCurrency, formatLargeNumber } from '@/lib/utils'
+import { cn, formatLargeNumber } from '@/lib/utils'
 import { getRealEstateWithDebts, updateDebtLtvInclusion, type RealEstateWithDebts, type LinkedDebt } from '@/lib/actions/accounts'
 import { Switch } from '@/components/ui/switch'
 import type { AccountInitialData } from '@/components/ui/account-drawer'

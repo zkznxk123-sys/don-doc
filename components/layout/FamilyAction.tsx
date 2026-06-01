@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Users, Copy, Check, Loader2, UserPlus, Crown } from 'lucide-react'
+import { Users, Copy, Check, Loader2, Crown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { getLatestInviteCode, getFamilyInfo, type FamilyMember } from '@/lib/actions/family'
 import { toast } from 'sonner'

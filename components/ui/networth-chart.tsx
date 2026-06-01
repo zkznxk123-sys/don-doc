@@ -9,11 +9,10 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Legend,
 } from 'recharts'
 import { Plus, TrendingUp } from 'lucide-react'
 import { NetWorthHistoryModal } from '@/components/ui/networth-history-modal'
-import { formatCurrency, formatLargeNumber } from '@/lib/utils'
+import { formatCurrency } from '@/lib/utils'
 import type { NetWorthSnapshotData } from '@/lib/actions/networth'
 
 interface NetWorthChartProps {

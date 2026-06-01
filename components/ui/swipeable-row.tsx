@@ -19,7 +19,6 @@ export function SwipeableRow({
   isOwnTransaction = false,
   onVisibilityToggle,
   onEdit,
-  onDelete
 }: SwipeableRowProps) {
   const [translateX, setTranslateX] = useState(0)
   const [isDragging, setIsDragging] = useState(false)

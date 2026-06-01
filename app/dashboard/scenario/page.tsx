@@ -1,13 +1,13 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { toast } from 'sonner'
 import {
-  Sparkles, Link2, Trash2, RefreshCw, BookmarkCheck,
+  Sparkles, RefreshCw, BookmarkCheck,
   X, ChevronRight, Clock, AlertTriangle, Zap, CheckCircle2,
-  Loader2, Plus, ExternalLink, MessageCircle, Send, History,
-  Check, SlidersHorizontal, FileText, BarChart3, ChevronDown,
-  Target, TrendingUp, Bot, ShoppingCart, Play, Banknote,
+  Loader2, MessageCircle, Send, History,
+  Check, BarChart3,
+  Target, TrendingUp, Bot, ShoppingCart,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LoadingPrompt } from '@/components/ui/loading-prompt'

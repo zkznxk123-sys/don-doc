@@ -1,4 +1,3 @@
-import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { chat, chatJSON } from '@/lib/ai'
 import { formatLargeNumber } from '@/lib/utils'

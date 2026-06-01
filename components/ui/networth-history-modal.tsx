@@ -25,12 +25,6 @@ function parseCurrencyInput(raw: string): number {
   return isNaN(n) ? 0 : n
 }
 
-function formatInput(value: string): string {
-  const num = parseCurrencyInput(value)
-  if (num === 0 && value === '') return ''
-  return num.toLocaleString('ko-KR')
-}
-
 export function NetWorthHistoryModal({
   isOpen,
   onClose,

@@ -1,7 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { useAuth, useUser } from '@clerk/nextjs'
+import { useEffect } from 'react'
 
 /** PostHog를 클라이언트에서만 동적으로 로드 */
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
@@ -10,10 +9,7 @@ export function PostHogProvider({ children }: { children: React.ReactNode }) {
 
 /** 클라이언트 전용 PostHog 초기화 컴포넌트 */
 export function PostHogPageView() {
-  const [mounted, setMounted] = useState(false)
-
   useEffect(() => {
-    setMounted(true)
     const key = process.env.NEXT_PUBLIC_POSTHOG_KEY
     if (!key) return
 

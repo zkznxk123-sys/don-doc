@@ -6,7 +6,7 @@ import { useEffect, useRef, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
-  Sparkles, Lock, Shield, BarChart3, AlertCircle, ArrowRight,
+  Sparkles, Shield, BarChart3, AlertCircle, ArrowRight,
 } from 'lucide-react'
 import { CountUp } from './CountUp'
 
