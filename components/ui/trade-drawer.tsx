@@ -200,7 +200,7 @@ export function TradeDrawer({ isOpen, onClose, onSuccess, holding }: TradeDrawer
                       <p key={i} className={`${l.color} tabular-nums`}>· {l.label}</p>
                     ))}
                     {holding.currency === 'USD' && (
-                      <p className="text-muted-foreground/50 text-[9.5px] pt-0.5">※ 거래 내역엔 현재 환율로 환산되어 원화 기록됩니다.</p>
+                      <p className="text-muted-foreground/50 text-[9.5px] pt-0.5">※ 거래 내역엔 매도일 환율로 환산되어 원화 기록됩니다.</p>
                     )}
                   </div>
                 )

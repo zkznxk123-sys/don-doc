@@ -29,9 +29,14 @@ vi.mock('@/lib/roles', () => ({
   isCFOLevel: vi.fn(() => true),
 }))
 
+vi.mock('@/lib/utils/historical-fx', () => ({
+  getHistoricalUsdKrw: vi.fn(),
+}))
+
 import { addTradeRecord } from './investments'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
+import { getHistoricalUsdKrw } from '@/lib/utils/historical-fx'
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -178,11 +183,8 @@ function setupAuthAndHolding(opts: {
     account: { familyId: 'f1', id: 'a1' },
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } as any)
-  // USD 환율 (USD case)
-  if (opts.currency === 'USD') {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(prisma.exchangeRate.findUnique).mockResolvedValue({ rate: 1400 } as any)
-  }
+  // 거래일 환율 (USD case) — addTradeRecord에서 getHistoricalUsdKrw 호출
+  vi.mocked(getHistoricalUsdKrw).mockResolvedValue(opts.currency === 'USD' ? 1400 : 1)
   // 카테고리 매핑 - 기본은 시드되어 있음
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   vi.mocked(prisma.category.findMany).mockResolvedValue([
@@ -340,6 +342,40 @@ describe('addTradeRecord — 카테고리 fallback', () => {
         categoryId: null, // fallback
       }),
     })
+  })
+})
+
+describe('addTradeRecord — 거래일 환율 lookup', () => {
+  it('USD SELL uses historical rate at trade date, not current rate', async () => {
+    const tx = setupAuthAndHolding({ currency: 'USD', avgPrice: 100, quantity: 10 })
+    // 거래일 환율을 명시적으로 다른 값으로 override
+    vi.mocked(getHistoricalUsdKrw).mockResolvedValueOnce(1300)
+
+    const tradeDate = new Date('2026-04-15')
+    await addTradeRecord({
+      holdingId: 'h1', type: 'SELL', quantity: 5, price: 150, date: tradeDate,
+    })
+
+    // realizedPnL_USD = (150 - 100) * 5 = 250 USD → 1300 KRW/USD = 325,000 KRW
+    expect(tx.transaction.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        amount: 325000,
+        category: '투자수익',
+      }),
+    })
+    expect(getHistoricalUsdKrw).toHaveBeenCalledWith(tradeDate)
+  })
+
+  it('KRW SELL does not call getHistoricalUsdKrw', async () => {
+    setupAuthAndHolding({ currency: 'KRW', avgPrice: 1000 })
+    // currency=KRW면 환율 lookup 자체가 안 일어나야 함
+    vi.mocked(getHistoricalUsdKrw).mockClear()
+
+    await addTradeRecord({
+      holdingId: 'h1', type: 'SELL', quantity: 5, price: 2000, date: new Date('2026-04-15'),
+    })
+
+    expect(getHistoricalUsdKrw).not.toHaveBeenCalled()
   })
 })
 

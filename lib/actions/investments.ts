@@ -3,6 +3,7 @@
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
 import { isCFOLevel } from '@/lib/roles'
+import { getHistoricalUsdKrw } from '@/lib/utils/historical-fx'
 import type { TradeType as PrismaTradeType } from '@prisma/client'
 // TradeType을 여기서 정의 — 클라이언트 컴포넌트에서도 재사용 가능 (prisma client는 server-only라 별도 type alias 유지)
 export type TradeType = 'BUY' | 'SELL' | 'DIVIDEND' | 'SPLIT'
@@ -355,8 +356,10 @@ export async function addTradeRecord(data: {
     return { success: false, error: '종목을 찾을 수 없습니다.' }
   }
 
-  // 가계부 연동을 위한 환율 (USD → KRW). 거래일 환율 모르므로 현재 환율 사용.
-  const usdKrw = holding.currency === 'USD' ? await getUsdKrwRate() : 1
+  // 거래 내역 연동을 위한 환율 (USD → KRW).
+  // 거래일 환율을 lookup하여 USD 종목 손익이 보고일 환율에 휘둘리지 않도록 함.
+  // Yahoo historical fetch 실패 시 자동으로 현재 환율 fallback (DB → DEFAULT_USDKRW).
+  const usdKrw = holding.currency === 'USD' ? await getHistoricalUsdKrw(data.date) : 1
   const toKrw = (v: number) => v * usdKrw
 
   // 실현손익 = (매도가 - 평균단가) * 수량 — fee는 별도 트랜잭션이라 여기서는 빼지 않음
