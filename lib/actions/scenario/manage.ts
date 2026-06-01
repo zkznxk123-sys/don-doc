@@ -133,7 +133,8 @@ ${financialContext}
 
   await prisma.scenario.update({
     where: { id },
-    data: { expansion: expansion as any },
+    // Prisma JSON 컬럼은 InputJsonValue를 받지만 도메인 타입(ScenarioExpansion)이 더 정확. unknown 경유로 캐스트.
+    data: { expansion: expansion as unknown as object },
   })
 
   return { success: true, expansion }

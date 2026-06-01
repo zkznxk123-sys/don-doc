@@ -130,7 +130,13 @@ ${categoryRule}
     feasibility: number
     sourceIndexes: number[]
   }
-  const newScenarios: NewScenario[] = scenariosInput.map((s: any) => ({
+  // AI 응답 시나리오 raw shape — 모든 필드 optional·unknown 가정 후 안전 변환
+  type RawScenario = {
+    title?: unknown; category?: unknown; rationale?: unknown
+    gap?: unknown; timeline?: unknown; risk?: unknown
+    actions?: unknown; feasibility?: unknown; sourceIndexes?: unknown
+  }
+  const newScenarios: NewScenario[] = (scenariosInput as RawScenario[]).map(s => ({
     title: String(s.title ?? ''),
     category: s.category ? String(s.category) : null,
     rationale: String(s.rationale ?? ''),
@@ -138,7 +144,7 @@ ${categoryRule}
     timeline: s.timeline ? String(s.timeline) : null,
     risk: s.risk ? String(s.risk) : null,
     actions: Array.isArray(s.actions) ? s.actions.map(String) : [],
-    feasibility: Math.min(100, Math.max(0, parseInt(s.feasibility ?? '50', 10) || 50)),
+    feasibility: Math.min(100, Math.max(0, parseInt(String(s.feasibility ?? '50'), 10) || 50)),
     sourceIndexes: Array.isArray(s.sourceIndexes) ? s.sourceIndexes : [],
   }))
 

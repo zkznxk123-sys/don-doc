@@ -563,7 +563,27 @@ export function toContentSourceData(row: {
   }
 }
 
-export function mapScenario(r: any): ScenarioData {
+// Prisma Scenario row shape — JSON 컬럼 expansion 외엔 schema 따라가는 단순 매핑.
+// 정확한 prisma 타입(Scenario)을 가져오면 generated 타입 의존성이 강해져, 사용 필드만 inline 명시.
+interface PrismaScenarioRow {
+  id: string
+  title: string
+  category: string | null
+  rationale: string
+  gap: string | null
+  timeline: string | null
+  risk: string | null
+  actions: string[]
+  completedActions: number[]
+  feasibility: number
+  sourceIds: string[]
+  status: string
+  generationBatch: string
+  expansion: unknown
+  generatedAt: Date
+}
+
+export function mapScenario(r: PrismaScenarioRow): ScenarioData {
   return {
     id: r.id,
     title: r.title,
@@ -576,7 +596,7 @@ export function mapScenario(r: any): ScenarioData {
     completedActions: r.completedActions ?? [],
     feasibility: r.feasibility,
     sourceIds: r.sourceIds,
-    status: r.status,
+    status: r.status as ScenarioData['status'],
     generationBatch: r.generationBatch,
     expansion: r.expansion ? (r.expansion as unknown as ScenarioExpansion) : null,
     generatedAt: r.generatedAt,
