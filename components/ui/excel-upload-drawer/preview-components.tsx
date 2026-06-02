@@ -170,7 +170,7 @@ function matchDbAccount(
   dbAccounts: DbAccountWithHoldings[],
 ): { matchType: 'account'; matched: DbAccountWithHoldings } |
    { matchType: 'cash-sub'; parentAccountName: string } |
-   { matchType: 'holding'; parentAccountName: string } |
+   { matchType: 'holding'; parentAccountNames: string[] } |
    { matchType: 'none' } {
   const norm = normalizeAccountName(excelName)
 
@@ -186,15 +186,17 @@ function matchDbAccount(
     return { matchType: 'account', matched: accountHit }
   }
 
-  // 2) Holding 매칭 (부모 account 찾기)
+  // 2) Holding 매칭 — 여러 account에 같은 종목 있을 수 있어 전부 수집
+  const holdingParents: string[] = []
   for (const a of dbAccounts) {
     if (!a.holdingNames) continue
     const holdingHit = a.holdingNames.some(h => {
       const hNorm = normalizeAccountName(h)
       return hNorm.includes(norm) || norm.includes(hNorm)
     })
-    if (holdingHit) return { matchType: 'holding', parentAccountName: a.name }
+    if (holdingHit) holdingParents.push(a.name)
   }
+  if (holdingParents.length > 0) return { matchType: 'holding', parentAccountNames: holdingParents }
 
   return { matchType: 'none' }
 }
@@ -244,13 +246,17 @@ export function AccountBalanceDiff({
       <div className="divide-y divide-border/60 max-h-[160px] overflow-y-auto">
         {diffs.map((d, i) => {
           if (d.match.matchType === 'holding') {
+            const parents = d.match.parentAccountNames
+            const ambiguous = parents.length > 1
             return (
               <div key={i} className="grid grid-cols-[28px_1fr_auto] items-center px-2.5 py-1.5">
                 <span className="text-[10px] text-muted-foreground/40 select-none">—</span>
                 <div className="min-w-0">
                   <p className="text-xs text-foreground truncate">{d.name}</p>
-                  <span className="text-[10px] text-muted-foreground">
-                    {d.match.parentAccountName} 안의 종목 — 잔액 동기화 skip
+                  <span className={cn('text-[10px]', ambiguous ? 'text-warning' : 'text-muted-foreground')}>
+                    {ambiguous
+                      ? `여러 계좌(${parents.join(', ')})에 동일 종목 — 잔액 동기화 skip · 부모 확정은 수동`
+                      : `${parents[0]} 안의 종목 — 잔액 동기화 skip`}
                   </span>
                 </div>
                 <div className="text-right pl-2 flex-shrink-0">
