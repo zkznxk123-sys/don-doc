@@ -878,7 +878,7 @@ export default function CashflowPage() {
           <div className={cn('rounded-2xl p-4 border', effectiveSavingsRate !== null && effectiveSavingsRate >= 30 ? 'bg-savings-soft border-emerald-200 dark:border-emerald-900/40' : 'bg-card border-border')}>
             <p className="text-xs text-muted-foreground font-medium mb-2">저축률</p>
             <p className={cn('text-lg font-bold tabular-nums', effectiveSavingsRate === null ? 'text-muted-foreground/60' : effectiveSavingsRate >= 30 ? 'text-savings' : effectiveSavingsRate < 10 ? 'text-expense' : 'text-foreground')}>
-              {effectiveSavingsRate !== null ? `${effectiveSavingsRate}%` : '—'}
+              {effectiveSavingsRate !== null ? `${effectiveSavingsRate.toLocaleString('ko-KR')}%` : '—'}
             </p>
           </div>
         </div>

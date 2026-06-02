@@ -32,11 +32,11 @@ export function InsightCard({ label, icon, actual, target, type, isRate = false 
         <span className="text-xs text-muted-foreground font-medium">{label}</span>
       </div>
       <p className={cn('numeric text-xl mb-1', valueColor)}>
-        {isRate ? `${actual}%` : formatCurrency(actual)}
+        {isRate ? `${actual.toLocaleString('ko-KR')}%` : formatCurrency(actual)}
       </p>
       {hasTarget ? (
         <>
-          <p className="text-[10px] text-muted-foreground/60 mb-2">목표 {isRate ? `${target}%` : formatCurrency(target)}</p>
+          <p className="text-[10px] text-muted-foreground/60 mb-2">목표 {isRate ? `${target.toLocaleString('ko-KR')}%` : formatCurrency(target)}</p>
           <div className="h-1.5 bg-muted rounded-full overflow-hidden">
             <div className={cn('h-full rounded-full transition-all duration-500', barColor)} style={{ width: `${Math.min(pct, 100)}%` }} />
           </div>
