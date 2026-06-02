@@ -733,7 +733,9 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
               )}
             >
               {(() => {
-                const syncCount = accountBalances.filter(ab => !excludedAccountNames.has(ab.name)).length
+                // holding 매칭(서버 skip) 제외 + 사용자 unchecked 제외 = 실제 등록될 개수
+                const toggleable = new Set(listToggleableBalanceNames(accountBalances, dbAccounts))
+                const syncCount = accountBalances.filter(ab => toggleable.has(ab.name) && !excludedAccountNames.has(ab.name)).length
                 if (isLoading) return <><Loader2 className="w-4 h-4 animate-spin" />{uploadMode === 'assets' ? '업데이트 중...' : '등록 중...'}</>
                 if (uploadMode === 'assets') return `계좌 잔액 ${syncCount}개 업데이트`
                 if (validRows.length === 0 && uploadMode === 'both' && syncCount > 0) return `계좌 잔액 ${syncCount}개 업데이트`
