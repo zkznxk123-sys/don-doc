@@ -548,34 +548,69 @@ export async function syncAccountBalancesOnly(
   if (accountBalances.length === 0) return { success: true, syncedCount: 0 }
 
   try {
-    // 1. 업데이트 전 옛 잔액 캡처.
-    //    종목이 어떤 account의 holding으로 등록된 경우는 잔액 동기화 skip — 부모 account.balance는
-    //    holdings 시가평가액 합으로 재계산되는 별도 모델이라 단일 종목 잔액으로 덮어쓰면 안 됨.
+    // 1. 매칭 분류 후 잔액 동기화 plan 수립.
+    //    - holding 매칭: 잔액 동기화 skip (부모 balance는 시가평가액 모델이라 단일 종목으로 덮어쓰면 안 됨)
+    //    - cash-sub: 부모(holdings 보유 증권계좌)의 자식 "예수금" sub-account로 잔액 동기화. 부모 balance는 그대로
+    //    - 일반: 매칭된 account나 새 account의 balance 직접 갱신
     type PendingBalance = { accountId: string; oldBalance: number; newBalance: number }
     const pending: PendingBalance[] = []
     const skipped: string[] = []
+    const cashSubCreated: string[] = []
+
+    const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, '')
+    const allFamilyAccounts = await prisma.account.findMany({
+      where: { familyId },
+      select: {
+        id: true, name: true, type: true,
+        holdings: { select: { name: true } },
+        subAccounts: { select: { id: true, name: true, balance: true } },
+      },
+    })
+
     for (const ab of accountBalances) {
-      // 종목이 holding으로 매칭되는지 사전 확인
-      const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, '')
       const abNorm = normalize(ab.name)
-      const matched = await prisma.account.findMany({
-        where: { familyId },
-        select: { id: true, name: true, holdings: { select: { name: true } } },
-      })
-      const accountHit = matched.find(a => {
+      const accountHit = allFamilyAccounts.find(a => {
         const aNorm = normalize(a.name)
         return aNorm.includes(abNorm) || abNorm.includes(aNorm)
       })
-      const holdingHit = !accountHit && matched.find(a =>
-        a.holdings.some(h => {
-          const hNorm = normalize(h.name)
-          return hNorm.includes(abNorm) || abNorm.includes(hNorm)
-        })
-      )
-      if (holdingHit) {
-        // holding 매칭 — 잔액 동기화 skip
-        skipped.push(ab.name)
+
+      // cash-sub: account 매칭됐는데 holdings 있는 증권계좌 → 자식 "예수금"으로 분리
+      if (accountHit && accountHit.holdings.length > 0) {
+        // 이미 자식 "예수금" sub-account가 있으면 잔액만 갱신, 없으면 생성
+        const existingCashSub = accountHit.subAccounts.find(s => s.name === '예수금')
+        if (existingCashSub) {
+          pending.push({ accountId: existingCashSub.id, oldBalance: existingCashSub.balance, newBalance: ab.balance })
+        } else {
+          const created = await prisma.account.create({
+            data: {
+              name: '예수금',
+              type: 'CASH',
+              balance: ab.balance,
+              familyId,
+              userId,
+              parentAccountId: accountHit.id,
+              isShared: true,
+              shareLevel: 'PUBLIC',
+            },
+          })
+          cashSubCreated.push(`${accountHit.name} 예수금`)
+          pending.push({ accountId: created.id, oldBalance: 0, newBalance: ab.balance })
+        }
         continue
+      }
+
+      // holding 매칭 — skip (account 매칭 안 됐을 때만 검사)
+      if (!accountHit) {
+        const holdingHit = allFamilyAccounts.find(a =>
+          a.holdings.some(h => {
+            const hNorm = normalize(h.name)
+            return hNorm.includes(abNorm) || abNorm.includes(hNorm)
+          })
+        )
+        if (holdingHit) {
+          skipped.push(ab.name)
+          continue
+        }
       }
 
       const id = await findOrCreateAccount(ab.name, familyId, ab.type ?? 'CASH', userId)
@@ -584,6 +619,9 @@ export async function syncAccountBalancesOnly(
     }
     if (skipped.length > 0) {
       console.log('[syncAccountBalancesOnly] skipped holdings:', skipped)
+    }
+    if (cashSubCreated.length > 0) {
+      console.log('[syncAccountBalancesOnly] created cash sub-accounts:', cashSubCreated)
     }
 
     // 2. 배치 생성 (자산만 업로드 모드 → source='manual-sync')

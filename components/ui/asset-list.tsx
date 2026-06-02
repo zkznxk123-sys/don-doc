@@ -115,7 +115,14 @@ function AssetRow({
 }) {
   const meta = TYPE_META[account.type] ?? TYPE_META['CASH']
   const MetaIcon = meta.Icon
-  const allocation = totalAssets > 0 ? Math.round((account.balance / totalAssets) * 100) : 0
+  // holdings 보유 증권계좌의 경우, 자식 CASH sub-account (예수금)는 계좌 자산에 합산.
+  // 부모 account.balance는 holdings 시가평가액 합 (recalcAccountBalanceFromHoldings).
+  // 사용자가 뱅크샐러드 동기화로 만든 "예수금" 자식이 있으면 그 잔액을 부모 표시 잔액에 포함.
+  const cashSubTotal = (account.subAccounts ?? [])
+    .filter(s => s.type === 'CASH')
+    .reduce((sum, s) => sum + (s.balance ?? 0), 0)
+  const displayBalance = account.balance + cashSubTotal
+  const allocation = totalAssets > 0 ? Math.round((displayBalance / totalAssets) * 100) : 0
   const hasLinkedDebts = (account.linkedDebts?.length ?? 0) > 0
   const netEquity = account.netEquity
   // holdings 지원 타입: onAddHolding 우선, 없으면 기존 onAddProduct fallback
@@ -133,7 +140,7 @@ function AssetRow({
           <p className="text-xs text-muted-foreground/60 mt-0.5">{meta.label} · {allocation}%</p>
         </div>
         <span className="text-sm font-semibold text-muted-foreground tabular-nums flex-shrink-0">
-          {formatCurrency(account.balance)}
+          {formatCurrency(displayBalance)}
         </span>
       </div>
     )
@@ -185,7 +192,7 @@ function AssetRow({
         </button>
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className="text-sm font-semibold text-foreground tabular-nums">
-            {formatCurrency(account.balance)}
+            {formatCurrency(displayBalance)}
           </span>
           <button
             onClick={() => onAddHolding!(account.id, account.name)}
@@ -209,7 +216,7 @@ function AssetRow({
         </button>
         <div className="flex items-center gap-2 flex-shrink-0">
           <span className="text-sm font-semibold text-foreground tabular-nums">
-            {formatCurrency(account.balance)}
+            {formatCurrency(displayBalance)}
           </span>
           <button
             onClick={() => onAddProduct!(account.id, account.type, account.name)}
@@ -232,7 +239,7 @@ function AssetRow({
       {infoContent}
       <div className="flex items-center gap-2 flex-shrink-0">
         <span className="text-sm font-semibold text-foreground tabular-nums">
-          {formatCurrency(account.balance)}
+          {formatCurrency(displayBalance)}
         </span>
         <ChevronRight className="w-4 h-4 text-border group-hover:text-muted-foreground transition-colors" />
       </div>
@@ -509,14 +516,19 @@ export function AssetList({
                         }}
                       />
                     ))}
-                    {/* 기존 하위 계좌(상품) 인라인 — holdings 없을 때만 표시 */}
-                    {holdings.length === 0 && account.subAccounts && account.subAccounts.length > 0 && (
+                    {/* 하위 계좌 인라인.
+                        - holdings 없으면 모든 sub-account 표시 (상품·예수금 등)
+                        - holdings 있으면 cash sub-account만 (예수금) 표시 — 종목과 같이 부모 자산 합산에 포함 */}
+                    {account.subAccounts && account.subAccounts.length > 0 && (
                       <>
-                        {account.subAccounts.map(sub => (
+                        {(holdings.length === 0
+                          ? account.subAccounts
+                          : account.subAccounts.filter(s => s.type === 'CASH')
+                        ).map(sub => (
                           <SubAccountRow key={sub.id} sub={sub} parentId={account.id} onEdit={onEdit} />
                         ))}
-                        {/* 종목으로 변환 버튼 — INVESTMENT/PENSION/CRYPTO 타입에서만 */}
-                        {onMigrateSubAccounts && HOLDING_ACCOUNT_TYPES.has(account.type) && (
+                        {/* 종목으로 변환 버튼 — holdings 없는 INVESTMENT/PENSION/CRYPTO 타입에서만 */}
+                        {holdings.length === 0 && onMigrateSubAccounts && HOLDING_ACCOUNT_TYPES.has(account.type) && (
                           <div className="flex items-center justify-end pl-[52px] pr-4 py-1.5 border-t border-border/30 bg-background/20">
                             <button
                               onClick={() => onMigrateSubAccounts(account.id, account.name)}

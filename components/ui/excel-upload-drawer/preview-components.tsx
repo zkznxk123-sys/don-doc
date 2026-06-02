@@ -157,16 +157,19 @@ function normalizeAccountName(s: string) {
 
 /**
  * 엑셀 행 이름을 DB 계좌 또는 그 계좌의 holding과 매칭.
- * 1) Account.name 양방향 substring 매칭
- * 2) 안 되면 어떤 Account의 InvestmentHolding.name 매칭 — "[부모계좌] 안의 종목"으로 인식
+ * 1) Account 매칭 + 그 account가 holdings 보유 (증권계좌) → cash-sub (자식 "예수금"으로)
+ * 2) Account 매칭 + holdings 없음 → 일반 잔액 동기화
+ * 3) 어떤 Account의 holding 이름 매칭 → "[부모계좌] 내 종목 — skip"
+ * 4) 매칭 없음 → 신규 계좌
  *
- * holding 매칭 시: 잔액은 부모 account 단위라 종목별 diff 비교가 의미 없음. parentAccountName만 반환해서
- * "신규 계좌"가 아니라 "[부모계좌] 내 종목 — 잔액 동기화 skip" 표시.
+ * cash-sub: 뱅크샐러드는 증권계좌의 예수금을 그 계좌명 자체로 표시. holdings 보유 account에 단순 덮어쓰면
+ * 시가평가액이 날아가서 자식 "예수금" sub-account로 분리하는 게 맞다.
  */
 function matchDbAccount(
   excelName: string,
   dbAccounts: DbAccountWithHoldings[],
 ): { matchType: 'account'; matched: DbAccountWithHoldings } |
+   { matchType: 'cash-sub'; parentAccountName: string } |
    { matchType: 'holding'; parentAccountName: string } |
    { matchType: 'none' } {
   const norm = normalizeAccountName(excelName)
@@ -176,7 +179,12 @@ function matchDbAccount(
     const aNorm = normalizeAccountName(a.name)
     return aNorm.includes(norm) || norm.includes(aNorm)
   })
-  if (accountHit) return { matchType: 'account', matched: accountHit }
+  if (accountHit) {
+    if (accountHit.holdingNames && accountHit.holdingNames.length > 0) {
+      return { matchType: 'cash-sub', parentAccountName: accountHit.name }
+    }
+    return { matchType: 'account', matched: accountHit }
+  }
 
   // 2) Holding 매칭 (부모 account 찾기)
   for (const a of dbAccounts) {
@@ -249,6 +257,35 @@ export function AccountBalanceDiff({
                   <p className="text-xs text-muted-foreground tabular-nums">{formatCurrency(d.newBalance)}</p>
                 </div>
               </div>
+            )
+          }
+
+          if (d.match.matchType === 'cash-sub') {
+            const enabled = !excludedNames.has(d.name)
+            return (
+              <label
+                key={i}
+                className={cn(
+                  'grid grid-cols-[28px_1fr_auto] items-center px-2.5 py-1.5 cursor-pointer',
+                  !enabled && 'opacity-40'
+                )}
+              >
+                <input
+                  type="checkbox"
+                  checked={enabled}
+                  onChange={() => onToggle(d.name)}
+                  className="w-3.5 h-3.5 cursor-pointer accent-foreground"
+                />
+                <div className="min-w-0">
+                  <p className="text-xs text-foreground truncate">{d.match.parentAccountName} 예수금</p>
+                  <span className="text-[10px] text-savings">
+                    증권계좌 예수금 — 자식 sub-account로 등록
+                  </span>
+                </div>
+                <div className="text-right pl-2 flex-shrink-0">
+                  <p className="text-xs text-foreground tabular-nums">{formatCurrency(d.newBalance)}</p>
+                </div>
+              </label>
             )
           }
 

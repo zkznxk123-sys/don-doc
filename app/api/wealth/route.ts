@@ -53,6 +53,7 @@ export async function GET(req: NextRequest) {
         realEstateDetail: {
           select: { complexName: true, bjdCode: true, area: true, floor: true, propertyType: true },
         },
+        _count: { select: { holdings: true } },
       },
     })
 
@@ -73,10 +74,13 @@ export async function GET(req: NextRequest) {
     const accountSummary: AccountSummary[] = []
     for (const acc of accounts) {
       const isOwn = acc.userId === userId
-      // 자식 계좌가 있으면 잔액을 합산으로 계산
-      const balance = acc.subAccounts.length > 0
-        ? acc.subAccounts.reduce((s, c) => s + c.balance, 0)
-        : acc.balance
+      // 잔액 계산: holdings 보유 시 부모.balance(시가평가액) + cash sub. holdings 없으면 옛 sub-account 모델.
+      const hasHoldings = acc._count.holdings > 0
+      const balance = hasHoldings
+        ? acc.balance + acc.subAccounts.filter(s => s.type === 'CASH').reduce((s, c) => s + c.balance, 0)
+        : acc.subAccounts.length > 0
+          ? acc.subAccounts.reduce((s, c) => s + c.balance, 0)
+          : acc.balance
       const linkedDebtTotal = acc.linkedDebts.reduce((s, d) => s + d.balance, 0)
       const netEquity = balance - linkedDebtTotal
 
