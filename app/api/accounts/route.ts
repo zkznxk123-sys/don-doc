@@ -26,6 +26,11 @@ export async function GET(req: NextRequest) {
           { userId: userId || undefined },
         ],
       },
+      include: {
+        // 엑셀 일괄 등록의 잔액 매칭에서 사용자가 holding으로 옮긴 종목도 매칭하려면
+        // holdings 이름이 노출돼야 함 — 신규 계좌 오인 방지.
+        holdings: { select: { id: true, name: true } },
+      },
       orderBy: { name: 'asc' },
     })
 
@@ -46,6 +51,7 @@ export async function GET(req: NextRequest) {
         typeLabel: TYPE_LABELS[acc.type] || acc.type,
         balance: acc.balance,
         isShared: acc.isShared,
+        holdingNames: acc.holdings.map(h => h.name),
       })),
     })
   } catch (e) {

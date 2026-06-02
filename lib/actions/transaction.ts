@@ -301,13 +301,23 @@ async function findOrCreateAccount(
   const normalized = normalize(name)
   const allFamilyAccounts = await prisma.account.findMany({
     where: { familyId },
-    select: { id: true, name: true },
+    select: { id: true, name: true, holdings: { select: { name: true } } },
   })
   const fuzzyMatch = allFamilyAccounts.find(a => {
     const aNorm = normalize(a.name)
     return aNorm.includes(normalized) || normalized.includes(aNorm)
   })
   if (fuzzyMatch) return fuzzyMatch.id
+
+  // 4. holding 이름 매칭 — 사용자가 종목을 어떤 account의 holding으로 옮긴 경우
+  //    뱅크샐러드에는 종목명이 별도 계좌로 잡혀 있어서 신규 계좌 오인 방지.
+  const holdingMatch = allFamilyAccounts.find(a =>
+    a.holdings.some(h => {
+      const hNorm = normalize(h.name)
+      return hNorm.includes(normalized) || normalized.includes(hNorm)
+    })
+  )
+  if (holdingMatch) return holdingMatch.id
 
   const created = await prisma.account.create({
     data: {
@@ -538,13 +548,42 @@ export async function syncAccountBalancesOnly(
   if (accountBalances.length === 0) return { success: true, syncedCount: 0 }
 
   try {
-    // 1. 업데이트 전 옛 잔액 캡처
+    // 1. 업데이트 전 옛 잔액 캡처.
+    //    종목이 어떤 account의 holding으로 등록된 경우는 잔액 동기화 skip — 부모 account.balance는
+    //    holdings 시가평가액 합으로 재계산되는 별도 모델이라 단일 종목 잔액으로 덮어쓰면 안 됨.
     type PendingBalance = { accountId: string; oldBalance: number; newBalance: number }
     const pending: PendingBalance[] = []
+    const skipped: string[] = []
     for (const ab of accountBalances) {
+      // 종목이 holding으로 매칭되는지 사전 확인
+      const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, '')
+      const abNorm = normalize(ab.name)
+      const matched = await prisma.account.findMany({
+        where: { familyId },
+        select: { id: true, name: true, holdings: { select: { name: true } } },
+      })
+      const accountHit = matched.find(a => {
+        const aNorm = normalize(a.name)
+        return aNorm.includes(abNorm) || abNorm.includes(aNorm)
+      })
+      const holdingHit = !accountHit && matched.find(a =>
+        a.holdings.some(h => {
+          const hNorm = normalize(h.name)
+          return hNorm.includes(abNorm) || abNorm.includes(hNorm)
+        })
+      )
+      if (holdingHit) {
+        // holding 매칭 — 잔액 동기화 skip
+        skipped.push(ab.name)
+        continue
+      }
+
       const id = await findOrCreateAccount(ab.name, familyId, ab.type ?? 'CASH', userId)
       const acc = await prisma.account.findUnique({ where: { id }, select: { balance: true } })
       pending.push({ accountId: id, oldBalance: acc?.balance ?? 0, newBalance: ab.balance })
+    }
+    if (skipped.length > 0) {
+      console.log('[syncAccountBalancesOnly] skipped holdings:', skipped)
     }
 
     // 2. 배치 생성 (자산만 업로드 모드 → source='manual-sync')

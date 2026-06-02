@@ -28,6 +28,7 @@ import { InputGuide } from '@/components/dashboard/InputGuide'
 import { mapRow, type ParsedRow, type AiStatus, type UploadMode } from './excel-upload-drawer/parsers'
 import {
   AiMappingStatus, BanksaladPreviewRow, GenericPreviewRow, AccountBalanceDiff, ColSelect,
+  type DbAccountWithHoldings,
 } from './excel-upload-drawer/preview-components'
 
 // ━━ 메인 컴포넌트 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -64,8 +65,8 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
 
   // 뱅샐현황 계좌 잔액 목록
   const [accountBalances, setAccountBalances] = useState<AccountBalance[]>([])
-  // DB 현재 계좌 잔액 (자산 diff 미리보기용)
-  const [dbAccounts, setDbAccounts] = useState<{ name: string; balance: number }[]>([])
+  // DB 현재 계좌 잔액 (자산 diff 미리보기용). holdingNames 포함 — 종목을 holding으로 옮긴 경우 매칭에 사용
+  const [dbAccounts, setDbAccounts] = useState<DbAccountWithHoldings[]>([])
 
   // 월 필터 (뱅크샐러드 전용)
   const [availableMonths, setAvailableMonths] = useState<string[]>([])
@@ -222,7 +223,11 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
               .then(r => r.json())
               .then(d => {
                 if (d.success && d.accounts) {
-                  setDbAccounts(d.accounts.map((a: { name: string; balance: number }) => ({ name: a.name, balance: a.balance })))
+                  setDbAccounts((d.accounts as DbAccountWithHoldings[]).map(a => ({
+                    name: a.name,
+                    balance: a.balance,
+                    holdingNames: a.holdingNames ?? [],
+                  })))
                 }
               })
               .catch(() => {})

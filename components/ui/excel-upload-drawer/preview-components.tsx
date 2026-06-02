@@ -145,16 +145,50 @@ export function GenericPreviewRow({ row, aiStatus }: { row: ParsedRow; aiStatus:
 
 // ━━ 자산 잔액 Diff 미리보기 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+export interface DbAccountWithHoldings {
+  name: string
+  balance: number
+  holdingNames?: string[]
+}
+
 function normalizeAccountName(s: string) {
   return s.toLowerCase().replace(/\s+/g, '')
 }
 
-function matchDbAccount(excelName: string, dbAccounts: { name: string; balance: number }[]): { name: string; balance: number } | null {
+/**
+ * 엑셀 행 이름을 DB 계좌 또는 그 계좌의 holding과 매칭.
+ * 1) Account.name 양방향 substring 매칭
+ * 2) 안 되면 어떤 Account의 InvestmentHolding.name 매칭 — "[부모계좌] 안의 종목"으로 인식
+ *
+ * holding 매칭 시: 잔액은 부모 account 단위라 종목별 diff 비교가 의미 없음. parentAccountName만 반환해서
+ * "신규 계좌"가 아니라 "[부모계좌] 내 종목 — 잔액 동기화 skip" 표시.
+ */
+function matchDbAccount(
+  excelName: string,
+  dbAccounts: DbAccountWithHoldings[],
+): { matchType: 'account'; matched: DbAccountWithHoldings } |
+   { matchType: 'holding'; parentAccountName: string } |
+   { matchType: 'none' } {
   const norm = normalizeAccountName(excelName)
-  return dbAccounts.find(a => {
+
+  // 1) Account 직접 매칭
+  const accountHit = dbAccounts.find(a => {
     const aNorm = normalizeAccountName(a.name)
     return aNorm.includes(norm) || norm.includes(aNorm)
-  }) ?? null
+  })
+  if (accountHit) return { matchType: 'account', matched: accountHit }
+
+  // 2) Holding 매칭 (부모 account 찾기)
+  for (const a of dbAccounts) {
+    if (!a.holdingNames) continue
+    const holdingHit = a.holdingNames.some(h => {
+      const hNorm = normalizeAccountName(h)
+      return hNorm.includes(norm) || norm.includes(hNorm)
+    })
+    if (holdingHit) return { matchType: 'holding', parentAccountName: a.name }
+  }
+
+  return { matchType: 'none' }
 }
 
 export function AccountBalanceDiff({
@@ -162,13 +196,13 @@ export function AccountBalanceDiff({
   dbAccounts,
 }: {
   accountBalances: AccountBalance[]
-  dbAccounts: { name: string; balance: number }[]
+  dbAccounts: DbAccountWithHoldings[]
 }) {
   if (accountBalances.length === 0) return null
 
   const diffs = accountBalances.map(ab => {
-    const matched = matchDbAccount(ab.name, dbAccounts)
-    return { name: ab.name, newBalance: ab.balance, currentBalance: matched?.balance ?? null }
+    const m = matchDbAccount(ab.name, dbAccounts)
+    return { name: ab.name, newBalance: ab.balance, match: m }
   })
 
   return (
@@ -179,8 +213,25 @@ export function AccountBalanceDiff({
       </div>
       <div className="divide-y divide-border/60 max-h-[160px] overflow-y-auto">
         {diffs.map((d, i) => {
-          const isNew = d.currentBalance === null
-          const diff = isNew ? 0 : d.newBalance - d.currentBalance!
+          if (d.match.matchType === 'holding') {
+            return (
+              <div key={i} className="grid grid-cols-[1fr_auto] items-center px-2.5 py-1.5">
+                <div className="min-w-0">
+                  <p className="text-xs text-foreground truncate">{d.name}</p>
+                  <span className="text-[10px] text-muted-foreground">
+                    {d.match.parentAccountName} 안의 종목 — 잔액 동기화 skip
+                  </span>
+                </div>
+                <div className="text-right pl-2 flex-shrink-0">
+                  <p className="text-xs text-muted-foreground tabular-nums">{formatCurrency(d.newBalance)}</p>
+                </div>
+              </div>
+            )
+          }
+
+          const isNew = d.match.matchType === 'none'
+          const current = d.match.matchType === 'account' ? d.match.matched.balance : null
+          const diff = isNew || current === null ? 0 : d.newBalance - current
           const diffAbs = Math.abs(diff)
           return (
             <div key={i} className="grid grid-cols-[1fr_auto] items-center px-2.5 py-1.5">
