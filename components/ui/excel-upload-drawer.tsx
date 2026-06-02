@@ -28,6 +28,7 @@ import { InputGuide } from '@/components/dashboard/InputGuide'
 import { mapRow, type ParsedRow, type AiStatus, type UploadMode } from './excel-upload-drawer/parsers'
 import {
   AiMappingStatus, BanksaladPreviewRow, GenericPreviewRow, AccountBalanceDiff, ColSelect,
+  listToggleableBalanceNames,
   type DbAccountWithHoldings,
 } from './excel-upload-drawer/preview-components'
 
@@ -67,6 +68,8 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
   const [accountBalances, setAccountBalances] = useState<AccountBalance[]>([])
   // DB 현재 계좌 잔액 (자산 diff 미리보기용). holdingNames 포함 — 종목을 holding으로 옮긴 경우 매칭에 사용
   const [dbAccounts, setDbAccounts] = useState<DbAccountWithHoldings[]>([])
+  // 사용자가 잔액 동기화에서 제외한 계좌명 set — 체크박스 unchecked
+  const [excludedAccountNames, setExcludedAccountNames] = useState<Set<string>>(new Set())
 
   // 월 필터 (뱅크샐러드 전용)
   const [availableMonths, setAvailableMonths] = useState<string[]>([])
@@ -295,7 +298,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
     setFileName(null); setDetectedPreset(null); setIsBanksalad(false)
     setBanksaladMeta(null); setColMap(null); setRawData([])
     setRows([]); setRawHeaders([]); setAiStatus('idle'); setAiMappedCount(0)
-    setAccountBalances([]); setDbAccounts([])
+    setAccountBalances([]); setDbAccounts([]); setExcludedAccountNames(new Set())
     setAvailableMonths([]); setSelectedMonths(new Set())
     setUploadMode('both')
     if (fileInputRef.current) fileInputRef.current.value = ''
@@ -337,9 +340,12 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
   const handleSubmit = async () => {
     setIsLoading(true)
     try {
+      // 사용자가 unchecked한 항목은 동기화에서 제외
+      const filteredBalances = accountBalances.filter(ab => !excludedAccountNames.has(ab.name))
+
       // ── 자산만 업데이트 모드 ──
       if (uploadMode === 'assets') {
-        const result = await syncAccountBalancesOnly(familyId, userId, accountBalances, { fileName: fileName ?? undefined })
+        const result = await syncAccountBalancesOnly(familyId, userId, filteredBalances, { fileName: fileName ?? undefined })
         if (result.success) {
           toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료`)
           handleClose(); onSuccess()
@@ -352,8 +358,8 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
       // ── 현금흐름 포함 모드 ──
       if (validRows.length === 0) {
         // 신규 거래 없어도 both 모드에서 자산 잔액은 업데이트
-        if (uploadMode === 'both' && accountBalances.length > 0) {
-          const result = await syncAccountBalancesOnly(familyId, userId, accountBalances, { fileName: fileName ?? undefined })
+        if (uploadMode === 'both' && filteredBalances.length > 0) {
+          const result = await syncAccountBalancesOnly(familyId, userId, filteredBalances, { fileName: fileName ?? undefined })
           if (result.success) {
             toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료`, { description: '새로 등록할 거래 내역이 없습니다.' })
             handleClose(); onSuccess()
@@ -376,7 +382,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         accountName: r.accountName || r._paymentMethod || '기본 계좌',
       }))
       const submitOptions = {
-        ...(uploadMode === 'both' && accountBalances.length > 0 ? { accountBalances } : {}),
+        ...(uploadMode === 'both' && filteredBalances.length > 0 ? { accountBalances: filteredBalances } : {}),
         ...(fileName ? { fileName } : {}),
       }
       const result = await createManyTransactions(userId, familyId, submitRows, submitOptions)
@@ -681,7 +687,21 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                     <span className="text-xs font-semibold text-foreground/80">자산 — 계좌 잔액 변경</span>
                   </header>
                   <div className="p-3">
-                    <AccountBalanceDiff accountBalances={accountBalances} dbAccounts={dbAccounts} />
+                    <AccountBalanceDiff
+                      accountBalances={accountBalances}
+                      dbAccounts={dbAccounts}
+                      excludedNames={excludedAccountNames}
+                      onToggle={name => setExcludedAccountNames(prev => {
+                        const next = new Set(prev)
+                        if (next.has(name)) next.delete(name)
+                        else next.add(name)
+                        return next
+                      })}
+                      onToggleAll={allOn => {
+                        if (allOn) setExcludedAccountNames(new Set())
+                        else setExcludedAccountNames(new Set(listToggleableBalanceNames(accountBalances, dbAccounts)))
+                      }}
+                    />
                   </div>
                 </section>
               )}
@@ -712,15 +732,14 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                   : 'bg-foreground text-background hover:bg-foreground/90 active:scale-[0.98]'
               )}
             >
-              {isLoading
-                ? <><Loader2 className="w-4 h-4 animate-spin" />{uploadMode === 'assets' ? '업데이트 중...' : '등록 중...'}</>
-                : uploadMode === 'assets'
-                ? `계좌 잔액 ${accountBalances.length}개 업데이트`
-                : validRows.length === 0 && uploadMode === 'both' && accountBalances.length > 0
-                ? `계좌 잔액 ${accountBalances.length}개 업데이트`
-                : aiStatus === 'pending'
-                ? `${validRows.length}건 등록하기 (분류 생략)`
-                : `${validRows.length}건 등록하기`}
+              {(() => {
+                const syncCount = accountBalances.filter(ab => !excludedAccountNames.has(ab.name)).length
+                if (isLoading) return <><Loader2 className="w-4 h-4 animate-spin" />{uploadMode === 'assets' ? '업데이트 중...' : '등록 중...'}</>
+                if (uploadMode === 'assets') return `계좌 잔액 ${syncCount}개 업데이트`
+                if (validRows.length === 0 && uploadMode === 'both' && syncCount > 0) return `계좌 잔액 ${syncCount}개 업데이트`
+                if (aiStatus === 'pending') return `${validRows.length}건 등록하기 (분류 생략)`
+                return `${validRows.length}건 등록하기`
+              })()}
             </button>
           </DrawerFooter>
         )}

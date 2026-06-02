@@ -194,9 +194,18 @@ function matchDbAccount(
 export function AccountBalanceDiff({
   accountBalances,
   dbAccounts,
+  excludedNames,
+  onToggle,
+  onToggleAll,
 }: {
   accountBalances: AccountBalance[]
   dbAccounts: DbAccountWithHoldings[]
+  /** 사용자가 동기화 제외한 계좌 이름 set */
+  excludedNames: Set<string>
+  /** 단일 row 토글 (holding-skip 행은 건드리지 못함) */
+  onToggle: (name: string) => void
+  /** 헤더 체크박스 — toggleable rows 전체 on/off */
+  onToggleAll: (allOn: boolean) => void
 }) {
   if (accountBalances.length === 0) return null
 
@@ -205,9 +214,22 @@ export function AccountBalanceDiff({
     return { name: ab.name, newBalance: ab.balance, match: m }
   })
 
+  // holding-skip은 사용자 토글 대상 아님 — 전체 토글 계산에서 제외
+  const toggleableNames = diffs.filter(d => d.match.matchType !== 'holding').map(d => d.name)
+  const allOn = toggleableNames.length > 0 && toggleableNames.every(n => !excludedNames.has(n))
+  const someOn = toggleableNames.some(n => !excludedNames.has(n))
+
   return (
     <div className="mt-1 rounded-lg border border-border overflow-hidden">
-      <div className="grid grid-cols-[1fr_auto] bg-muted/40 px-2.5 py-1.5 border-b border-border">
+      <div className="grid grid-cols-[28px_1fr_auto] items-center bg-muted/40 px-2.5 py-1.5 border-b border-border">
+        <input
+          type="checkbox"
+          checked={allOn}
+          ref={el => { if (el) el.indeterminate = !allOn && someOn }}
+          onChange={() => onToggleAll(!allOn)}
+          className="w-3.5 h-3.5 cursor-pointer accent-foreground"
+          title="동기화 전체 on/off"
+        />
         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">계좌명</span>
         <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide text-right">잔액 변경</span>
       </div>
@@ -215,7 +237,8 @@ export function AccountBalanceDiff({
         {diffs.map((d, i) => {
           if (d.match.matchType === 'holding') {
             return (
-              <div key={i} className="grid grid-cols-[1fr_auto] items-center px-2.5 py-1.5">
+              <div key={i} className="grid grid-cols-[28px_1fr_auto] items-center px-2.5 py-1.5">
+                <span className="text-[10px] text-muted-foreground/40 select-none">—</span>
                 <div className="min-w-0">
                   <p className="text-xs text-foreground truncate">{d.name}</p>
                   <span className="text-[10px] text-muted-foreground">
@@ -233,8 +256,21 @@ export function AccountBalanceDiff({
           const current = d.match.matchType === 'account' ? d.match.matched.balance : null
           const diff = isNew || current === null ? 0 : d.newBalance - current
           const diffAbs = Math.abs(diff)
+          const enabled = !excludedNames.has(d.name)
           return (
-            <div key={i} className="grid grid-cols-[1fr_auto] items-center px-2.5 py-1.5">
+            <label
+              key={i}
+              className={cn(
+                'grid grid-cols-[28px_1fr_auto] items-center px-2.5 py-1.5 cursor-pointer',
+                !enabled && 'opacity-40'
+              )}
+            >
+              <input
+                type="checkbox"
+                checked={enabled}
+                onChange={() => onToggle(d.name)}
+                className="w-3.5 h-3.5 cursor-pointer accent-foreground"
+              />
               <div className="min-w-0">
                 <p className="text-xs text-foreground truncate">{d.name}</p>
                 {isNew && (
@@ -258,12 +294,25 @@ export function AccountBalanceDiff({
                   </>
                 )}
               </div>
-            </div>
+            </label>
           )
         })}
       </div>
     </div>
   )
+}
+
+/**
+ * Excel name 배열 + DB accounts → toggleable name 배열 (holding 매칭은 제외).
+ * 본체에서 excludedNames 초기값 계산용 export.
+ */
+export function listToggleableBalanceNames(
+  accountBalances: AccountBalance[],
+  dbAccounts: DbAccountWithHoldings[],
+): string[] {
+  return accountBalances
+    .filter(ab => matchDbAccount(ab.name, dbAccounts).matchType !== 'holding')
+    .map(ab => ab.name)
 }
 
 // ━━ 헤더 셀렉트 (범용 모드) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
