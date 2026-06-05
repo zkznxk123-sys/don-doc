@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { Trash2, AlertTriangle, ShieldAlert, ArrowLeft, Tag, ChevronRight, User, Pencil, Check, X, Zap, Lock, Globe } from 'lucide-react'
+import { Trash2, AlertTriangle, ShieldAlert, ArrowLeft, Tag, ChevronRight, User, Pencil, Check, X, Zap, Lock, Globe, FileSpreadsheet } from 'lucide-react'
 import Link from 'next/link'
 import {
   AlertDialog,
@@ -511,6 +511,22 @@ function SettingsClient() {
             <div>
               <p className="text-sm font-medium text-foreground">카테고리 관리</p>
               <p className="text-xs text-muted-foreground mt-0.5">수입/지출 카테고리 및 자산 유형 표시 이름 설정</p>
+            </div>
+          </div>
+          <ChevronRight className="w-4 h-4 text-muted-foreground/60 group-hover:text-muted-foreground transition-colors" />
+        </Link>
+
+        <Link
+          href="/dashboard/settings/excel-mappings"
+          className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/60 transition-colors group border-t border-border/50 mt-2 pt-3"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center">
+              <FileSpreadsheet className="w-4 h-4 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground">엑셀 매핑 관리</p>
+              <p className="text-xs text-muted-foreground mt-0.5">뱅크샐러드 표기명 ↔ 돈Doc 계좌 매핑 관리</p>
             </div>
           </div>
           <ChevronRight className="w-4 h-4 text-muted-foreground/60 group-hover:text-muted-foreground transition-colors" />

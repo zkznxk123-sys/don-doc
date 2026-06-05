@@ -7,6 +7,7 @@ import { generateTransactionHash } from '@/lib/utils/transaction-hash'
 import { generateOriginalHash } from '@/lib/utils/original-hash'
 import { getAuthUser } from '@/lib/auth'
 import { isCFOLevel, type AppRole } from '@/lib/roles'
+import { findExcelMapping } from '@/lib/actions/excel-mapping'
 
 // ━━ Zod 스키마: 거래 입력 유효성 검사 ━━
 const CreateTransactionSchema = z.object({
@@ -568,6 +569,49 @@ export async function syncAccountBalancesOnly(
     })
 
     for (const ab of accountBalances) {
+      // 0. 사용자가 미리 확정한 ExcelMapping이 있으면 그것을 우선 적용.
+      //    fuzzy 매칭의 모호함(같은 이름 부모 2개, 같은 종목 여러 holding 등)을 우회.
+      const mapping = await findExcelMapping(familyId, ab.name)
+      if (mapping) {
+        if (mapping.mappingType === 'IGNORE' || mapping.mappingType === 'HOLDING_SKIP') {
+          skipped.push(`${ab.name} (mapping:${mapping.mappingType})`)
+          continue
+        }
+        if (mapping.mappingType === 'CASH_SUB' && mapping.targetAccountId) {
+          const parent = allFamilyAccounts.find(a => a.id === mapping.targetAccountId)
+          if (parent) {
+            const existingCashSub = parent.subAccounts.find(s => s.name === '예수금')
+            if (existingCashSub) {
+              pending.push({ accountId: existingCashSub.id, oldBalance: existingCashSub.balance, newBalance: ab.balance })
+            } else {
+              const created = await prisma.account.create({
+                data: {
+                  name: '예수금', type: 'CASH', balance: ab.balance,
+                  familyId, userId, parentAccountId: parent.id,
+                  isShared: true, shareLevel: 'PUBLIC',
+                },
+              })
+              cashSubCreated.push(`${parent.name} 예수금 (mapping)`)
+              pending.push({ accountId: created.id, oldBalance: 0, newBalance: ab.balance })
+            }
+            continue
+          }
+          // parent 사라진 경우 fallback to 일반 흐름
+        }
+        if (mapping.mappingType === 'ACCOUNT' && mapping.targetAccountId) {
+          const acc = await prisma.account.findUnique({
+            where: { id: mapping.targetAccountId },
+            select: { balance: true },
+          })
+          if (acc) {
+            pending.push({ accountId: mapping.targetAccountId, oldBalance: acc.balance, newBalance: ab.balance })
+            continue
+          }
+          // 대상 계좌 삭제된 경우 fallback to 일반 흐름
+        }
+        // NEW_ACCOUNT는 기존 흐름과 동일 — fall through
+      }
+
       const abNorm = normalize(ab.name)
       const accountHit = allFamilyAccounts.find(a => {
         const aNorm = normalize(a.name)

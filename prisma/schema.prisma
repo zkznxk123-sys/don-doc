@@ -95,6 +95,7 @@ model FamilyGroup {
   oauthAccounts     FamilyOAuthAccount[]
   oauthSessions     FamilyOAuthSession[]
   uploadBatches     UploadBatch[]
+  excelMappings     ExcelMapping[]
   createdAt         DateTime             @default(now())
 }
 
@@ -590,6 +591,30 @@ model FamilyOAuthSession {
   expiresAt DateTime
 
   @@index([familyId, provider])
+}
+
+// 엑셀 일괄 등록 시 사용자가 한 번 확정한 매핑을 재사용.
+// 뱅크샐러드 표기명(예: "종합매매") → dondoc 계좌·holding·cash-sub·신규·무시
+enum ExcelMappingType {
+  ACCOUNT // 일반 잔액 동기화 대상 — targetAccountId
+  CASH_SUB // 부모 account의 자식 "예수금"으로 — targetAccountId (parent)
+  HOLDING_SKIP // 종목 row가 부모 account에 holding으로 등록됨 — 잔액 동기화 skip
+  NEW_ACCOUNT // 신규 account 생성 대상
+  IGNORE // 동기화 영구 제외 (사용자가 등록 안 함)
+}
+
+model ExcelMapping {
+  id              String           @id @default(cuid())
+  familyId        String
+  family          FamilyGroup      @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  excelName       String // 정규화된 엑셀 표기명
+  mappingType    ExcelMappingType
+  targetAccountId String? // account 매칭 또는 cash-sub 부모
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  @@unique([familyId, excelName])
+  @@index([familyId])
 }
 
 // 환율 — 글로벌 단일 row per pair. USDKRW 등.
