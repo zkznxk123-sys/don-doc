@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import {
   ChevronLeft, ChevronRight, TrendingUp, TrendingDown,
-  PiggyBank, Eye, EyeOff, Pencil, Check, X, Save, Loader2,
+  PiggyBank, Eye, EyeOff, Pencil, X, Save, Loader2,
   FileSpreadsheet, Plus, GitMerge, Sparkles, ArrowUpDown, ArrowDownUp,
 } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
@@ -19,13 +19,16 @@ import { AutoCleanupDialog } from '@/components/ui/auto-cleanup-dialog'
 // 신규 추출된 sub-components
 import {
   groupSuggestions, toMonthParam,
-  type TypeFilter, type PreviewSuggestion, type PreviewGroup,
+  type TypeFilter, type PreviewSuggestion,
   type Transaction, type Summary, type MonthlyGoal, type DraftItem,
 } from '@/components/cashflow/utils'
 import { SummaryCard } from '@/components/cashflow/SummaryCard'
 import { InsightCard } from '@/components/cashflow/InsightCard'
 import { CategoryBar } from '@/components/cashflow/CategoryBar'
 import { TransactionRow } from '@/components/cashflow/TransactionRow'
+import { RecategorizeProgressModal, type ProgressModalState } from '@/components/cashflow/RecategorizeProgressModal'
+import { RecategorizeModeModal } from '@/components/cashflow/RecategorizeModeModal'
+import { RecategorizePreviewModal, type PreviewModalState } from '@/components/cashflow/RecategorizePreviewModal'
 
 export default function CashflowPage() {
   const now = new Date()
@@ -50,25 +53,11 @@ export default function CashflowPage() {
   const [allCategories, setAllCategories] = useState<CategoryOption[]>([])
 
   // ── AI 재분류 모달 state ──
-  const [aiModal, setAiModal] = useState<{
-    progress: number
-    steps: { label: string; done: boolean; active: boolean }[]
-    updated: number
-    done: boolean
-    cancelled?: boolean
-    error: string | null
-    forceMode?: boolean
-  } | null>(null)
+  const [aiModal, setAiModal] = useState<ProgressModalState | null>(null)
   const [aiModeModal, setAiModeModal] = useState(false)
   const [cleanupDialog, setCleanupDialog] = useState<{ open: boolean; groups: DetectedGroup[] }>({ open: false, groups: [] })
   const [cleanupLoading, setCleanupLoading] = useState(false)
-  const [previewModal, setPreviewModal] = useState<{
-    groups: PreviewGroup[]
-    remaining: number
-    uncheckedKeys: Set<string>
-    showUnchanged: boolean
-    applying: boolean
-  } | null>(null)
+  const [previewModal, setPreviewModal] = useState<PreviewModalState | null>(null)
   const aiAbortRef = useRef<AbortController | null>(null)
 
   const { refreshKey, openTransactionDrawer, shellUser, setPageActions, openExcelDrawer } = useDashboardActions()
@@ -522,97 +511,12 @@ export default function CashflowPage() {
 
   return (
     <div className="max-w-3xl mx-auto">
-      {/* AI 재분류 모달 */}
       {aiModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-card border border-border rounded-2xl w-full max-w-sm mx-4 p-8 flex flex-col items-center gap-6 shadow-2xl">
-            {/* 아이콘 */}
-            <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center">
-              <Sparkles className={cn('w-7 h-7', aiModal.done && !aiModal.error ? 'text-income' : 'text-foreground', !aiModal.done && 'animate-pulse')} />
-            </div>
-
-            {/* 타이틀 */}
-            <div className="text-center space-y-2">
-              <h2 className="text-lg font-bold italic text-foreground">
-                {aiModal.done
-                  ? aiModal.error ? '재분류 실패' : aiModal.cancelled ? '재분류 중지됨' : 'AI 재분류 완료'
-                  : 'AI 미분류 항목 재분류 중...'}
-              </h2>
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                {aiModal.done && !aiModal.error
-                  ? `${aiModal.updated > 0 ? `${aiModal.updated}건이 새로 분류됐습니다.` : '모든 항목이 이미 분류되어 있습니다.'}`
-                  : aiModal.error
-                  ? aiModal.error
-                  : '거래 내역 패턴을 분석하여 카테고리를 자동 매핑합니다.'}
-              </p>
-            </div>
-
-            {/* 프로그레스 바 */}
-            {!aiModal.done && (
-              <div className="w-full space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                    STATUS: PROCESSING
-                  </span>
-                  <span className="text-xs tabular-nums text-foreground">{aiModal.progress}%</span>
-                </div>
-                <div className="h-0.5 w-full bg-border rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-foreground rounded-full transition-all duration-700"
-                    style={{ width: `${aiModal.progress}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* 스텝 리스트 */}
-            <div className="w-full rounded-xl bg-muted/50 border border-border/50 divide-y divide-border/40">
-              {aiModal.steps.map((step, i) => (
-                <div key={i} className="flex items-center gap-3 px-4 py-2.5">
-                  {step.done ? (
-                    <Check className="w-3.5 h-3.5 text-income flex-shrink-0" />
-                  ) : step.active ? (
-                    <div className="w-3.5 h-3.5 flex items-center justify-center flex-shrink-0">
-                      <div className="w-1.5 h-1.5 rounded-full bg-foreground animate-pulse" />
-                    </div>
-                  ) : (
-                    <div className="w-3.5 h-3.5 flex items-center justify-center flex-shrink-0">
-                      <div className="w-1.5 h-1.5 rounded-full bg-border" />
-                    </div>
-                  )}
-                  <span className={cn(
-                    'text-[11px] font-medium uppercase tracking-wider',
-                    step.active ? 'text-foreground' : step.done ? 'text-muted-foreground' : 'text-muted-foreground/40',
-                  )}>
-                    {step.active ? `${step.label}...` : step.label}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            {/* 완료 버튼 또는 중지 버튼 */}
-            {aiModal.done ? (
-              <button
-                onClick={() => setAiModal(null)}
-                className="w-full py-2.5 rounded-xl bg-foreground text-background text-sm font-semibold hover:bg-foreground/90 transition-colors"
-              >
-                확인
-              </button>
-            ) : (
-              <div className="flex flex-col items-center gap-2 w-full">
-                <button
-                  onClick={() => {
-                    aiAbortRef.current?.abort()
-                  }}
-                  className="px-4 py-1.5 rounded-lg border border-border text-xs text-muted-foreground hover:text-foreground hover:border-ring transition-colors"
-                >
-                  중지
-                </button>
-                <p className="text-[10px] text-muted-foreground/40 italic">Powered by GPT-4o-mini</p>
-              </div>
-            )}
-          </div>
-        </div>
+        <RecategorizeProgressModal
+          state={aiModal}
+          onCancel={() => aiAbortRef.current?.abort()}
+          onClose={() => setAiModal(null)}
+        />
       )}
 
       {/* 내역 자동 정리 확인 다이얼로그 */}
@@ -623,200 +527,21 @@ export default function CashflowPage() {
         onDone={() => { setCleanupDialog({ open: false, groups: [] }); router.refresh() }}
       />
 
-      {/* AI 재분류 모드 선택 모달 */}
       {aiModeModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-card border border-border rounded-2xl w-full max-w-sm mx-4 p-6 flex flex-col gap-5 shadow-2xl">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-muted flex items-center justify-center">
-                <Sparkles className="w-5 h-5 text-foreground" />
-              </div>
-              <div>
-                <h2 className="text-sm font-bold text-foreground">AI 재분류</h2>
-                <p className="text-[11px] text-muted-foreground">분류 방식을 선택하세요</p>
-              </div>
-            </div>
-            <div className="flex flex-col gap-2">
-              <button
-                onClick={() => runRecategorize(false)}
-                className="w-full flex flex-col items-start gap-1 px-4 py-3 rounded-xl bg-muted hover:bg-muted/80 border border-border text-left transition-colors"
-              >
-                <span className="text-sm font-semibold text-foreground">미분류 항목만</span>
-                <span className="text-[11px] text-muted-foreground">카테고리가 없는 항목만 개인화 규칙 + AI로 분류</span>
-              </button>
-              <button
-                onClick={() => runRecategorize(true)}
-                className="w-full flex flex-col items-start gap-1 px-4 py-3 rounded-xl bg-warning-soft hover:opacity-80 text-left transition-colors"
-              >
-                <span className="text-sm font-semibold text-warning">전체 강제 재분류</span>
-                <span className="text-[11px] text-muted-foreground">기존 분류 포함 전체 항목을 개인화 규칙 + AI로 재분류</span>
-              </button>
-            </div>
-            <button
-              onClick={() => setAiModeModal(false)}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              취소
-            </button>
-          </div>
-        </div>
+        <RecategorizeModeModal
+          onClose={() => setAiModeModal(false)}
+          onRun={runRecategorize}
+        />
       )}
 
-      {/* AI 재분류 결과 확인 모달 */}
-      {previewModal && (() => {
-        const visibleGroups = previewModal.showUnchanged
-          ? previewModal.groups
-          : previewModal.groups.filter(g => g.changed)
-        const unchangedCount = previewModal.groups.filter(g => !g.changed).length
-        const selectedCount = previewModal.groups
-          .filter(g => g.changed && !previewModal.uncheckedKeys.has(g.key))
-          .reduce((s, g) => s + g.ids.length, 0)
-        const changedGroupCount = previewModal.groups.filter(g => g.changed).length
-
-        return (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm">
-            <div className="bg-card border border-border rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg mx-0 sm:mx-4 flex flex-col shadow-2xl max-h-[90vh]">
-              {/* 헤더 */}
-              <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-foreground" />
-                  <h2 className="text-sm font-bold text-foreground">AI 재분류 결과</h2>
-                </div>
-                <button
-                  onClick={() => setPreviewModal(null)}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* 서브 헤더 */}
-              <div className="px-5 pb-3 flex items-center justify-between flex-shrink-0 border-b border-border">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setPreviewModal(p => p ? { ...p, uncheckedKeys: new Set() } : null)}
-                    className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    전체 선택
-                  </button>
-                  <span className="text-muted-foreground/40 text-xs">·</span>
-                  <button
-                    onClick={() => setPreviewModal(p => p ? {
-                      ...p,
-                      uncheckedKeys: new Set(p.groups.filter(g => g.changed).map(g => g.key)),
-                    } : null)}
-                    className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    전체 해제
-                  </button>
-                  <span className="text-[11px] text-muted-foreground/60">
-                    ({changedGroupCount}그룹 · {selectedCount}건 선택됨)
-                  </span>
-                </div>
-                {unchangedCount > 0 && (
-                  <button
-                    onClick={() => setPreviewModal(p => p ? { ...p, showUnchanged: !p.showUnchanged } : null)}
-                    className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
-                  >
-                    {previewModal.showUnchanged ? '변경 항목만 보기' : `변경 없는 ${unchangedCount}건 보기`}
-                  </button>
-                )}
-              </div>
-
-              {/* 목록 */}
-              <div className="overflow-y-auto flex-1 divide-y divide-border/50">
-                {visibleGroups.length === 0 ? (
-                  <div className="py-10 text-center text-sm text-muted-foreground/60">
-                    변경될 항목이 없습니다
-                  </div>
-                ) : visibleGroups.map(group => {
-                  const isChecked = !previewModal.uncheckedKeys.has(group.key)
-                  const toggle = () => setPreviewModal(p => {
-                    if (!p) return null
-                    const next = new Set(p.uncheckedKeys)
-                    if (next.has(group.key)) next.delete(group.key)
-                    else next.add(group.key)
-                    return { ...p, uncheckedKeys: next }
-                  })
-                  return (
-                    <div
-                      key={group.key}
-                      onClick={group.changed ? toggle : undefined}
-                      className={cn(
-                        'flex items-center gap-3 px-5 py-3 transition-colors',
-                        group.changed ? 'cursor-pointer hover:bg-muted/40' : 'opacity-50',
-                      )}
-                    >
-                      {/* 체크박스 */}
-                      <div className={cn(
-                        'w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors',
-                        group.changed
-                          ? isChecked
-                            ? 'bg-foreground border-foreground'
-                            : 'border-border bg-transparent'
-                          : 'border-border/40 bg-transparent',
-                      )}>
-                        {group.changed && isChecked && <Check className="w-2.5 h-2.5 text-background" />}
-                      </div>
-
-                      {/* 내용 */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-baseline gap-1.5">
-                          <span className="text-sm font-medium text-foreground truncate">{group.description}</span>
-                          {group.ids.length > 1 && (
-                            <span className="text-[11px] text-muted-foreground flex-shrink-0">({group.ids.length}건)</span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <span className="text-[11px] text-muted-foreground">{group.oldCategory || '미분류'}</span>
-                          {group.changed && (
-                            <>
-                              <span className="text-muted-foreground/40 text-[10px]">→</span>
-                              <span className="text-[11px] text-foreground font-medium">{group.newCategory}</span>
-                            </>
-                          )}
-                          {!group.changed && (
-                            <span className="text-[10px] text-muted-foreground/50 ml-1">변경 없음</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* 잔여 항목 알림 */}
-              {previewModal.remaining > 0 && (
-                <div className="px-5 py-2 flex-shrink-0 bg-warning-soft border-t border-warning/20">
-                  <p className="text-[11px] text-warning">
-                    150건 초과로 나머지 {previewModal.remaining}건은 적용 후 다시 실행하세요
-                  </p>
-                </div>
-              )}
-
-              {/* 하단 버튼 */}
-              <div className="flex items-center gap-3 px-5 py-4 flex-shrink-0 border-t border-border">
-                <button
-                  onClick={() => setPreviewModal(null)}
-                  disabled={previewModal.applying}
-                  className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-ring transition-colors disabled:opacity-50"
-                >
-                  취소
-                </button>
-                <button
-                  onClick={applyPreview}
-                  disabled={previewModal.applying || selectedCount === 0}
-                  className="flex-1 py-2.5 rounded-xl bg-foreground text-background text-sm font-semibold hover:bg-foreground/90 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
-                >
-                  {previewModal.applying
-                    ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />적용 중...</>
-                    : `적용하기 (${selectedCount}건)`}
-                </button>
-              </div>
-            </div>
-          </div>
-        )
-      })()}
+      {previewModal && (
+        <RecategorizePreviewModal
+          state={previewModal}
+          onUpdate={updater => setPreviewModal(p => p ? updater(p) : null)}
+          onClose={() => setPreviewModal(null)}
+          onApply={applyPreview}
+        />
+      )}
 
       {/* 월 선택기 */}
       <div className="flex items-center justify-between mb-6">
