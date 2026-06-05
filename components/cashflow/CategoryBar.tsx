@@ -79,7 +79,7 @@ export function CategoryBar({
                 isSelected ? 'font-semibold' : '',
               )}
             >
-              <span className="w-2 h-2 rounded-sm flex-shrink-0" style={{ backgroundColor: color }} />
+              <span className="w-2 h-2 rounded-sm shrink-0" style={{ backgroundColor: color }} />
               <span className="text-muted-foreground">{cat}</span>
               <span className="tabular-nums text-foreground/70">{formatLargeNumber(amt)}</span>
             </button>

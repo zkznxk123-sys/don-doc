@@ -83,8 +83,8 @@ export function DonutChartSkeleton() {
       <Skeleton className="w-24 h-5 mb-1" />
       <Skeleton className="w-36 h-3 mb-5" />
       <div className="flex flex-col items-center gap-5">
-        <div className="w-[200px] h-[200px] relative flex items-center justify-center flex-shrink-0">
-          <div className="w-full h-full rounded-full border-[28px] border-border animate-pulse" />
+        <div className="w-[200px] h-[200px] relative flex items-center justify-center shrink-0">
+          <div className="w-full h-full rounded-full border-28 border-border animate-pulse" />
           <div className="absolute flex flex-col items-center gap-1">
             <Skeleton className="w-16 h-3" />
             <Skeleton className="w-20 h-5" />
@@ -93,7 +93,7 @@ export function DonutChartSkeleton() {
         <div className="w-full space-y-2">
           {[80, 65, 50].map((w, i) => (
             <div key={i} className="flex items-center gap-3 px-3 py-2.5">
-              <Skeleton className="w-8 h-8 rounded-lg flex-shrink-0" />
+              <Skeleton className="w-8 h-8 rounded-lg shrink-0" />
               <div className="flex-1 space-y-2">
                 <div className="flex justify-between">
                   <Skeleton className="h-3.5" style={{ width: `${w}%` }} />
@@ -138,7 +138,7 @@ export function BudgetCategorySkeleton() {
         <div className="space-y-3">
           {[90, 70, 55, 45, 35].map((w, i) => (
             <div key={i} className="flex items-center gap-3">
-              <Skeleton className="w-2 h-2 rounded-full flex-shrink-0" />
+              <Skeleton className="w-2 h-2 rounded-full shrink-0" />
               <Skeleton className="flex-1 h-3" style={{ maxWidth: `${w}%` }} />
               <Skeleton className="w-6 h-3" />
               <Skeleton className="w-16 h-3" />
@@ -165,13 +165,13 @@ export function TransactionFeedSkeleton() {
       <div className="space-y-0">
         {[...Array(5)].map((_, i) => (
           <div key={i} className="flex items-center gap-3 py-2.5 border-b border-border/60 last:border-0">
-            <Skeleton className="w-7 h-7 rounded-full flex-shrink-0" />
+            <Skeleton className="w-7 h-7 rounded-full shrink-0" />
             <div className="flex-1 space-y-1.5">
               <Skeleton className="h-3" style={{ width: `${[70, 55, 80, 60, 45][i]}%` }} />
               <Skeleton className="w-32 h-2.5" />
             </div>
-            <Skeleton className="w-16 h-3 flex-shrink-0" />
-            <Skeleton className="w-8 h-5 rounded-full flex-shrink-0" />
+            <Skeleton className="w-16 h-3 shrink-0" />
+            <Skeleton className="w-8 h-5 rounded-full shrink-0" />
           </div>
         ))}
       </div>
@@ -203,7 +203,7 @@ export function MemberCategorySkeleton() {
       <div className="space-y-3">
         {[85, 65, 50, 40, 30].map((w, i) => (
           <div key={i} className="flex items-center gap-3">
-            <Skeleton className="w-2 h-2 rounded-full flex-shrink-0" />
+            <Skeleton className="w-2 h-2 rounded-full shrink-0" />
             <Skeleton className="flex-1 h-3" style={{ maxWidth: `${w}%` }} />
             <Skeleton className="w-6 h-3" />
             <Skeleton className="w-16 h-3" />

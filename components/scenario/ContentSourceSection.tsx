@@ -228,7 +228,7 @@ function SourceRow({
         className={cn('flex items-start gap-2.5', canExpand && 'cursor-pointer')}
         onClick={() => canExpand && setExpanded(v => !v)}
       >
-        <div className="flex-shrink-0 mt-0.5">
+        <div className="shrink-0 mt-0.5">
           {src.type === 'text' ? (
             <FileText className="w-3.5 h-3.5 text-muted-foreground/40" />
           ) : (
@@ -237,7 +237,7 @@ function SourceRow({
         </div>
         <div className="flex-1 min-w-0">
           {/* 1줄: 제목만 */}
-          <p className="text-sm font-medium text-foreground leading-tight break-words pr-1">
+          <p className="text-sm font-medium text-foreground leading-tight wrap-break-word pr-1">
             {src.title ?? src.url ?? '텍스트 메모'}
           </p>
           {/* 2줄: 상태 + 카테고리 뱃지 */}
@@ -263,7 +263,7 @@ function SourceRow({
             <p className="text-[11px] text-destructive/70 mt-1.5 line-clamp-1">{src.summaryError}</p>
           )}
         </div>
-        <div className="flex items-center gap-0.5 flex-shrink-0">
+        <div className="flex items-center gap-0.5 shrink-0">
           {canExpand && (
             <ChevronDown className={cn('w-4 h-4 text-muted-foreground/40 transition-transform', expanded && 'rotate-180')} />
           )}
@@ -453,7 +453,7 @@ export function ContentSourceSection({
             onClick={() => setInputMode('url')}
             className={cn(
               'flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors',
-              inputMode === 'url' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground',
+              inputMode === 'url' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground',
             )}
           >
             <Link2 className="w-3 h-3" />URL
@@ -462,7 +462,7 @@ export function ContentSourceSection({
             onClick={() => setInputMode('text')}
             className={cn(
               'flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors',
-              inputMode === 'text' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground',
+              inputMode === 'text' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground',
             )}
           >
             <FileText className="w-3 h-3" />텍스트
@@ -481,7 +481,7 @@ export function ContentSourceSection({
                 onKeyDown={e => e.key === 'Enter' && handleSubmit()}
                 placeholder="https://..."
                 disabled={adding}
-                className="flex-1 text-sm bg-muted/50 border border-border rounded-xl px-3 py-2 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/30 disabled:opacity-50"
+                className="flex-1 text-sm bg-muted/50 border border-border rounded-xl px-3 py-2 text-foreground placeholder:text-muted-foreground/40 focus:outline-hidden focus:ring-1 focus:ring-primary/30 disabled:opacity-50"
               />
               <button
                 onClick={handleSubmit}
@@ -510,7 +510,7 @@ export function ContentSourceSection({
               value={textTitle}
               onChange={e => setTextTitle(e.target.value)}
               placeholder="제목 (예: 마통 갈아타기 전략 메모)"
-              className="w-full text-sm bg-muted/50 border border-border rounded-xl px-3 py-2 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/30"
+              className="w-full text-sm bg-muted/50 border border-border rounded-xl px-3 py-2 text-foreground placeholder:text-muted-foreground/40 focus:outline-hidden focus:ring-1 focus:ring-primary/30"
             />
             <div className="flex gap-2">
               <textarea
@@ -518,12 +518,12 @@ export function ContentSourceSection({
                 onChange={e => setTextContent(e.target.value)}
                 placeholder="관심 있는 재무/투자 내용을 자유롭게 입력하세요..."
                 rows={3}
-                className="flex-1 text-sm bg-muted/50 border border-border rounded-xl px-3 py-2 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/30 resize-none"
+                className="flex-1 text-sm bg-muted/50 border border-border rounded-xl px-3 py-2 text-foreground placeholder:text-muted-foreground/40 focus:outline-hidden focus:ring-1 focus:ring-primary/30 resize-none"
               />
               <button
                 onClick={handleSubmit}
                 disabled={adding || !canSubmit}
-                className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-medium disabled:opacity-50 transition-opacity self-start"
+                className="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-medium disabled:opacity-50 transition-opacity self-start"
               >
                 {adding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
                 추가

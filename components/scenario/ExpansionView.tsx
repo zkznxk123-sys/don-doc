@@ -22,7 +22,7 @@ export function ExpansionView({ expansion }: { expansion: ScenarioExpansion }) {
           <div key={i} className="border border-border rounded-xl overflow-hidden">
             <div className="px-4 py-2.5 bg-muted/40 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[10px] flex items-center justify-center font-bold flex-shrink-0">
+                <span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[10px] flex items-center justify-center font-bold shrink-0">
                   {i + 1}
                 </span>
                 <span className="text-xs font-semibold text-foreground">{step.title}</span>
@@ -34,12 +34,12 @@ export function ExpansionView({ expansion }: { expansion: ScenarioExpansion }) {
             <div className="px-4 py-2.5 space-y-1.5">
               {step.actions.map((a, j) => (
                 <div key={j} className="flex items-start gap-2">
-                  <span className="w-1 h-1 rounded-full bg-muted-foreground/40 flex-shrink-0 mt-1.5" />
+                  <span className="w-1 h-1 rounded-full bg-muted-foreground/40 shrink-0 mt-1.5" />
                   <span className="text-xs text-foreground/80">{a}</span>
                 </div>
               ))}
               <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-border/50">
-                <CheckCircle2 className="w-3 h-3 text-income flex-shrink-0" />
+                <CheckCircle2 className="w-3 h-3 text-income shrink-0" />
                 <span className="text-[11px] text-income">{step.milestone}</span>
               </div>
             </div>
@@ -65,7 +65,7 @@ export function ExpansionView({ expansion }: { expansion: ScenarioExpansion }) {
             {expansion.risks.map((r, i) => (
               <div key={i} className="bg-warning-soft border border-warning/20 rounded-xl px-3 py-2">
                 <p className="text-xs font-medium text-warning flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3 flex-shrink-0" />{r.risk}
+                  <AlertTriangle className="w-3 h-3 shrink-0" />{r.risk}
                 </p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">→ {r.mitigation}</p>
               </div>

@@ -20,7 +20,7 @@ export function AiMappingStatus({
   if (status === 'pending') return (
     <div className="flex items-center justify-between p-3 rounded-xl bg-card border border-border">
       <div className="flex items-center gap-2">
-        <Wand2 className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        <Wand2 className="w-4 h-4 text-muted-foreground shrink-0" />
         <div>
           <p className="text-xs font-medium text-foreground/70">AI 카테고리 분류</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">월 · 범위 선택 후 분류를 시작하세요</p>
@@ -38,7 +38,7 @@ export function AiMappingStatus({
   if (status === 'loading') return (
     <div className="flex items-center justify-between p-3 rounded-xl bg-card border border-border">
       <div className="flex items-center gap-2.5">
-        <Loader2 className="w-4 h-4 text-violet-500 dark:text-violet-400 animate-spin flex-shrink-0" />
+        <Loader2 className="w-4 h-4 text-violet-500 dark:text-violet-400 animate-spin shrink-0" />
         <div>
           <p className="text-xs font-semibold text-violet-700 dark:text-violet-300">AI 카테고리 분류 중...</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">고유 내역 {totalUnique}건을 분류하고 있어요</p>
@@ -52,7 +52,7 @@ export function AiMappingStatus({
 
   if (status === 'done') return (
     <div className="flex items-center gap-2.5 p-3 rounded-xl bg-violet-50 dark:bg-violet-950/20 border border-violet-300 dark:border-violet-800/30">
-      <Wand2 className="w-4 h-4 text-violet-500 dark:text-violet-400 flex-shrink-0" />
+      <Wand2 className="w-4 h-4 text-violet-500 dark:text-violet-400 shrink-0" />
       <p className="text-xs text-violet-700 dark:text-violet-300">
         <span className="font-semibold">AI 분류 완료</span>
         <span className="text-violet-500 dark:text-violet-600 ml-1.5">{mappedCount}가지 내역 카테고리 매핑됨</span>
@@ -63,7 +63,7 @@ export function AiMappingStatus({
   if (status === 'error') return (
     <div className="flex items-center justify-between p-3 rounded-xl bg-card border border-border">
       <div className="flex items-center gap-2">
-        <AlertCircle className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+        <AlertCircle className="w-4 h-4 text-muted-foreground shrink-0" />
         <p className="text-xs text-muted-foreground">AI 분류 실패 — 기존 매핑 사용 중</p>
       </div>
       <button onClick={onRetry} className="text-[11px] text-violet-400 hover:text-violet-300 transition-colors">
@@ -259,7 +259,7 @@ export function AccountBalanceDiff({
                       : `${parents[0]} 안의 종목 — 잔액 동기화 skip`}
                   </span>
                 </div>
-                <div className="text-right pl-2 flex-shrink-0">
+                <div className="text-right pl-2 shrink-0">
                   <p className="text-xs text-muted-foreground tabular-nums">{formatCurrency(d.newBalance)}</p>
                 </div>
               </div>
@@ -288,7 +288,7 @@ export function AccountBalanceDiff({
                     증권계좌 예수금 — 자식 sub-account로 등록
                   </span>
                 </div>
-                <div className="text-right pl-2 flex-shrink-0">
+                <div className="text-right pl-2 shrink-0">
                   <p className="text-xs text-foreground tabular-nums">{formatCurrency(d.newBalance)}</p>
                 </div>
               </label>
@@ -320,7 +320,7 @@ export function AccountBalanceDiff({
                   <span className="text-[10px] text-violet-400">신규 계좌</span>
                 )}
               </div>
-              <div className="text-right pl-2 flex-shrink-0">
+              <div className="text-right pl-2 shrink-0">
                 {isNew ? (
                   <p className="text-xs text-foreground tabular-nums">{formatCurrency(d.newBalance)}</p>
                 ) : (
@@ -366,14 +366,14 @@ export function ColSelect({ label, value, options, onChange, hasValue }: {
   return (
     <div className="px-2 py-2 border-r border-border last:border-r-0">
       <div className="flex items-center gap-1 mb-1">
-        {hasValue ? <CheckCircle2 className="w-2.5 h-2.5 text-income flex-shrink-0" /> : <AlertCircle className="w-2.5 h-2.5 text-muted-foreground/60 flex-shrink-0" />}
+        {hasValue ? <CheckCircle2 className="w-2.5 h-2.5 text-income shrink-0" /> : <AlertCircle className="w-2.5 h-2.5 text-muted-foreground/60 shrink-0" />}
         <span className="text-[9px] font-semibold text-muted-foreground uppercase tracking-wide truncate">{label}</span>
       </div>
       <select
         value={value}
         onChange={e => onChange(e.target.value)}
         className={cn(
-          'w-full text-[10px] rounded px-1 py-0.5 border outline-none transition-colors truncate',
+          'w-full text-[10px] rounded px-1 py-0.5 border outline-hidden transition-colors truncate',
           hasValue ? 'bg-muted text-foreground/80 border-border' : 'bg-muted/50 text-muted-foreground border-border/50'
         )}
       >

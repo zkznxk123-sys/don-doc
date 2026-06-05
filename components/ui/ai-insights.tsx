@@ -64,7 +64,7 @@ export function AiInsights({ familyId }: AiInsightsProps) {
         onClick={() => setIsExpanded(v => !v)}
       >
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500/20 to-blue-500/20 border border-violet-500/20 flex items-center justify-center">
+          <div className="w-7 h-7 rounded-lg bg-linear-to-br from-violet-500/20 to-blue-500/20 border border-violet-500/20 flex items-center justify-center">
             <Sparkles className="w-3.5 h-3.5 text-violet-400" />
           </div>
           <div>
@@ -132,7 +132,7 @@ export function AiInsights({ familyId }: AiInsightsProps) {
           ) : error ? (
             <div className="space-y-3">
               <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-950/20 border border-red-800/30">
-                <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
+                <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
                 <div>
                   <p className="text-xs text-destructive">{error}</p>
                   {llmMuxDown && (
@@ -161,7 +161,7 @@ export function AiInsights({ familyId }: AiInsightsProps) {
                 'w-full py-3.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2',
                 llmStatus === 'offline'
                   ? 'bg-muted/50 text-muted-foreground/60 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-violet-500/20 to-blue-500/20 border border-violet-500/20 text-violet-300 hover:from-violet-500/30 hover:to-blue-500/30 active:scale-[0.98]'
+                  : 'bg-linear-to-r from-violet-500/20 to-blue-500/20 border border-violet-500/20 text-violet-300 hover:from-violet-500/30 hover:to-blue-500/30 active:scale-[0.98]'
               )}
             >
               <Zap className="w-4 h-4" />

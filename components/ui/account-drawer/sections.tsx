@@ -66,7 +66,7 @@ export function PensionSection(props: PensionSectionProps) {
           <select
             value={pPensionType}
             onChange={e => setPPensionType(e.target.value as PensionType)}
-            className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-9 text-sm text-foreground outline-none focus:border-ring transition-colors appearance-none"
+            className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-9 text-sm text-foreground outline-hidden focus:border-ring transition-colors appearance-none"
           >
             {PENSION_TYPES_LIST.map(pt => (
               <option key={pt.value} value={pt.value}>{pt.label}</option>
@@ -84,7 +84,7 @@ export function PensionSection(props: PensionSectionProps) {
           value={pInstitutionName}
           onChange={e => setPInstitutionName(e.target.value)}
           placeholder="예: 국민연금공단, 삼성생명"
-          className="w-full h-10 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors"
+          className="w-full h-10 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-hidden focus:border-ring transition-colors"
         />
       </div>
 
@@ -100,7 +100,7 @@ export function PensionSection(props: PensionSectionProps) {
               type="number" min="50" max="80" value={pPensionStartAge}
               onChange={e => setPPensionStartAge(e.target.value)}
               placeholder="65"
-              className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-10 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors"
+              className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-10 text-sm text-foreground placeholder-muted-foreground/40 outline-hidden focus:border-ring transition-colors"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/60">세</span>
           </div>
@@ -111,7 +111,7 @@ export function PensionSection(props: PensionSectionProps) {
             type="number" min="1940" max="2010" value={pOwnerBirthYear}
             onChange={e => setPOwnerBirthYear(e.target.value)}
             placeholder="1990"
-            className="w-full h-10 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors"
+            className="w-full h-10 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-hidden focus:border-ring transition-colors"
           />
         </div>
         <div>
@@ -121,7 +121,7 @@ export function PensionSection(props: PensionSectionProps) {
               type="number" min="0" value={pAccumulatedMonths}
               onChange={e => setPAccumulatedMonths(e.target.value)}
               placeholder="0"
-              className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-12 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors"
+              className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-12 text-sm text-foreground placeholder-muted-foreground/40 outline-hidden focus:border-ring transition-colors"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/60">개월</span>
           </div>

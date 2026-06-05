@@ -102,7 +102,7 @@ export function RecentBalanceChanges({ days = 30, limit = 8 }: { days?: number; 
                 'flex items-center gap-1 tabular-nums whitespace-nowrap text-right justify-end',
                 flat ? 'text-muted-foreground' : up ? 'text-income' : 'text-expense',
               )}>
-                {!flat && (up ? <TrendingUp className="h-3 w-3 flex-shrink-0" /> : <TrendingDown className="h-3 w-3 flex-shrink-0" />)}
+                {!flat && (up ? <TrendingUp className="h-3 w-3 shrink-0" /> : <TrendingDown className="h-3 w-3 shrink-0" />)}
                 <span>{up ? '+' : flat ? '' : '−'}{formatCurrency(Math.abs(it.delta))}</span>
               </span>
               <span className="hidden sm:flex items-center gap-1.5 text-[10px] text-muted-foreground/60 whitespace-nowrap justify-end">

@@ -291,7 +291,7 @@ export default function AssetsPage() {
           {/* 현재 자산 기록하기 */}
           <button
             onClick={() => setConfirmOpen(true)}
-            className="flex-shrink-0 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground bg-muted hover:bg-accent border border-border px-3 py-2 rounded-xl transition-colors mt-0.5"
+            className="shrink-0 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground bg-muted hover:bg-accent border border-border px-3 py-2 rounded-xl transition-colors mt-0.5"
           >
             <Camera className="w-3.5 h-3.5" />
             현재 자산 기록

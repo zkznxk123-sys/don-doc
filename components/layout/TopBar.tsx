@@ -91,12 +91,12 @@ export function TopBar({ onToggleSidebar }: TopBarProps) {
   const defaultActions = useRouteDefaultActions(pathname, openTransactionDrawer, openExcelDrawer)
 
   return (
-    <header className="h-14 flex-shrink-0 border-b border-border/60 bg-background flex items-center justify-between px-4 gap-3">
+    <header className="h-14 shrink-0 border-b border-border/60 bg-background flex items-center justify-between px-4 gap-3">
       {/* 좌측: 토글 + 타이틀 */}
       <div className="flex items-center gap-3 min-w-0">
         <button
           onClick={onToggleSidebar}
-          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors flex-shrink-0"
+          className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors shrink-0"
           aria-label="사이드바 토글"
         >
           <PanelLeft className="w-4 h-4" />
@@ -105,7 +105,7 @@ export function TopBar({ onToggleSidebar }: TopBarProps) {
       </div>
 
       {/* 우측: 페이지 액션 또는 라우트별 기본 버튼 + 테마 토글 */}
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="flex items-center gap-2 shrink-0">
         {pageActions ?? defaultActions}
         <ThemeToggle />
         <UserButton />

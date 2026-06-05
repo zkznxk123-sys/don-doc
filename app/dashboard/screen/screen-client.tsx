@@ -200,7 +200,7 @@ export function ScreenClient() {
             value={input.sectorContains ?? ''}
             onChange={e => update('sectorContains', e.target.value || undefined)}
             placeholder="기술 / 금융 / 헬스케어 / Technology ..."
-            className="w-full h-9 px-3 rounded-lg bg-muted border border-border/40 text-sm focus:outline-none focus:border-primary/40"
+            className="w-full h-9 px-3 rounded-lg bg-muted border border-border/40 text-sm focus:outline-hidden focus:border-primary/40"
           />
         </Field>
 
@@ -209,7 +209,7 @@ export function ScreenClient() {
             <select
               value={input.sortBy}
               onChange={e => update('sortBy', e.target.value as ScreenSortKey)}
-              className="flex-1 h-9 px-2 rounded-lg bg-muted border border-border/40 text-sm focus:outline-none focus:border-primary/40"
+              className="flex-1 h-9 px-2 rounded-lg bg-muted border border-border/40 text-sm focus:outline-hidden focus:border-primary/40"
             >
               {SORT_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
             </select>
@@ -240,7 +240,7 @@ export function ScreenClient() {
             min={1} max={50}
             value={input.limit ?? 20}
             onChange={e => update('limit', Number(e.target.value) || 20)}
-            className="w-24 h-9 px-3 rounded-lg bg-muted border border-border/40 text-sm focus:outline-none focus:border-primary/40"
+            className="w-24 h-9 px-3 rounded-lg bg-muted border border-border/40 text-sm focus:outline-hidden focus:border-primary/40"
           />
         </Field>
 
@@ -283,7 +283,7 @@ function NumInput({
       value={value ?? ''}
       onChange={e => onChange(e.target.value === '' ? undefined : Number(e.target.value))}
       placeholder={placeholder}
-      className="w-full h-9 px-3 rounded-lg bg-muted border border-border/40 text-sm focus:outline-none focus:border-primary/40"
+      className="w-full h-9 px-3 rounded-lg bg-muted border border-border/40 text-sm focus:outline-hidden focus:border-primary/40"
     />
   )
 }

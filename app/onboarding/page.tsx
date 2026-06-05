@@ -111,7 +111,7 @@ function OnboardingContent() {
                 className="w-full p-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 hover:border-zinc-600 hover:bg-zinc-900 transition-all text-left group"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
                     <Users className="w-5 h-5 text-white" />
                   </div>
                   <div className="flex-1">
@@ -127,7 +127,7 @@ function OnboardingContent() {
                 className="w-full p-5 rounded-2xl border border-zinc-800 bg-zinc-900/50 hover:border-zinc-600 hover:bg-zinc-900 transition-all text-left group"
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
+                  <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center shrink-0">
                     <UserPlus className="w-5 h-5 text-white" />
                   </div>
                   <div className="flex-1">
@@ -170,7 +170,7 @@ function OnboardingContent() {
                     placeholder="예: 우리집 자산 본부"
                     autoFocus
                     className={cn(
-                      'w-full h-12 bg-zinc-900 border rounded-xl px-4 text-sm text-white placeholder-zinc-600 outline-none transition-all',
+                      'w-full h-12 bg-zinc-900 border rounded-xl px-4 text-sm text-white placeholder-zinc-600 outline-hidden transition-all',
                       createForm.formState.errors.name
                         ? 'border-destructive/50 focus:border-destructive'
                         : 'border-zinc-800 focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600'
@@ -242,7 +242,7 @@ function OnboardingContent() {
                     maxLength={6}
                     autoFocus
                     className={cn(
-                      'w-full h-12 bg-zinc-900 border rounded-xl px-4 text-sm text-white placeholder-zinc-600 outline-none transition-all tracking-[0.3em] uppercase text-center font-mono',
+                      'w-full h-12 bg-zinc-900 border rounded-xl px-4 text-sm text-white placeholder-zinc-600 outline-hidden transition-all tracking-[0.3em] uppercase text-center font-mono',
                       joinForm.formState.errors.code
                         ? 'border-destructive/50 focus:border-destructive'
                         : 'border-zinc-800 focus:border-zinc-600 focus:ring-1 focus:ring-zinc-600'

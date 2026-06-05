@@ -12,7 +12,7 @@ export function ScenarioView({ data }: { data: DemoData }) {
 
   const STATUS_COLOR: Record<string, string> = {
     active: 'bg-savings/10 text-blue-400 border-blue-500/20',
-    interested: 'bg-income-soft text-income border-[var(--viz-emerald)]/20',
+    interested: 'bg-income-soft text-income border-(--viz-emerald)/20',
   }
   const STATUS_LABEL: Record<string, string> = { active: '검토 중', interested: '관심' }
 
@@ -35,10 +35,10 @@ export function ScenarioView({ data }: { data: DemoData }) {
           {scenarios.map(sc => (
             <button key={sc.id} onClick={() => setSelected(sc.id)}
               className={cn('w-full text-left bg-card rounded-2xl border p-4 transition-all',
-                selected === sc.id ? 'border-violet-500/40 shadow-sm' : 'border-border hover:border-border/80')}>
+                selected === sc.id ? 'border-violet-500/40 shadow-xs' : 'border-border hover:border-border/80')}>
               <div className="flex items-start justify-between gap-2 mb-2">
                 <p className="text-xs font-semibold leading-snug flex-1">{sc.title}</p>
-                <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-full border flex-shrink-0', STATUS_COLOR[sc.status])}>
+                <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-full border shrink-0', STATUS_COLOR[sc.status])}>
                   {STATUS_LABEL[sc.status] ?? sc.status}
                 </span>
               </div>
@@ -62,7 +62,7 @@ export function ScenarioView({ data }: { data: DemoData }) {
             <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5">
               <div className="flex items-start justify-between gap-3 mb-3">
                 <h3 className="text-sm font-bold leading-snug">{selectedSc.title}</h3>
-                <span className={cn('text-[10px] font-medium px-2 py-1 rounded-full border flex-shrink-0', STATUS_COLOR[selectedSc.status])}>
+                <span className={cn('text-[10px] font-medium px-2 py-1 rounded-full border shrink-0', STATUS_COLOR[selectedSc.status])}>
                   {STATUS_LABEL[selectedSc.status]}
                 </span>
               </div>
@@ -89,8 +89,8 @@ export function ScenarioView({ data }: { data: DemoData }) {
                     const done = selectedSc.completedActions.includes(i)
                     return (
                       <div key={i} className={cn('flex items-start gap-3 p-3 rounded-xl', done ? 'bg-income-soft' : 'bg-muted/40')}>
-                        <div className={cn('w-5 h-5 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5',
-                          done ? 'bg-[var(--viz-emerald)] border-[var(--viz-emerald)]' : 'border-border')}>
+                        <div className={cn('w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5',
+                          done ? 'bg-(--viz-emerald) border-(--viz-emerald)' : 'border-border')}>
                           {done && <Check className="w-3 h-3 text-white" />}
                         </div>
                         <p className={cn('text-xs leading-relaxed', done ? 'text-muted-foreground line-through' : 'text-foreground/80')}>

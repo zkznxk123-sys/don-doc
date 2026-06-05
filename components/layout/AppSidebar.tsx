@@ -71,12 +71,12 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
 
   return (
     <aside className={cn(
-      'fixed lg:static inset-y-0 left-0 z-50 flex flex-col bg-background border-r border-border/60 transition-all duration-200 flex-shrink-0 overflow-hidden',
+      'fixed lg:static inset-y-0 left-0 z-50 flex flex-col bg-background border-r border-border/60 transition-all duration-200 shrink-0 overflow-hidden',
       open ? 'w-60' : 'w-0 lg:w-[60px]',
     )}>
       {/* 브랜드 */}
       <div className={cn(
-        'flex items-center gap-3 px-4 h-14 border-b border-border/60 flex-shrink-0',
+        'flex items-center gap-3 px-4 h-14 border-b border-border/60 shrink-0',
         !open && 'lg:justify-center lg:px-0',
       )}>
         <Link href="/dashboard" className={cn(
@@ -98,7 +98,7 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
         {open && (
           <button
             onClick={onClose}
-            className="ml-auto p-1 text-muted-foreground/60 hover:text-foreground lg:hidden flex-shrink-0"
+            className="ml-auto p-1 text-muted-foreground/60 hover:text-foreground lg:hidden shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
@@ -134,7 +134,7 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
                       !open && 'lg:justify-center lg:px-0',
                     )}
                   >
-                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    <Icon className="w-4 h-4 shrink-0" />
                     {open && <span className="truncate flex-1">{item.label}</span>}
                     {open && item.beta && (
                       <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/70 bg-muted px-1.5 py-0.5 rounded leading-none border border-border/40">
@@ -159,7 +159,7 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
                       !open && 'lg:justify-center lg:px-0',
                     )}
                   >
-                    <Users className="w-4 h-4 flex-shrink-0" />
+                    <Users className="w-4 h-4 shrink-0" />
                     {open && <span>가족 관리</span>}
                   </Link>
                   {open && <InviteCodeButton />}
@@ -172,7 +172,7 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
 
       {/* 유저 프로필 + 로그아웃 */}
       <div className={cn(
-        'border-t border-border/60 p-3 flex-shrink-0',
+        'border-t border-border/60 p-3 shrink-0',
         !open && 'lg:flex lg:justify-center',
       )}>
         {open ? (
@@ -184,7 +184,7 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
             </div>
             <button
               onClick={onLogout}
-              className="p-1.5 rounded-lg text-muted-foreground/60 hover:text-destructive hover:bg-red-950/30 transition-colors flex-shrink-0"
+              className="p-1.5 rounded-lg text-muted-foreground/60 hover:text-destructive hover:bg-red-950/30 transition-colors shrink-0"
               title="로그아웃"
             >
               <LogOut className="w-4 h-4" />
@@ -209,7 +209,7 @@ function UserAvatar({ name }: { name: string | null }) {
   const colors = ['bg-savings', 'bg-violet-500', 'bg-income', 'bg-warning', 'bg-rose-500']
   const color = colors[(name?.charCodeAt(0) ?? 0) % colors.length]
   return (
-    <div className={cn('w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold text-white', color)}>
+    <div className={cn('w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold text-white', color)}>
       {initials}
     </div>
   )
@@ -269,7 +269,7 @@ function InviteCodeButton() {
             : 'text-muted-foreground hover:text-foreground hover:bg-muted'
         )}
       >
-        <UserPlus className="w-4 h-4 flex-shrink-0" />
+        <UserPlus className="w-4 h-4 shrink-0" />
         <span>초대 코드</span>
       </button>
       {open && (
@@ -287,7 +287,7 @@ function InviteCodeButton() {
                 className={cn(
                   'w-full h-9 rounded-xl border text-xs font-medium transition-all flex items-center justify-center gap-1.5',
                   copied
-                    ? 'bg-income-soft border-[var(--viz-emerald)]/30 text-income'
+                    ? 'bg-income-soft border-(--viz-emerald)/30 text-income'
                     : 'bg-muted border-border text-foreground/70 hover:text-foreground'
                 )}
               >

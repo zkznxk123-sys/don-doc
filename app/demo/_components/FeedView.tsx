@@ -78,7 +78,7 @@ export function FeedView({ data }: { data: DemoData }) {
                 <div className="mt-3 space-y-2 border-t border-border/40 pt-3">
                   {post.comments.map((c, i) => (
                     <div key={i} className="flex gap-2">
-                      <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-[9px] font-bold flex-shrink-0 mt-0.5">
+                      <div className="w-5 h-5 rounded-full bg-muted flex items-center justify-center text-[9px] font-bold shrink-0 mt-0.5">
                         {(c.authorName ?? '?').charAt(0)}
                       </div>
                       <div className="bg-muted/40 rounded-xl px-3 py-1.5 flex-1">

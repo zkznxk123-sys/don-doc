@@ -74,7 +74,7 @@ export function OAuthConnectDialog({ open, provider, providerLabel, onClose, onD
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={handleClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-xs" onClick={handleClose} />
       <div className="relative w-full sm:max-w-md bg-card border border-border rounded-t-2xl sm:rounded-2xl p-5 mx-4 mb-0 sm:mb-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-foreground">{providerLabel} 계정 연결</h3>
@@ -152,7 +152,7 @@ export function OAuthConnectDialog({ open, provider, providerLabel, onClose, onD
                 onChange={(e) => setPastedUrl(e.target.value)}
                 placeholder="http://localhost:54545/callback?code=...&state=..."
                 rows={3}
-                className="w-full text-xs font-mono px-3 py-2 rounded-xl bg-muted/50 border border-border focus:border-foreground/30 focus:outline-none resize-none"
+                className="w-full text-xs font-mono px-3 py-2 rounded-xl bg-muted/50 border border-border focus:border-foreground/30 focus:outline-hidden resize-none"
               />
             </div>
             {error && (

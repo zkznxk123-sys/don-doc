@@ -40,8 +40,8 @@ export function KpiCard({
           <span className="text-[11px] sm:text-xs text-muted-foreground font-medium truncate">{label}</span>
         </div>
         {active
-          ? <span className="flex-shrink-0 text-[9px] sm:text-[10px] font-medium px-1 sm:px-1.5 py-0.5 rounded-md" style={{ color: accentColor, backgroundColor: accentColor + '20' }}>필터 중</span>
-          : onClick && <span className="flex-shrink-0 hidden xs:inline text-[10px] text-muted-foreground/40">탭하여 필터</span>
+          ? <span className="shrink-0 text-[9px] sm:text-[10px] font-medium px-1 sm:px-1.5 py-0.5 rounded-md" style={{ color: accentColor, backgroundColor: accentColor + '20' }}>필터 중</span>
+          : onClick && <span className="shrink-0 hidden xs:inline text-[10px] text-muted-foreground/40">탭하여 필터</span>
         }
       </div>
       <p className="numeric text-lg sm:text-xl text-foreground leading-tight">{value}</p>

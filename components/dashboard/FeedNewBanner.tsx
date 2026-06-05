@@ -24,14 +24,14 @@ export function FeedNewBanner() {
       href="/dashboard/feed"
       className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-savings/8 border border-blue-500/20 hover:bg-savings/12 transition-colors"
     >
-      <span className="relative flex-shrink-0">
+      <span className="relative shrink-0">
         <MessageSquare className="w-4 h-4 text-blue-400" />
         <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-blue-400" />
       </span>
       <p className="text-sm text-blue-300 flex-1">
         가족 피드에 새 글이 <span className="font-semibold text-blue-200">{newCount}개</span> 올라왔어요
       </p>
-      <span className="text-xs text-blue-400/60 flex-shrink-0">보러가기 →</span>
+      <span className="text-xs text-blue-400/60 shrink-0">보러가기 →</span>
     </Link>
   )
 }

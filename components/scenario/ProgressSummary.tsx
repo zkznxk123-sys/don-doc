@@ -21,7 +21,7 @@ export function ProgressSummary({ scenarios }: { scenarios: ScenarioData[] }) {
             <div key={s.id}>
               <div className="flex items-center justify-between mb-1">
                 <span className="text-xs text-foreground/80 truncate pr-2">{s.title}</span>
-                <span className={cn('text-xs font-semibold flex-shrink-0', pct === 100 ? 'text-income' : 'text-muted-foreground')}>
+                <span className={cn('text-xs font-semibold shrink-0', pct === 100 ? 'text-income' : 'text-muted-foreground')}>
                   {pct === 100 ? '완료!' : `${s.completedActions.length}/${s.actions.length}`}
                 </span>
               </div>

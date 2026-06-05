@@ -132,14 +132,14 @@ function AssetRow({
   if (account.isMasked) {
     return (
       <div className="w-full flex items-center gap-4 px-5 py-3.5 text-left opacity-60">
-        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-muted">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 bg-muted">
           <Lock className="w-4 h-4 text-muted-foreground" />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-medium text-muted-foreground">🔒 개인 자산</p>
           <p className="text-xs text-muted-foreground/60 mt-0.5">{meta.label} · {allocation}%</p>
         </div>
-        <span className="text-sm font-semibold text-muted-foreground tabular-nums flex-shrink-0">
+        <span className="text-sm font-semibold text-muted-foreground tabular-nums shrink-0">
           {formatCurrency(displayBalance)}
         </span>
       </div>
@@ -148,17 +148,17 @@ function AssetRow({
 
   const infoContent = (
     <>
-      <div className={cn('w-10 h-10 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center flex-shrink-0', meta.bg)}>
+      <div className={cn('w-10 h-10 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0', meta.bg)}>
         <MetaIcon className={cn('w-5 h-5 sm:w-4 sm:h-4', meta.color)} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <p className="text-sm font-medium text-foreground truncate">{account.name}</p>
           {account.shareLevel === 'PUBLIC'
-            ? <Users className="w-3 h-3 text-muted-foreground/60 flex-shrink-0" />
+            ? <Users className="w-3 h-3 text-muted-foreground/60 shrink-0" />
             : account.shareLevel === 'BALANCE_ONLY'
-            ? <Eye className="w-3 h-3 text-muted-foreground/60 flex-shrink-0" />
-            : <User className="w-3 h-3 text-muted-foreground/60 flex-shrink-0" />
+            ? <Eye className="w-3 h-3 text-muted-foreground/60 shrink-0" />
+            : <User className="w-3 h-3 text-muted-foreground/60 shrink-0" />
           }
         </div>
         <div className="flex items-center gap-2 mt-0.5">
@@ -190,7 +190,7 @@ function AssetRow({
         <button onClick={() => onEdit(account)} className="flex items-center gap-4 flex-1 min-w-0 text-left">
           {infoContent}
         </button>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <span className="text-sm font-semibold text-foreground tabular-nums">
             {formatCurrency(displayBalance)}
           </span>
@@ -214,7 +214,7 @@ function AssetRow({
         <button onClick={() => onEdit(account)} className="flex items-center gap-4 flex-1 min-w-0 text-left">
           {infoContent}
         </button>
-        <div className="flex items-center gap-2 flex-shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
           <span className="text-sm font-semibold text-foreground tabular-nums">
             {formatCurrency(displayBalance)}
           </span>
@@ -237,7 +237,7 @@ function AssetRow({
       className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-muted/50 transition-colors text-left group"
     >
       {infoContent}
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="flex items-center gap-2 shrink-0">
         <span className="text-sm font-semibold text-foreground tabular-nums">
           {formatCurrency(displayBalance)}
         </span>
@@ -252,9 +252,9 @@ function AssetRow({
 function LinkedDebtRow({ debt }: { debt: { id: string; name: string; balance: number } }) {
   return (
     <div className="flex items-center gap-2 pl-[52px] pr-5 py-2 border-t border-border/40 bg-background/30">
-      <CornerDownRight className="w-3 h-3 text-border flex-shrink-0" />
+      <CornerDownRight className="w-3 h-3 text-border shrink-0" />
       <span className="text-xs text-muted-foreground flex-1 truncate">{debt.name}</span>
-      <span className="text-xs font-medium text-destructive/80 tabular-nums flex-shrink-0">
+      <span className="text-xs font-medium text-destructive/80 tabular-nums shrink-0">
         -{formatCurrency(debt.balance)}
       </span>
     </div>
@@ -283,15 +283,15 @@ function SubAccountRow({
       })}
       className="w-full flex items-center gap-2 pl-[52px] pr-5 py-2.5 border-t border-border/40 bg-background/30 hover:bg-muted/30 transition-colors text-left group"
     >
-      <CornerDownRight className="w-3 h-3 text-border flex-shrink-0" />
-      <div className={cn('w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0', meta.bg)}>
+      <CornerDownRight className="w-3 h-3 text-border shrink-0" />
+      <div className={cn('w-6 h-6 rounded-lg flex items-center justify-center shrink-0', meta.bg)}>
         <SubIcon className={cn('w-3.5 h-3.5', meta.color)} />
       </div>
       <span className="text-xs text-foreground flex-1 truncate">{sub.name}</span>
-      <span className="text-xs font-medium text-muted-foreground tabular-nums flex-shrink-0">
+      <span className="text-xs font-medium text-muted-foreground tabular-nums shrink-0">
         {formatCurrency(sub.balance)}
       </span>
-      <ChevronRight className="w-3 h-3 text-border group-hover:text-muted-foreground transition-colors flex-shrink-0" />
+      <ChevronRight className="w-3 h-3 text-border group-hover:text-muted-foreground transition-colors shrink-0" />
     </button>
   )
 }
@@ -347,8 +347,8 @@ function HoldingSubRow({
 
   return (
     <div className="flex items-center gap-2 pl-[52px] pr-3 py-2.5 border-t border-border/40 bg-background/30 hover:bg-muted/30 transition-colors group/holding">
-      <CornerDownRight className="w-3 h-3 text-border flex-shrink-0" />
-      <div className="w-5 h-5 rounded-md bg-income-soft flex items-center justify-center flex-shrink-0">
+      <CornerDownRight className="w-3 h-3 text-border shrink-0" />
+      <div className="w-5 h-5 rounded-md bg-income-soft flex items-center justify-center shrink-0">
         <TrendingUp className="w-3 h-3 text-income" />
       </div>
       <div className="flex-1 min-w-0">
@@ -369,7 +369,7 @@ function HoldingSubRow({
       </div>
 
       {/* 현재가 수동 입력 or P&L 표시 */}
-      <div className="text-right flex-shrink-0">
+      <div className="text-right shrink-0">
         {editingPrice ? (
           <div className="flex items-center gap-1">
             <input
@@ -379,7 +379,7 @@ function HoldingSubRow({
               onChange={e => setPriceInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter') savePrice(); if (e.key === 'Escape') setEditingPrice(false) }}
               placeholder="현재가"
-              className="w-24 px-2 py-0.5 text-xs bg-muted border border-border rounded-lg focus:outline-none text-right tabular-nums"
+              className="w-24 px-2 py-0.5 text-xs bg-muted border border-border rounded-lg focus:outline-hidden text-right tabular-nums"
             />
             <button
               onClick={savePrice}
@@ -417,7 +417,7 @@ function HoldingSubRow({
       </div>
 
       {/* 액션 (hover) */}
-      <div className="hidden group-hover/holding:flex items-center gap-0.5 flex-shrink-0">
+      <div className="hidden group-hover/holding:flex items-center gap-0.5 shrink-0">
         <button onClick={() => onEdit(holding)} className="p-1 text-muted-foreground/50 hover:text-foreground rounded transition-colors" title="수정">
           <Pencil className="w-3 h-3" />
         </button>
@@ -611,17 +611,17 @@ export function LiabilityList({ liabilities, totalLiabilities, onEdit, onAdd, cu
               onClick={() => onEdit(account)}
               className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-muted/50 transition-colors text-left group"
             >
-              <div className={cn('w-10 h-10 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center flex-shrink-0', meta.bg)}>
+              <div className={cn('w-10 h-10 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0', meta.bg)}>
                 <MetaIcon className={cn('w-5 h-5 sm:w-4 sm:h-4', meta.color)} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
                   <p className="text-sm font-medium text-foreground truncate">{account.name}</p>
                   {account.shareLevel === 'PUBLIC'
-                    ? <Users className="w-3 h-3 text-muted-foreground/60 flex-shrink-0" />
+                    ? <Users className="w-3 h-3 text-muted-foreground/60 shrink-0" />
                     : account.shareLevel === 'BALANCE_ONLY'
-                    ? <Eye className="w-3 h-3 text-muted-foreground/60 flex-shrink-0" />
-                    : <User className="w-3 h-3 text-muted-foreground/60 flex-shrink-0" />
+                    ? <Eye className="w-3 h-3 text-muted-foreground/60 shrink-0" />
+                    : <User className="w-3 h-3 text-muted-foreground/60 shrink-0" />
                   }
                 </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -634,7 +634,7 @@ export function LiabilityList({ liabilities, totalLiabilities, onEdit, onAdd, cu
                   {meta.label}
                 </p>
               </div>
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex items-center gap-2 shrink-0">
                 <span className="text-sm font-semibold text-destructive tabular-nums">
                   -{formatCurrency(account.balance)}
                 </span>

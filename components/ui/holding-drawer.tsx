@@ -167,7 +167,7 @@ export function HoldingDrawer({ isOpen, onClose, onSuccess, accountId, accountNa
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   placeholder="종목명 또는 티커로 검색 (예: 삼성전자, AAPL)"
-                  className="w-full pl-8 pr-8 py-2 text-sm bg-muted rounded-lg border border-transparent focus:border-border focus:outline-none"
+                  className="w-full pl-8 pr-8 py-2 text-sm bg-muted rounded-lg border border-transparent focus:border-border focus:outline-hidden"
                 />
                 {searching ? (
                   <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground/50 animate-spin" />
@@ -191,7 +191,7 @@ export function HoldingDrawer({ isOpen, onClose, onSuccess, accountId, accountNa
                         <p className="text-sm text-foreground truncate">{r.name}</p>
                         <p className="text-[10px] text-muted-foreground/60 font-mono mt-0.5">{r.ticker}</p>
                       </div>
-                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <div className="flex items-center gap-1.5 shrink-0">
                         <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md ${
                           r.market === 'KOSPI'  ? 'bg-savings/10 text-savings' :
                           r.market === 'KOSDAQ' ? 'bg-income-soft text-income' :
@@ -242,7 +242,7 @@ export function HoldingDrawer({ isOpen, onClose, onSuccess, accountId, accountNa
                 value={name}
                 onChange={e => setName(e.target.value)}
                 placeholder="예: 삼성전자"
-                className="w-full px-3 py-2 text-sm bg-muted rounded-lg border border-transparent focus:border-border focus:outline-none"
+                className="w-full px-3 py-2 text-sm bg-muted rounded-lg border border-transparent focus:border-border focus:outline-hidden"
               />
             </div>
             <div>
@@ -251,7 +251,7 @@ export function HoldingDrawer({ isOpen, onClose, onSuccess, accountId, accountNa
                 value={ticker}
                 onChange={e => setTicker(e.target.value.toUpperCase())}
                 placeholder={market === 'KOSPI' || market === 'KOSDAQ' ? '예: 005930' : '예: AAPL'}
-                className="w-full px-3 py-2 text-sm bg-muted rounded-lg border border-transparent focus:border-border focus:outline-none font-mono"
+                className="w-full px-3 py-2 text-sm bg-muted rounded-lg border border-transparent focus:border-border focus:outline-hidden font-mono"
               />
             </div>
           </div>
@@ -267,7 +267,7 @@ export function HoldingDrawer({ isOpen, onClose, onSuccess, accountId, accountNa
                 placeholder="0"
                 min="0"
                 step="any"
-                className="w-full px-3 py-2 text-sm bg-muted rounded-lg border border-transparent focus:border-border focus:outline-none"
+                className="w-full px-3 py-2 text-sm bg-muted rounded-lg border border-transparent focus:border-border focus:outline-hidden"
               />
             </div>
             <div>
@@ -281,7 +281,7 @@ export function HoldingDrawer({ isOpen, onClose, onSuccess, accountId, accountNa
                 placeholder="0"
                 min="0"
                 step="any"
-                className="w-full px-3 py-2 text-sm bg-muted rounded-lg border border-transparent focus:border-border focus:outline-none"
+                className="w-full px-3 py-2 text-sm bg-muted rounded-lg border border-transparent focus:border-border focus:outline-hidden"
               />
             </div>
           </div>
@@ -301,7 +301,7 @@ export function HoldingDrawer({ isOpen, onClose, onSuccess, accountId, accountNa
               value={memo}
               onChange={e => setMemo(e.target.value)}
               placeholder="투자 메모 (선택)"
-              className="w-full px-3 py-2 text-sm bg-muted rounded-lg border border-transparent focus:border-border focus:outline-none"
+              className="w-full px-3 py-2 text-sm bg-muted rounded-lg border border-transparent focus:border-border focus:outline-hidden"
             />
           </div>
         </div>

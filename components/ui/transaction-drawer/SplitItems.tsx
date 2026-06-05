@@ -76,7 +76,7 @@ export function SplitItems({
                     value={item.description}
                     onChange={e => setSubItems(prev => prev.map((s, i) => i === idx ? { ...s, description: e.target.value } : s))}
                     placeholder="항목명 (예: 소득세)"
-                    className="w-full h-8 bg-background border border-border rounded-lg px-2.5 text-xs outline-none focus:border-ring"
+                    className="w-full h-8 bg-background border border-border rounded-lg px-2.5 text-xs outline-hidden focus:border-ring"
                   />
                   <div className="flex gap-1.5">
                     <div className="relative">
@@ -89,7 +89,7 @@ export function SplitItems({
                           setSubItems(prev => prev.map((s, i) => i === idx ? { ...s, amount: raw } : s))
                         }}
                         placeholder="금액"
-                        className="w-28 h-8 bg-background border border-border rounded-lg px-2.5 text-xs tabular-nums outline-none focus:border-ring"
+                        className="w-28 h-8 bg-background border border-border rounded-lg px-2.5 text-xs tabular-nums outline-hidden focus:border-ring"
                       />
                       {(() => {
                         const total = Number(amount)
@@ -108,7 +108,7 @@ export function SplitItems({
                     <select
                       value={item.category}
                       onChange={e => setSubItems(prev => prev.map((s, i) => i === idx ? { ...s, category: e.target.value } : s))}
-                      className="flex-1 h-8 bg-background border border-border rounded-lg px-2 text-xs outline-none focus:border-ring appearance-none"
+                      className="flex-1 h-8 bg-background border border-border rounded-lg px-2 text-xs outline-hidden focus:border-ring appearance-none"
                     >
                       <option value="">카테고리</option>
                       {cats.map(c => <option key={c.id} value={c.name}>{c.icon} {c.name}</option>)}
@@ -125,7 +125,7 @@ export function SplitItems({
                       )}
                     >
                       <div className={cn(
-                        'w-3 h-3 rounded border flex items-center justify-center flex-shrink-0',
+                        'w-3 h-3 rounded border flex items-center justify-center shrink-0',
                         item.excludeFromBudget ? 'bg-warning border-warning' : 'border-muted-foreground/30'
                       )}>
                         {item.excludeFromBudget && (
@@ -140,7 +140,7 @@ export function SplitItems({
                 </div>
                 <button
                   onClick={() => setSubItems(prev => prev.filter((_, i) => i !== idx))}
-                  className="mt-1 p-1 rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors flex-shrink-0"
+                  className="mt-1 p-1 rounded-lg text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
                 >
                   <X className="w-3.5 h-3.5" />
                 </button>

@@ -53,7 +53,7 @@ function avatarColor(id: string): string {
 function Avatar({ name, userId, size = 'md' }: { name: string | null; userId: string; size?: 'sm' | 'md' }) {
   return (
     <div className={cn(
-      'rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0',
+      'rounded-full flex items-center justify-center text-white font-semibold shrink-0',
       size === 'sm' ? 'w-6 h-6 text-[10px]' : 'w-8 h-8 text-xs',
       avatarColor(userId),
     )}>
@@ -111,7 +111,7 @@ function CommentSection({
               <p className="text-[11px] font-semibold text-foreground/70 mb-0.5">
                 {c.author.name ?? '알 수 없음'}
               </p>
-              <p className="text-xs text-foreground/90 break-words">{c.content}</p>
+              <p className="text-xs text-foreground/90 wrap-break-word">{c.content}</p>
             </div>
             <div className="flex items-center gap-2 mt-0.5 px-1">
               <span className="text-[10px] text-muted-foreground/40">
@@ -139,7 +139,7 @@ function CommentSection({
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && submit()}
           placeholder="댓글 달기..."
-          className="flex-1 text-xs bg-muted/50 border border-border rounded-full px-3 py-1.5 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/30"
+          className="flex-1 text-xs bg-muted/50 border border-border rounded-full px-3 py-1.5 text-foreground placeholder:text-muted-foreground/40 focus:outline-hidden focus:ring-1 focus:ring-primary/30"
         />
         <button
           onClick={submit}
@@ -236,8 +236,8 @@ function TxnRefCard({ txnRef }: { txnRef: TxnRefData }) {
       txnRef.isMasked
         ? 'bg-muted/30 border-border'
         : isExpense
-          ? 'bg-expense-soft border-[var(--viz-red)]/20'
-          : 'bg-income-soft border-[var(--viz-emerald)]/20',
+          ? 'bg-expense-soft border-(--viz-red)/20'
+          : 'bg-income-soft border-(--viz-emerald)/20',
     )}>
       <div className="px-3.5 py-2.5 flex items-center justify-between gap-3">
         <div className="min-w-0">
@@ -257,7 +257,7 @@ function TxnRefCard({ txnRef }: { txnRef: TxnRefData }) {
           </p>
         </div>
         <span className={cn(
-          'text-sm font-bold tabular-nums flex-shrink-0',
+          'text-sm font-bold tabular-nums shrink-0',
           txnRef.isMasked
             ? 'text-muted-foreground/40'
             : isExpense ? 'text-expense' : 'text-income',
@@ -271,8 +271,8 @@ function TxnRefCard({ txnRef }: { txnRef: TxnRefData }) {
           className={cn(
             'flex items-center justify-center gap-1 py-1.5 text-[10px] font-medium border-t transition-colors',
             isExpense
-              ? 'border-[var(--viz-red)]/15 text-muted-foreground hover:text-expense hover:bg-expense-soft'
-              : 'border-[var(--viz-emerald)]/15 text-muted-foreground hover:text-income hover:bg-income-soft',
+              ? 'border-(--viz-red)/15 text-muted-foreground hover:text-expense hover:bg-expense-soft'
+              : 'border-(--viz-emerald)/15 text-muted-foreground hover:text-income hover:bg-income-soft',
           )}
         >
           현금흐름에서 확인
@@ -413,7 +413,7 @@ function PostCard({
         )}
 
         {/* 본문 */}
-        <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap break-words">
+        <p className="text-sm text-foreground/90 leading-relaxed whitespace-pre-wrap wrap-break-word">
           {post.content}
         </p>
 
@@ -504,7 +504,7 @@ function PostComposer({ onPosted }: { onPosted: (post: FamilyPostData) => void }
           }}
           placeholder="가족에게 공유하고 싶은 내용을 작성하세요..."
           rows={2}
-          className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none leading-relaxed"
+          className="w-full resize-none bg-transparent text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-hidden leading-relaxed"
         />
         {focused && (
           <div className="flex items-center justify-between">

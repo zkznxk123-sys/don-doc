@@ -107,7 +107,7 @@ export function BrokerAgentPanel({
       <div className="absolute inset-0 bg-black/60" onClick={onClose} />
       <div className="relative w-full sm:max-w-lg bg-card border border-border rounded-t-2xl sm:rounded-2xl max-h-[85vh] flex flex-col">
         {/* 헤더 */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border flex-shrink-0">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
           <div className="flex items-center gap-2">
             <Bot className="w-4 h-4 text-violet-400" />
             <span className="text-sm font-semibold">AI 에이전트 실행</span>
@@ -127,13 +127,13 @@ export function BrokerAgentPanel({
               <div>
                 <label className="text-[10px] text-muted-foreground/60 uppercase tracking-wider block mb-1.5">투자 예산</label>
                 <div className="flex items-center gap-2">
-                  <Banknote className="w-4 h-4 text-muted-foreground/50 flex-shrink-0" />
+                  <Banknote className="w-4 h-4 text-muted-foreground/50 shrink-0" />
                   <input
                     type="number"
                     value={budget}
                     onChange={e => setBudget(Number(e.target.value))}
                     step={100000}
-                    className="flex-1 bg-muted rounded-lg px-3 py-2 text-sm text-foreground border border-border focus:outline-none focus:border-ring"
+                    className="flex-1 bg-muted rounded-lg px-3 py-2 text-sm text-foreground border border-border focus:outline-hidden focus:border-ring"
                   />
                   <span className="text-xs text-muted-foreground">원</span>
                 </div>
@@ -148,7 +148,7 @@ export function BrokerAgentPanel({
                   <select
                     value={selectedAccountId}
                     onChange={e => setSelectedAccountId(e.target.value)}
-                    className="w-full bg-muted rounded-lg px-3 py-2 text-sm text-foreground border border-border focus:outline-none focus:border-ring"
+                    className="w-full bg-muted rounded-lg px-3 py-2 text-sm text-foreground border border-border focus:outline-hidden focus:border-ring"
                   >
                     {accounts.map(a => (
                       <option key={a.id} value={a.id}>{a.name}</option>
@@ -219,7 +219,7 @@ export function BrokerAgentPanel({
                           </div>
                         </div>
                         {isDone ? (
-                          <div className="flex items-center gap-1 text-income text-xs flex-shrink-0">
+                          <div className="flex items-center gap-1 text-income text-xs shrink-0">
                             <CheckCircle2 className="w-3.5 h-3.5" />
                             <span>완료</span>
                           </div>
@@ -227,7 +227,7 @@ export function BrokerAgentPanel({
                           <button
                             onClick={() => handleExecute(order)}
                             disabled={isExec}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-semibold hover:bg-foreground/90 transition-colors disabled:opacity-50 flex-shrink-0"
+                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-semibold hover:bg-foreground/90 transition-colors disabled:opacity-50 shrink-0"
                           >
                             {isExec ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
                             {isExec ? '주문 중' : '실행'}

@@ -9,7 +9,7 @@ export function TransactionFeedRow({ tx }: { tx: Transaction }) {
   return (
     <div className="flex items-center gap-3 py-2.5 border-b border-border/60 last:border-0">
       <div className={cn(
-        'w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0',
+        'w-7 h-7 rounded-full flex items-center justify-center shrink-0',
         tx.isMasked ? 'bg-muted' : isIncome ? 'bg-income-soft' : 'bg-muted'
       )}>
         {tx.isMasked
@@ -27,13 +27,13 @@ export function TransactionFeedRow({ tx }: { tx: Transaction }) {
         </p>
       </div>
       <span className={cn(
-        'text-xs font-semibold tabular-nums flex-shrink-0',
+        'text-xs font-semibold tabular-nums shrink-0',
         tx.isMasked ? 'text-muted-foreground/60' : isIncome ? 'text-income' : 'text-expense'
       )}>
         {isIncome ? '+' : ''}{formatCurrency(tx.amount)}
       </span>
       {tx.userName && !tx.isMasked && (
-        <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full flex-shrink-0">
+        <span className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full shrink-0">
           {tx.userName}
         </span>
       )}

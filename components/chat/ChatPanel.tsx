@@ -213,7 +213,7 @@ export function ChatPanel({ open, onClose }: { open: boolean; onClose: () => voi
               placeholder="가족 자산에 대해 물어보세요…"
               rows={1}
               disabled={isStreaming}
-              className="flex-1 resize-none rounded-xl border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500/40 disabled:opacity-50"
+              className="flex-1 resize-none rounded-xl border bg-background px-3 py-2 text-sm outline-hidden focus:ring-2 focus:ring-indigo-500/40 disabled:opacity-50"
             />
             <button
               type="submit"

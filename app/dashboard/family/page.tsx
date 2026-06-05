@@ -180,7 +180,7 @@ export default function FamilyPage() {
       <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-6 mb-6">
         <div className="flex items-start justify-between gap-4 mb-6">
           <div className="flex items-center gap-3 flex-1 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-foreground/10 flex items-center justify-center flex-shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-foreground/10 flex items-center justify-center shrink-0">
               <Users className="w-5 h-5 text-foreground" />
             </div>
             {isEditing ? (
@@ -194,18 +194,18 @@ export default function FamilyPage() {
                     if (e.key === 'Escape') handleCancelEdit()
                   }}
                   maxLength={30}
-                  className="flex-1 min-w-0 bg-muted border border-border rounded-lg px-3 py-1.5 text-sm text-foreground outline-none focus:border-ring"
+                  className="flex-1 min-w-0 bg-muted border border-border rounded-lg px-3 py-1.5 text-sm text-foreground outline-hidden focus:border-ring"
                 />
                 <button
                   onClick={handleSaveName}
                   disabled={isSaving}
-                  className="flex-shrink-0 px-3 py-1.5 bg-foreground text-background text-xs font-semibold rounded-lg hover:bg-foreground/90 transition-colors disabled:opacity-50"
+                  className="shrink-0 px-3 py-1.5 bg-foreground text-background text-xs font-semibold rounded-lg hover:bg-foreground/90 transition-colors disabled:opacity-50"
                 >
                   {isSaving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : '저장'}
                 </button>
                 <button
                   onClick={handleCancelEdit}
-                  className="flex-shrink-0 p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+                  className="shrink-0 p-1.5 text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -216,7 +216,7 @@ export default function FamilyPage() {
                 {isCFOLevel && (
                   <button
                     onClick={handleStartEdit}
-                    className="flex-shrink-0 p-1 text-muted-foreground/60 hover:text-foreground/70 transition-colors"
+                    className="shrink-0 p-1 text-muted-foreground/60 hover:text-foreground/70 transition-colors"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
@@ -224,7 +224,7 @@ export default function FamilyPage() {
               </div>
             )}
           </div>
-          <span className="flex-shrink-0 text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-full border border-border">
+          <span className="shrink-0 text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-full border border-border">
             {family.members.length}명
           </span>
         </div>
@@ -249,9 +249,9 @@ export default function FamilyPage() {
               onClick={handleCopy}
               disabled={inviteLoading}
               className={cn(
-                'flex items-center gap-1.5 px-4 py-2 rounded-xl border text-xs font-medium transition-all flex-shrink-0',
+                'flex items-center gap-1.5 px-4 py-2 rounded-xl border text-xs font-medium transition-all shrink-0',
                 copied
-                  ? 'bg-income-soft border-[var(--viz-emerald)]/30 text-income'
+                  ? 'bg-income-soft border-(--viz-emerald)/30 text-income'
                   : 'bg-muted border-border text-foreground/70 hover:text-foreground hover:border-ring'
               )}
             >
@@ -314,7 +314,7 @@ function MemberRow({
   return (
     <div className="flex items-center gap-4 px-5 py-4">
       {/* 아바타 */}
-      <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-xs font-bold', meta.avatar)}>
+      <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-xs font-bold', meta.avatar)}>
         {initials}
       </div>
 
@@ -325,14 +325,14 @@ function MemberRow({
             {member.name ?? '이름 없음'}
           </p>
           {isCurrentUser && (
-            <span className="text-[10px] text-muted-foreground/60 bg-muted px-1.5 py-0.5 rounded-full flex-shrink-0">나</span>
+            <span className="text-[10px] text-muted-foreground/60 bg-muted px-1.5 py-0.5 rounded-full shrink-0">나</span>
           )}
         </div>
         <p className="text-xs text-muted-foreground truncate mt-0.5">{member.email}</p>
       </div>
 
       {/* 역할 배지 + 변경 드롭다운 */}
-      <div className="relative flex-shrink-0">
+      <div className="relative shrink-0">
         {canManage ? (
           <button
             onClick={() => setDropdownOpen(v => !v)}

@@ -216,12 +216,12 @@ export function PortfolioAnalysis({ accounts, investmentSummary, usdKrwRate }: P
               <div key={g.key} className="flex items-center justify-between">
                 <div className="flex items-center gap-1.5 min-w-0">
                   <span
-                    className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
+                    className="w-2.5 h-2.5 rounded-sm shrink-0"
                     style={{ backgroundColor: g.color }}
                   />
                   <span className="text-xs text-muted-foreground truncate">{g.label}</span>
                 </div>
-                <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                <div className="flex items-center gap-1.5 shrink-0 ml-2">
                   <span className="text-xs font-medium text-foreground tabular-nums">{formatKrw(g.value)}</span>
                   <span className="text-[10px] text-muted-foreground/50 tabular-nums w-9 text-right">{pct.toFixed(1)}%</span>
                 </div>
@@ -238,7 +238,7 @@ export function PortfolioAnalysis({ accounts, investmentSummary, usdKrwRate }: P
 
           <div className="flex gap-4 items-center">
             {/* 도넛 차트 */}
-            <div className="w-28 h-28 flex-shrink-0">
+            <div className="w-28 h-28 shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <RePieChart>
                   <Pie
@@ -280,7 +280,7 @@ export function PortfolioAnalysis({ accounts, investmentSummary, usdKrwRate }: P
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-1.5 min-w-0 pt-0.5">
                         <span
-                          className="w-2 h-2 rounded-full flex-shrink-0 mt-0.5"
+                          className="w-2 h-2 rounded-full shrink-0 mt-0.5"
                           style={{ backgroundColor: slice.color }}
                         />
                         <div className="min-w-0">
@@ -290,7 +290,7 @@ export function PortfolioAnalysis({ accounts, investmentSummary, usdKrwRate }: P
                           </p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5 flex-shrink-0 pt-0.5">
+                      <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
                         {slice.pnlPct != null && slice.pnl != null && (
                           <span className={cn(
                             'text-[10px] tabular-nums flex items-center gap-0.5',

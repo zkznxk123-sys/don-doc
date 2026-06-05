@@ -338,7 +338,7 @@ function PensionCard({
       {/* 헤더 */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center flex-shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center shrink-0">
             <PiggyBank className="w-4 h-4 text-teal-600 dark:text-teal-400" />
           </div>
           <div className="min-w-0">
@@ -374,7 +374,7 @@ function PensionCard({
         </div>
         <button
           onClick={onEdit}
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground/40 hover:text-foreground hover:bg-muted transition-colors flex-shrink-0"
+          className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground/40 hover:text-foreground hover:bg-muted transition-colors shrink-0"
         >
           <Pencil className="w-3.5 h-3.5" />
         </button>
@@ -457,7 +457,7 @@ function PensionCard({
           remainingYears <= 0
             ? 'bg-income-soft text-income'
             : 'bg-muted/50 text-muted-foreground')}>
-          <Clock className="w-3.5 h-3.5 flex-shrink-0" />
+          <Clock className="w-3.5 h-3.5 shrink-0" />
           {remainingYears <= 0
             ? '수령 가능 연령 도달'
             : `수령 시작까지 약 ${remainingYears}년 남음 (${account.ownerBirthYear! + account.pensionStartAge!}년 예정)`}
@@ -530,7 +530,7 @@ function PensionCard({
       {showDetail && withdrawable && (
         <div className={cn('px-3 py-2.5 rounded-xl mb-2.5 text-[11px] -mt-2',
           withdrawable.canWithdraw && withdrawable.taxRate > 0.1
-            ? 'bg-expense-soft border border-[var(--viz-red)]/20 text-expense'
+            ? 'bg-expense-soft border border-(--viz-red)/20 text-expense'
             : 'bg-muted/40 text-muted-foreground'
         )}>
           {withdrawable.note}

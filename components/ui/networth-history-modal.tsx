@@ -119,7 +119,7 @@ export function NetWorthHistoryModal({
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-xs" />
 
       {/* Modal */}
       <div
@@ -152,7 +152,7 @@ export function NetWorthHistoryModal({
               value={yearMonth}
               max={defaultYearMonth}
               onChange={e => setYearMonth(e.target.value)}
-              className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-none focus:border-blue-500 transition-colors [color-scheme:dark]"
+              className="w-full bg-muted border border-border rounded-xl px-4 py-3 text-sm text-foreground focus:outline-hidden focus:border-blue-500 transition-colors scheme-dark"
             />
           </div>
 
@@ -166,7 +166,7 @@ export function NetWorthHistoryModal({
                 placeholder="0"
                 value={assetsRaw}
                 onChange={e => handleAssetsChange(e.target.value)}
-                className="w-full bg-muted border border-border rounded-xl pl-4 pr-8 py-3 text-sm text-foreground placeholder-muted-foreground/40 focus:outline-none focus:border-blue-500 transition-colors tabular-nums"
+                className="w-full bg-muted border border-border rounded-xl pl-4 pr-8 py-3 text-sm text-foreground placeholder-muted-foreground/40 focus:outline-hidden focus:border-blue-500 transition-colors tabular-nums"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">원</span>
             </div>
@@ -182,7 +182,7 @@ export function NetWorthHistoryModal({
                 placeholder="0"
                 value={liabilitiesRaw}
                 onChange={e => handleLiabilitiesChange(e.target.value)}
-                className="w-full bg-muted border border-border rounded-xl pl-4 pr-8 py-3 text-sm text-foreground placeholder-muted-foreground/40 focus:outline-none focus:border-destructive transition-colors tabular-nums"
+                className="w-full bg-muted border border-border rounded-xl pl-4 pr-8 py-3 text-sm text-foreground placeholder-muted-foreground/40 focus:outline-hidden focus:border-destructive transition-colors tabular-nums"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">원</span>
             </div>

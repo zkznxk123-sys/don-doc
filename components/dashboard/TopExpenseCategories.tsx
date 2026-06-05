@@ -51,7 +51,7 @@ export function TopExpenseCategories({ transactions }: { transactions: Transacti
               onClick={() => setExpanded(isOpen ? null : cat.category)}
               className="w-full flex items-center gap-3 py-1.5 hover:bg-muted/40 rounded-lg px-1 transition-colors"
             >
-              <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: CAT_COLORS[i] }} />
+              <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: CAT_COLORS[i] }} />
               <span className="text-xs text-muted-foreground flex-1 truncate text-left">{cat.category}</span>
               <span className="text-xs text-muted-foreground tabular-nums w-6 text-right">{pct}%</span>
               <span className="text-xs font-medium text-foreground tabular-nums w-20 text-right">

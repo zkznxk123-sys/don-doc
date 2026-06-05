@@ -95,7 +95,7 @@ export function TargetPropertyDrawer({
                 value={area}
                 onChange={e => setArea(e.target.value)}
                 placeholder="예: 84.98"
-                className="w-full h-10 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors"
+                className="w-full h-10 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-hidden focus:border-ring transition-colors"
               />
               {area && (
                 <p className="text-[10px] text-muted-foreground/50 mt-1">{Math.round(parseFloat(area) / 3.305)}평</p>
@@ -113,7 +113,7 @@ export function TargetPropertyDrawer({
                     if (/^\d*$/.test(raw)) setBudget(Number(raw).toLocaleString())
                   }}
                   placeholder="예: 1,200,000,000"
-                  className="w-full h-10 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors"
+                  className="w-full h-10 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-hidden focus:border-ring transition-colors"
                 />
                 {budget && (
                   <p className="text-[10px] text-muted-foreground/50 mt-1">{toKoreanUnit(parseNum(budget) ?? 0)}</p>
@@ -129,7 +129,7 @@ export function TargetPropertyDrawer({
               value={memo}
               onChange={e => setMemo(e.target.value)}
               placeholder="예: 초등학교 근처, 2028년 입주 목표"
-              className="w-full h-10 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors"
+              className="w-full h-10 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-hidden focus:border-ring transition-colors"
             />
           </div>
         </div>

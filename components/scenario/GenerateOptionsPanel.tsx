@@ -84,7 +84,7 @@ export function GenerateOptionsPanel({
               onChange={e => setDirective(e.target.value)}
               placeholder="예: 마통 상환 우선, 갈아타기 준비 중, 연금 비중 늘리기..."
               rows={2}
-              className="w-full text-xs bg-muted/50 border border-border rounded-xl px-3 py-2 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/30 resize-none"
+              className="w-full text-xs bg-muted/50 border border-border rounded-xl px-3 py-2 text-foreground placeholder:text-muted-foreground/40 focus:outline-hidden focus:ring-1 focus:ring-primary/30 resize-none"
             />
           </div>
 
@@ -176,7 +176,7 @@ export function GenerateOptionsPanel({
                       )}
                     >
                       <span className={cn(
-                        'w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-colors mt-0.5',
+                        'w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-colors mt-0.5',
                         active ? 'bg-primary border-primary' : 'border-muted-foreground/30',
                       )}>
                         {active && <Check className="w-2.5 h-2.5 text-primary-foreground" />}

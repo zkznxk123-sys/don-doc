@@ -1,17 +1,303 @@
 /* ── Pretendard — brand sans (9 weights, local OTF) ──────────────────── */
-@font-face { font-family: 'Pretendard'; font-weight: 100; font-style: normal; font-display: swap; src: url('/fonts/Pretendard-Thin.otf') format('opentype'); }
-@font-face { font-family: 'Pretendard'; font-weight: 200; font-style: normal; font-display: swap; src: url('/fonts/Pretendard-ExtraLight.otf') format('opentype'); }
-@font-face { font-family: 'Pretendard'; font-weight: 300; font-style: normal; font-display: swap; src: url('/fonts/Pretendard-Light.otf') format('opentype'); }
-@font-face { font-family: 'Pretendard'; font-weight: 400; font-style: normal; font-display: swap; src: url('/fonts/Pretendard-Regular.otf') format('opentype'); }
-@font-face { font-family: 'Pretendard'; font-weight: 500; font-style: normal; font-display: swap; src: url('/fonts/Pretendard-Medium.otf') format('opentype'); }
-@font-face { font-family: 'Pretendard'; font-weight: 600; font-style: normal; font-display: swap; src: url('/fonts/Pretendard-SemiBold.otf') format('opentype'); }
-@font-face { font-family: 'Pretendard'; font-weight: 700; font-style: normal; font-display: swap; src: url('/fonts/Pretendard-Bold.otf') format('opentype'); }
-@font-face { font-family: 'Pretendard'; font-weight: 800; font-style: normal; font-display: swap; src: url('/fonts/Pretendard-ExtraBold.otf') format('opentype'); }
-@font-face { font-family: 'Pretendard'; font-weight: 900; font-style: normal; font-display: swap; src: url('/fonts/Pretendard-Black.otf') format('opentype'); }
+@import 'tailwindcss';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@custom-variant dark (&:is(.dark *));
+
+@utility container {
+  margin-inline: auto;
+  padding-inline: 2rem;
+  @media (width >= --theme(--breakpoint-sm)) {
+    max-width: none;
+  }
+  @media (width >= 1400px) {
+    max-width: 1400px;
+  }
+}
+
+@theme {
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
+  --font-mono: var(--font-mono);
+
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-viz-emerald: var(--viz-emerald);
+  --color-viz-blue: var(--viz-blue);
+  --color-viz-violet: var(--viz-violet);
+  --color-viz-purple: var(--viz-purple);
+  --color-viz-amber: var(--viz-amber);
+  --color-viz-orange: var(--viz-orange);
+  --color-viz-red: var(--viz-red);
+  --color-viz-rose: var(--viz-rose);
+  --color-viz-pink: var(--viz-pink);
+  --color-viz-sky: var(--viz-sky);
+  --color-viz-mint: var(--viz-mint);
+  --color-viz-gold: var(--viz-gold);
+
+  --radius-sm: var(--radius-sm);
+  --radius: var(--radius);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius-lg);
+  --radius-xl: var(--radius-xl);
+  --radius-2xl: var(--radius-2xl);
+  --radius-full: var(--radius-full);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-float: var(--shadow-float);
+  --shadow-card-xl: var(--shadow-xl);
+
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+  --animate-fade-up: fade-up 0.55s ease-out both;
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
+  }
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
+  }
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+/* ── Component classes ───────────────────────────────────────────────────── */
+@utility card-surface {
+  /* Card surface: ambient shadow (light) / ghost border (dark) */
+  @apply bg-card rounded-2xl;
+  box-shadow: var(--shadow-card);
+  .dark & {
+    box-shadow: none;
+    @apply border border-border;
+  }
+}
+@utility dark {
+  & .card-surface {
+    box-shadow: none;
+    @apply border border-border;
+  }
+}
+
+/* ── Utility classes ─────────────────────────────────────────────────────── */
+@utility card-elevated {
+  /* Card ambient shadow (light mode only) */
+  box-shadow: var(--shadow-card);
+}
+@utility float-elevated {
+  box-shadow: var(--shadow-float);
+}
+@utility shadow-card-xl {
+  box-shadow: var(--shadow-xl);
+}
+@utility text-income {
+  /* Semantic color utilities (income / expense / savings / warning) */
+  color: var(--viz-emerald);
+}
+@utility text-expense {
+  color: var(--viz-red);
+}
+@utility text-savings {
+  color: var(--viz-blue);
+}
+@utility text-warning {
+  color: var(--viz-amber);
+}
+@utility bg-income-soft {
+  background: rgb(16 185 129 / 0.1);
+}
+@utility bg-expense-soft {
+  background: rgb(239 68 68 / 0.1);
+}
+@utility bg-savings-soft {
+  background: rgb(59 130 246 / 0.1);
+}
+@utility bg-warning-soft {
+  background: rgb(245 158 11 / 0.1);
+}
+@utility bg-income {
+  /* Solid viz bg utilities — Progress bar·badge·아바타 등에서 사용 */
+  background-color: var(--viz-emerald);
+}
+@utility bg-expense {
+  background-color: var(--viz-red);
+}
+@utility bg-savings {
+  background-color: var(--viz-blue);
+}
+@utility bg-warning {
+  background-color: var(--viz-amber);
+}
+@utility border-income {
+  border-color: var(--viz-emerald);
+}
+@utility border-expense {
+  border-color: var(--viz-red);
+}
+@utility border-savings {
+  border-color: var(--viz-blue);
+}
+@utility border-warning {
+  border-color: var(--viz-amber);
+}
+@utility eyebrow {
+  /* Eyebrow — uppercase label above sections */
+  font-size: 11px;
+  font-weight: 500;
+  color: hsl(var(--secondary));
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+@utility numeric-display {
+  /* Numeric · Hero display — Serif, editorial magazine tone */
+  font-family: var(--font-serif);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+@utility numeric {
+  /* Numeric · UI (KPI cards, tables, transaction rows) */
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+@utility text-muted {
+  /* Muted / meta text */
+  color: hsl(var(--muted-foreground));
+}
+@utility text-meta {
+  font-size: 11px;
+  color: hsl(var(--muted-foreground));
+}
+
+@layer base {
+  @font-face {
+    font-family: 'Pretendard';
+    font-weight: 100;
+    font-style: normal;
+    font-display: swap;
+    src: url('/fonts/Pretendard-Thin.otf') format('opentype');
+  }
+  @font-face {
+    font-family: 'Pretendard';
+    font-weight: 200;
+    font-style: normal;
+    font-display: swap;
+    src: url('/fonts/Pretendard-ExtraLight.otf') format('opentype');
+  }
+  @font-face {
+    font-family: 'Pretendard';
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+    src: url('/fonts/Pretendard-Light.otf') format('opentype');
+  }
+  @font-face {
+    font-family: 'Pretendard';
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+    src: url('/fonts/Pretendard-Regular.otf') format('opentype');
+  }
+  @font-face {
+    font-family: 'Pretendard';
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+    src: url('/fonts/Pretendard-Medium.otf') format('opentype');
+  }
+  @font-face {
+    font-family: 'Pretendard';
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+    src: url('/fonts/Pretendard-SemiBold.otf') format('opentype');
+  }
+  @font-face {
+    font-family: 'Pretendard';
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+    src: url('/fonts/Pretendard-Bold.otf') format('opentype');
+  }
+  @font-face {
+    font-family: 'Pretendard';
+    font-weight: 800;
+    font-style: normal;
+    font-display: swap;
+    src: url('/fonts/Pretendard-ExtraBold.otf') format('opentype');
+  }
+  @font-face {
+    font-family: 'Pretendard';
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+    src: url('/fonts/Pretendard-Black.otf') format('opentype');
+  }
+}
 
 @layer base {
   :root {
@@ -159,85 +445,4 @@
   [class*="bg-muted"], [class*="bg-popover"] {
     transition: background-color 0.3s ease, border-color 0.3s ease;
   }
-}
-
-/* ── Component classes ───────────────────────────────────────────────────── */
-@layer components {
-  /* Card surface: ambient shadow (light) / ghost border (dark) */
-  .card-surface {
-    @apply bg-card rounded-2xl;
-    box-shadow: var(--shadow-card);
-  }
-  .dark .card-surface {
-    box-shadow: none;
-    @apply border border-border;
-  }
-}
-
-/* ── Utility classes ─────────────────────────────────────────────────────── */
-@layer utilities {
-  /* Card ambient shadow (light mode only) */
-  .card-elevated {
-    box-shadow: var(--shadow-card);
-  }
-  .float-elevated {
-    box-shadow: var(--shadow-float);
-  }
-  .shadow-card-xl {
-    box-shadow: var(--shadow-xl);
-  }
-
-  /* Semantic color utilities (income / expense / savings / warning) */
-  .text-income   { color: var(--viz-emerald); }
-  .text-expense  { color: var(--viz-red); }
-  .text-savings  { color: var(--viz-blue); }
-  .text-warning  { color: var(--viz-amber); }
-
-  .bg-income-soft  { background: rgb(16 185 129 / 0.1); }
-  .bg-expense-soft { background: rgb(239 68 68 / 0.1); }
-  .bg-savings-soft { background: rgb(59 130 246 / 0.1); }
-  .bg-warning-soft { background: rgb(245 158 11 / 0.1); }
-
-  /* Solid viz bg utilities — Progress bar·badge·아바타 등에서 사용 */
-  .bg-income   { background-color: var(--viz-emerald); }
-  .bg-expense  { background-color: var(--viz-red); }
-  .bg-savings  { background-color: var(--viz-blue); }
-  .bg-warning  { background-color: var(--viz-amber); }
-  .border-income  { border-color: var(--viz-emerald); }
-  .border-expense { border-color: var(--viz-red); }
-  .border-savings { border-color: var(--viz-blue); }
-  .border-warning { border-color: var(--viz-amber); }
-
-  /* Eyebrow — uppercase label above sections */
-  .eyebrow {
-    font-size: 11px;
-    font-weight: 500;
-    color: hsl(var(--secondary));
-    text-transform: uppercase;
-    letter-spacing: 0.16em;
-  }
-
-  /* Numeric · Hero display — Serif, editorial magazine tone */
-  .numeric-display {
-    font-family: var(--font-serif);
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* Numeric · UI (KPI cards, tables, transaction rows) */
-  .numeric {
-    font-family: var(--font-sans);
-    font-weight: 600;
-    font-variant-numeric: tabular-nums;
-    letter-spacing: -0.01em;
-  }
-
-  .tabular {
-    font-variant-numeric: tabular-nums;
-  }
-
-  /* Muted / meta text */
-  .text-muted { color: hsl(var(--muted-foreground)); }
-  .text-meta  { font-size: 11px; color: hsl(var(--muted-foreground)); }
 }

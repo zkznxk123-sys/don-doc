@@ -12,17 +12,17 @@ export function InsightCard({ label, icon, actual, target, type, isRate = false 
   let barColor = 'bg-muted', valueColor = 'text-foreground', statusText = ''
   if (hasTarget) {
     if (type === 'income') {
-      if (pct >= 100) { barColor = 'bg-[var(--viz-emerald)]'; valueColor = 'text-income'; statusText = '목표 달성!' }
-      else if (pct >= 70) { barColor = 'bg-[var(--viz-amber)]'; valueColor = 'text-warning'; statusText = `${pct}% 달성` }
-      else { barColor = 'bg-[var(--viz-red)]'; valueColor = 'text-expense'; statusText = `${pct}% 달성` }
+      if (pct >= 100) { barColor = 'bg-(--viz-emerald)'; valueColor = 'text-income'; statusText = '목표 달성!' }
+      else if (pct >= 70) { barColor = 'bg-(--viz-amber)'; valueColor = 'text-warning'; statusText = `${pct}% 달성` }
+      else { barColor = 'bg-(--viz-red)'; valueColor = 'text-expense'; statusText = `${pct}% 달성` }
     } else if (type === 'expense') {
-      if (pct <= 80) { barColor = 'bg-[var(--viz-emerald)]'; valueColor = 'text-income'; statusText = '절약 중!' }
-      else if (pct <= 100) { barColor = 'bg-[var(--viz-amber)]'; valueColor = 'text-warning'; statusText = `${pct}% 사용` }
-      else { barColor = 'bg-[var(--viz-red)]'; valueColor = 'text-expense'; statusText = `초과 ${pct - 100}%` }
+      if (pct <= 80) { barColor = 'bg-(--viz-emerald)'; valueColor = 'text-income'; statusText = '절약 중!' }
+      else if (pct <= 100) { barColor = 'bg-(--viz-amber)'; valueColor = 'text-warning'; statusText = `${pct}% 사용` }
+      else { barColor = 'bg-(--viz-red)'; valueColor = 'text-expense'; statusText = `초과 ${pct - 100}%` }
     } else {
-      if (pct >= 100) { barColor = 'bg-[var(--viz-emerald)]'; valueColor = 'text-income'; statusText = '목표 달성!' }
-      else if (pct >= 70) { barColor = 'bg-[var(--viz-amber)]'; valueColor = 'text-warning'; statusText = `${pct}% 달성` }
-      else { barColor = 'bg-[var(--viz-red)]'; valueColor = 'text-expense'; statusText = `${pct}% 달성` }
+      if (pct >= 100) { barColor = 'bg-(--viz-emerald)'; valueColor = 'text-income'; statusText = '목표 달성!' }
+      else if (pct >= 70) { barColor = 'bg-(--viz-amber)'; valueColor = 'text-warning'; statusText = `${pct}% 달성` }
+      else { barColor = 'bg-(--viz-red)'; valueColor = 'text-expense'; statusText = `${pct}% 달성` }
     }
   }
   return (

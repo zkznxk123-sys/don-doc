@@ -246,7 +246,7 @@ function SettingsClient() {
       <section className="rounded-2xl border border-border bg-card/30 p-5 mb-4">
         <h2 className="text-sm font-semibold text-foreground/70 mb-3">프로필</h2>
         <div className="flex items-center gap-3 p-3 rounded-xl">
-          <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-muted flex items-center justify-center shrink-0">
             <User className="w-4 h-4 text-muted-foreground" />
           </div>
           <div className="flex-1 min-w-0">
@@ -258,7 +258,7 @@ function SettingsClient() {
                   value={nameInput}
                   onChange={e => setNameInput(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') handleSaveName(); if (e.key === 'Escape') setIsEditingName(false) }}
-                  className="text-sm font-medium bg-transparent border-b border-foreground/30 focus:border-foreground outline-none w-40"
+                  className="text-sm font-medium bg-transparent border-b border-foreground/30 focus:border-foreground outline-hidden w-40"
                   autoFocus
                   maxLength={20}
                 />
@@ -349,7 +349,7 @@ function SettingsClient() {
               : 'border-border hover:bg-muted/30 cursor-pointer'
           }`}
         >
-          <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
+          <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
             aiMode === 'api' ? 'bg-foreground/10' : 'bg-muted'
           }`}>
             <Zap className={`w-4 h-4 ${aiMode === 'api' ? 'text-foreground' : 'text-muted-foreground'}`} />
@@ -359,7 +359,7 @@ function SettingsClient() {
             <p className="text-xs text-muted-foreground mt-0.5">GPT-4o-mini · 빠르고 안정적</p>
           </div>
           {aiMode === 'api' && (
-            <span className="text-xs font-medium text-foreground/50 flex-shrink-0">사용 중</span>
+            <span className="text-xs font-medium text-foreground/50 shrink-0">사용 중</span>
           )}
         </button>
 
@@ -395,7 +395,7 @@ function SettingsClient() {
               style={isActive ? { borderColor: cfg.activeBorderColor } : undefined}
             >
               {/* 프로바이더 아이콘 */}
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors font-bold text-sm ${
+              <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-colors font-bold text-sm ${
                 isActive || isUsable ? cfg.iconBg : 'bg-muted'
               } ${isActive || isUsable ? cfg.iconColor : 'text-muted-foreground'}`}>
                 {cfg.letter}
@@ -417,13 +417,13 @@ function SettingsClient() {
 
               {/* 액션 */}
               {isActive ? (
-                <span className={`text-xs font-semibold flex-shrink-0 ${cfg.activeText}`}>사용 중</span>
+                <span className={`text-xs font-semibold shrink-0 ${cfg.activeText}`}>사용 중</span>
               ) : isProxyOffline ? (
-                <span className="text-[10px] font-medium text-muted-foreground/60 flex-shrink-0 px-2 py-1 rounded-lg bg-muted/50 border border-border">오프라인</span>
+                <span className="text-[10px] font-medium text-muted-foreground/60 shrink-0 px-2 py-1 rounded-lg bg-muted/50 border border-border">오프라인</span>
               ) : isUnusable ? (
-                <span className="text-[10px] font-medium text-muted-foreground/60 flex-shrink-0 px-2 py-1 rounded-lg bg-muted/50 border border-border">미연결</span>
+                <span className="text-[10px] font-medium text-muted-foreground/60 shrink-0 px-2 py-1 rounded-lg bg-muted/50 border border-border">미연결</span>
               ) : (
-                <span className="text-xs font-medium text-foreground/50 flex-shrink-0 px-2 py-1 rounded-lg bg-muted border border-border">전환</span>
+                <span className="text-xs font-medium text-foreground/50 shrink-0 px-2 py-1 rounded-lg bg-muted border border-border">전환</span>
               )}
             </button>
           )
@@ -449,7 +449,7 @@ function SettingsClient() {
                 key={cfg.id}
                 className="flex items-center gap-3 p-3 rounded-xl border border-border mb-2 last:mb-0"
               >
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-bold text-sm ${
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-bold text-sm ${
                   account ? cfg.iconBg : 'bg-muted'
                 } ${account ? cfg.iconColor : 'text-muted-foreground'}`}>
                   {cfg.letter}
@@ -471,14 +471,14 @@ function SettingsClient() {
                   <button
                     onClick={() => handleDisconnect(cfg.id)}
                     disabled={isDisconnecting}
-                    className="flex-shrink-0 text-xs font-medium px-3 h-8 rounded-xl bg-card border border-border text-muted-foreground hover:text-foreground hover:border-ring transition-colors disabled:opacity-50"
+                    className="shrink-0 text-xs font-medium px-3 h-8 rounded-xl bg-card border border-border text-muted-foreground hover:text-foreground hover:border-ring transition-colors disabled:opacity-50"
                   >
                     {isDisconnecting ? '해제 중...' : '해제'}
                   </button>
                 ) : (
                   <button
                     onClick={() => setOauthDialog({ open: true, provider: cfg.id, label: cfg.label })}
-                    className="flex-shrink-0 text-xs font-semibold px-3 h-8 rounded-xl bg-foreground text-background hover:opacity-90 transition-opacity"
+                    className="shrink-0 text-xs font-semibold px-3 h-8 rounded-xl bg-foreground text-background hover:opacity-90 transition-opacity"
                   >
                     연결
                   </button>
@@ -547,7 +547,7 @@ function SettingsClient() {
               <AlertDialogTrigger asChild>
                 <button
                   disabled={isDeletingZero}
-                  className="flex-shrink-0 flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-medium bg-card border border-border text-muted-foreground hover:text-foreground hover:border-ring transition-colors disabled:opacity-50"
+                  className="shrink-0 flex items-center gap-1.5 px-3 h-8 rounded-xl text-xs font-medium bg-card border border-border text-muted-foreground hover:text-foreground hover:border-ring transition-colors disabled:opacity-50"
                 >
                   <Trash2 className="w-3 h-3" />
                   삭제
@@ -597,7 +597,7 @@ function SettingsClient() {
             <AlertDialogTrigger asChild>
               <button
                 disabled={isLoading}
-                className="flex-shrink-0 flex items-center gap-2 px-4 h-9 rounded-xl text-sm font-semibold bg-expense-soft text-destructive border transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80"
+                className="shrink-0 flex items-center gap-2 px-4 h-9 rounded-xl text-sm font-semibold bg-expense-soft text-destructive border transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80"
                 style={{ borderColor: 'rgba(239,68,68,0.3)' }}
               >
                 <Trash2 className="w-3.5 h-3.5" />

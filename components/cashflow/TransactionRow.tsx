@@ -69,7 +69,7 @@ function TxnShareModal({ tx, onClose }: { tx: Transaction; onClose: () => void }
   const dateStr = new Date(tx.date).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40 backdrop-blur-xs" onClick={onClose}>
       <div
         className="bg-card border border-border rounded-2xl w-full max-w-sm shadow-xl space-y-3 p-4"
         onClick={e => e.stopPropagation()}
@@ -83,7 +83,7 @@ function TxnShareModal({ tx, onClose }: { tx: Transaction; onClose: () => void }
             <p className="text-sm text-foreground truncate">{tx.isMasked ? '비공개 거래' : tx.description}</p>
           </div>
           <p className={cn(
-            'text-sm font-semibold tabular-nums flex-shrink-0',
+            'text-sm font-semibold tabular-nums shrink-0',
             tx.amount > 0 ? 'text-income' : 'text-foreground',
           )}>
             {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)}
@@ -121,7 +121,7 @@ function TxnShareModal({ tx, onClose }: { tx: Transaction; onClose: () => void }
           onKeyDown={e => e.key === 'Enter' && (e.metaKey || e.ctrlKey) && submit()}
           placeholder="한마디 남기기... (예: 이 지출 확인해봐, 왜 이렇게 많지?)"
           rows={3}
-          className="w-full resize-none text-sm bg-muted/50 border border-border rounded-xl px-3 py-2.5 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/30"
+          className="w-full resize-none text-sm bg-muted/50 border border-border rounded-xl px-3 py-2.5 text-foreground placeholder:text-muted-foreground/40 focus:outline-hidden focus:ring-1 focus:ring-primary/30"
         />
 
         <div className="flex gap-2 justify-end">
@@ -195,7 +195,7 @@ export function TransactionRow({
             type="text"
             value={effectiveDescription}
             onChange={e => onDraftChange({ description: e.target.value })}
-            className="h-7 bg-muted border border-border rounded-lg px-2 text-xs text-foreground outline-none focus:border-ring transition-colors min-w-0"
+            className="h-7 bg-muted border border-border rounded-lg px-2 text-xs text-foreground outline-hidden focus:border-ring transition-colors min-w-0"
           />
           {/* 금액 input */}
           <div className="relative">
@@ -205,7 +205,7 @@ export function TransactionRow({
               value={Math.abs(effectiveAmount) === 0 ? '' : Math.abs(effectiveAmount).toLocaleString()}
               onChange={e => handleAmountChange(e.target.value)}
               className={cn(
-                'h-7 w-full bg-muted border border-border rounded-lg pl-2 pr-1 text-xs text-right outline-none focus:border-ring transition-colors tabular-nums',
+                'h-7 w-full bg-muted border border-border rounded-lg pl-2 pr-1 text-xs text-right outline-hidden focus:border-ring transition-colors tabular-nums',
                 tx.amount > 0 ? 'text-income' : 'text-foreground'
               )}
             />
@@ -217,7 +217,7 @@ export function TransactionRow({
             <SelectTrigger className="h-7 px-2 text-xs rounded-lg bg-muted border-border focus:ring-0 focus:ring-offset-0">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent position="popper" sideOffset={4} className="z-[9999]">
+            <SelectContent position="popper" sideOffset={4} className="z-9999">
               {!categories.includes(effectiveCategory) && (
                 <SelectItem value={effectiveCategory}>{effectiveCategory}</SelectItem>
               )}
@@ -229,14 +229,14 @@ export function TransactionRow({
           <button
             onClick={() => onDraftChange({ isExcluded: !effectiveExcluded })}
             className={cn(
-              'flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs font-medium border transition-colors flex-shrink-0',
+              'flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-xs font-medium border transition-colors shrink-0',
               effectiveExcluded
                 ? 'bg-accent border-border text-foreground/70'
                 : 'bg-muted/50 border-border/50 text-muted-foreground hover:text-foreground/70'
             )}
           >
             <span className={cn(
-              'w-3.5 h-3.5 rounded-sm border flex items-center justify-center flex-shrink-0',
+              'w-3.5 h-3.5 rounded-sm border flex items-center justify-center shrink-0',
               effectiveExcluded ? 'bg-muted-foreground border-muted-foreground' : 'border-muted-foreground/40'
             )}>
               {effectiveExcluded && <Check className="w-2.5 h-2.5 text-background" />}
@@ -269,8 +269,8 @@ export function TransactionRow({
         className={cn('min-w-0 pr-2 flex items-center gap-1.5', canEdit && !isEditing && 'cursor-pointer')}
         onClick={canEdit && !isEditing ? onEdit : undefined}
       >
-        {tx.isMasked && <EyeOff className="w-3 h-3 text-muted-foreground/60 flex-shrink-0" />}
-        {effectiveExcluded && <span className="text-[9px] text-muted-foreground/60 bg-muted px-1 rounded flex-shrink-0">제외</span>}
+        {tx.isMasked && <EyeOff className="w-3 h-3 text-muted-foreground/60 shrink-0" />}
+        {effectiveExcluded && <span className="text-[9px] text-muted-foreground/60 bg-muted px-1 rounded shrink-0">제외</span>}
         <p className={cn('text-sm truncate', tx.isMasked ? 'text-muted-foreground italic' : 'text-foreground')}>
           {tx.description}
         </p>

@@ -25,7 +25,7 @@ export function BrandMark({ variant = 'symbol', size = 32, className }: BrandMar
         width={size}
         height={size}
         priority
-        className={cn('flex-shrink-0', className)}
+        className={cn('shrink-0', className)}
       />
     )
   }
@@ -40,7 +40,7 @@ export function BrandMark({ variant = 'symbol', size = 32, className }: BrandMar
       width={width}
       height={size}
       priority
-      className={cn('flex-shrink-0', className)}
+      className={cn('shrink-0', className)}
     />
   )
 }

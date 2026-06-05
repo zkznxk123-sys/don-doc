@@ -434,13 +434,13 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
                         : 'bg-muted/40 border-border hover:border-ring hover:bg-muted/70'
                     )}
                   >
-                    <TypeIcon className={cn('w-5 h-5 flex-shrink-0', isSelected ? 'text-background' : t.color)} />
+                    <TypeIcon className={cn('w-5 h-5 shrink-0', isSelected ? 'text-background' : t.color)} />
                     <div>
                       <p className={cn('text-xs font-semibold leading-tight', isSelected ? 'text-background' : 'text-foreground')}>{t.label}</p>
                       <p className={cn('text-[10px] mt-0.5', isSelected ? 'text-background/50' : 'text-muted-foreground')}>{t.desc}</p>
                     </div>
                     {isSelected && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-foreground rounded-full flex items-center justify-center shadow">
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-foreground rounded-full flex items-center justify-center shadow-sm">
                         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                           <path d="M2 5.5L4 7.5L8 3" stroke="currentColor" className="text-background" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
@@ -461,7 +461,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
               onChange={e => setName(e.target.value)}
               placeholder={isProductMode ? '예: TIGER 200 ETF, 채권형 펀드' : isRealEstate ? '예: 래미안위브 아파트' : isDebt ? '예: 주택담보대출' : '예: 생활비 통장'}
               maxLength={30}
-              className="w-full h-11 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors"
+              className="w-full h-11 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-hidden focus:border-ring transition-colors"
             />
           </div>
 
@@ -473,7 +473,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
                 <select
                   value={parentAccountId}
                   onChange={e => setParentAccountId(e.target.value)}
-                  className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-9 text-sm text-foreground outline-none focus:border-ring transition-colors appearance-none"
+                  className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-9 text-sm text-foreground outline-hidden focus:border-ring transition-colors appearance-none"
                 >
                   <option value="">없음 (최상위)</option>
                   {eligibleParents.map(p => (
@@ -500,7 +500,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
                 value={balance}
                 onChange={e => setBalance(fmtNum(e.target.value))}
                 placeholder="0"
-                className="w-full h-11 bg-card border border-border rounded-xl pl-4 pr-10 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors tabular-nums"
+                className="w-full h-11 bg-card border border-border rounded-xl pl-4 pr-10 text-sm text-foreground placeholder-muted-foreground/40 outline-hidden focus:border-ring transition-colors tabular-nums"
               />
               <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">원</span>
             </div>
@@ -545,7 +545,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
                   <select
                     value={rePropertyType}
                     onChange={e => setRePropertyType(e.target.value)}
-                    className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-9 text-sm text-foreground outline-none focus:border-ring transition-colors appearance-none"
+                    className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-9 text-sm text-foreground outline-hidden focus:border-ring transition-colors appearance-none"
                   >
                     <option value="">선택 안 함</option>
                     {PROPERTY_TYPES.map(pt => (
@@ -564,7 +564,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
                     value={reArea}
                     onChange={e => setReArea(e.target.value)}
                     placeholder="예: 84.98"
-                    className="w-full h-10 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors"
+                    className="w-full h-10 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-hidden focus:border-ring transition-colors"
                   />
                   {reArea && <p className="text-[10px] text-muted-foreground/50 mt-1">{Math.round(parseFloat(reArea) / 3.305)}평</p>}
                 </div>
@@ -575,7 +575,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
                     value={reFloor}
                     onChange={e => setReFloor(e.target.value)}
                     placeholder="예: 15"
-                    className="w-full h-10 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors"
+                    className="w-full h-10 bg-card border border-border rounded-xl px-4 text-sm text-foreground placeholder-muted-foreground/40 outline-hidden focus:border-ring transition-colors"
                   />
                 </div>
               </div>
@@ -624,7 +624,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
                   <select
                     value={dDebtType}
                     onChange={e => setDDebtType(e.target.value as DebtType)}
-                    className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-9 text-sm text-foreground outline-none focus:border-ring transition-colors appearance-none"
+                    className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-9 text-sm text-foreground outline-hidden focus:border-ring transition-colors appearance-none"
                   >
                     {DEBT_TYPES.map(dt => (
                       <option key={dt.value} value={dt.value}>{dt.label}</option>
@@ -660,7 +660,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
                   <select
                     value={linkedAssetId}
                     onChange={e => setLinkedAssetId(e.target.value)}
-                    className="w-full h-10 bg-card rounded-xl pl-4 pr-9 text-sm text-foreground outline-none transition-colors appearance-none border border-border focus:border-ring"
+                    className="w-full h-10 bg-card rounded-xl pl-4 pr-9 text-sm text-foreground outline-hidden transition-colors appearance-none border border-border focus:border-ring"
                     style={needsLinkedAsset && !linkedAssetId ? { borderColor: 'rgba(245,158,11,0.5)' } : undefined}
                   >
                     <option value="">없음</option>
@@ -693,7 +693,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
                     <select
                       value={dRepaymentType}
                       onChange={e => setDRepaymentType(e.target.value as RepaymentType | '')}
-                      className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-9 text-sm text-foreground outline-none focus:border-ring transition-colors appearance-none"
+                      className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-9 text-sm text-foreground outline-hidden focus:border-ring transition-colors appearance-none"
                     >
                       <option value="">선택 안 함</option>
                       {REPAYMENT_TYPES.map(rt => (
@@ -716,7 +716,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
                 <select
                   value={pOwnerId}
                   onChange={e => setPOwnerId(e.target.value)}
-                  className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-9 text-sm text-foreground outline-none focus:border-ring transition-colors appearance-none"
+                  className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-9 text-sm text-foreground outline-hidden focus:border-ring transition-colors appearance-none"
                 >
                   <option value="">미설정</option>
                   <option value="__joint__">공동</option>
@@ -746,7 +746,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
                       isSelected ? s.bg : 'bg-card border-border hover:border-ring'
                     )}
                   >
-                    <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0', isSelected ? 'bg-foreground/10' : 'bg-muted')}>
+                    <div className={cn('w-8 h-8 rounded-lg flex items-center justify-center shrink-0', isSelected ? 'bg-foreground/10' : 'bg-muted')}>
                       <ShareIcon className={cn('w-4 h-4', isSelected ? s.color : 'text-muted-foreground')} />
                     </div>
                     <div className="flex-1 min-w-0">
@@ -754,7 +754,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
                       <p className="text-xs text-muted-foreground mt-0.5">{s.desc}</p>
                     </div>
                     <div className={cn(
-                      'w-4 h-4 rounded-full border-2 flex-shrink-0 transition-all',
+                      'w-4 h-4 rounded-full border-2 shrink-0 transition-all',
                       isSelected ? `border-current ${s.color} bg-current scale-110` : 'border-border'
                     )} />
                   </button>

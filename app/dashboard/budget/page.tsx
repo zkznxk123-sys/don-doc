@@ -329,7 +329,7 @@ export default function BudgetPage() {
                   value={goalInput.targetIncome}
                   onChange={e => handleIncomeChange(e.target.value)}
                   placeholder="0"
-                  className="w-full h-11 bg-muted border border-border rounded-xl px-3 text-sm font-bold text-income placeholder-muted-foreground/50 outline-none focus:border-ring transition-colors tabular-nums"
+                  className="w-full h-11 bg-muted border border-border rounded-xl px-3 text-sm font-bold text-income placeholder-muted-foreground/50 outline-hidden focus:border-ring transition-colors tabular-nums"
                 />
               </div>
             ) : (
@@ -351,7 +351,7 @@ export default function BudgetPage() {
                 value={goalInput.targetExpense}
                 onChange={e => handleExpenseChange(e.target.value)}
                 placeholder="0"
-                className="w-full h-11 bg-muted border border-border rounded-xl px-3 text-sm font-bold text-expense placeholder-muted-foreground/50 outline-none focus:border-ring transition-colors tabular-nums"
+                className="w-full h-11 bg-muted border border-border rounded-xl px-3 text-sm font-bold text-expense placeholder-muted-foreground/50 outline-hidden focus:border-ring transition-colors tabular-nums"
               />
             ) : (
               <div className="h-11 flex items-center px-3 bg-muted rounded-xl text-sm font-bold text-expense">
@@ -376,7 +376,7 @@ export default function BudgetPage() {
                   value={goalInput.targetSavingsRate}
                   onChange={e => handleRateChange(e.target.value)}
                   placeholder="0"
-                  className="w-full h-11 bg-muted border border-border rounded-xl px-3 pr-7 text-sm font-bold text-savings placeholder-muted-foreground/50 outline-none focus:border-ring transition-colors tabular-nums"
+                  className="w-full h-11 bg-muted border border-border rounded-xl px-3 pr-7 text-sm font-bold text-savings placeholder-muted-foreground/50 outline-hidden focus:border-ring transition-colors tabular-nums"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">%</span>
               </div>
@@ -422,7 +422,7 @@ export default function BudgetPage() {
             value={familyInput}
             onChange={e => setFamilyInput(e.target.value)}
             placeholder="예: 3000000"
-            className="w-full h-12 bg-muted border border-border rounded-xl px-4 text-lg font-bold text-foreground placeholder-muted-foreground/50 outline-none focus:border-ring transition-colors"
+            className="w-full h-12 bg-muted border border-border rounded-xl px-4 text-lg font-bold text-foreground placeholder-muted-foreground/50 outline-hidden focus:border-ring transition-colors"
           />
         ) : (
           <div className="h-12 flex items-center px-4 bg-muted rounded-xl text-lg font-bold text-foreground">
@@ -514,7 +514,7 @@ export default function BudgetPage() {
               <div key={member.id} className="px-6 py-5">
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-accent flex items-center justify-center text-sm font-bold text-foreground/70 flex-shrink-0">
+                    <div className="w-9 h-9 rounded-full bg-accent flex items-center justify-center text-sm font-bold text-foreground/70 shrink-0">
                       {member.name[0]?.toUpperCase() ?? '?'}
                     </div>
                     <div>
@@ -545,7 +545,7 @@ export default function BudgetPage() {
                       value={memberInputs[member.id] ?? ''}
                       onChange={e => setMemberInputs(prev => ({ ...prev, [member.id]: e.target.value }))}
                       placeholder="한도 미설정"
-                      className="w-32 h-9 bg-muted border border-border rounded-xl px-3 text-sm font-semibold text-foreground placeholder-muted-foreground/50 outline-none focus:border-ring transition-colors text-right"
+                      className="w-32 h-9 bg-muted border border-border rounded-xl px-3 text-sm font-semibold text-foreground placeholder-muted-foreground/50 outline-hidden focus:border-ring transition-colors text-right"
                     />
                   ) : (
                     <span className="text-sm font-semibold text-foreground">
@@ -623,7 +623,7 @@ export default function BudgetPage() {
               const pct = parsedFamilyBudget > 0 ? Math.round((memberBudget / parsedFamilyBudget) * 100) : 0
               return (
                 <div key={member.id} className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-sm flex-shrink-0" style={{ backgroundColor: VIZ[idx % VIZ.length] }} />
+                  <div className="w-3 h-3 rounded-sm shrink-0" style={{ backgroundColor: VIZ[idx % VIZ.length] }} />
                   <span className="text-xs text-muted-foreground truncate">{member.name}</span>
                   <span className="text-xs text-muted-foreground ml-auto">{pct}%</span>
                 </div>
@@ -631,7 +631,7 @@ export default function BudgetPage() {
             })}
             {unallocated > 0 && !overAllocated && (
               <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-sm bg-accent flex-shrink-0" />
+                <div className="w-3 h-3 rounded-sm bg-accent shrink-0" />
                 <span className="text-xs text-muted-foreground">미배정</span>
                 <span className="text-xs text-muted-foreground/60 ml-auto">
                   {Math.round((unallocated / parsedFamilyBudget) * 100)}%

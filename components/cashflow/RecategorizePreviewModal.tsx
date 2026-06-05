@@ -31,10 +31,10 @@ export function RecategorizePreviewModal({
   const changedGroupCount = state.groups.filter(g => g.changed).length
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/50 backdrop-blur-xs">
       <div className="bg-card border border-border rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg mx-0 sm:mx-4 flex flex-col shadow-2xl max-h-[90vh]">
         {/* 헤더 */}
-        <div className="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 shrink-0">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-foreground" />
             <h2 className="text-sm font-bold text-foreground">AI 재분류 결과</h2>
@@ -48,7 +48,7 @@ export function RecategorizePreviewModal({
         </div>
 
         {/* 서브 헤더 */}
-        <div className="px-5 pb-3 flex items-center justify-between flex-shrink-0 border-b border-border">
+        <div className="px-5 pb-3 flex items-center justify-between shrink-0 border-b border-border">
           <div className="flex items-center gap-2">
             <button
               onClick={() => onUpdate(p => ({ ...p, uncheckedKeys: new Set() }))}
@@ -105,7 +105,7 @@ export function RecategorizePreviewModal({
               >
                 {/* 체크박스 */}
                 <div className={cn(
-                  'w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors',
+                  'w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors',
                   group.changed
                     ? isChecked
                       ? 'bg-foreground border-foreground'
@@ -120,7 +120,7 @@ export function RecategorizePreviewModal({
                   <div className="flex items-baseline gap-1.5">
                     <span className="text-sm font-medium text-foreground truncate">{group.description}</span>
                     {group.ids.length > 1 && (
-                      <span className="text-[11px] text-muted-foreground flex-shrink-0">({group.ids.length}건)</span>
+                      <span className="text-[11px] text-muted-foreground shrink-0">({group.ids.length}건)</span>
                     )}
                   </div>
                   <div className="flex items-center gap-1.5 mt-0.5">
@@ -143,7 +143,7 @@ export function RecategorizePreviewModal({
 
         {/* 잔여 항목 알림 */}
         {state.remaining > 0 && (
-          <div className="px-5 py-2 flex-shrink-0 bg-warning-soft border-t border-warning/20">
+          <div className="px-5 py-2 shrink-0 bg-warning-soft border-t border-warning/20">
             <p className="text-[11px] text-warning">
               150건 초과로 나머지 {state.remaining}건은 적용 후 다시 실행하세요
             </p>
@@ -151,7 +151,7 @@ export function RecategorizePreviewModal({
         )}
 
         {/* 하단 버튼 */}
-        <div className="flex items-center gap-3 px-5 py-4 flex-shrink-0 border-t border-border">
+        <div className="flex items-center gap-3 px-5 py-4 shrink-0 border-t border-border">
           <button
             onClick={onClose}
             disabled={state.applying}

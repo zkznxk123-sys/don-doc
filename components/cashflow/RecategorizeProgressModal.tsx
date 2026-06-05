@@ -21,7 +21,7 @@ export function RecategorizeProgressModal({
   onClose: () => void
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs">
       <div className="bg-card border border-border rounded-2xl w-full max-w-sm mx-4 p-8 flex flex-col items-center gap-6 shadow-2xl">
         {/* 아이콘 */}
         <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center">
@@ -67,13 +67,13 @@ export function RecategorizeProgressModal({
           {state.steps.map((step, i) => (
             <div key={i} className="flex items-center gap-3 px-4 py-2.5">
               {step.done ? (
-                <Check className="w-3.5 h-3.5 text-income flex-shrink-0" />
+                <Check className="w-3.5 h-3.5 text-income shrink-0" />
               ) : step.active ? (
-                <div className="w-3.5 h-3.5 flex items-center justify-center flex-shrink-0">
+                <div className="w-3.5 h-3.5 flex items-center justify-center shrink-0">
                   <div className="w-1.5 h-1.5 rounded-full bg-foreground animate-pulse" />
                 </div>
               ) : (
-                <div className="w-3.5 h-3.5 flex items-center justify-center flex-shrink-0">
+                <div className="w-3.5 h-3.5 flex items-center justify-center shrink-0">
                   <div className="w-1.5 h-1.5 rounded-full bg-border" />
                 </div>
               )}

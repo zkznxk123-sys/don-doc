@@ -133,7 +133,7 @@ export default function ExcelMappingsPage() {
                   <AlertDialogTrigger asChild>
                     <button
                       disabled={deletingId === m.id}
-                      className="flex-shrink-0 p-1.5 rounded-lg text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-40"
+                      className="shrink-0 p-1.5 rounded-lg text-muted-foreground/60 hover:text-destructive hover:bg-destructive/10 transition-colors disabled:opacity-40"
                     >
                       {deletingId === m.id
                         ? <Loader2 className="w-3.5 h-3.5 animate-spin" />

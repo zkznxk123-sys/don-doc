@@ -28,7 +28,7 @@ export function Section({
               {kicker}
             </p>
             <h2
-              className="font-serif font-medium m-0 leading-[1.05] tracking-[-0.025em] text-[40px] sm:text-[48px] lg:text-[56px]"
+              className="font-serif font-medium m-0 leading-[1.05] tracking-tight text-[40px] sm:text-[48px] lg:text-[56px]"
               style={{ color: CREAM }}
             >
               {title}

@@ -107,7 +107,7 @@ export function AssetDonutChart({ data, totalAssets, manageLink, hideZeroAccount
           {manageLink && (
             <Link
               href={manageLink}
-              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
             >
               자산 관리하기
               <ArrowRight className="w-3 h-3" />
@@ -121,7 +121,7 @@ export function AssetDonutChart({ data, totalAssets, manageLink, hideZeroAccount
 
       <div className="flex flex-col items-center gap-5">
         {/* 도넛 */}
-        <div className="relative w-[200px] h-[200px] flex-shrink-0">
+        <div className="relative w-[200px] h-[200px] shrink-0">
           <ResponsiveContainer width="100%" height="100%">
             <RePieChart>
               <Pie
@@ -182,7 +182,7 @@ export function AssetDonutChart({ data, totalAssets, manageLink, hideZeroAccount
                   onClick={() => setExpandedType(isExpanded ? null : item.type)}
                 >
                   <div
-                    className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                     style={{ backgroundColor: palette.color + '20', color: palette.color }}
                   >
                     {palette.icon}
@@ -190,7 +190,7 @@ export function AssetDonutChart({ data, totalAssets, manageLink, hideZeroAccount
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2 mb-1">
                       <span className="text-sm font-medium text-foreground/80 truncate">{item.label}</span>
-                      <div className="flex items-center gap-2 flex-shrink-0">
+                      <div className="flex items-center gap-2 shrink-0">
                         <span className="text-xs text-muted-foreground tabular-nums">{item.percentage}%</span>
                         <span className="text-sm font-semibold text-foreground tabular-nums">
                           {formatCurrency(item.balance)}
@@ -208,7 +208,7 @@ export function AssetDonutChart({ data, totalAssets, manageLink, hideZeroAccount
                     {item.accounts.filter(a => (!hideZeroAccounts || a.balance !== 0) && (!excludeSmall || a.balance >= threshold)).map(acc => (
                       <div key={acc.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-muted/40">
                         <span className="text-xs text-muted-foreground truncate mr-2">{acc.name}</span>
-                        <span className="text-xs font-medium text-foreground/70 tabular-nums flex-shrink-0">
+                        <span className="text-xs font-medium text-foreground/70 tabular-nums shrink-0">
                           {formatCurrency(acc.balance)}
                         </span>
                       </div>
@@ -244,7 +244,7 @@ export function AssetDonutChart({ data, totalAssets, manageLink, hideZeroAccount
                       onClick={() => setExpandedType(isExpanded ? null : item.type)}
                     >
                       <div
-                        className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
                         style={{ backgroundColor: palette.color + '20', color: palette.color }}
                       >
                         {palette.icon}
@@ -252,7 +252,7 @@ export function AssetDonutChart({ data, totalAssets, manageLink, hideZeroAccount
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2 mb-1">
                           <span className="text-sm font-medium text-muted-foreground truncate">{item.label}</span>
-                          <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="flex items-center gap-2 shrink-0">
                             <span className="text-xs text-muted-foreground/60 tabular-nums">{item.percentage}%</span>
                             <span className="text-sm font-semibold text-destructive tabular-nums">
                               -{formatCurrency(item.balance)}
@@ -270,7 +270,7 @@ export function AssetDonutChart({ data, totalAssets, manageLink, hideZeroAccount
                         {item.accounts.filter(a => (!hideZeroAccounts || a.balance !== 0) && (!excludeSmall || a.balance >= threshold)).map(acc => (
                           <div key={acc.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-red-950/20">
                             <span className="text-xs text-muted-foreground truncate mr-2">{acc.name}</span>
-                            <span className="text-xs font-medium text-destructive/80 tabular-nums flex-shrink-0">
+                            <span className="text-xs font-medium text-destructive/80 tabular-nums shrink-0">
                               -{formatCurrency(acc.balance)}
                             </span>
                           </div>

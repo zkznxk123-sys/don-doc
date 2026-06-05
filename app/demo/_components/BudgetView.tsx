@@ -42,7 +42,7 @@ export function BudgetView({ data }: { data: DemoData }) {
                 </span>
               </div>
               <div className="w-full bg-muted rounded-full h-2">
-                <div className={cn('h-2 rounded-full transition-all', (budgetSpent / budget.amount) > 0.8 ? 'bg-[var(--viz-red)]' : 'bg-[var(--viz-emerald)]')}
+                <div className={cn('h-2 rounded-full transition-all', (budgetSpent / budget.amount) > 0.8 ? 'bg-(--viz-red)' : 'bg-(--viz-emerald)')}
                   style={{ width: `${Math.min((budgetSpent / budget.amount) * 100, 100)}%` }} />
               </div>
             </div>
@@ -89,7 +89,7 @@ export function BudgetView({ data }: { data: DemoData }) {
             const VIZ_COLORS = ['var(--viz-blue)', 'var(--viz-violet)', 'var(--viz-emerald)', 'var(--viz-amber)', 'var(--viz-pink)', 'var(--viz-sky)', 'var(--viz-red)', 'var(--viz-blue)']
             return (
               <div key={item.category} className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: VIZ_COLORS[i % VIZ_COLORS.length] }} />
+                <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: VIZ_COLORS[i % VIZ_COLORS.length] }} />
                 <div className="flex-1 min-w-0">
                   <div className="flex justify-between mb-1">
                     <span className="text-xs text-foreground/80">{item.category}</span>
@@ -128,7 +128,7 @@ export function BudgetView({ data }: { data: DemoData }) {
                   </span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-1.5">
-                  <div className={cn('h-1.5 rounded-full', good ? 'bg-[var(--viz-emerald)]' : 'bg-[var(--viz-amber)]')}
+                  <div className={cn('h-1.5 rounded-full', good ? 'bg-(--viz-emerald)' : 'bg-(--viz-amber)')}
                     style={{ width: `${Math.min(pct, 100)}%` }} />
                 </div>
               </div>

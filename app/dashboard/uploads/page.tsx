@@ -85,7 +85,7 @@ export default function UploadsPage() {
                   {isOpen ? <ChevronDown className="h-4 w-4 mt-1 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 mt-1 text-muted-foreground" />}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <FileSpreadsheet className="h-4 w-4 text-muted-foreground/70 flex-shrink-0" />
+                      <FileSpreadsheet className="h-4 w-4 text-muted-foreground/70 shrink-0" />
                       <span className="font-medium truncate">{b.fileName}</span>
                       <span className="text-[11px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
                         {SOURCE_LABEL[b.source] ?? b.source}
@@ -130,11 +130,11 @@ export default function UploadsPage() {
                             <ul className="divide-y divide-border/40 rounded-lg border border-border/40 bg-background/40 px-3">
                               {detail.transactions.map(tx => (
                                 <li key={tx.id} className="flex items-center gap-2 text-xs py-2">
-                                  <span className="text-muted-foreground tabular-nums w-20 flex-shrink-0">{tx.date}</span>
+                                  <span className="text-muted-foreground tabular-nums w-20 shrink-0">{tx.date}</span>
                                   <span className="text-muted-foreground/70 truncate flex-1">{tx.description}</span>
-                                  <span className="text-muted-foreground/50 px-1.5 py-0.5 rounded bg-muted text-[10px] flex-shrink-0">{tx.category}</span>
+                                  <span className="text-muted-foreground/50 px-1.5 py-0.5 rounded bg-muted text-[10px] shrink-0">{tx.category}</span>
                                   <span className={cn(
-                                    'tabular-nums font-medium w-24 text-right whitespace-nowrap flex-shrink-0',
+                                    'tabular-nums font-medium w-24 text-right whitespace-nowrap shrink-0',
                                     tx.amount >= 0 ? 'text-income' : 'text-expense'
                                   )}>
                                     {tx.amount >= 0 ? '+' : '−'}{formatCurrency(Math.abs(tx.amount))}
@@ -191,7 +191,7 @@ function BalanceChangeRow({ change }: { change: { accountName: string; oldBalanc
         'flex items-center gap-1 tabular-nums whitespace-nowrap text-right justify-end',
         flat ? 'text-muted-foreground' : up ? 'text-income' : 'text-expense',
       )}>
-        {!flat && (up ? <TrendingUp className="h-3 w-3 flex-shrink-0" /> : <TrendingDown className="h-3 w-3 flex-shrink-0" />)}
+        {!flat && (up ? <TrendingUp className="h-3 w-3 shrink-0" /> : <TrendingDown className="h-3 w-3 shrink-0" />)}
         <span>{up ? '+' : flat ? '' : '−'}{formatCurrency(Math.abs(change.delta))}</span>
         {pctLabel && (
           <span className="opacity-60 text-[10px]">({pctLabel})</span>

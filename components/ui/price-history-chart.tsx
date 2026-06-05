@@ -68,7 +68,7 @@ function CustomTooltip({ active, payload, label, currentYMLabel }: {
       {lines.map(p => (
         <div key={p.dataKey} className="flex items-center justify-between gap-4 text-xs">
           <span className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: p.color }} />
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: p.color }} />
             <span className="text-muted-foreground truncate max-w-[110px]">{p.name}</span>
           </span>
           <span className="font-semibold tabular-nums" style={{ color: p.color }}>
@@ -88,7 +88,7 @@ function CustomLegend({ payload }: { payload?: ChartPayload[] }) {
       {filtered.map(p => (
         <span key={p.dataKey} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
           <span
-            className="inline-block w-5 h-[2.5px] rounded-full flex-shrink-0"
+            className="inline-block w-5 h-[2.5px] rounded-full shrink-0"
             style={{
               background: p.color,
               borderTop: p.dataKey?.toString().startsWith('target_')

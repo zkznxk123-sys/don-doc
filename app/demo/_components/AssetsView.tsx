@@ -42,7 +42,7 @@ export function AssetsView({ data }: { data: DemoData }) {
           { label: '총 부채', value: wealth.totalLiabilities, color: 'text-expense' },
           { label: '순 자산', value: wealth.netWorth, color: 'text-foreground', bold: true },
         ].map(item => (
-          <div key={item.label} className={cn('bg-card rounded-2xl border p-4', item.bold ? 'border-[var(--viz-emerald)]/30' : 'border-border')}>
+          <div key={item.label} className={cn('bg-card rounded-2xl border p-4', item.bold ? 'border-(--viz-emerald)/30' : 'border-border')}>
             <p className="text-[10px] text-muted-foreground mb-1">{item.label}</p>
             <p className={cn('text-base font-bold tabular-nums font-serif', item.color)}>{formatLargeNumber(item.value)}</p>
           </div>
@@ -110,7 +110,7 @@ export function AssetsView({ data }: { data: DemoData }) {
                           {h.ticker && <span className="text-[10px] text-muted-foreground ml-1">{h.ticker}</span>}
                           <span className="text-[10px] text-muted-foreground ml-1">· {h.quantity.toLocaleString()}주</span>
                         </div>
-                        <div className="text-right flex-shrink-0">
+                        <div className="text-right shrink-0">
                           <p className="text-xs font-semibold tabular-nums">{formatLargeNumber(evalAmt)}</p>
                           {h.currentPrice !== null && (
                             <p className={cn('text-[10px] tabular-nums', gainPct >= 0 ? 'text-income' : 'text-expense')}>

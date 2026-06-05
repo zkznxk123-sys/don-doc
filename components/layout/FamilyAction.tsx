@@ -126,7 +126,7 @@ export function FamilyAction({ userRole }: FamilyActionProps) {
                 <div className="space-y-2">
                   {members.map(m => (
                     <div key={m.id} className="flex items-center gap-3 p-3 rounded-xl bg-zinc-900 border border-zinc-800">
-                      <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-zinc-800 flex items-center justify-center shrink-0">
                         <span className="text-sm font-bold text-zinc-300">
                           {(m.name ?? m.email)[0].toUpperCase()}
                         </span>

@@ -231,7 +231,7 @@ export function ApartmentSearchInput({
               setQuery('')
               setComplexes([])
             }}
-            className="w-full h-9 bg-card border border-border rounded-xl pl-3 pr-8 text-xs text-foreground outline-none focus:border-ring transition-colors appearance-none"
+            className="w-full h-9 bg-card border border-border rounded-xl pl-3 pr-8 text-xs text-foreground outline-hidden focus:border-ring transition-colors appearance-none"
           >
             <option value="">시/도 선택</option>
             {Object.keys(REGION_DATA).map(s => (
@@ -249,7 +249,7 @@ export function ApartmentSearchInput({
               setQuery('')
             }}
             disabled={!sido}
-            className="w-full h-9 bg-card border border-border rounded-xl pl-3 pr-8 text-xs text-foreground outline-none focus:border-ring transition-colors appearance-none disabled:opacity-40"
+            className="w-full h-9 bg-card border border-border rounded-xl pl-3 pr-8 text-xs text-foreground outline-hidden focus:border-ring transition-colors appearance-none disabled:opacity-40"
           >
             <option value="">시군구 선택</option>
             {sigunguList.map(s => (
@@ -275,7 +275,7 @@ export function ApartmentSearchInput({
             onFocus={() => setOpen(true)}
             placeholder={placeholder}
             disabled={false}
-            className="w-full h-10 bg-card border border-border rounded-xl pl-9 pr-9 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors disabled:opacity-50"
+            className="w-full h-10 bg-card border border-border rounded-xl pl-9 pr-9 text-sm text-foreground placeholder-muted-foreground/40 outline-hidden focus:border-ring transition-colors disabled:opacity-50"
           />
           {(query || selected) && (
             <button
@@ -293,7 +293,7 @@ export function ApartmentSearchInput({
           <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-popover border border-border rounded-xl shadow-lg overflow-hidden">
             {!activeBjdCode ? (
               <div className="py-3 px-4 text-xs text-muted-foreground flex items-center gap-2">
-                <MapPin className="w-3 h-3 flex-shrink-0" />
+                <MapPin className="w-3 h-3 shrink-0" />
                 위에서 시/도와 시군구를 먼저 선택해주세요
               </div>
             ) : loading ? (
@@ -314,7 +314,7 @@ export function ApartmentSearchInput({
                       onMouseDown={e => { e.preventDefault(); handleSelect(c) }}
                       className="w-full text-left px-4 py-2.5 text-sm hover:bg-accent transition-colors flex items-center gap-2"
                     >
-                      <MapPin className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                      <MapPin className="w-3 h-3 text-muted-foreground shrink-0" />
                       <span className="text-foreground">{c.name}</span>
                     </button>
                   </li>

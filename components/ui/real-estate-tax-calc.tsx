@@ -247,7 +247,7 @@ export function RealEstateTaxCalc({ data }: Props) {
                 className={cn(
                   'flex-1 py-1.5 text-xs font-medium rounded-lg transition-colors',
                   tab === t.key
-                    ? 'bg-background text-foreground shadow-sm'
+                    ? 'bg-background text-foreground shadow-xs'
                     : 'text-muted-foreground hover:text-foreground'
                 )}
               >
@@ -279,7 +279,7 @@ export function RealEstateTaxCalc({ data }: Props) {
                   type="number"
                   value={transferForm.sellAmt}
                   onChange={e => setTransferForm(p => ({ ...p, sellAmt: Number(e.target.value) }))}
-                  className="w-full bg-muted/40 rounded-lg px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-purple-400/50"
+                  className="w-full bg-muted/40 rounded-lg px-3 py-2 text-xs text-foreground outline-hidden focus:ring-1 focus:ring-purple-400/50"
                 />
                 {transferForm.sellAmt > 0 && (
                   <p className="text-[11px] text-purple-400/80 mt-1 tabular-nums">{toKoreanUnit(transferForm.sellAmt)}</p>
@@ -349,7 +349,7 @@ export function RealEstateTaxCalc({ data }: Props) {
                   value={propertyForm.amount}
                   onChange={e => setPropertyForm(p => ({ ...p, amount: Number(e.target.value) }))}
                   placeholder="공시가격을 입력하세요"
-                  className="w-full bg-muted/40 rounded-lg px-3 py-2 text-xs text-foreground outline-none focus:ring-1 focus:ring-purple-400/50"
+                  className="w-full bg-muted/40 rounded-lg px-3 py-2 text-xs text-foreground outline-hidden focus:ring-1 focus:ring-purple-400/50"
                 />
                 <div className="flex items-center justify-between mt-1">
                   <p className="text-[10px] text-muted-foreground/50">시세가 아닌 공시가격 기준 · 국토부 부동산공시가격알리미에서 확인</p>

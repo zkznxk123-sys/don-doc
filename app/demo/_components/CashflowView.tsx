@@ -98,7 +98,7 @@ export function CashflowView({ data }: { data: DemoData }) {
             {(['all', 'income', 'expense'] as const).map(f => (
               <button key={f} onClick={() => setFilter(f)}
                 className={cn('text-[10px] px-2 py-1 rounded-md font-medium transition-colors',
-                  filter === f ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground')}>
+                  filter === f ? 'bg-background text-foreground shadow-xs' : 'text-muted-foreground hover:text-foreground')}>
                 {f === 'all' ? '전체' : f === 'income' ? '수입' : '지출'}
               </button>
             ))}
@@ -107,14 +107,14 @@ export function CashflowView({ data }: { data: DemoData }) {
         <div className="space-y-0">
           {filteredTx.slice(0, 15).map(tx => (
             <div key={tx.id} className="flex items-center gap-3 py-2.5 border-b border-border/40 last:border-0">
-              <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
+              <div className="w-8 h-8 rounded-xl bg-muted flex items-center justify-center shrink-0">
                 <span className="text-[10px]">{tx.amount > 0 ? '💰' : '💳'}</span>
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{tx.description}</p>
                 <p className="text-xs text-muted-foreground">{tx.userName} · {tx.category} · {new Date(tx.date).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })}</p>
               </div>
-              <span className={cn('text-sm font-semibold tabular-nums flex-shrink-0', tx.amount > 0 ? 'text-income' : 'text-foreground')}>
+              <span className={cn('text-sm font-semibold tabular-nums shrink-0', tx.amount > 0 ? 'text-income' : 'text-foreground')}>
                 {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)}
               </span>
             </div>

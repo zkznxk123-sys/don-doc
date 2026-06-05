@@ -447,7 +447,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
   return (
     <Drawer open={isOpen} onOpenChange={v => { if (!v) handleClose() }}>
       <DrawerContent className="bg-background border-t border-border max-h-[92vh] flex flex-col">
-        <DrawerHeader className="flex-shrink-0 pb-2">
+        <DrawerHeader className="shrink-0 pb-2">
           <div className="flex items-center justify-between">
             <DrawerTitle className="text-foreground text-lg font-bold">엑셀 일괄 등록</DrawerTitle>
             <DrawerClose asChild>
@@ -489,7 +489,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
             <>
               {/* ── 파일 정보 ── */}
               <div className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
-                <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center flex-shrink-0">
+                <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0">
                   <FileSpreadsheet className={cn("w-4 h-4", isBanksalad ? "text-violet-400" : "text-income")} />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -508,7 +508,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
               {/* ── 양식 감지 배지 ── */}
               {isBanksalad ? (
                 <div className="flex items-start gap-2.5 p-3 rounded-xl bg-violet-50 dark:bg-violet-950/30 border border-violet-300 dark:border-violet-700/40">
-                  <Sparkles className="w-4 h-4 text-violet-500 dark:text-violet-400 flex-shrink-0 mt-0.5" />
+                  <Sparkles className="w-4 h-4 text-violet-500 dark:text-violet-400 shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-violet-700 dark:text-violet-300">뱅크샐러드 양식이 감지되었습니다</p>
                     <p className="text-[11px] text-violet-500 dark:text-violet-700 mt-0.5">
@@ -524,7 +524,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                 </div>
               ) : detectedPreset ? (
                 <div className="flex items-center gap-2.5 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800/40">
-                  <Sparkles className="w-4 h-4 text-income flex-shrink-0" />
+                  <Sparkles className="w-4 h-4 text-income shrink-0" />
                   <div>
                     <p className="text-xs font-semibold text-income">{detectedPreset.name} 양식 감지됨</p>
                     <p className="text-[10px] text-income dark:text-income mt-0.5">{detectedPreset.description}</p>
@@ -532,7 +532,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                 </div>
               ) : (
                 <div className="flex items-center gap-2.5 p-3 rounded-xl bg-card border border-border">
-                  <AlertCircle className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                  <AlertCircle className="w-4 h-4 text-muted-foreground shrink-0" />
                   <p className="text-xs text-muted-foreground">양식 자동 감지 실패 — 아래 헤더 셀렉트에서 직접 지정해주세요</p>
                 </div>
               )}
@@ -709,7 +709,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
               {/* ── 오류 안내 ── */}
               {errorRows.length > 0 && (
                 <div className="flex items-start gap-2 p-3 rounded-xl bg-amber-950/20 border border-amber-800/40">
-                  <AlertCircle className="w-4 h-4 text-warning flex-shrink-0 mt-0.5" />
+                  <AlertCircle className="w-4 h-4 text-warning shrink-0 mt-0.5" />
                   <p className="text-xs text-warning">
                     {errorRows.length}행 오류 제외 · <strong className="text-foreground">{validRows.length}건</strong> 등록 예정
                   </p>
@@ -721,7 +721,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
 
         {/* ── 등록 버튼 ── */}
         {hasFile && (
-          <DrawerFooter className="flex-shrink-0 pt-0 px-4 pb-6 space-y-2">
+          <DrawerFooter className="shrink-0 pt-0 px-4 pb-6 space-y-2">
             <button
               onClick={handleSubmit}
               disabled={isLoading || (uploadMode === 'assets' ? false : uploadMode === 'both' && accountBalances.length > 0 ? false : validRows.length === 0)}

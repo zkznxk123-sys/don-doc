@@ -216,14 +216,14 @@ function CategoryRow({
     <div className="flex items-center gap-3 px-4 py-3 group">
       {/* 아이콘 */}
       {isSystem ? (
-        <span className="w-8 h-8 flex items-center justify-center text-lg flex-shrink-0">{icon}</span>
+        <span className="w-8 h-8 flex items-center justify-center text-lg shrink-0">{icon}</span>
       ) : (
         <input
           value={icon}
           onChange={e => setIcon(e.target.value)}
           onBlur={handleSave}
           maxLength={4}
-          className="w-8 h-8 text-center text-lg bg-muted border border-border rounded-lg outline-none focus:border-ring flex-shrink-0"
+          className="w-8 h-8 text-center text-lg bg-muted border border-border rounded-lg outline-hidden focus:border-ring shrink-0"
           title="아이콘 (이모지)"
         />
       )}
@@ -237,30 +237,30 @@ function CategoryRow({
           onChange={e => setName(e.target.value)}
           onBlur={handleSave}
           onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}
-          className="flex-1 h-8 bg-muted border border-border rounded-lg px-2.5 text-sm text-foreground outline-none focus:border-ring transition-colors min-w-0"
+          className="flex-1 h-8 bg-muted border border-border rounded-lg px-2.5 text-sm text-foreground outline-hidden focus:border-ring transition-colors min-w-0"
         />
       )}
 
       {/* 시스템 배지 */}
       {isSystem && (
-        <span className="text-[10px] text-muted-foreground/60 bg-muted border border-border/50 px-1.5 py-0.5 rounded-md flex-shrink-0">
+        <span className="text-[10px] text-muted-foreground/60 bg-muted border border-border/50 px-1.5 py-0.5 rounded-md shrink-0">
           기본
         </span>
       )}
 
       {/* 저장 중 인디케이터 */}
-      {saving && <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin flex-shrink-0" />}
+      {saving && <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin shrink-0" />}
 
       {/* 삭제 버튼 */}
       {isSystem ? (
-        <button disabled className="p-1.5 rounded-lg text-muted-foreground/40 cursor-not-allowed flex-shrink-0" title="기본 카테고리는 삭제할 수 없습니다">
+        <button disabled className="p-1.5 rounded-lg text-muted-foreground/40 cursor-not-allowed shrink-0" title="기본 카테고리는 삭제할 수 없습니다">
           <Lock className="w-3.5 h-3.5" />
         </button>
       ) : (
         <button
           onClick={handleDelete}
           disabled={deleting}
-          className="p-1.5 rounded-lg text-muted-foreground/60 hover:text-destructive hover:bg-red-950/30 transition-colors flex-shrink-0 opacity-0 group-hover:opacity-100 disabled:opacity-50"
+          className="p-1.5 rounded-lg text-muted-foreground/60 hover:text-destructive hover:bg-red-950/30 transition-colors shrink-0 opacity-0 group-hover:opacity-100 disabled:opacity-50"
           title="삭제"
         >
           {deleting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
@@ -304,7 +304,7 @@ function AddCategoryForm({
         value={icon}
         onChange={e => setIcon(e.target.value)}
         maxLength={4}
-        className="w-8 h-8 text-center text-lg bg-muted border border-border rounded-lg outline-none focus:border-ring flex-shrink-0"
+        className="w-8 h-8 text-center text-lg bg-muted border border-border rounded-lg outline-hidden focus:border-ring shrink-0"
         title="아이콘 (이모지)"
       />
       <input
@@ -316,19 +316,19 @@ function AddCategoryForm({
           if (e.key === 'Escape') onCancel()
         }}
         placeholder="카테고리 이름"
-        className="flex-1 h-8 bg-muted border border-border rounded-lg px-2.5 text-sm text-foreground placeholder-muted-foreground/50 outline-none focus:border-ring transition-colors"
+        className="flex-1 h-8 bg-muted border border-border rounded-lg px-2.5 text-sm text-foreground placeholder-muted-foreground/50 outline-hidden focus:border-ring transition-colors"
       />
       <button
         onClick={handleAdd}
         disabled={saving || !name.trim()}
-        className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-foreground text-background text-xs font-semibold hover:bg-foreground/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
+        className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-foreground text-background text-xs font-semibold hover:bg-foreground/90 transition-colors disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
       >
         {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
         추가
       </button>
       <button
         onClick={onCancel}
-        className="h-8 px-3 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+        className="h-8 px-3 rounded-lg text-xs text-muted-foreground hover:text-foreground transition-colors shrink-0"
       >
         취소
       </button>
@@ -394,11 +394,11 @@ function AssetTab({
                   onBlur={e => handleBlur(type, e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}
                   placeholder={defaultLabel}
-                  className="flex-1 h-7 bg-muted border border-border rounded-lg px-2.5 text-xs text-foreground placeholder-muted-foreground/50 outline-none focus:border-ring transition-colors"
+                  className="flex-1 h-7 bg-muted border border-border rounded-lg px-2.5 text-xs text-foreground placeholder-muted-foreground/50 outline-hidden focus:border-ring transition-colors"
                 />
-                {saving === type && <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin flex-shrink-0" />}
+                {saving === type && <Loader2 className="w-3.5 h-3.5 text-muted-foreground animate-spin shrink-0" />}
                 {isCustom && saving !== type && (
-                  <span className="text-[9px] text-income flex-shrink-0">커스텀</span>
+                  <span className="text-[9px] text-income shrink-0">커스텀</span>
                 )}
               </div>
             </div>

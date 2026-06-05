@@ -117,7 +117,7 @@ export function TradeDrawer({ isOpen, onClose, onSuccess, holding }: TradeDrawer
                     onChange={e => setQuantity(e.target.value)}
                     placeholder="0"
                     step="any"
-                    className="w-full px-3 py-2 text-sm bg-background rounded-lg border border-border focus:outline-none"
+                    className="w-full px-3 py-2 text-sm bg-background rounded-lg border border-border focus:outline-hidden"
                   />
                 </div>
                 <div>
@@ -128,7 +128,7 @@ export function TradeDrawer({ isOpen, onClose, onSuccess, holding }: TradeDrawer
                     onChange={e => setPrice(e.target.value)}
                     placeholder="0"
                     step="any"
-                    className="w-full px-3 py-2 text-sm bg-background rounded-lg border border-border focus:outline-none"
+                    className="w-full px-3 py-2 text-sm bg-background rounded-lg border border-border focus:outline-hidden"
                   />
                 </div>
                 <div>
@@ -139,7 +139,7 @@ export function TradeDrawer({ isOpen, onClose, onSuccess, holding }: TradeDrawer
                     onChange={e => setFee(e.target.value)}
                     placeholder="0"
                     min="0"
-                    className="w-full px-3 py-2 text-sm bg-background rounded-lg border border-border focus:outline-none"
+                    className="w-full px-3 py-2 text-sm bg-background rounded-lg border border-border focus:outline-hidden"
                   />
                 </div>
                 <div>
@@ -148,7 +148,7 @@ export function TradeDrawer({ isOpen, onClose, onSuccess, holding }: TradeDrawer
                     type="date"
                     value={date}
                     onChange={e => setDate(e.target.value)}
-                    className="w-full px-3 py-2 text-sm bg-background rounded-lg border border-border focus:outline-none"
+                    className="w-full px-3 py-2 text-sm bg-background rounded-lg border border-border focus:outline-hidden"
                   />
                 </div>
               </div>
@@ -157,7 +157,7 @@ export function TradeDrawer({ isOpen, onClose, onSuccess, holding }: TradeDrawer
                 value={memo}
                 onChange={e => setMemo(e.target.value)}
                 placeholder="메모 (선택)"
-                className="w-full px-3 py-2 text-sm bg-background rounded-lg border border-border focus:outline-none"
+                className="w-full px-3 py-2 text-sm bg-background rounded-lg border border-border focus:outline-hidden"
               />
 
               {/* 거래 내역 영향 미리보기 */}

@@ -20,9 +20,9 @@ describe('feasibilityColor', () => {
 
 describe('feasibilityBg', () => {
   it('matches feasibilityColor 3-tier mapping', () => {
-    expect(feasibilityBg(70)).toBe('bg-[var(--viz-emerald)]')
-    expect(feasibilityBg(50)).toBe('bg-[var(--viz-amber)]')
-    expect(feasibilityBg(20)).toBe('bg-[var(--viz-red)]')
+    expect(feasibilityBg(70)).toBe('bg-(--viz-emerald)')
+    expect(feasibilityBg(50)).toBe('bg-(--viz-amber)')
+    expect(feasibilityBg(20)).toBe('bg-(--viz-red)')
   })
 })
 

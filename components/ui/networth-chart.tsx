@@ -46,14 +46,14 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
       <div className="space-y-1.5">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: 'var(--viz-sky)' }} />
+            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: 'var(--viz-sky)' }} />
             <span className="text-xs text-muted-foreground">총 자산</span>
           </div>
           <span className="text-xs font-semibold text-foreground tabular-nums">{formatCurrency(totalAssets)}</span>
         </div>
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: 'var(--viz-mint)' }} />
+            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: 'var(--viz-mint)' }} />
             <span className="text-xs text-muted-foreground">순자산</span>
           </div>
           <span className="text-xs font-semibold text-income tabular-nums">{formatCurrency(netWorth)}</span>

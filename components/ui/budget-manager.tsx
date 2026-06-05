@@ -128,7 +128,7 @@ export const BudgetManager = ({ month }: BudgetManagerProps) => {
                 inputMode="numeric"
                 value={familyInput}
                 onChange={e => setFamilyInput(e.target.value)}
-                className="w-32 h-7 bg-accent border border-border rounded-lg px-2 text-xs text-foreground outline-none focus:border-ring"
+                className="w-32 h-7 bg-accent border border-border rounded-lg px-2 text-xs text-foreground outline-hidden focus:border-ring"
                 placeholder="금액 입력"
                 onKeyDown={e => {
                   if (e.key === 'Enter') saveFamilyBudget()
@@ -220,7 +220,7 @@ export const BudgetManager = ({ month }: BudgetManagerProps) => {
                       inputMode="numeric"
                       value={memberInputs[member.id] || ''}
                       onChange={e => setMemberInputs(prev => ({ ...prev, [member.id]: e.target.value }))}
-                      className="w-28 h-7 bg-accent border border-border rounded-lg px-2 text-xs text-foreground outline-none focus:border-ring"
+                      className="w-28 h-7 bg-accent border border-border rounded-lg px-2 text-xs text-foreground outline-hidden focus:border-ring"
                       placeholder="한도 입력"
                       onKeyDown={e => {
                         if (e.key === 'Enter') saveMemberBudget(member.id)

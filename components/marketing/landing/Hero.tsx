@@ -73,7 +73,7 @@ export function Hero() {
           </p>
 
           <h1
-            className="font-serif font-medium leading-[1.05] tracking-[-0.025em] text-[44px] sm:text-[56px] lg:text-[68px]"
+            className="font-serif font-medium leading-[1.05] tracking-tight text-[44px] sm:text-[56px] lg:text-[68px]"
             style={{ color: CREAM }}
           >
             흩어진 자산을
@@ -167,12 +167,12 @@ export function Hero() {
           >
             {/* faux toolbar with section pills */}
             <div
-              className="flex items-center justify-between px-[18px] py-[12px] flex-shrink-0"
+              className="flex items-center justify-between px-[18px] py-[12px] shrink-0"
               style={{ borderBottom: `1px solid ${CREAM_FAINT}`, background: 'rgba(0,0,0,0.3)' }}
             >
               <div className="flex items-center gap-2">
                 <span
-                  className="w-[22px] h-[22px] rounded-md inline-flex items-center justify-center flex-shrink-0"
+                  className="w-[22px] h-[22px] rounded-md inline-flex items-center justify-center shrink-0"
                   style={{ background: FOREST }}
                 >
                   <Sparkles className="w-3 h-3" style={{ color: CREAM }} />
@@ -256,7 +256,7 @@ export function Hero() {
                     { l: '부채', v: '-2.8억' },
                   ].map(c => (
                     <div key={c.l} className="text-center py-1.5 rounded-md" style={{ background: 'rgba(241,236,227,0.03)' }}>
-                      <p className="text-[8px] m-0 tracking-[0.1em] uppercase" style={{ color: CREAM_DIM }}>
+                      <p className="text-[8px] m-0 tracking-widest uppercase" style={{ color: CREAM_DIM }}>
                         {c.l}
                       </p>
                       <p className="text-[11px] m-0 mt-0.5 font-semibold" style={{ color: CREAM, fontVariantNumeric: 'tabular-nums' }}>
@@ -292,7 +292,7 @@ export function Hero() {
                   ].map(t => (
                     <div key={t.d} className="flex items-center gap-2">
                       <span
-                        className="text-[9px] px-1.5 py-0.5 rounded font-semibold flex-shrink-0"
+                        className="text-[9px] px-1.5 py-0.5 rounded font-semibold shrink-0"
                         style={{ background: `${t.tone}22`, color: t.tone, minWidth: 36, textAlign: 'center' }}
                       >
                         {t.cat}
@@ -331,7 +331,7 @@ export function Hero() {
                 <p className="font-serif font-medium text-[15px] m-0 mt-1 tracking-[-0.01em]" style={{ color: CREAM }}>
                   3년 내 강북 → 강남 갈아타기
                 </p>
-                <p className="text-[10px] m-0 mt-1.5 leading-[1.5]" style={{ color: CREAM_DIM }}>
+                <p className="text-[10px] m-0 mt-1.5 leading-normal" style={{ color: CREAM_DIM }}>
                   현재 자산·부채·여유자금 기준 시뮬레이션. 5단계 액션 플랜 자동 생성.
                 </p>
                 <div className="mt-auto pt-2 flex items-center gap-2">
@@ -347,7 +347,7 @@ export function Hero() {
                       />
                     </div>
                   </div>
-                  <span className="text-[9px] font-medium px-2 py-1 rounded-md flex-shrink-0" style={{ background: CREAM, color: BG }}>
+                  <span className="text-[9px] font-medium px-2 py-1 rounded-md shrink-0" style={{ background: CREAM, color: BG }}>
                     실행 →
                   </span>
                 </div>

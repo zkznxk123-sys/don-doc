@@ -42,7 +42,7 @@ export function NumberField({
           value={value}
           onChange={e => onChange(fmtNum(e.target.value))}
           placeholder={placeholder}
-          className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-10 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors tabular-nums"
+          className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-10 text-sm text-foreground placeholder-muted-foreground/40 outline-hidden focus:border-ring transition-colors tabular-nums"
         />
         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/60">{suffix}</span>
       </div>
@@ -67,7 +67,7 @@ export function RateField({
           value={value}
           onChange={e => onChange(e.target.value)}
           placeholder="0.00"
-          className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-10 text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:border-ring transition-colors"
+          className="w-full h-10 bg-card border border-border rounded-xl pl-4 pr-10 text-sm text-foreground placeholder-muted-foreground/40 outline-hidden focus:border-ring transition-colors"
         />
         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground/60">%</span>
       </div>
@@ -87,7 +87,7 @@ export function DateField({
         type="date"
         value={value}
         onChange={e => onChange(e.target.value)}
-        className="w-full h-10 bg-card border border-border rounded-xl px-4 text-sm text-foreground outline-none focus:border-ring transition-colors [color-scheme:dark]"
+        className="w-full h-10 bg-card border border-border rounded-xl px-4 text-sm text-foreground outline-hidden focus:border-ring transition-colors scheme-dark"
       />
     </div>
   )

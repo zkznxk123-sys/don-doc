@@ -74,7 +74,7 @@ export function DashboardView({ data }: { data: DemoData }) {
                   </span>
                   <span className="text-xs text-foreground/80 truncate">{a.name}</span>
                 </div>
-                <span className={cn('text-xs font-semibold tabular-nums flex-shrink-0', a.balance < 0 ? 'text-destructive' : 'text-foreground')}>
+                <span className={cn('text-xs font-semibold tabular-nums shrink-0', a.balance < 0 ? 'text-destructive' : 'text-foreground')}>
                   {a.balance < 0 ? '-' : ''}{formatLargeNumber(Math.abs(a.balance))}
                 </span>
               </div>
@@ -108,7 +108,7 @@ export function DashboardView({ data }: { data: DemoData }) {
                   <span>소진율</span><span>{Math.round(Math.min((budgetSpent / budget.amount) * 100, 100))}%</span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-1.5">
-                  <div className={cn('h-1.5 rounded-full', (budgetSpent / budget.amount) > 0.8 ? 'bg-[var(--viz-red)]' : 'bg-[var(--viz-emerald)]')}
+                  <div className={cn('h-1.5 rounded-full', (budgetSpent / budget.amount) > 0.8 ? 'bg-(--viz-red)' : 'bg-(--viz-emerald)')}
                     style={{ width: `${Math.min((budgetSpent / budget.amount) * 100, 100)}%` }} />
                 </div>
               </div>
@@ -168,12 +168,12 @@ export function DashboardView({ data }: { data: DemoData }) {
         <div className="space-y-0">
           {data.transactions.slice(0, 8).map(tx => (
             <div key={tx.id} className="flex items-center gap-3 py-2.5 border-b border-border/40 last:border-0">
-              <div className={cn('w-1.5 h-8 rounded-full flex-shrink-0', tx.amount > 0 ? 'bg-[var(--viz-emerald)]' : 'bg-muted')} />
+              <div className={cn('w-1.5 h-8 rounded-full shrink-0', tx.amount > 0 ? 'bg-(--viz-emerald)' : 'bg-muted')} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{tx.description}</p>
                 <p className="text-xs text-muted-foreground">{tx.userName} · {tx.category}</p>
               </div>
-              <span className={cn('text-sm font-semibold tabular-nums flex-shrink-0', tx.amount > 0 ? 'text-income' : 'text-foreground')}>
+              <span className={cn('text-sm font-semibold tabular-nums shrink-0', tx.amount > 0 ? 'text-income' : 'text-foreground')}>
                 {tx.amount > 0 ? '+' : ''}{formatCurrency(tx.amount)}
               </span>
             </div>

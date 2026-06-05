@@ -75,7 +75,7 @@ function UserAvatar({ name, userId, isMe }: { name: string | null; userId: strin
   const letter = name?.[0]?.toUpperCase() ?? '?'
   const color = isMe ? 'bg-muted-foreground/40' : AVATAR_COLORS[userId.charCodeAt(0) % AVATAR_COLORS.length]
   return (
-    <span className={cn('inline-flex w-4 h-4 rounded-full items-center justify-center text-[9px] font-bold text-white flex-shrink-0', color)}>
+    <span className={cn('inline-flex w-4 h-4 rounded-full items-center justify-center text-[9px] font-bold text-white shrink-0', color)}>
       {letter}
     </span>
   )
@@ -149,7 +149,7 @@ export function TransactionFeed({
                 >
                   {/* 카테고리 아이콘 */}
                   <div className={cn(
-                    'w-9 h-9 rounded-xl flex items-center justify-center text-base flex-shrink-0',
+                    'w-9 h-9 rounded-xl flex items-center justify-center text-base shrink-0',
                     tx.isMasked
                       ? 'bg-muted border border-dashed border-border'
                       : tx.amount > 0
@@ -194,7 +194,7 @@ export function TransactionFeed({
 
                   {/* 금액 */}
                   <span className={cn(
-                    'text-sm font-semibold tabular-nums flex-shrink-0',
+                    'text-sm font-semibold tabular-nums shrink-0',
                     tx.isMasked ? 'text-muted-foreground'
                     : tx.amount > 0 ? 'text-income'
                     : 'text-foreground'

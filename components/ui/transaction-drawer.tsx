@@ -417,7 +417,7 @@ export function TransactionDrawer({
 
             <div className="flex items-baseline justify-center gap-1 max-w-full overflow-hidden">
               <span className={cn(
-                "text-3xl font-light flex-shrink-0",
+                "text-3xl font-light shrink-0",
                 isExpense ? "text-expense/60" : "text-income/60"
               )}>
                 ₩
@@ -439,7 +439,7 @@ export function TransactionDrawer({
                 placeholder="0"
                 autoFocus
                 className={cn(
-                  "bg-transparent text-center font-bold placeholder-muted-foreground/40 outline-none tabular-nums tracking-tight text-4xl sm:text-5xl min-w-0",
+                  "bg-transparent text-center font-bold placeholder-muted-foreground/40 outline-hidden tabular-nums tracking-tight text-4xl sm:text-5xl min-w-0",
                   isExpense ? "text-foreground" : "text-income"
                 )}
                 style={{
@@ -510,7 +510,7 @@ export function TransactionDrawer({
                           <span className="text-base">{cat.icon}</span>
                           {cat.name}
                           {isSelected && (
-                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-foreground rounded-full flex items-center justify-center shadow">
+                            <span className="absolute -top-1 -right-1 w-4 h-4 bg-foreground rounded-full flex items-center justify-center shadow-sm">
                               <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M2 5.5L4 7.5L8 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-background"/></svg>
                             </span>
                           )}
@@ -537,7 +537,7 @@ export function TransactionDrawer({
                           onChange={e => setNewCatIcon(e.target.value)}
                           placeholder="🏷️"
                           maxLength={2}
-                          className="w-12 h-9 text-center bg-background border border-border rounded-lg text-sm outline-none focus:ring-1 focus:ring-ring"
+                          className="w-12 h-9 text-center bg-background border border-border rounded-lg text-sm outline-hidden focus:ring-1 focus:ring-ring"
                         />
                         <input
                           type="text"
@@ -548,7 +548,7 @@ export function TransactionDrawer({
                             else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); setShowAddCategory(false); setAddCatError(''); setNewCatName(''); setNewCatIcon('') }
                           }}
                           placeholder="카테고리 이름"
-                          className="flex-1 h-9 bg-background border border-border rounded-lg px-3 text-sm outline-none focus:ring-1 focus:ring-ring"
+                          className="flex-1 h-9 bg-background border border-border rounded-lg px-3 text-sm outline-hidden focus:ring-1 focus:ring-ring"
                           autoFocus
                         />
                         <button
@@ -580,7 +580,7 @@ export function TransactionDrawer({
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full h-11 bg-muted rounded-xl px-4 border border-border text-sm text-foreground outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-all [color-scheme:dark]"
+                className="w-full h-11 bg-muted rounded-xl px-4 border border-border text-sm text-foreground outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-all scheme-dark"
               />
             </div>
 
@@ -598,11 +598,11 @@ export function TransactionDrawer({
                   }
                 }}
                 placeholder="어디서, 무엇을 했나요? (예: 스타벅스)"
-                className="w-full h-11 bg-muted rounded-xl px-4 border border-border text-sm text-foreground placeholder-muted-foreground/40 outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-all"
+                className="w-full h-11 bg-muted rounded-xl px-4 border border-border text-sm text-foreground placeholder-muted-foreground/40 outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-all"
               />
               {autoSuggestedCategory && (
                 <p className="text-xs text-income/80 mt-1.5 pl-1 flex items-center gap-1">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--viz-emerald)]" />
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-(--viz-emerald)" />
                   &lsquo;{description}&rsquo; → <span className="font-medium">{autoSuggestedCategory}</span> 카테고리 자동 선택됨
                 </p>
               )}
@@ -655,7 +655,7 @@ export function TransactionDrawer({
                   </p>
                 </div>
                 <div className={cn(
-                  'w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0',
+                  'w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0',
                   isExcluded ? 'bg-destructive border-destructive' : 'border-muted-foreground/30'
                 )}>
                   {isExcluded && (
@@ -687,7 +687,7 @@ export function TransactionDrawer({
                   </p>
                 </div>
                 <div className={cn(
-                  'w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0',
+                  'w-5 h-5 rounded-md border-2 flex items-center justify-center shrink-0',
                   excludeFromBudget ? 'bg-warning border-warning' : 'border-muted-foreground/30'
                 )}>
                   {excludeFromBudget && (
@@ -700,8 +700,8 @@ export function TransactionDrawer({
             )}
 
             {!isShared && (
-              <div className="flex items-start gap-2.5 rounded-xl px-4 py-3 bg-warning-soft/50 border border-[var(--viz-amber)]/15">
-                <Lock className="w-4 h-4 text-warning mt-0.5 flex-shrink-0" />
+              <div className="flex items-start gap-2.5 rounded-xl px-4 py-3 bg-warning-soft/50 border border-(--viz-amber)/15">
+                <Lock className="w-4 h-4 text-warning mt-0.5 shrink-0" />
                 <p className="text-xs text-warning/80 leading-relaxed">
                   이 지출의 상세 내역은 가족에게 공개되지 않습니다.<br />
                   <span className="text-warning/50">가족 대시보드에는 금액과 &lsquo;🔒 개인 지출&rsquo;만 표시됩니다.</span>
@@ -724,7 +724,7 @@ export function TransactionDrawer({
 
           {/* Error */}
           {error && (
-            <div className="mt-4 px-4 py-3 bg-expense-soft border border-[var(--viz-red)]/20 rounded-xl text-sm text-expense">
+            <div className="mt-4 px-4 py-3 bg-expense-soft border border-(--viz-red)/20 rounded-xl text-sm text-expense">
               {error}
             </div>
           )}
@@ -786,7 +786,7 @@ export function TransactionDrawer({
                 ) : (
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="w-full py-3.5 rounded-xl text-sm font-medium text-expense border border-[var(--viz-red)]/20 bg-[var(--viz-red)]/5 hover:bg-expense-soft hover:border-[var(--viz-red)]/40 transition-all flex items-center justify-center gap-2"
+                    className="w-full py-3.5 rounded-xl text-sm font-medium text-expense border border-(--viz-red)/20 bg-(--viz-red)/5 hover:bg-expense-soft hover:border-(--viz-red)/40 transition-all flex items-center justify-center gap-2"
                   >
                     <Trash2 className="w-4 h-4" />
                     삭제하기

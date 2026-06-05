@@ -32,7 +32,7 @@ function ltvStyle(ltv: number): { barColor: string; text: string; borderColor: s
 function DebtRow({ debt, onToggleLtv }: { debt: LinkedDebt; onToggleLtv: (id: string, val: boolean) => void }) {
   return (
     <div className="flex items-center gap-3 py-2.5 border-b border-border/60 last:border-0">
-      <div className="w-7 h-7 rounded-lg bg-expense-soft flex items-center justify-center flex-shrink-0">
+      <div className="w-7 h-7 rounded-lg bg-expense-soft flex items-center justify-center shrink-0">
         <HandCoins className="w-3.5 h-3.5 text-destructive" />
       </div>
       <div className="flex-1 min-w-0">
@@ -49,7 +49,7 @@ function DebtRow({ debt, onToggleLtv }: { debt: LinkedDebt; onToggleLtv: (id: st
           )}
         </div>
       </div>
-      <div className="flex items-center gap-3 flex-shrink-0">
+      <div className="flex items-center gap-3 shrink-0">
         <div className="text-right">
           <p className="text-xs font-semibold text-expense tabular-nums">-{formatLargeNumber(debt.balance)}</p>
           {debt.monthlyPayment != null && (
@@ -106,7 +106,7 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
       {/* 헤더 */}
       <div className="flex items-start justify-between px-5 py-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-purple-400/10 flex items-center justify-center flex-shrink-0">
+          <div className="w-9 h-9 rounded-xl bg-purple-400/10 flex items-center justify-center shrink-0">
             <Building2 className="w-4 h-4 text-purple-400" />
           </div>
           <div>

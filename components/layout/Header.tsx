@@ -23,7 +23,7 @@ export function Header({
   onLogout,
 }: HeaderProps) {
   const linkClass =
-    'flex items-center gap-2 px-3 py-2 md:px-4 bg-card rounded-lg border border-border text-xs md:text-sm font-medium text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
+    'flex items-center gap-2 px-3 py-2 md:px-4 bg-card rounded-lg border border-border text-xs md:text-sm font-medium text-muted-foreground hover:text-foreground hover:border-foreground/20 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background'
 
   return (
     <div className="flex items-center justify-between mb-8">
@@ -72,7 +72,7 @@ export function Header({
         {/* ── 로그아웃 ── */}
         <button
           onClick={onLogout}
-          className="flex items-center gap-2 px-3 py-2 md:px-4 bg-card rounded-lg border border-border text-xs md:text-sm font-medium text-muted-foreground hover:text-destructive hover:border-destructive/30 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className="flex items-center gap-2 px-3 py-2 md:px-4 bg-card rounded-lg border border-border text-xs md:text-sm font-medium text-muted-foreground hover:text-destructive hover:border-destructive/30 transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           <LogOut className="w-4 h-4" />
           <span className="hidden sm:inline">로그아웃</span>

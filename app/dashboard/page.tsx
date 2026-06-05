@@ -169,7 +169,7 @@ export default function Dashboard() {
 
       {/* 헤더: 뷰 전환 + 월 선택 */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center bg-card rounded-xl border border-border p-0.5 flex-shrink-0">
+        <div className="flex items-center bg-card rounded-xl border border-border p-0.5 shrink-0">
           <button
             onClick={() => setViewMode('MEMBER')}
             className={cn(
@@ -177,7 +177,7 @@ export default function Dashboard() {
               viewMode === 'MEMBER' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground/70'
             )}
           >
-            <User className="w-3.5 h-3.5 flex-shrink-0" />
+            <User className="w-3.5 h-3.5 shrink-0" />
             개인
           </button>
           <button
@@ -187,7 +187,7 @@ export default function Dashboard() {
               viewMode === 'CFO' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground/70'
             )}
           >
-            <Users className="w-3.5 h-3.5 flex-shrink-0" />
+            <Users className="w-3.5 h-3.5 shrink-0" />
             패밀리
           </button>
         </div>
