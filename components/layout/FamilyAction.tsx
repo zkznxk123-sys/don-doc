@@ -105,8 +105,8 @@ export function FamilyAction({ userRole }: FamilyActionProps) {
                         className={cn(
                           'w-full flex items-center justify-center gap-2 h-10 rounded-xl border text-sm font-medium transition-all',
                           copied
-                            ? 'bg-income-soft border-emerald-500/30 text-income'
-                            : 'bg-zinc-800 border-zinc-700 text-zinc-300 hover:text-white hover:border-zinc-600'
+                            ? 'bg-income-soft border-income/30 text-income'
+                            : 'bg-muted border-border text-muted-foreground hover:text-foreground hover:border-ring'
                         )}
                       >
                         {copied ? <><Check className="w-4 h-4" />복사됨!</> : <><Copy className="w-4 h-4" />초대 링크 복사</>}

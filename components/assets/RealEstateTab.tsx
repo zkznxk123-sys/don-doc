@@ -1,6 +1,5 @@
 'use client'
 
-import { useState } from 'react'
 import { RealEstateCard } from '@/components/ui/real-estate-card'
 import { PriceHistoryChart } from '@/components/ui/price-history-chart'
 import type { AccountInitialData } from '@/components/ui/account-drawer'
@@ -33,17 +32,9 @@ interface RealEstateTabProps {
 export function RealEstateTab({
   realEstateAccounts, reSummary, totalDebtMonthlyPayment, avgMonthlyIncome,
   priceHistories, targetProperties, fetchingPrice,
-  onAdd, onEdit, onFetchPrice, onFetchTargetPrice, onLoadHistory,
+  onAdd, onEdit, onFetchPrice, onFetchTargetPrice,
   onAddTarget, onEditTarget, onDeleteTarget,
 }: RealEstateTabProps) {
-  const [historyLoadedFor, setHistoryLoadedFor] = useState<Set<string>>(new Set())
-
-  const handleLoadHistory = async (accountId: string) => {
-    if (historyLoadedFor.has(accountId)) return
-    await onLoadHistory(accountId)
-    setHistoryLoadedFor(prev => new Set(Array.from(prev).concat(accountId)))
-  }
-
   // 차트용 데이터 — history가 있는 부동산만
   const ownForChart = realEstateAccounts
     .filter(a => (priceHistories[a.id]?.length ?? 0) > 0)

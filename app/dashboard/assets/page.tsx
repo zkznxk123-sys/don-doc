@@ -61,7 +61,6 @@ import { FinancialTab } from '@/components/assets/FinancialTab'
 
 const REAL_ESTATE_TYPES = new Set(['REAL_ESTATE'])
 const FINANCIAL_TYPES = new Set(['CASH', 'INVESTMENT', 'CRYPTO', 'STO', 'PENSION'])
-const PENSION_TYPES = new Set(['PENSION'])
 
 function getCurrentYearMonth(): string {
   const now = new Date()
@@ -247,7 +246,6 @@ export default function AssetsPage() {
 
   const realEstateAccounts = accounts.filter(a => REAL_ESTATE_TYPES.has(a.type))
   const financialAccounts = accounts.filter(a => FINANCIAL_TYPES.has(a.type))
-  const pensionAccounts = accounts.filter(a => PENSION_TYPES.has(a.type))
   const financialTotalAssets = financialAccounts.reduce((s, a) => s + a.balance, 0)
 
   const showBanner = !!missingYearMonth && !bannerDismissed

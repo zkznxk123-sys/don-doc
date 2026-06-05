@@ -55,7 +55,6 @@ export function TransactionDrawer({
   onClose,
   currentUserId,
   userRole,
-  familyId,
   onSuccess,
   editTransaction,
 }: TransactionDrawerProps) {

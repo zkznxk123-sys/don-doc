@@ -39,7 +39,6 @@ export async function getFinancialInsights(
 ): Promise<FinancialInsights> {
   const [y, m] = month.split('-').map(Number)
 
-  const currentStart = new Date(y, m - 1, 1)
   const currentEnd = new Date(y, m, 1)
   const twelveMonthsAgo = new Date(y, m - 13, 1) // 12개월 이전 시작
 

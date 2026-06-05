@@ -22,8 +22,6 @@ export async function GET() {
   const familyId = user.familyId
   const now = new Date()
   const nowMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-  const prevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  const prevMonthStr = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, '0')}`
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1)
 
   const [accounts, netWorthHistory, transactions, allTransactions, budget, memberBudgets, scenarios, feedPosts, members] = await Promise.all([

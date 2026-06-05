@@ -59,7 +59,7 @@ export function TargetPropertyDrawer({
       }
       onSuccess()
       onClose()
-    } catch (e) {
+    } catch {
       toast.error('저장 실패')
     } finally {
       setSaving(false)

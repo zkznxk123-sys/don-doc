@@ -165,7 +165,7 @@ export function AssetDonutChart({ data, totalAssets, manageLink, hideZeroAccount
         {/* 범례 */}
         <div className="w-full space-y-1">
           {/* 자산 항목 */}
-          {data.filter(d => !d.isLiability).map((item, i) => {
+          {data.filter(d => !d.isLiability).map(item => {
             const palette = ASSET_PALETTE[item.type] || FALLBACK
             const isExpanded = expandedType === item.type
             const idx = data.indexOf(item)

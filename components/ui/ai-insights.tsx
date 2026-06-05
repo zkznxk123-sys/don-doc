@@ -16,7 +16,7 @@ interface AiInsightsProps {
   familyId: string
 }
 
-export function AiInsights({ familyId }: AiInsightsProps) {
+export function AiInsights({}: AiInsightsProps) {
   const [insights, setInsights] = useState<string | null>(null)
   const [summary, setSummary] = useState<InsightsSummary | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -49,7 +49,7 @@ export function AiInsights({ familyId }: AiInsightsProps) {
       setInsights(data.insights)
       setSummary(data.summary)
       setLlmMuxDown(false)
-    } catch (e) {
+    } catch {
       setError('네트워크 오류가 발생했습니다.')
     } finally {
       setIsLoading(false)

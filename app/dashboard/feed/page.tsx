@@ -39,8 +39,8 @@ function authorInitial(name: string | null): string {
 }
 
 const AVATAR_COLORS = [
-  'bg-indigo-500', 'bg-violet-500', 'bg-income',
-  'bg-warning', 'bg-savings', 'bg-rose-500',
+  'bg-savings', 'bg-(--viz-violet)', 'bg-income',
+  'bg-warning', 'bg-(--viz-blue)', 'bg-destructive',
 ]
 function avatarColor(id: string): string {
   let hash = 0
@@ -537,7 +537,7 @@ function PostComposer({ onPosted }: { onPosted: (post: FamilyPostData) => void }
 export default function FeedPage() {
   const [posts, setPosts] = useState<FamilyPostData[]>([])
   const [loading, setLoading] = useState(true)
-  const [isCFO, setIsCFO] = useState(false)
+  const [isCFO] = useState(false)
 
   const load = useCallback(async () => {
     const data = await getFeedPosts()

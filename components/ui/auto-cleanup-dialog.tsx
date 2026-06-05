@@ -38,7 +38,8 @@ export function AutoCleanupDialog({ open, groups, onClose, onDone }: Props) {
   const toggle = (i: number) => {
     setSelected(prev => {
       const next = new Set(prev)
-      next.has(i) ? next.delete(i) : next.add(i)
+      if (next.has(i)) next.delete(i)
+      else next.add(i)
       return next
     })
   }
@@ -152,7 +153,7 @@ export function AutoCleanupDialog({ open, groups, onClose, onDone }: Props) {
 
                         {/* 트랜잭션 목록 */}
                         <div className="flex-1 min-w-0 space-y-1.5">
-                          {group.transactions.map((tx, ti) => {
+                          {group.transactions.map(tx => {
                             const willExclude = group.toExcludeIds.includes(tx.id)
                             return (
                               <div key={tx.id} className="flex items-center justify-between gap-2">

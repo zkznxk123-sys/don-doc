@@ -55,10 +55,10 @@ export default function InvitePage() {
         <div className={cn(
           "w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 border",
           status === 'success'
-            ? "bg-income-soft border-emerald-500/20"
+            ? "bg-income-soft border-income/20"
             : status === 'error'
             ? "bg-expense-soft border-destructive/20"
-            : "bg-zinc-900 border-zinc-800"
+            : "bg-muted border-border"
         )}>
           {status === 'success' ? (
             <CheckCircle2 className="w-7 h-7 text-income" />

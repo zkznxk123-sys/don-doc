@@ -12,7 +12,7 @@ describe('cn (tailwind class merge)', () => {
 
   it('twMerge resolves conflicting Tailwind utilities — last wins', () => {
     expect(cn('p-2', 'p-4')).toBe('p-4')
-    expect(cn('text-red-500', 'text-blue-500')).toBe('text-blue-500')
+    expect(cn('text-destructive', 'text-income')).toBe('text-income')
   })
 
   it('preserves non-conflicting utilities', () => {

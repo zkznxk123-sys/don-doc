@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/drawer'
 import { createManyTransactions, syncAccountBalancesOnly, checkTransactionDuplicates, type BulkTransactionRow } from '@/lib/actions/transaction'
 import { autoDetectAndExcludeTransfers, autoDetectAndExcludeCancellations, autoDetectAndExcludeSharedCardDuplicates } from '@/lib/actions/transactions/auto-exclude'
-import { getFamilyCategories, syncBanksaladCategories, type CategoryOption } from '@/lib/actions/categories'
+import { syncBanksaladCategories } from '@/lib/actions/categories'
 import { useDefaultVisibility } from '@/lib/hooks/useDefaultVisibility'
 import {
   type ColMap, type ExcelPreset,
@@ -62,7 +62,6 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
   // AI 매핑
   const [aiStatus, setAiStatus] = useState<AiStatus>('idle')
   const [aiMappedCount, setAiMappedCount] = useState(0)
-  const [categories, setCategories] = useState<CategoryOption[]>([])
 
   // 뱅샐현황 계좌 잔액 목록
   const [accountBalances, setAccountBalances] = useState<AccountBalance[]>([])
@@ -89,7 +88,6 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
   // ── 카테고리 + 가족 정보 로드 ──
   useEffect(() => {
     if (!isOpen) return
-    getFamilyCategories().then(setCategories).catch(() => {})
     fetch('/api/family/info')
       .then(r => r.json())
       .then(d => {
@@ -517,7 +515,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                     {banksaladMeta?.skipped ? (
                       <div className="flex items-center gap-1 mt-1">
                         <SkipForward className="w-3 h-3 text-muted-foreground" />
-                        <p className="text-[11px] text-muted-foreground">"이체" {banksaladMeta.skipped}건 자동 제외</p>
+                        <p className="text-[11px] text-muted-foreground">&ldquo;이체&rdquo; {banksaladMeta.skipped}건 자동 제외</p>
                       </div>
                     ) : null}
                   </div>

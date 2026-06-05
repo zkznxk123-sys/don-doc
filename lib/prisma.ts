@@ -37,10 +37,9 @@ function getClient(): any {
   return globalForPrisma.prisma
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildStub(): any {
-  return new Proxy({} as any, {
-    get: (_t, _p) => () => Promise.resolve(null),
+function buildStub(): unknown {
+  return new Proxy({}, {
+    get: () => () => Promise.resolve(null),
   })
 }
 

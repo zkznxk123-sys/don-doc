@@ -49,7 +49,8 @@ function TxnShareModal({ tx, onClose }: { tx: Transaction; onClose: () => void }
   const toggleTag = (id: string) =>
     setTaggedIds(prev => {
       const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
       return next
     })
 
@@ -180,7 +181,7 @@ export function TransactionRow({
       <div className={cn(
         'px-4 py-2 transition-colors',
         isDirty
-          ? 'bg-emerald-100/80 dark:bg-emerald-950/15 border-l-2 border-emerald-500 dark:border-emerald-600/70'
+          ? 'bg-income-soft border-l-2 border-income'
           : 'border-l-2 border-transparent',
         effectiveExcluded && 'opacity-50',
       )}>

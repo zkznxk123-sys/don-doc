@@ -72,12 +72,10 @@ describe('addTradeRecord — BUY', () => {
     vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => cb(txMock))
 
     // recalcAccountBalanceFromHoldings에서 사용 — 빈 holdings + balance 0
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     vi.mocked(prisma.account.findUnique).mockResolvedValue({
       id: 'a1', type: 'INVESTMENT', balance: 0, holdings: [],
-    } as any)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    vi.mocked(prisma.account.update).mockResolvedValue({} as any)
+    } as unknown as Awaited<ReturnType<typeof prisma.account.findUnique>>)
+    vi.mocked(prisma.account.update).mockResolvedValue({} as unknown as Awaited<ReturnType<typeof prisma.account.update>>)
 
     // ── ACT
     const result = await addTradeRecord({
@@ -200,13 +198,13 @@ function setupAuthAndHolding(opts: {
     transaction: { create: vi.fn() },
   }
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => cb(txMock))
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  vi.mocked(prisma.$transaction).mockImplementation(async cb =>
+    (cb as unknown as (tx: typeof txMock) => unknown)(txMock),
+  )
   vi.mocked(prisma.account.findUnique).mockResolvedValue({
     id: 'a1', type: 'INVESTMENT', balance: 0, holdings: [],
-  } as any)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  vi.mocked(prisma.account.update).mockResolvedValue({} as any)
+  } as unknown as Awaited<ReturnType<typeof prisma.account.findUnique>>)
+  vi.mocked(prisma.account.update).mockResolvedValue({} as unknown as Awaited<ReturnType<typeof prisma.account.update>>)
   return txMock
 }
 

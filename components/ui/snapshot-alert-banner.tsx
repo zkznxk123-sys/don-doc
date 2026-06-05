@@ -54,7 +54,7 @@ export function SnapshotAlertBanner({ yearMonth, onSaved, onDismiss }: SnapshotA
         <button
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center gap-1.5 mt-2.5 text-xs font-semibold text-amber-900 bg-amber-400 hover:bg-amber-300 disabled:opacity-60 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition-colors"
+          className="inline-flex items-center gap-1.5 mt-2.5 text-xs font-semibold text-background bg-warning hover:bg-warning/80 disabled:opacity-60 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition-colors"
         >
           <Camera className="w-3.5 h-3.5" />
           {saving ? '저장 중...' : '현재 잔액으로 기록'}
