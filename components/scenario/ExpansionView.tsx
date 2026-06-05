@@ -80,7 +80,7 @@ export function ExpansionView({ expansion }: { expansion: ScenarioExpansion }) {
       </div>
 
       {/* 에이전트 실행 — KIS 브로커 연동 검증 후 활성화 (feat/kis-broker 브랜치 참조) */}
-      {/* eslint-disable-next-line @typescript-eslint/no-unused-vars */}
+      { }
       {false && (
         <>
           <button

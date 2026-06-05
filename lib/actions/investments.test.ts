@@ -184,7 +184,7 @@ function setupAuthAndHolding(opts: {
   // 거래일 환율 (USD case) — addTradeRecord에서 getHistoricalUsdKrw 호출
   vi.mocked(getHistoricalUsdKrw).mockResolvedValue(opts.currency === 'USD' ? 1400 : 1)
   // 카테고리 매핑 - 기본은 시드되어 있음
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   vi.mocked(prisma.category.findMany).mockResolvedValue([
     { id: 'cat-income',   name: '투자수익',   familyId: null },
     { id: 'cat-loss',     name: '투자손실',   familyId: null },
@@ -197,7 +197,7 @@ function setupAuthAndHolding(opts: {
     investmentHolding: { update: vi.fn() },
     transaction: { create: vi.fn() },
   }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+   
   vi.mocked(prisma.$transaction).mockImplementation(async cb =>
     (cb as unknown as (tx: typeof txMock) => unknown)(txMock),
   )

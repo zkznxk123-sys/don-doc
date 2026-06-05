@@ -24,7 +24,7 @@ function getClient(): any {
 
   if (!globalForPrisma.prisma) {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+       
       const { PrismaClient } = require('@prisma/client')
       globalForPrisma.prisma = new PrismaClient()
     } catch {
