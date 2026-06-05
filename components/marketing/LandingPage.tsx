@@ -157,7 +157,7 @@ function Hero() {
             </a>
           </motion.div>
 
-          {/* 측정 가능한 결과 — 경진대회 정량 목표 */}
+          {/* 측정 가능한 결과 — 사용자 가치 정량 목표 */}
           <motion.div
             initial={{ opacity: 0, y: 14 }}
             animate={{ opacity: 1, y: 0 }}
