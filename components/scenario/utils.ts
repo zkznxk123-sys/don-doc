@@ -13,11 +13,11 @@ export function feasibilityBg(v: number) {
 }
 
 const CATEGORY_STYLE: Record<string, string> = {
-  '부동산': 'bg-blue-100 dark:bg-blue-900/30 text-blue-600',
-  '투자':   'bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400',
-  '부채':   'bg-red-100 dark:bg-red-900/30 text-red-600',
+  '부동산': 'bg-[var(--viz-blue)]/15 text-[var(--viz-blue)]',
+  '투자':   'bg-[var(--viz-violet)]/15 text-[var(--viz-violet)]',
+  '부채':   'bg-destructive/15 text-destructive',
   '현금흐름': 'bg-income-soft text-income',
-  '연금/장기': 'bg-warning-soft dark:bg-amber-900/30 text-amber-600',
+  '연금/장기': 'bg-warning-soft text-warning',
 }
 
 export function categoryStyle(c: string | null) {

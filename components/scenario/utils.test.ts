@@ -36,9 +36,9 @@ describe('categoryStyle', () => {
     expect(categoryStyle('부동산')).toContain('blue')
     expect(categoryStyle('부동산 갈아타기')).toContain('blue')
     expect(categoryStyle('투자')).toContain('violet')
-    expect(categoryStyle('부채')).toContain('red')
+    expect(categoryStyle('부채')).toContain('destructive')
     expect(categoryStyle('현금흐름')).toBe('bg-income-soft text-income')
-    expect(categoryStyle('연금/장기')).toContain('amber')
+    expect(categoryStyle('연금/장기')).toContain('warning')
   })
 })
 

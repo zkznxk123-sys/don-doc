@@ -162,10 +162,6 @@ export default function CashflowPage() {
     else setMonth(m => m + 1)
   }
 
-  const savingsRate = summary && summary.income > 0
-    ? Math.round((summary.savings / summary.income) * 100)
-    : null
-
   const draftCount = Object.keys(drafts).length
 
   // draft 적용 후의 로컬 summary 계산
@@ -231,7 +227,8 @@ export default function CashflowPage() {
         next.amount === original.amount &&
         next.description === original.description
       ) {
-        const { [id]: _, ...rest } = prev
+        const { [id]: _removed, ...rest } = prev
+        void _removed
         return rest
       }
       return { ...prev, [id]: next }

@@ -178,7 +178,7 @@ export default function ScenarioPage() {
               ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />생성 중</>
               : <><RefreshCw className="w-3.5 h-3.5" />{needsRegen ? '업데이트' : '재생성'}</>}
             {needsRegen && !generating && (
-              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-red-400" />
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-destructive" />
             )}
           </button>
         </div>
