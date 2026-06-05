@@ -557,6 +557,9 @@ export async function syncAccountBalancesOnly(
     const pending: PendingBalance[] = []
     const skipped: string[] = []
     const cashSubCreated: string[] = []
+    // 사용자가 명시적으로 sync한 row → ExcelMapping 자동 upsert로 다음 업로드부터 같은 결정 적용.
+    // 매핑이 이미 있는 row는 skip (사용자 결정 우선).
+    const mappingsToUpsert: { excelName: string; mappingType: 'ACCOUNT' | 'CASH_SUB' | 'HOLDING_SKIP'; targetAccountId: string }[] = []
 
     const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, '')
     const allFamilyAccounts = await prisma.account.findMany({
@@ -640,6 +643,7 @@ export async function syncAccountBalancesOnly(
           cashSubCreated.push(`${accountHit.name} 예수금`)
           pending.push({ accountId: created.id, oldBalance: 0, newBalance: ab.balance })
         }
+        if (!mapping) mappingsToUpsert.push({ excelName: ab.name, mappingType: 'CASH_SUB', targetAccountId: accountHit.id })
         continue
       }
 
@@ -653,6 +657,7 @@ export async function syncAccountBalancesOnly(
         )
         if (holdingHit) {
           skipped.push(ab.name)
+          if (!mapping) mappingsToUpsert.push({ excelName: ab.name, mappingType: 'HOLDING_SKIP', targetAccountId: holdingHit.id })
           continue
         }
       }
@@ -660,12 +665,33 @@ export async function syncAccountBalancesOnly(
       const id = await findOrCreateAccount(ab.name, familyId, ab.type ?? 'CASH', userId)
       const acc = await prisma.account.findUnique({ where: { id }, select: { balance: true } })
       pending.push({ accountId: id, oldBalance: acc?.balance ?? 0, newBalance: ab.balance })
+      if (!mapping) {
+        // 신규 계좌도 동일 — 첫 업로드에서 생성된 id로 ACCOUNT 매핑. 다음 업로드부터 같은 계좌로 동기화
+        mappingsToUpsert.push({ excelName: ab.name, mappingType: 'ACCOUNT', targetAccountId: id })
+      }
     }
     if (skipped.length > 0) {
       console.log('[syncAccountBalancesOnly] skipped holdings:', skipped)
     }
     if (cashSubCreated.length > 0) {
       console.log('[syncAccountBalancesOnly] created cash sub-accounts:', cashSubCreated)
+    }
+
+    // 1.5. ExcelMapping 자동 등록 — 다음 업로드부터 같은 결정 재적용
+    for (const m of mappingsToUpsert) {
+      await prisma.excelMapping.upsert({
+        where: { familyId_excelName: { familyId, excelName: m.excelName } },
+        create: {
+          familyId,
+          excelName: m.excelName,
+          mappingType: m.mappingType,
+          targetAccountId: m.targetAccountId,
+        },
+        update: {
+          mappingType: m.mappingType,
+          targetAccountId: m.targetAccountId,
+        },
+      })
     }
 
     // 2. 배치 생성 (자산만 업로드 모드 → source='manual-sync')
