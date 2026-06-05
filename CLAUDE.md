@@ -1,6 +1,6 @@
 # 돈Doc (Don-Doc) — CLAUDE.md
 
-가족 공유 자산/가계부 관리 앱. Next.js 14 App Router 기반.
+1인 자산 본부 도구 (선택적 가족·동업자 공유). Next.js 15 App Router 기반.
 
 ---
 
@@ -207,9 +207,16 @@ NEXT_PUBLIC_POSTHOG_KEY=
 NEXT_PUBLIC_POSTHOG_HOST=
 # 선택
 LLM_MUX_URL=          # 기본값: http://localhost:8317
+OPENAI_API_KEY=       # LLM fallback 직접 호출 (lib/ai.ts)
 FRANKR_CLIENT_ID=     # fran.kr 세금 계산 API (보유세·취득세·양도세 등)
 FRANKR_CLIENT_SECRET=
-DEMO_CFO_EMAIL=       # /api/demo/data 가 조회할 데모 가족 CFO 이메일
+MOLIT_API_KEY=        # 국토부 실거래가 API (부동산 시세)
+KAKAO_REST_API_KEY=   # 카카오 주소 검색 API
+DART_API_KEY=         # DART 공시 API (주식 펀더멘털 fallback)
+CLI_PROXY_MGMT_SECRET= # CLIProxy 관리 API (오버라이드 시)
+CLI_PROXY_API_KEY=
+ADMIN_FAMILY_ID=      # 가족 그룹 운영자 식별 (oauth status 확인용)
+DEMO_CFO_EMAIL=       # /api/demo/data 가 조회할 데모 가족 CFO 이메일 (가명 권장)
 ```
 
 ---
