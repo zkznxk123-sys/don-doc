@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Trash2, Loader2, FileSpreadsheet } from 'lucide-react'
+import { ArrowLeft, Trash2, Loader2, FileSpreadsheet, Plus } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   AlertDialog,
@@ -18,8 +18,12 @@ import {
 import {
   listExcelMappings,
   deleteExcelMapping,
+  upsertExcelMapping,
+  listFamilyAccountsForMapping,
   type ExcelMappingData,
+  type AccountSummary,
 } from '@/lib/actions/excel-mapping'
+import type { ExcelMappingType } from '@prisma/client'
 
 const TYPE_LABEL: Record<string, { label: string; tone: string }> = {
   ACCOUNT:      { label: '계좌 매칭',     tone: 'text-foreground bg-muted' },
@@ -37,22 +41,76 @@ const TYPE_DESC: Record<string, string> = {
   IGNORE:       '동기화 영구 제외 (예: dondoc에 등록 안 하는 카드)',
 }
 
+const TYPES_REQUIRING_ACCOUNT: ExcelMappingType[] = ['ACCOUNT', 'CASH_SUB', 'HOLDING_SKIP']
+
 export default function ExcelMappingsPage() {
   const [mappings, setMappings] = useState<ExcelMappingData[]>([])
+  const [accounts, setAccounts] = useState<AccountSummary[]>([])
   const [loading, setLoading] = useState(true)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  // 신규 매핑 폼 state
+  const [formOpen, setFormOpen] = useState(false)
+  const [formName, setFormName] = useState('')
+  const [formType, setFormType] = useState<ExcelMappingType>('ACCOUNT')
+  const [formAccountId, setFormAccountId] = useState<string>('')
+  const [submitting, setSubmitting] = useState(false)
+
+  const needsAccount = TYPES_REQUIRING_ACCOUNT.includes(formType)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const rows = await listExcelMappings()
+      const [rows, accs] = await Promise.all([
+        listExcelMappings(),
+        listFamilyAccountsForMapping(),
+      ])
       setMappings(rows)
+      setAccounts(accs)
     } finally {
       setLoading(false)
     }
   }, [])
 
   useEffect(() => { load() }, [load])
+
+  const resetForm = () => {
+    setFormName('')
+    setFormType('ACCOUNT')
+    setFormAccountId('')
+    setFormOpen(false)
+  }
+
+  const handleSubmit = async () => {
+    if (!formName.trim()) {
+      toast.error('엑셀 표기명을 입력하세요')
+      return
+    }
+    if (needsAccount && !formAccountId) {
+      toast.error('대상 계좌를 선택하세요')
+      return
+    }
+    setSubmitting(true)
+    try {
+      const res = await upsertExcelMapping({
+        excelName: formName.trim(),
+        mappingType: formType,
+        targetAccountId: needsAccount ? formAccountId : null,
+      })
+      if (res.success) {
+        toast.success('매핑이 저장되었습니다')
+        setMappings(prev => {
+          const filtered = prev.filter(m => m.id !== res.data.id)
+          return [res.data, ...filtered]
+        })
+        resetForm()
+      } else {
+        toast.error(res.error)
+      }
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   const handleDelete = async (id: string) => {
     setDeletingId(id)
@@ -87,6 +145,81 @@ export default function ExcelMappingsPage() {
         뱅크샐러드 엑셀에서 발견된 표기명을 돈Doc 계좌에 어떻게 매핑할지 한 번 확정한 결과입니다.
         다음 업로드부터 자동 적용되며, 잘못 매핑된 항목은 여기서 삭제할 수 있습니다.
       </p>
+
+      {/* 신규 매핑 폼 */}
+      {!formOpen ? (
+        <button
+          onClick={() => setFormOpen(true)}
+          className="mb-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-card border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-ring transition-colors"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          매핑 직접 추가
+        </button>
+      ) : (
+        <div className="mb-4 bg-card border border-border rounded-2xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-foreground">매핑 추가</h2>
+            <button
+              onClick={resetForm}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              취소
+            </button>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block">
+              <span className="text-[11px] font-medium text-muted-foreground mb-1 block">엑셀 표기명</span>
+              <input
+                type="text"
+                value={formName}
+                onChange={e => setFormName(e.target.value)}
+                placeholder="예: 종합매매, RISE 단기특수은행채액티브"
+                className="w-full bg-muted/40 border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-1 focus:ring-primary/30"
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-[11px] font-medium text-muted-foreground mb-1 block">매핑 타입</span>
+              <select
+                value={formType}
+                onChange={e => setFormType(e.target.value as ExcelMappingType)}
+                className="w-full bg-muted/40 border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+              >
+                {(Object.keys(TYPE_LABEL) as ExcelMappingType[]).map(t => (
+                  <option key={t} value={t}>{TYPE_LABEL[t].label} — {TYPE_DESC[t]}</option>
+                ))}
+              </select>
+            </label>
+
+            {needsAccount && (
+              <label className="block">
+                <span className="text-[11px] font-medium text-muted-foreground mb-1 block">대상 계좌</span>
+                <select
+                  value={formAccountId}
+                  onChange={e => setFormAccountId(e.target.value)}
+                  className="w-full bg-muted/40 border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+                >
+                  <option value="">— 선택 —</option>
+                  {accounts.map(a => (
+                    <option key={a.id} value={a.id}>{a.name} ({a.type})</option>
+                  ))}
+                </select>
+              </label>
+            )}
+          </div>
+
+          <button
+            onClick={handleSubmit}
+            disabled={submitting || !formName.trim() || (needsAccount && !formAccountId)}
+            className="w-full px-3 py-2 rounded-xl bg-foreground text-background text-sm font-semibold hover:bg-foreground/90 transition-colors disabled:opacity-40 inline-flex items-center justify-center gap-1.5"
+          >
+            {submitting
+              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />저장 중</>
+              : <><Plus className="w-3.5 h-3.5" />매핑 저장</>}
+          </button>
+        </div>
+      )}
 
       {loading ? (
         <div className="flex flex-col items-center py-12 gap-2">

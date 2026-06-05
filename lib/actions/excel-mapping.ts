@@ -25,6 +25,23 @@ async function getCurrentFamilyId(): Promise<string | null> {
   return user?.familyId ?? null
 }
 
+export interface AccountSummary {
+  id: string
+  name: string
+  type: string
+}
+
+export async function listFamilyAccountsForMapping(): Promise<AccountSummary[]> {
+  const familyId = await getCurrentFamilyId()
+  if (!familyId) return []
+  const accounts = await prisma.account.findMany({
+    where: { familyId },
+    select: { id: true, name: true, type: true },
+    orderBy: { name: 'asc' },
+  })
+  return accounts
+}
+
 export async function listExcelMappings(): Promise<ExcelMappingData[]> {
   const familyId = await getCurrentFamilyId()
   if (!familyId) return []
