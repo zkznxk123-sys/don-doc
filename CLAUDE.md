@@ -8,10 +8,11 @@
 
 | 분류 | 스택 |
 |------|------|
-| 프레임워크 | Next.js 15.3.9 (App Router, Turbo dev) |
+| 프레임워크 | Next.js 16.2.7 (App Router, Turbo dev) |
 | 인증 | Clerk (@clerk/nextjs) |
-| DB | PostgreSQL + Prisma 5 |
-| 스타일 | Tailwind CSS + shadcn/ui (Radix UI) |
+| 런타임 | React 19 + TypeScript 6 |
+| DB | PostgreSQL + Prisma 6 |
+| 스타일 | Tailwind CSS 4 (CSS-first @theme) + shadcn/ui (Radix UI) |
 | AI | Vercel AI SDK + OpenAI gpt-4o-mini (LLM-Mux 경유) |
 | 알림 | Sonner (toast) |
 | 차트 | Recharts |
@@ -160,9 +161,11 @@ const categories = await getFamilyCategories()
 - **ExchangeRate** — USD-KRW 환율 스냅샷
 - **FeedPost** — 가족 피드 게시물
 - **Scenario** — 시나리오 분석 (임베딩 기반 부분 대체·비교 뷰)
+- **ExcelMapping** — 엑셀 표기명 → dondoc 계좌 매핑 (Phase A~D 신규, 6/5 도입). 일괄 등록 시 자동 lookup + 사용자 결정 자동 upsert. 관리 UI: `/dashboard/settings/excel-mappings`
 
 ### Prisma enum
 - **Role** — CFO · CO_CFO · MEMBER
+- **ExcelMappingType** — ACCOUNT · CASH_SUB · HOLDING_SKIP · NEW_ACCOUNT · IGNORE (엑셀 매핑 타입)
 - **AccountType** — CASH · INVESTMENT · CRYPTO · STO · PENSION · REAL_ESTATE · DEBT · CREDIT_CARD
 - **ShareLevel** — PUBLIC · BALANCE_ONLY · PRIVATE
 - **DebtType** — MORTGAGE · JEONSE_DEPOSIT · CREDIT_LOAN · OVERDRAFT · ETC
