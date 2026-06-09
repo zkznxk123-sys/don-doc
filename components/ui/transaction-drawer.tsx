@@ -11,7 +11,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { getFamilyCategories, addCustomCategory, type CategoryOption } from '@/lib/actions/categories'
-import { upsertSubTransactions, type SubTransactionInput } from '@/lib/actions/transaction'
+import { upsertSubTransactions, type SubTransactionInput } from '@/lib/actions/transactions/sub'
 import { useDefaultVisibility } from '@/lib/hooks/useDefaultVisibility'
 import { suggestCategory, QUICK_AMOUNTS } from './transaction-drawer/keywords'
 

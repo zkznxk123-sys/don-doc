@@ -11,6 +11,7 @@ import { cn, formatCurrency } from '@/lib/utils'
 import { useDashboardActions } from '@/components/layout/DashboardShell'
 import { toast } from 'sonner'
 import { bulkUpdateTransactions } from '@/lib/actions/transaction'
+// (transaction.ts 본체 — 단일 거래·잔액·일괄편집. bulk·sub는 transactions/ 하위 모듈)
 import { detectAutoExcludeItems, type DetectedGroup } from '@/lib/actions/transactions/cleanup'
 import { InputGuide } from '@/components/dashboard/InputGuide'
 import { getFamilyCategories, type CategoryOption } from '@/lib/actions/categories'

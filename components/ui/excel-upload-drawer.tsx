@@ -11,7 +11,10 @@ import { cn } from '@/lib/utils'
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose,
 } from '@/components/ui/drawer'
-import { createManyTransactions, syncAccountBalancesOnly, checkTransactionDuplicates, type BulkTransactionRow } from '@/lib/actions/transaction'
+import {
+  createManyTransactions, syncAccountBalancesOnly, checkTransactionDuplicates,
+  type BulkTransactionRow,
+} from '@/lib/actions/transactions/bulk'
 import { autoDetectAndExcludeTransfers, autoDetectAndExcludeCancellations, autoDetectAndExcludeSharedCardDuplicates } from '@/lib/actions/transactions/auto-exclude'
 import { syncBanksaladCategories } from '@/lib/actions/categories'
 import { useDefaultVisibility } from '@/lib/hooks/useDefaultVisibility'

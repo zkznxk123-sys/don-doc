@@ -4,7 +4,7 @@
  */
 
 import * as XLSX from 'xlsx'
-import type { BulkTransactionRow } from '@/lib/actions/transaction'
+import type { BulkTransactionRow } from '@/lib/actions/transactions/bulk'
 import type { ColMap } from '@/constants/excel-presets'
 
 export interface ParsedRow extends BulkTransactionRow {

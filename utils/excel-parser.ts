@@ -9,7 +9,7 @@
  */
 
 import * as XLSX from 'xlsx'
-import type { BulkTransactionRow } from '@/lib/actions/transaction'
+import type { BulkTransactionRow } from '@/lib/actions/transactions/bulk'
 
 // ━━ 타입 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
