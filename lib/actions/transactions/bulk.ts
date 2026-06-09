@@ -215,10 +215,20 @@ export async function createManyTransactions(
       }),
     })
 
-    // ── 8. 계좌 잔액 강제 동기화 + BalanceChangeLog 기록 ──
+    // ── 8. dedup + 계좌 잔액 강제 동기화 + BalanceChangeLog 기록 ──
+    // 엑셀 accountBalances에 같은 계좌 row가 여러 개일 때 첫 oldBalance + 마지막 newBalance로 합침.
+    const balanceDedupMap = new Map<string, PendingBalance>()
+    for (const pb of pendingBalances) {
+      const prev = balanceDedupMap.get(pb.accountId)
+      if (prev) {
+        balanceDedupMap.set(pb.accountId, { accountId: pb.accountId, oldBalance: prev.oldBalance, newBalance: pb.newBalance })
+      } else {
+        balanceDedupMap.set(pb.accountId, pb)
+      }
+    }
     let syncedAccountCount = 0
     const balanceLogs: { accountId: string; oldBalance: number; newBalance: number; delta: number; source: string; uploadBatchId: string }[] = []
-    for (const pb of pendingBalances) {
+    for (const pb of balanceDedupMap.values()) {
       await prisma.account.update({ where: { id: pb.accountId }, data: { balance: pb.newBalance } })
       syncedAccountCount++
       if (pb.oldBalance !== pb.newBalance) {
@@ -450,15 +460,34 @@ export async function syncAccountBalancesOnly(
       })
     }
 
-    // 2. 배치 생성 (자산만 업로드 모드 → source='manual-sync')
+    // 2. dedup — 같은 accountId가 여러 번 push된 경우 (엑셀에 동일 계좌 row 중복 또는 같은 부모로 fuzzy 매칭된 여러 종목 row)
+    //    첫 push의 oldBalance + 마지막 push의 newBalance로 합쳐 update·log 1회만 발생.
+    //    회귀 사례: 연금저축펀드-키움이 BalanceChangeLog에 3건 찍히며 oldBalance가 동일하게 반복된 경우.
+    const dedupMap = new Map<string, PendingBalance>()
+    let duplicateCount = 0
+    for (const pb of pending) {
+      const prev = dedupMap.get(pb.accountId)
+      if (prev) {
+        duplicateCount++
+        dedupMap.set(pb.accountId, { accountId: pb.accountId, oldBalance: prev.oldBalance, newBalance: pb.newBalance })
+      } else {
+        dedupMap.set(pb.accountId, pb)
+      }
+    }
+    const dedupedPending = Array.from(dedupMap.values())
+    if (duplicateCount > 0) {
+      console.log(`[syncAccountBalancesOnly] dedup: ${duplicateCount}건 중복 합쳐짐 (entries ${pending.length} → ${dedupedPending.length})`)
+    }
+
+    // 3. 배치 생성 (자산만 업로드 모드 → source='manual-sync')
     const batch = await prisma.uploadBatch.create({
       data: { familyId, userId, fileName: options?.fileName, source: 'manual-sync' },
     })
 
-    // 3. 잔액 업데이트 + 로그
+    // 4. 잔액 업데이트 + 로그
     let syncedCount = 0
     const logs: { accountId: string; oldBalance: number; newBalance: number; delta: number; source: string; uploadBatchId: string }[] = []
-    for (const pb of pending) {
+    for (const pb of dedupedPending) {
       await prisma.account.update({ where: { id: pb.accountId }, data: { balance: pb.newBalance } })
       syncedCount++
       if (pb.oldBalance !== pb.newBalance) {
