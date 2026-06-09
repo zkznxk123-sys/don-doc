@@ -5,8 +5,9 @@
  * 같은 batch+account 그룹에서 첫 oldBalance + 마지막 newBalance로 합쳐 1건만 남기고 나머지 삭제.
  *
  * 사용:
- *   npx tsx scripts/dedup-balance-change-logs.ts <email>         # dry-run
- *   npx tsx scripts/dedup-balance-change-logs.ts <email> --apply # 실제 변경
+ *   npx tsx scripts/dedup-balance-change-logs.ts <email>              # dry-run
+ *   npx tsx scripts/dedup-balance-change-logs.ts <email> --apply      # dedup (옵션 A: 첫 row 합치고 나머지 삭제)
+ *   npx tsx scripts/dedup-balance-change-logs.ts <email> --delete-all # 옵션 B: 중복 그룹 전체 삭제 (잘못된 ledger 완전 제거)
  */
 import { PrismaClient } from '@prisma/client'
 import * as dotenv from 'dotenv'
@@ -24,6 +25,7 @@ async function main() {
     process.exit(1)
   }
   const apply = flags.includes('--apply')
+  const deleteAll = flags.includes('--delete-all')
 
   const user = await prisma.user.findFirst({ where: { email } })
   if (!user?.familyId) {
@@ -72,13 +74,24 @@ async function main() {
     console.log(`    삭제될 ${g.length - 1}건의 newBalance: ${g.slice(0, -1).map(l => l.newBalance.toLocaleString()).join(', ')}`)
   })
 
-  if (!apply) {
-    console.log('\n💡 dry-run. 실제 변경하려면 --apply 추가.\n')
+  if (!apply && !deleteAll) {
+    console.log('\n💡 dry-run.')
+    console.log('   옵션 A (--apply): 각 그룹 첫 row 합치고 나머지 삭제')
+    console.log('   옵션 B (--delete-all): 중복 그룹 전체 삭제 (잘못된 ledger 완전 제거, 변경 이력 손실 감수)\n')
     await prisma.$disconnect()
     return
   }
 
-  // apply: 각 그룹 첫 row를 last의 newBalance·delta로 update, 나머지 삭제
+  if (deleteAll) {
+    // 옵션 B: 중복 그룹 전체 삭제 (마지막 newBalance가 종목 1개 평가액이라 ledger로 무의미한 케이스)
+    const allIds = duplicateGroups.flatMap(g => g.map(l => l.id))
+    const r = await prisma.balanceChangeLog.deleteMany({ where: { id: { in: allIds } } })
+    console.log(`\n✅ 중복 그룹 ${duplicateGroups.length}개 — 총 ${r.count}건 삭제 완료.\n`)
+    await prisma.$disconnect()
+    return
+  }
+
+  // 옵션 A: 각 그룹 첫 row를 last의 newBalance·delta로 update, 나머지 삭제
   let updated = 0
   let deleted = 0
   for (const g of duplicateGroups) {
