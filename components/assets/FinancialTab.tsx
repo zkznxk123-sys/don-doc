@@ -5,6 +5,7 @@ import type { AccountInitialData } from '@/components/ui/account-drawer'
 import {
   migrateSubAccountsToHoldings,
   saveUsdKrwRate,
+  fetchLastUsdKrwRate,
   updateHoldingPrices,
   type InvestmentAccountSummary,
   type HoldingData,
@@ -47,6 +48,7 @@ export function FinancialTab({
     return Number(localStorage.getItem('don-doc:usdkrw-rate') ?? 0)
   })
   const autoRefreshed = useRef(false)
+  const serverRateFetched = useRef(false)
 
   const CACHE_KEY = 'don-doc:stocks-refresh-at'
   const CACHE_TTL = 5 * 60 * 1000 // 5분
@@ -147,6 +149,21 @@ export function FinancialTab({
     refreshPrices(true)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [investmentSummary.length])
+
+  // 첫 mount: localStorage 환율이 없으면 서버 DB 마지막 값으로 초기화.
+  // 새 기기·브라우저 첫 방문 시 USD 평가액이 0원으로 표시되는 문제 회피.
+  useEffect(() => {
+    if (serverRateFetched.current) return
+    if (!hasUsd) return
+    if (usdKrwRate > 0) return
+    serverRateFetched.current = true
+    fetchLastUsdKrwRate().then(rate => {
+      if (rate > 0) {
+        setUsdKrwRate(rate)
+        localStorage.setItem('don-doc:usdkrw-rate', String(rate))
+      }
+    }).catch(() => { /* silent — refreshPrices가 다음 fetch에서 갱신 */ })
+  }, [hasUsd, usdKrwRate])
 
   if (accounts.length === 0) return (
     <EmptyTab icon={<Landmark className="w-6 h-6 text-muted-foreground/60" />} message="등록된 금융자산이 없습니다" onAdd={onAdd} />

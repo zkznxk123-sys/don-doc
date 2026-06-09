@@ -13,6 +13,8 @@ import {
   createComment, deleteComment, toggleReaction,
   type FamilyPostData, type PostCommentData, type PostReactionSummary, type TxnRefData,
 } from '@/lib/actions/feed'
+import { useDashboardActions } from '@/components/layout/DashboardShell'
+import { isCFOLevel } from '@/lib/roles'
 
 // ── 상수 ─────────────────────────────────────────────────────────────────────
 
@@ -537,7 +539,8 @@ function PostComposer({ onPosted }: { onPosted: (post: FamilyPostData) => void }
 export default function FeedPage() {
   const [posts, setPosts] = useState<FamilyPostData[]>([])
   const [loading, setLoading] = useState(true)
-  const [isCFO] = useState(false)
+  const { shellUser } = useDashboardActions()
+  const isCFO = isCFOLevel(shellUser?.role)
 
   const load = useCallback(async () => {
     const data = await getFeedPosts()

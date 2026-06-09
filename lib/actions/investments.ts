@@ -17,6 +17,15 @@ async function getUsdKrwRate(): Promise<number> {
 }
 
 /**
+ * 클라이언트가 첫 진입 시 호출 — localStorage가 비어 USD 평가액이 0원으로 표시되는 문제 회피.
+ * 서버 DB의 마지막 환율 값을 가져온다. 없으면 0 반환 (호출 측이 fallback 결정).
+ */
+export async function fetchLastUsdKrwRate(): Promise<number> {
+  const row = await prisma.exchangeRate.findUnique({ where: { pair: 'USDKRW' } })
+  return row?.rate ?? 0
+}
+
+/**
  * 클라이언트가 시세 새로고침 시점에 가져온 USD-KRW 환율을 서버 DB에 저장.
  * 이 값은 추후 모든 자산 합산 시 USD holdings 변환에 사용됨.
  *
