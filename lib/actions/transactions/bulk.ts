@@ -180,14 +180,117 @@ export async function createManyTransactions(
       return { success: true, count: 0, skippedCount, monthStats: [], syncedAccountCount: 0 }
     }
 
-    // ── 5. accountBalances 적용 전, 변경될 계좌의 옛 잔액 미리 캡처 ──
+    // ── 5. accountBalances 분류 + plan 수립 ──
+    //    syncAccountBalancesOnly와 동일한 분기: ExcelMapping lookup · cash-sub 분리 · holding-skip · 일반.
+    //    증권계좌(holdings>0)에 잔액 row가 들어오면 본체 덮어쓰지 말고 자식 "예수금"으로 분리.
+    //    회귀 사례: 6/8 연금저축펀드-키움 본체에 6번 덮어쓴 BalanceChangeLog.
     type PendingBalance = { accountId: string; oldBalance: number; newBalance: number }
     const pendingBalances: PendingBalance[] = []
+    const balanceMappingsToUpsert: { excelName: string; mappingType: 'ACCOUNT' | 'CASH_SUB' | 'HOLDING_SKIP'; targetAccountId: string }[] = []
     if (options?.accountBalances && options.accountBalances.length > 0) {
+      const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, '')
+      const allFamilyAccounts = await prisma.account.findMany({
+        where: { familyId },
+        select: {
+          id: true, name: true, type: true,
+          holdings: { select: { name: true } },
+          subAccounts: { select: { id: true, name: true, balance: true } },
+        },
+      })
+
       for (const ab of options.accountBalances) {
+        // 0. ExcelMapping 우선 lookup
+        const mapping = await findExcelMapping(familyId, ab.name)
+        if (mapping) {
+          if (mapping.mappingType === 'IGNORE' || mapping.mappingType === 'HOLDING_SKIP') {
+            continue
+          }
+          if (mapping.mappingType === 'CASH_SUB' && mapping.targetAccountId) {
+            const parent = allFamilyAccounts.find(a => a.id === mapping.targetAccountId)
+            if (parent) {
+              const existingCashSub = parent.subAccounts.find(s => s.name === '예수금')
+              if (existingCashSub) {
+                pendingBalances.push({ accountId: existingCashSub.id, oldBalance: existingCashSub.balance, newBalance: ab.balance })
+              } else {
+                const created = await prisma.account.create({
+                  data: {
+                    name: '예수금', type: 'CASH', balance: ab.balance,
+                    familyId, userId, parentAccountId: parent.id,
+                    isShared: true, shareLevel: 'PUBLIC',
+                  },
+                })
+                pendingBalances.push({ accountId: created.id, oldBalance: 0, newBalance: ab.balance })
+              }
+              continue
+            }
+          }
+          if (mapping.mappingType === 'ACCOUNT' && mapping.targetAccountId) {
+            const acc = await prisma.account.findUnique({
+              where: { id: mapping.targetAccountId },
+              select: { balance: true },
+            })
+            if (acc) {
+              pendingBalances.push({ accountId: mapping.targetAccountId, oldBalance: acc.balance, newBalance: ab.balance })
+              continue
+            }
+          }
+          // NEW_ACCOUNT는 fall through
+        }
+
+        // 1. fuzzy account match
+        const abNorm = normalize(ab.name)
+        const accountHit = allFamilyAccounts.find(a => {
+          const aNorm = normalize(a.name)
+          return aNorm.includes(abNorm) || abNorm.includes(aNorm)
+        })
+
+        // 2. cash-sub 분리: account 매칭됐는데 holdings 있는 증권계좌 → 자식 "예수금"
+        if (accountHit && accountHit.holdings.length > 0) {
+          const existingCashSub = accountHit.subAccounts.find(s => s.name === '예수금')
+          if (existingCashSub) {
+            pendingBalances.push({ accountId: existingCashSub.id, oldBalance: existingCashSub.balance, newBalance: ab.balance })
+          } else {
+            const created = await prisma.account.create({
+              data: {
+                name: '예수금', type: 'CASH', balance: ab.balance,
+                familyId, userId, parentAccountId: accountHit.id,
+                isShared: true, shareLevel: 'PUBLIC',
+              },
+            })
+            pendingBalances.push({ accountId: created.id, oldBalance: 0, newBalance: ab.balance })
+          }
+          if (!mapping) balanceMappingsToUpsert.push({ excelName: ab.name, mappingType: 'CASH_SUB', targetAccountId: accountHit.id })
+          continue
+        }
+
+        // 3. holding-skip: account 매칭 안 됐고 holding 이름 매칭 → 잔액 동기화 skip
+        if (!accountHit) {
+          const holdingHit = allFamilyAccounts.find(a =>
+            a.holdings.some(h => {
+              const hNorm = normalize(h.name)
+              return hNorm.includes(abNorm) || abNorm.includes(hNorm)
+            })
+          )
+          if (holdingHit) {
+            if (!mapping) balanceMappingsToUpsert.push({ excelName: ab.name, mappingType: 'HOLDING_SKIP', targetAccountId: holdingHit.id })
+            continue
+          }
+        }
+
+        // 4. 일반: 매칭된 account 또는 신규 생성 → 본체 balance update
         const id = await findOrCreateAccount(ab.name, familyId, ab.type ?? 'CASH', userId)
         const acc = await prisma.account.findUnique({ where: { id }, select: { balance: true } })
         pendingBalances.push({ accountId: id, oldBalance: acc?.balance ?? 0, newBalance: ab.balance })
+        if (!mapping) balanceMappingsToUpsert.push({ excelName: ab.name, mappingType: 'ACCOUNT', targetAccountId: id })
+      }
+
+      // ExcelMapping 자동 등록
+      for (const m of balanceMappingsToUpsert) {
+        await prisma.excelMapping.upsert({
+          where: { familyId_excelName: { familyId, excelName: m.excelName } },
+          create: { familyId, excelName: m.excelName, mappingType: m.mappingType, targetAccountId: m.targetAccountId },
+          update: { mappingType: m.mappingType, targetAccountId: m.targetAccountId },
+        })
       }
     }
 

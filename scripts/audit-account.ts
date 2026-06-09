@@ -51,7 +51,7 @@ async function main() {
       where: { accountId: { in: allIds } },
       orderBy: { changedAt: 'desc' },
       take: limit,
-      include: { uploadBatch: { select: { id: true, source: true, fileName: true, createdAt: true } } },
+      include: { uploadBatch: { select: { id: true, source: true, fileName: true, uploadedAt: true } } },
     })
     if (logs.length > 0) {
       console.log(`   📊 BalanceChangeLog (최근 ${logs.length}건, 자식 포함):`)
