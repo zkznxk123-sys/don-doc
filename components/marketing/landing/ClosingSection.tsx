@@ -64,7 +64,7 @@ export function ClosingSection() {
           <br />
           <br />
           다음 단계는 — 예산 관리, 리마인드, 실행 체크, 후속 액션까지{' '}
-          <em style={{ color: ACCENT }}>AI 에이전트가 직접 실행</em>하는 플랫폼.
+          <em style={{ color: ACCENT }}>AI 에이전트가 직접 실행</em>하는 자산 운영 시스템.
           <br />
           가족의 재무 데이터를 실제 금융 행동까지 연결하는 의사결정 파트너로 진화합니다.
         </p>
@@ -72,7 +72,7 @@ export function ClosingSection() {
         <div className="flex flex-wrap gap-3 justify-center mt-14">
           <Link
             href="/sign-up"
-            className="inline-flex items-center gap-2 px-9 py-4 rounded-full text-[14px] font-semibold transition active:scale-[0.97] hover:opacity-90"
+            className="inline-flex items-center gap-2 px-9 py-4 rounded-full text-[14px] font-semibold transition active:scale-[0.97] hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B49B3E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B0F0E]"
             style={{ background: CREAM, color: BG }}
           >
             무료로 시작하기
@@ -80,7 +80,7 @@ export function ClosingSection() {
           </Link>
           <a
             href="/demo"
-            className="inline-flex items-center gap-2 px-9 py-4 rounded-full text-[14px] font-medium transition hover:bg-white/5 active:scale-[0.97]"
+            className="inline-flex items-center gap-2 px-9 py-4 rounded-full text-[14px] font-medium transition hover:bg-white/5 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B49B3E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B0F0E]"
             style={{ color: CREAM, border: `1px solid ${CREAM_FAINT}` }}
           >
             데모 둘러보기

@@ -18,7 +18,7 @@ export function TechStackStrip() {
           style={{ animation: 'cpTicker 24s linear infinite' }}
         >
           {[...Array(2)].flatMap((_, copy) =>
-            ['Next.js 14', 'Prisma 5', 'PostgreSQL', 'Clerk', 'Vercel AI SDK', 'CLIProxyAPI', 'Tailwind', 'shadcn/ui', 'Zod', 'Recharts'].map((p, i) => (
+            ['Next.js 16', 'Prisma 6', 'PostgreSQL', 'Clerk', 'Vercel AI SDK', 'CLIProxyAPI', 'Tailwind', 'shadcn/ui', 'Zod', 'Recharts'].map((p, i) => (
               <span
                 key={`${copy}-${i}`}
                 className="font-serif font-medium tracking-[-0.02em] text-[20px] sm:text-[22px]"

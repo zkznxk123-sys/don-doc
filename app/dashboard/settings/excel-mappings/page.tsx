@@ -187,9 +187,10 @@ export default function ExcelMappingsPage() {
                 className="w-full bg-muted/40 border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
               >
                 {(Object.keys(TYPE_LABEL) as ExcelMappingType[]).map(t => (
-                  <option key={t} value={t}>{TYPE_LABEL[t].label} — {TYPE_DESC[t]}</option>
+                  <option key={t} value={t}>{TYPE_LABEL[t].label}</option>
                 ))}
               </select>
+              <p className="text-[11px] text-muted-foreground/70 mt-1">{TYPE_DESC[formType]}</p>
             </label>
 
             {needsAccount && (

@@ -13,6 +13,10 @@ export function Hero() {
   const heroRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
+    // WCAG 2.3.3: prefers-reduced-motion이면 rAF 루프 자체를 안 돌린다 (float 칩 정지).
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return
+    }
     let raf = 0
     const start = performance.now()
     const tick = (now: number) => {
@@ -106,7 +110,7 @@ export function Hero() {
           >
             <Link
               href="/sign-up"
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-[13px] font-semibold transition-all active:scale-[0.97] hover:opacity-90"
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-[13px] font-semibold transition-all active:scale-[0.97] hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B49B3E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B0F0E]"
               style={{ background: CREAM, color: BG }}
             >
               무료로 시작하기
@@ -114,7 +118,7 @@ export function Hero() {
             </Link>
             <a
               href="/demo"
-              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-[13px] font-medium transition-all hover:bg-white/5 active:scale-[0.97]"
+              className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full text-[13px] font-medium transition-all hover:bg-white/5 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B49B3E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B0F0E]"
               style={{ color: CREAM, border: `1px solid ${CREAM_FAINT}` }}
             >
               데모 둘러보기
