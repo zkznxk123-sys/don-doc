@@ -68,9 +68,9 @@ export function PensionTab({
           </p>
           <p className="text-[10px] text-muted-foreground/50 mt-1">{accounts.length}개 계좌</p>
         </div>
-        <div className="bg-teal-50 dark:bg-teal-900/15 border border-teal-200 dark:border-teal-800/40 rounded-2xl p-4">
+        <div className="bg-income-soft border border-income/20 rounded-2xl p-4">
           <div className="flex items-center gap-1.5 mb-2">
-            <PiggyBank className="w-3.5 h-3.5 text-teal-500" />
+            <PiggyBank className="w-3.5 h-3.5 text-income" />
             <p className="text-[11px] text-muted-foreground font-medium">
               예상 월 수령{hasEstimatedPension && <span className="text-warning ml-1">(추정 포함)</span>}
             </p>
@@ -79,12 +79,12 @@ export function PensionTab({
             <div className="flex items-end gap-3">
               <div>
                 <p className="text-[9px] text-muted-foreground/50 mb-0.5">납입 유지 시</p>
-                <p className="text-lg font-bold tabular-nums text-teal-600 dark:text-teal-400">
+                <p className="text-lg font-bold tabular-nums text-income">
                   ~{formatLargeNumber(totalProjectedMonthly)}
                 </p>
               </div>
               {hasEstimatedPension && totalCurrentMonthly > 0 && totalCurrentMonthly !== totalProjectedMonthly && (
-                <div className="border-l border-teal-200/60 dark:border-teal-800/40 pl-3 pb-0.5">
+                <div className="border-l border-income/20 pl-3 pb-0.5">
                   <p className="text-[9px] text-muted-foreground/50 mb-0.5">현재 기준</p>
                   <p className="text-sm font-bold tabular-nums text-muted-foreground/70">
                     ~{formatLargeNumber(totalCurrentMonthly)}
@@ -93,7 +93,7 @@ export function PensionTab({
               )}
             </div>
           ) : (
-            <p className="text-lg font-bold tabular-nums text-teal-600 dark:text-teal-400">—</p>
+            <p className="text-lg font-bold tabular-nums text-income">—</p>
           )}
           <p className="text-[10px] text-muted-foreground/50 mt-1">전체 합산 기준</p>
         </div>
@@ -338,8 +338,8 @@ function PensionCard({
       {/* 헤더 */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center shrink-0">
-            <PiggyBank className="w-4 h-4 text-teal-600 dark:text-teal-400" />
+          <div className="w-9 h-9 rounded-xl bg-income-soft flex items-center justify-center shrink-0">
+            <PiggyBank className="w-4 h-4 text-income" />
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -349,7 +349,7 @@ function PensionCard({
               </span>
               {(() => {
                 if (account.isJoint) return (
-                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md text-blue-600 bg-savings/10">
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md text-savings bg-savings/10">
                     공동
                   </span>
                 )
@@ -389,7 +389,7 @@ function PensionCard({
 
         {/* 예상 월 수령 — 납입 유지 / 현재 기준 두 줄 표시 */}
         <div className={cn('rounded-xl p-2.5 col-span-2', displayMonthlyPension
-          ? 'bg-teal-50 dark:bg-teal-900/20 border border-teal-200/50 dark:border-teal-800/30'
+          ? 'bg-income-soft border border-income/20'
           : 'bg-muted/40')}>
           <p className="text-[10px] text-muted-foreground/60 mb-1">
             예상 월 수령{isEstimated && <span className="text-warning ml-1">추정</span>}
@@ -400,7 +400,7 @@ function PensionCard({
               <div>
                 <p className="text-[9px] text-muted-foreground/50 mb-0.5">납입 유지 시</p>
                 <p className={cn('text-sm font-bold tabular-nums',
-                  'text-teal-600 dark:text-teal-400')}>
+                  'text-income')}>
                   ~{formatLargeNumber(displayMonthlyPension)}
                 </p>
               </div>
@@ -491,7 +491,7 @@ function PensionCard({
                 {projection.futureBalance > 0 ? '예상 월 수령액 (20년 분할)' : '예상 월 수령액'}
               </span>
             </div>
-            <span className="text-[11px] font-bold text-teal-600 dark:text-teal-400 tabular-nums">
+            <span className="text-[11px] font-bold text-income tabular-nums">
               ~{formatLargeNumber(projection.amount)}/월
             </span>
           </div>
