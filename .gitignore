@@ -39,3 +39,10 @@ next-env.d.ts
 # prisma
 prisma/*.db
 .env*.local
+
+# 일회용 본인 가족 정리 스크립트 — 실명·DB id 하드코딩, OSS 공개 시 PII 노출 방지
+# 진단 도구(audit-*·list-*·delete-*·dedup-*·bulk-*)는 일반화돼서 유지
+scripts/fix-*.ts
+scripts/revert-*.ts
+scripts/move-*.ts
+scripts/rename-*.ts
