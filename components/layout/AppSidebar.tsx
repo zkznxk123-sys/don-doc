@@ -37,8 +37,11 @@ type NavItem = {
   group: NavGroup
 }
 
+import { features } from '@/lib/feature-flags'
+
 // 5/10 정체성 결정: 본질 4개 → Beta 그룹 → admin 순. Feed는 Beta로 노출(6/1 임시 복귀).
-export const NAV_ITEMS: NavItem[] = [
+// 6/10 제품 분리: lite 라인은 시나리오·피드 제외 (features.scenarios·familyFeed false).
+const ALL_NAV_ITEMS: NavItem[] = [
   { href: '/dashboard',          label: '대시보드',      icon: LayoutDashboard, exact: true, group: 'core' },
   { href: '/dashboard/cashflow', label: '현금흐름 관리', icon: ArrowLeftRight,  group: 'core' },
   { href: '/dashboard/assets',   label: '자산 관리',     icon: Wallet,          group: 'core' },
@@ -49,6 +52,12 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard/uploads',  label: '업로드 이력',   icon: History,         group: 'admin' },
   { href: '/dashboard/settings', label: '설정',          icon: Settings,        group: 'admin' },
 ]
+
+export const NAV_ITEMS: NavItem[] = ALL_NAV_ITEMS.filter(item => {
+  if (item.href === '/dashboard/scenario' && !features.scenarios) return false
+  if (item.href === '/dashboard/feed' && !features.familyFeed) return false
+  return true
+})
 
 const NAV_GROUP_ORDER: NavGroup[] = ['core', 'beta', 'admin']
 
@@ -145,8 +154,8 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
                 )
               })}
 
-              {/* CFO 전용: 가족 관리·초대 코드는 admin 그룹에 묶음 */}
-              {groupId === 'admin' && user.role === 'CFO' && (
+              {/* CFO 전용: 가족 관리·초대 코드는 admin 그룹에 묶음. lite는 가족 관리 자체 제외. */}
+              {groupId === 'admin' && user.role === 'CFO' && features.familyManagement && (
                 <>
                   <Link
                     href="/dashboard/family"

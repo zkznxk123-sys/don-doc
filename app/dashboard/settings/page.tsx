@@ -23,6 +23,7 @@ import { listOAuthAccounts, disconnectOAuthAccount, type OAuthAccountSummary, ty
 import { useAssetThreshold } from '@/lib/hooks/useAssetThreshold'
 import { useDefaultVisibility } from '@/lib/hooks/useDefaultVisibility'
 import { OAuthConnectDialog } from '@/components/ui/oauth-connect-dialog'
+import { features } from '@/lib/feature-flags'
 
 export default function SettingsPage() {
   return <SettingsClient />
@@ -282,7 +283,8 @@ function SettingsClient() {
         </div>
       </section>
 
-      {/* 새 거래 default 공유 범위 */}
+      {/* 새 거래 default 공유 범위 — lite는 가족 공유 자체 없음 */}
+      {features.visibilityRoles && (
       <section className="rounded-2xl border border-border bg-card/30 p-5 mb-4">
         <h2 className="text-sm font-semibold text-foreground/70 mb-3">새 거래 기본 공유 범위</h2>
         <div className="px-3 py-2">
@@ -309,6 +311,7 @@ function SettingsClient() {
           </div>
         </div>
       </section>
+      )}
 
       {/* 자산 필터 기준 */}
       <section className="rounded-2xl border border-border bg-card/30 p-5 mb-4">
@@ -336,7 +339,8 @@ function SettingsClient() {
         </div>
       </section>
 
-      {/* AI 설정 */}
+      {/* AI 설정 — lite는 시스템 API key 공용이라 사용자 OAuth 설정 노출 안 함 */}
+      {features.familyOAuth && (
       <section className="rounded-2xl border border-border bg-card/30 p-5 mb-4">
         <h2 className="text-sm font-semibold text-foreground/70 mb-3">AI 설정</h2>
 
@@ -429,9 +433,10 @@ function SettingsClient() {
           )
         })}
       </section>
+      )}
 
-      {/* 내 가족 AI 계정 (proxy 온라인일 때만) */}
-      {proxyOnline && (
+      {/* 내 가족 AI 계정 (proxy 온라인일 때만 + full 라인) */}
+      {features.familyOAuth && proxyOnline && (
         <section className="rounded-2xl border border-border bg-card/30 p-5 mb-4">
           <div className="mb-3">
             <h2 className="text-sm font-semibold text-foreground/70">내 가족 AI 계정</h2>

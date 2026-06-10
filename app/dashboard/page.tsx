@@ -29,6 +29,7 @@ import { CashflowChart } from '@/components/dashboard/CashflowChart'
 import { TopExpenseCategories } from '@/components/dashboard/TopExpenseCategories'
 import { TransactionFeedRow } from '@/components/dashboard/TransactionFeedRow'
 import { MemberBudgetCard } from '@/components/dashboard/MemberBudgetCard'
+import { features } from '@/lib/feature-flags'
 import {
   getCurrentYearMonth, filterDashboardAssets,
   type Transaction, type BudgetData, type Insights,
@@ -194,8 +195,8 @@ export default function Dashboard() {
         <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
       </div>
 
-      {/* 피드 알림 배너 — 항상 최상단 */}
-      <FeedNewBanner />
+      {/* 피드 알림 배너 — 항상 최상단 (lite는 피드 자체 없음 → 숨김) */}
+      {features.familyFeed && <FeedNewBanner />}
 
       {/* 로딩이 길어질 때만 표시되는 프롬프트 (3초 후) */}
       <LoadingPrompt
