@@ -419,9 +419,9 @@
     transition: background-color 0.3s ease, color 0.3s ease;
   }
 
-  /* Headline elements default to serif */
+  /* h1/h2 기본은 Pretendard(sans). serif는 opt-in — Hero·KPI display 등 editorial 헤딩에서 `font-serif` 명시.
+     designer-2026-06-11 권고: 라벨급 헤딩 24곳 serif 누수 영구 차단 + 의도 명시화 (DESIGN.md 정책). */
   h1, h2 {
-    font-family: var(--font-serif);
     letter-spacing: -0.02em;
     line-height: 1.1;
   }

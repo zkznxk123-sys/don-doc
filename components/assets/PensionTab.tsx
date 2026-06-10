@@ -57,7 +57,7 @@ export function PensionTab({
   return (
     <div className="space-y-4">
       {/* 상단 요약 카드 3종 */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-card border border-border rounded-2xl p-4">
           <div className="flex items-center gap-1.5 mb-2">
             <Banknote className="w-3.5 h-3.5 text-muted-foreground/60" />
@@ -381,7 +381,7 @@ function PensionCard({
       </div>
 
       {/* 지표 그리드 */}
-      <div className="grid grid-cols-3 gap-2 mb-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
         <div className="bg-muted/40 rounded-xl p-2.5">
           <p className="text-[10px] text-muted-foreground/60 mb-0.5">현재 잔액</p>
           <p className="text-sm font-bold tabular-nums text-foreground">{formatLargeNumber(account.balance)}</p>
