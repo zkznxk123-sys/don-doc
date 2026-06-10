@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -11,6 +11,7 @@ import { Users, UserPlus, ArrowRight, Loader2, ChevronLeft } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import { createFamily, joinFamily } from '@/lib/actions/family'
+import { isFull } from '@/lib/feature-flags'
 
 type Step = 'select' | 'create' | 'join'
 
@@ -36,6 +37,17 @@ function OnboardingContent() {
   const [step, setStep] = useState<Step>(codeFromUrl ? 'join' : 'select')
   const [isLoading, setIsLoading] = useState(false)
 
+  // lite 라인은 가족 공유 기능 없음 → 가입 시 개인 1인 가족 자동 생성.
+  // 초대 코드 진입도 lite에서 무시 (full 전용 메커니즘).
+  const [autoSetupTriggered, setAutoSetupTriggered] = useState(false)
+  useEffect(() => {
+    if (isFull() || autoSetupTriggered) return
+    setAutoSetupTriggered(true)
+    setIsLoading(true)
+    createFamily('내 자산')
+      .catch(() => toast.error('초기 설정 중 오류가 발생했습니다.'))
+  }, [autoSetupTriggered])
+
   const createForm = useForm<CreateFormData>({
     resolver: zodResolver(createSchema),
     mode: 'onSubmit',
@@ -46,6 +58,18 @@ function OnboardingContent() {
     mode: 'onSubmit',
     defaultValues: { code: codeFromUrl },
   })
+
+  // hooks 모두 호출한 후 lite 라인이면 로딩 UI만 — full 폼은 렌더 안 함
+  if (!isFull()) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ backgroundColor: '#0B0F0E' }}>
+        <div className="flex flex-col items-center gap-3 text-zinc-400">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <p className="text-sm">초기 설정 중...</p>
+        </div>
+      </div>
+    )
+  }
 
   const handleCreate = async (data: CreateFormData) => {
     setIsLoading(true)

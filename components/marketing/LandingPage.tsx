@@ -12,6 +12,7 @@ import { PowerfulTechnology } from './landing/PowerfulTechnology'
 import { ComparisonSection } from './landing/ComparisonSection'
 import { ClosingSection } from './landing/ClosingSection'
 import { BG, CREAM } from './landing/tokens'
+import { isFull } from '@/lib/feature-flags'
 
 export function LandingPage() {
   return (
@@ -39,9 +40,10 @@ export function LandingPage() {
       <Nav />
       <Hero />
       <TechStackStrip />
-      <ApproachSection />
+      {/* full 전용 깊이 섹션 — lite 랜딩은 진입 마찰 ↓ 위해 압축 (별도 스프린트로 lite 전용 랜딩 재작성 검토) */}
+      {isFull() && <ApproachSection />}
       <CoreFeatures />
-      <PowerfulTechnology />
+      {isFull() && <PowerfulTechnology />}
       <ComparisonSection />
       <ClosingSection />
     </div>
