@@ -26,12 +26,36 @@ function formatYearMonth(ym: string): string {
   return `${year.slice(2)}.${month}`
 }
 
-// Recharts payload entry shape — 차트 라이브러리 generic type 직접 임포트가 까다로워 작은 단위로 정의
-type RechartsPayload = { dataKey?: string; value?: number; name?: string; color?: string }
+// 차트 데이터 포인트 — typeBreakdown과 전월 비교 정보 포함
+type TypeBreakdownData = { realEstate: number; financial: number; pension: number; debt: number }
+type ChartPoint = {
+  yearMonth: string
+  totalAssets: number
+  totalLiabilities: number
+  netWorth: number
+  label: string
+  typeBreakdown: TypeBreakdownData | null
+  prevTypeBreakdown: TypeBreakdownData | null
+}
+
+type RechartsPayload = { dataKey?: string; value?: number; name?: string; color?: string; payload?: ChartPoint }
 interface CustomTooltipProps {
   active?: boolean
   payload?: RechartsPayload[]
   label?: string
+}
+
+const TYPE_LABEL: Record<keyof TypeBreakdownData, string> = {
+  realEstate: '부동산',
+  financial: '금융',
+  pension: '연금',
+  debt: '부채',
+}
+
+function formatDelta(delta: number): string {
+  if (delta === 0) return '±0'
+  const sign = delta > 0 ? '+' : '-'
+  return `${sign}${formatCurrency(Math.abs(delta))}`
 }
 
 const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
@@ -39,9 +63,12 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
 
   const netWorth = payload.find(p => p.dataKey === 'netWorth')?.value ?? 0
   const totalAssets = payload.find(p => p.dataKey === 'totalAssets')?.value ?? 0
+  const point = payload[0]?.payload
+  const breakdown = point?.typeBreakdown
+  const prevBreakdown = point?.prevTypeBreakdown
 
   return (
-    <div className="bg-card border border-border rounded-xl px-4 py-3 shadow-xl min-w-[160px]">
+    <div className="bg-card border border-border rounded-xl px-4 py-3 shadow-xl min-w-[220px]">
       <p className="text-xs text-muted-foreground mb-2">{label}</p>
       <div className="space-y-1.5">
         <div className="flex items-center justify-between gap-4">
@@ -59,6 +86,38 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
           <span className="text-xs font-semibold text-income tabular-nums">{formatCurrency(netWorth)}</span>
         </div>
       </div>
+
+      {/* 전월 대비 type별 delta — 6/10 도입 이후 스냅샷에만 표시 */}
+      {breakdown && (
+        <>
+          <div className="my-2 h-px bg-border/50" />
+          <p className="text-[10px] text-muted-foreground/60 mb-1.5 uppercase tracking-wide">
+            {prevBreakdown ? '전월 대비 변동' : '구성 (전월 데이터 없음)'}
+          </p>
+          <div className="space-y-1">
+            {(Object.keys(TYPE_LABEL) as (keyof TypeBreakdownData)[]).map(key => {
+              const cur = breakdown[key] ?? 0
+              const prev = prevBreakdown?.[key] ?? 0
+              const delta = cur - prev
+              if (cur === 0 && prev === 0) return null
+              const showDelta = !!prevBreakdown
+              return (
+                <div key={key} className="flex items-center justify-between gap-4">
+                  <span className="text-[11px] text-muted-foreground">{TYPE_LABEL[key]}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-foreground/70 tabular-nums">{formatCurrency(cur)}</span>
+                    {showDelta && delta !== 0 && (
+                      <span className={`text-[10px] font-medium tabular-nums ${delta > 0 ? 'text-income' : 'text-expense'}`}>
+                        {formatDelta(delta)}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
     </div>
   )
 }
@@ -72,8 +131,13 @@ const formatYAxis = (value: number): string => {
 export function NetWorthChart({ data, onDataSaved, onQuickSnapshot }: NetWorthChartProps) {
   const [modalOpen, setModalOpen] = useState(false)
 
-  const chartData = data.map(d => ({
-    ...d,
+  const chartData: ChartPoint[] = data.map((d, i) => ({
+    yearMonth: d.yearMonth,
+    totalAssets: d.totalAssets,
+    totalLiabilities: d.totalLiabilities,
+    netWorth: d.netWorth,
+    typeBreakdown: (d.typeBreakdown ?? null) as TypeBreakdownData | null,
+    prevTypeBreakdown: (i > 0 ? (data[i - 1].typeBreakdown ?? null) : null) as TypeBreakdownData | null,
     label: formatYearMonth(d.yearMonth),
   }))
 

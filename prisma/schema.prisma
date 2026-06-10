@@ -356,6 +356,10 @@ model NetWorthSnapshot {
   totalAssets      Float       @default(0)
   totalLiabilities Float       @default(0)
   netWorth         Float       @default(0)
+  // 그룹별 잔액 합산 — 차트 tooltip에서 전월 대비 어느 그룹에서 변동이 큰지 표시.
+  // { realEstate: number, financial: number, pension: number, debt: number }
+  // 6/10 도입 — 기존 스냅샷은 null, 신규부터 채워짐. 마이그레이션 없이 db push.
+  typeBreakdown    Json?
   createdAt        DateTime    @default(now())
   updatedAt        DateTime    @updatedAt
 
