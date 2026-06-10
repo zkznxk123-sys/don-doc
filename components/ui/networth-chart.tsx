@@ -101,13 +101,16 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
               const delta = cur - prev
               if (cur === 0 && prev === 0) return null
               const showDelta = !!prevBreakdown
+              // 자산은 증가=positive(초록), 부채는 증가=negative(빨강) — 의미 일치.
+              // designer-2026-06-10-v2 권고: debt 색 반전 (부채 증가를 초록으로 칠하던 의미 역전 fix).
+              const positive = key === 'debt' ? delta < 0 : delta > 0
               return (
                 <div key={key} className="flex items-center justify-between gap-4">
                   <span className="text-[11px] text-muted-foreground">{TYPE_LABEL[key]}</span>
                   <div className="flex items-center gap-2">
                     <span className="text-[11px] text-foreground/70 tabular-nums">{formatCurrency(cur)}</span>
                     {showDelta && delta !== 0 && (
-                      <span className={`text-[10px] font-medium tabular-nums ${delta > 0 ? 'text-income' : 'text-expense'}`}>
+                      <span className={`text-[10px] font-medium tabular-nums ${positive ? 'text-income' : 'text-expense'}`}>
                         {formatDelta(delta)}
                       </span>
                     )}

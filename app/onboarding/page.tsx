@@ -59,11 +59,12 @@ function OnboardingContent() {
     defaultValues: { code: codeFromUrl },
   })
 
-  // hooks 모두 호출한 후 lite 라인이면 로딩 UI만 — full 폼은 렌더 안 함
+  // hooks 모두 호출한 후 lite 라인이면 로딩 UI만 — full 폼은 렌더 안 함.
+  // designer-2026-06-10-v2 권고: 전환 화면은 origin(랜딩 dark)이 아닌 destination(제품 토큰)을 닮아야 함.
   if (!isFull()) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center px-4" style={{ backgroundColor: '#0B0F0E' }}>
-        <div className="flex flex-col items-center gap-3 text-zinc-400">
+      <div className="min-h-screen flex flex-col items-center justify-center px-4 bg-background">
+        <div className="flex flex-col items-center gap-3 text-muted-foreground">
           <Loader2 className="w-6 h-6 animate-spin" />
           <p className="text-sm">초기 설정 중...</p>
         </div>

@@ -40,12 +40,13 @@ export function LandingPage() {
       <Nav />
       <Hero />
       <TechStackStrip />
-      {/* full 전용 깊이 섹션 — lite 랜딩은 진입 마찰 ↓ 위해 압축 (별도 스프린트로 lite 전용 랜딩 재작성 검토) */}
+      {/* full 전용 섹션 — lite에는 가족·시나리오 등이 없으므로 광고-실물 불일치 차단.
+          designer-2026-06-10-v2 권고. 본격 lite 전용 랜딩 재작성은 별도 스프린트. */}
       {isFull() && <ApproachSection />}
       <CoreFeatures />
       {isFull() && <PowerfulTechnology />}
-      <ComparisonSection />
-      <ClosingSection />
+      {isFull() && <ComparisonSection />}
+      {isFull() && <ClosingSection />}
     </div>
   )
 }
