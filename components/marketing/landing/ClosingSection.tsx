@@ -2,6 +2,11 @@ import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
 import { ACCENT, BG, CREAM, CREAM_DIM, CREAM_FAINT } from './tokens'
 
+/**
+ * 2026-06-11 v2: 추상 "분석하는 AI / 실행하는 AI" 카피 제거.
+ * 사용자 디렉션: "경진대회 흔적 제거, 기능적으로 재구성"
+ * 단순 마감 — 한 줄 카피 + CTA + footer.
+ */
 export function ClosingSection() {
   return (
     <div
@@ -12,61 +17,22 @@ export function ClosingSection() {
       }}
     >
       <div className="max-w-5xl mx-auto">
-        <p
-          className="text-[11px] tracking-[0.18em] uppercase font-semibold text-center m-0 mb-6"
-          style={{ color: ACCENT }}
-        >
-          다음 단계
-        </p>
-
         <h2
-          className="font-serif font-medium leading-[1.05] tracking-[-0.03em] text-center text-[36px] sm:text-[52px] lg:text-[72px] m-0"
+          className="font-serif font-medium leading-[1.05] tracking-[-0.03em] text-center text-[40px] sm:text-[56px] lg:text-[72px] m-0"
           style={{ color: CREAM }}
         >
-          지금은{' '}
+          이번 달 정리,{' '}
           <span className="font-serif italic font-normal" style={{ color: ACCENT }}>
-            분석하는 AI
-          </span>
-          ,
-          <br />
-          다음은{' '}
-          <span className="inline-block relative mx-2">
-            <span
-              className="font-serif italic font-normal"
-              style={{ color: ACCENT }}
-            >
-              실행하는 AI
-            </span>
-            <svg
-              viewBox="0 0 200 14"
-              preserveAspectRatio="none"
-              className="absolute left-0 right-0 -bottom-2 w-full h-3"
-            >
-              <path
-                d="M 4 9 Q 50 2 100 7 T 196 6"
-                stroke={ACCENT}
-                strokeWidth="2.5"
-                fill="none"
-                strokeLinecap="round"
-                strokeDasharray="600"
-                style={{ animation: 'cpDraw 1.6s ease-out 0.2s both' }}
-              />
-            </svg>
+            지금 시작하세요
           </span>
           .
         </h2>
 
         <p
-          className="text-[15px] sm:text-[16px] leading-[1.7] text-center max-w-[700px] mx-auto m-0 mt-10"
+          className="text-[15px] sm:text-[16px] leading-[1.7] text-center max-w-[560px] mx-auto m-0 mt-10"
           style={{ color: CREAM_DIM }}
         >
-          지금 돈Doc은 가족 자산을 구조화하고 시나리오까지 제안합니다.
-          <br />
-          <br />
-          다음 단계는 — 예산 관리, 리마인드, 실행 체크, 후속 액션까지{' '}
-          <em style={{ color: ACCENT }}>AI 에이전트가 직접 실행</em>하는 자산 운영 시스템.
-          <br />
-          가족의 재무 데이터를 실제 금융 행동까지 연결하는 의사결정 파트너로 진화합니다.
+          엑셀을 한 번 올리면, AI가 분류하고 분석합니다. 매달 같은 흐름.
         </p>
 
         <div className="flex flex-wrap gap-3 justify-center mt-14">

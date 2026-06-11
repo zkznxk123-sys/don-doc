@@ -1,44 +1,49 @@
-import { Sparkles, Shield, BarChart3, ArrowRight } from 'lucide-react'
+import { Upload, Sparkles, TrendingUp, Calendar } from 'lucide-react'
 import { Section } from './Section'
 import { ACCENT, BG, BG_2, CREAM, CREAM_DIM, CREAM_FAINT } from './tokens'
 
+/**
+ * 2026-06-11 v2: 기능 중심 4 카드 — 양쪽 라인 공통 본질 가치.
+ * 이전: 가족 강조·HITL·시나리오 허브 (경진대회 잔재 + lite 광고-실물 불일치 우려)
+ * 사용자 디렉션: "기능적으로 재구성, 경진대회 흔적 제거"
+ */
 export function CoreFeatures() {
   return (
     <Section
-      kicker="구현된 4가지"
+      kicker="핵심 기능"
       title={
         <>
-          모으기 → 정리하기 →
+          엑셀 한 번으로
           <br />
           <span className="font-serif italic font-normal" style={{ color: ACCENT }}>
-            분석하기 → 실행하기
+            월 정리 30분
           </span>
         </>
       }
-      body="흩어진 자산을 한곳에 모으고, AI가 정리·분석·실행까지 연결하는 웹 기반 자산 운영 시스템. 혼자 써도 충분하고, 필요하면 가족·동업자와 선별 공유."
+      body="현금·금융·부동산·연금·부채를 한 곳에 모으고, AI가 분류·정리·분석까지 연결합니다. 매달 엑셀·시트 사이를 옮겨 다니는 시간을 줄입니다."
       bg={BG_2}
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-12">
         {[
           {
-            Icon: BarChart3,
-            t: '가족 자산 통합 대시보드',
-            d: '가족 구성원의 자산·부채·현금흐름을 한 화면에서 통합 조회. 순자산·월간 흐름·자산구성을 즉시 파악.',
+            Icon: Upload,
+            t: '엑셀 한 번 업로드',
+            d: '뱅크샐러드·증권사 엑셀을 그대로 올리면 5종 자산(현금·금융·부동산·연금·부채)으로 자동 분리.',
           },
           {
             Icon: Sparkles,
-            t: '현금흐름 + AI 자동분류',
-            d: '엑셀 업로드 → AI가 카테고리 자동 분류·구조화. 사용자 검증·수정 루프(HITL)로 정확도 지속 개선.',
+            t: 'AI 자동 분류',
+            d: '거래·계좌·종목을 AI가 카테고리에 매핑. 한 번 확정한 매핑은 다음부터 자동 적용.',
           },
           {
-            Icon: ArrowRight,
-            t: 'AI 시나리오 허브',
-            d: '관심 컨텐츠 + 자산 데이터를 결합해 가족 라이프 이벤트(주택·은퇴·교육)별 시뮬레이션과 액션 플랜 자동 생성.',
+            Icon: TrendingUp,
+            t: '순자산 한 화면',
+            d: '12개월 추이·자산 구성·전월 대비 변동을 한 차트에. 어디서 늘었고 줄었는지 즉시 파악.',
           },
           {
-            Icon: Shield,
-            t: '가족 커뮤니케이션 + AI 대화',
-            d: '같은 데이터를 함께 보고, AI 채팅으로 시나리오를 구체화. 거래 카드 첨부·멘션·댓글로 의사결정 가속.',
+            Icon: Calendar,
+            t: '월 결산 자동화',
+            d: '거래 내역·카테고리·예산·저축률까지 매달 같은 흐름으로. 한 번 세팅 → 매달 30분 안에 마감.',
           },
         ].map(s => (
           <div
