@@ -3,7 +3,7 @@
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useUser } from '@clerk/nextjs'
 import { useEffect } from 'react'
-import { identifyUser } from '@/lib/posthog'
+import { capturePageView, identifyUser } from '@/lib/posthog'
 
 export function PostHogPageView() {
   const pathname = usePathname()
@@ -21,12 +21,9 @@ export function PostHogPageView() {
 
   useEffect(() => {
     if (!pathname) return
-    import('posthog-js').then(({ default: posthog }) => {
-      if (!posthog.__loaded) return
-      let url = window.origin + pathname
-      if (searchParams.toString()) url += `?${searchParams.toString()}`
-      posthog.capture('$pageview', { $current_url: url })
-    })
+    let url = window.origin + pathname
+    if (searchParams.toString()) url += `?${searchParams.toString()}`
+    capturePageView(url)
   }, [pathname, searchParams])
 
   return null
