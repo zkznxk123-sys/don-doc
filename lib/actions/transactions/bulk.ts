@@ -46,7 +46,7 @@ async function resolveAccountSyncPlan(args: {
   const allFamilyAccounts = await prisma.account.findMany({
     where: { familyId },
     select: {
-      id: true, name: true, type: true,
+      id: true, name: true, type: true, balance: true,
       holdings: { select: { name: true } },
       subAccounts: { select: { id: true, name: true, balance: true } },
     },
@@ -137,11 +137,26 @@ async function resolveAccountSyncPlan(args: {
       }
     }
 
-    // 4. 일반: 매칭된 account 또는 신규 생성
-    const id = await findOrCreateAccount(ab.name, familyId, ab.type ?? 'CASH', userId)
-    const acc = await prisma.account.findUnique({ where: { id }, select: { balance: true } })
-    pendings.push({ accountId: id, oldBalance: acc?.balance ?? 0, newBalance: ab.balance })
-    if (!mapping) mappingsToUpsert.push({ excelName: ab.name, mappingType: 'ACCOUNT', targetAccountId: id })
+    // 4. 일반 분기 — 2026-06-11 [asset-input-redesign 1b] 신규 계좌 자동 생성 차단
+    // 4a. fuzzy accountHit 있음: 매칭된 계좌에 잔액 동기화 (예전엔 findOrCreateAccount가
+    //     정확 이름 매칭 실패 시 fuzzy hit을 무시하고 새 계좌 만들던 사고 원인)
+    if (accountHit) {
+      pendings.push({ accountId: accountHit.id, oldBalance: accountHit.balance, newBalance: ab.balance })
+      if (!mapping) mappingsToUpsert.push({ excelName: ab.name, mappingType: 'ACCOUNT', targetAccountId: accountHit.id })
+      continue
+    }
+
+    // 4b. 매칭 실패 + 사용자가 NEW_ACCOUNT를 명시 매핑한 경우: 신규 생성 허용
+    if (mapping?.mappingType === 'NEW_ACCOUNT') {
+      const id = await findOrCreateAccount(ab.name, familyId, ab.type ?? 'CASH', userId)
+      const acc = await prisma.account.findUnique({ where: { id }, select: { balance: true } })
+      pendings.push({ accountId: id, oldBalance: acc?.balance ?? 0, newBalance: ab.balance })
+      continue
+    }
+
+    // 4c. 매칭 실패 + 명시 의도 없음: 신규 자동 생성 차단(1b).
+    //     사용자가 ExcelMapping wizard에서 명시 매핑 결정할 때까지 pending mapping 상태로 skip.
+    skipped.push(`${ab.name} (no_match)`)
   }
 
   return { pendings, mappingsToUpsert, skipped, cashSubCreated }
@@ -264,6 +279,7 @@ export async function createManyTransactions(
   skippedCount?: number
   monthStats?: MonthStat[]
   syncedAccountCount?: number
+  skippedSync?: string[]
   batchId?: string
   error?: string
 }> {
@@ -331,7 +347,7 @@ export async function createManyTransactions(
     const skippedCount = rows.length - newRows.length
 
     if (newRows.length === 0) {
-      return { success: true, count: 0, skippedCount, monthStats: [], syncedAccountCount: 0 }
+      return { success: true, count: 0, skippedCount, monthStats: [], syncedAccountCount: 0, skippedSync: [] }
     }
 
     // ── 5. accountBalances 분류 + plan 수립 (helper) ──
@@ -412,7 +428,7 @@ export async function createManyTransactions(
 
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/transactions')
-    return { success: true, count: newRows.length, skippedCount, monthStats, syncedAccountCount, batchId: batch.id }
+    return { success: true, count: newRows.length, skippedCount, monthStats, syncedAccountCount, skippedSync: balancePlan.skipped, batchId: batch.id }
   } catch (e) {
     console.error('[createManyTransactions] ERROR:', e)
     return { success: false, error: '저장 중 오류가 발생했습니다.' }
@@ -450,7 +466,7 @@ export async function syncAccountBalancesOnly(
   userId: string,
   accountBalances: { name: string; balance: number; type?: 'CASH' | 'INVESTMENT' | 'PENSION' | 'REAL_ESTATE' | 'DEBT' }[],
   options?: { fileName?: string }
-): Promise<{ success: boolean; syncedCount?: number; batchId?: string; error?: string }> {
+): Promise<{ success: boolean; syncedCount?: number; batchId?: string; error?: string; skipped?: string[] }> {
   const user = await getAuthUser()
   if (!user) return { success: false, error: 'Unauthorized' }
 
@@ -504,7 +520,7 @@ export async function syncAccountBalancesOnly(
 
     revalidatePath('/dashboard')
     revalidatePath('/dashboard/assets')
-    return { success: true, syncedCount, batchId: batch.id }
+    return { success: true, syncedCount, batchId: batch.id, skipped: plan.skipped }
   } catch (e) {
     console.error('[syncAccountBalancesOnly] ERROR:', e)
     return { success: false, error: '잔액 동기화 중 오류가 발생했습니다.' }

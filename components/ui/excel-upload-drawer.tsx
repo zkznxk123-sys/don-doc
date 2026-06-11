@@ -78,7 +78,10 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
   const [selectedMonths, setSelectedMonths] = useState<Set<string>>(new Set())
 
   // 업로드 모드 (뱅크샐러드 + 계좌 잔액 있을 때)
-  const [uploadMode, setUploadMode] = useState<UploadMode>('both')
+  // 2026-06-11 [asset-input-redesign 1a]: default 'both' → 'cashflow'.
+  // 자산 sheet 동기화는 사용자가 '전체' 또는 '자산만' 명시 선택 시에만 작동(opt-in).
+  // 잘못된 자산 잔액 누적 사고 누적(6/10 정산) 방지. 거래는 그대로 자동.
+  const [uploadMode, setUploadMode] = useState<UploadMode>('cashflow')
 
   // 가시성: 결정 ③ — 설정의 default visibility 사용 (사용자 기본값, 업로드 후 개별 수정 가능)
   const { visibility: defaultVisibility } = useDefaultVisibility()
@@ -301,7 +304,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
     setRows([]); setRawHeaders([]); setAiStatus('idle'); setAiMappedCount(0)
     setAccountBalances([]); setDbAccounts([]); setExcludedAccountNames(new Set())
     setAvailableMonths([]); setSelectedMonths(new Set())
-    setUploadMode('both')
+    setUploadMode('cashflow')
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -348,7 +351,14 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
       if (uploadMode === 'assets') {
         const result = await syncAccountBalancesOnly(familyId, userId, filteredBalances, { fileName: fileName ?? undefined })
         if (result.success) {
-          toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료`)
+          const skipCount = result.skipped?.length ?? 0
+          if (skipCount > 0) {
+            toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료`, {
+              description: `매칭 안 된 ${skipCount}개 row는 신규 계좌 자동 생성 차단 — 자산 페이지에서 직접 추가 후 다시 업로드하세요.`,
+            })
+          } else {
+            toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료`)
+          }
           handleClose(); onSuccess()
         } else {
           toast.error(result.error ?? '잔액 업데이트에 실패했습니다.')
@@ -362,7 +372,10 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         if (uploadMode === 'both' && filteredBalances.length > 0) {
           const result = await syncAccountBalancesOnly(familyId, userId, filteredBalances, { fileName: fileName ?? undefined })
           if (result.success) {
-            toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료`, { description: '새로 등록할 거래 내역이 없습니다.' })
+            const skipCount = result.skipped?.length ?? 0
+            const baseDesc = '새로 등록할 거래 내역이 없습니다.'
+            const desc = skipCount > 0 ? `${baseDesc} 매칭 안 된 ${skipCount}개 row는 신규 계좌 자동 생성 차단 — 자산 페이지에서 직접 추가 후 다시 업로드하세요.` : baseDesc
+            toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료`, { description: desc })
             handleClose(); onSuccess()
           } else {
             toast.error(result.error ?? '잔액 업데이트에 실패했습니다.')
@@ -392,6 +405,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         const total = validRows.length
         const saved = result.count ?? 0
         const skipped = result.skippedCount ?? 0
+        const skippedSyncCount = result.skippedSync?.length ?? 0
         const syncPart = result.syncedAccountCount
           ? `${result.syncedAccountCount}개 계좌 잔액 동기화`
           : null
@@ -399,26 +413,30 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         const dupDesc = skipped > 0
           ? `총 ${total}건 중 ${skipped}건은 이미 존재하여 무시됨`
           : null
+        const syncSkipDesc = skippedSyncCount > 0
+          ? `매칭 안 된 계좌 ${skippedSyncCount}개는 신규 자동 생성 차단 — 자산 페이지에서 직접 추가 후 다시 업로드하세요.`
+          : null
 
         if (saved === 0) {
-          toast.info('모든 내역이 이미 등록되어 있습니다.', { description: dupDesc ?? undefined })
+          const desc = [dupDesc, syncSkipDesc].filter(Boolean).join(' · ') || undefined
+          toast.info('모든 내역이 이미 등록되어 있습니다.', { description: desc })
         } else {
           const stats = result.monthStats ?? []
           let title = ''
           if (syncPart) title += `${syncPart}, `
           title += `${saved}건 등록 완료`
 
-          let description = dupDesc ?? ''
+          const parts: string[] = []
+          if (dupDesc) parts.push(dupDesc)
           if (stats.length === 1) {
             const s = stats[0]
-            const statStr = `수입 ${new Intl.NumberFormat('ko-KR').format(s.income)}원 · 지출 ${new Intl.NumberFormat('ko-KR').format(s.expense)}원`
-            description = dupDesc ? `${dupDesc} · ${statStr}` : statStr
+            parts.push(`수입 ${new Intl.NumberFormat('ko-KR').format(s.income)}원 · 지출 ${new Intl.NumberFormat('ko-KR').format(s.expense)}원`)
           } else if (stats.length > 1) {
-            const range = `${stats[0].month} ~ ${stats[stats.length - 1].month}`
-            description = dupDesc ? `${dupDesc} · ${range}` : range
+            parts.push(`${stats[0].month} ~ ${stats[stats.length - 1].month}`)
           }
+          if (syncSkipDesc) parts.push(syncSkipDesc)
 
-          toast.success(title, { description: description || undefined })
+          toast.success(title, { description: parts.join(' · ') || undefined })
         }
 
         Promise.all([
