@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
-import { ACCENT, BG, CREAM, CREAM_DIM, CREAM_FAINT } from './tokens'
+import { ACCENT, BG, BG_2, CREAM, CREAM_DIM, CREAM_FAINT } from './tokens'
 
 /**
  * 2026-06-11 v2: 추상 "분석하는 AI / 실행하는 AI" 카피 제거.
@@ -12,7 +12,7 @@ export function ClosingSection() {
     <div
       className="relative px-6 md:px-14 py-24 md:py-[120px]"
       style={{
-        background: `linear-gradient(180deg, ${BG} 0%, #050706 100%)`,
+        background: `linear-gradient(180deg, ${BG} 0%, ${BG_2} 100%)`,
         borderTop: `1px solid ${CREAM_FAINT}`,
       }}
     >
@@ -38,7 +38,7 @@ export function ClosingSection() {
         <div className="flex flex-wrap gap-3 justify-center mt-14">
           <Link
             href="/sign-up"
-            className="inline-flex items-center gap-2 px-9 py-4 rounded-full text-[14px] font-semibold transition active:scale-[0.97] hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B49B3E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B0F0E]"
+            className="inline-flex items-center gap-2 px-9 py-4 rounded-full text-[14px] font-semibold transition active:scale-[0.97] hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F5D4F] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF8F3]"
             style={{ background: CREAM, color: BG }}
           >
             무료로 시작하기
@@ -46,7 +46,7 @@ export function ClosingSection() {
           </Link>
           <a
             href="/demo"
-            className="inline-flex items-center gap-2 px-9 py-4 rounded-full text-[14px] font-medium transition hover:bg-white/5 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B49B3E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B0F0E]"
+            className="inline-flex items-center gap-2 px-9 py-4 rounded-full text-[14px] font-medium transition hover:bg-black/5 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F5D4F] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF8F3]"
             style={{ color: CREAM, border: `1px solid ${CREAM_FAINT}` }}
           >
             데모 둘러보기

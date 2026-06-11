@@ -1,15 +1,16 @@
 'use client'
 
 /**
- * Hero — 미니멀 v3 (2026-06-11 동적 인터랙션 추가).
- * 사용자 6/11 input: "동적 인터랙션도 추가되면 시선을 확 끌수 있지 않을까"
+ * Hero — 미니멀 v4 (2026-06-11 라이트 단일 전환).
+ * 사용자 input: "다크가 부담스러워서" → dark-luxury 폐기, 라이트 단일.
  *
- * 변경 (v2 → v3):
- * - 정적 단일 ambient → 두 개의 floating gradient orb (천천히 회전·이동, mouse 영향 없음)
- * - 큰 카피 단순 fade → 글자 단위 stagger 입장
- * - "한 화면에" 이탤릭 단어 아래 ACCENT 라인이 SVG path로 천천히 그려짐
- * - hero 위쪽에 미세한 grid dot 패턴 (정적, ambient noise)
- * Antigravity 참조 — 추상 flow + 부드러운 모션 + 광활한 여백.
+ * v3 → v4 변경:
+ * - orb 색·opacity 라이트 BG 위에서 보이는 톤으로 (forest tint + warm gold tint)
+ * - dot pulse glow gold → forest 약한 glow
+ * - focus ring·offset 라이트 톤(#2F5D4F·#FAF8F3)
+ * - secondary CTA hover: white/5 → black/5
+ *
+ * v3 (다크) 유지 요소: floating orb 2개, stagger 입장, 이탤릭 단어 SVG draw, grid dot ambient.
  */
 
 import Link from 'next/link'
@@ -24,7 +25,7 @@ export function Hero() {
       <motion.div
         className="pointer-events-none absolute -top-32 left-1/4 w-[900px] h-[900px] rounded-full"
         style={{
-          background: `radial-gradient(circle, rgba(180,155,62,0.12) 0%, rgba(180,155,62,0.04) 40%, transparent 70%)`,
+          background: `radial-gradient(circle, rgba(47,93,79,0.10) 0%, rgba(47,93,79,0.03) 40%, transparent 70%)`,
           filter: 'blur(80px)',
         }}
         animate={{ x: [0, 60, -40, 0], y: [0, -30, 20, 0] }}
@@ -33,16 +34,16 @@ export function Hero() {
       <motion.div
         className="pointer-events-none absolute -bottom-40 right-1/4 w-[700px] h-[700px] rounded-full"
         style={{
-          background: `radial-gradient(circle, rgba(47,93,79,0.10) 0%, rgba(47,93,79,0.03) 40%, transparent 70%)`,
+          background: `radial-gradient(circle, rgba(180,155,62,0.08) 0%, rgba(180,155,62,0.02) 40%, transparent 70%)`,
           filter: 'blur(70px)',
         }}
         animate={{ x: [0, -50, 30, 0], y: [0, 40, -20, 0] }}
         transition={{ duration: 30, ease: 'easeInOut', repeat: Infinity }}
       />
 
-      {/* 미세 grid dot — ambient noise. 정적 */}
+      {/* 미세 grid dot — ambient noise. 정적. 라이트 BG에서는 dark ink dot이 살짝 보임 */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.04]"
+        className="pointer-events-none absolute inset-0 opacity-[0.06]"
         style={{
           backgroundImage: `radial-gradient(circle, ${CREAM} 1px, transparent 1px)`,
           backgroundSize: '40px 40px',
@@ -62,7 +63,7 @@ export function Hero() {
             className="w-1.5 h-1.5 rounded-full inline-block"
             style={{
               background: ACCENT,
-              boxShadow: '0 0 12px rgba(180,155,62,0.9)',
+              boxShadow: '0 0 10px rgba(47,93,79,0.55)',
               animation: 'cpDot 1.6s ease-in-out infinite',
             }}
           />
@@ -129,7 +130,7 @@ export function Hero() {
         >
           <Link
             href="/sign-up"
-            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-[13px] font-semibold transition-all active:scale-[0.97] hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B49B3E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B0F0E]"
+            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-[13px] font-semibold transition-all active:scale-[0.97] hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F5D4F] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF8F3]"
             style={{ background: CREAM, color: BG }}
           >
             무료로 시작하기
@@ -137,7 +138,7 @@ export function Hero() {
           </Link>
           <a
             href="/demo"
-            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-[13px] font-medium transition-all hover:bg-white/5 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#B49B3E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0B0F0E]"
+            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-[13px] font-medium transition-all hover:bg-black/5 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F5D4F] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF8F3]"
             style={{ color: CREAM, border: `1px solid ${CREAM_FAINT}` }}
           >
             데모 둘러보기

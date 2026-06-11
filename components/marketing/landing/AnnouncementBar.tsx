@@ -1,4 +1,4 @@
-import { ACCENT, BG_3, CREAM, CREAM_FAINT } from './tokens'
+import { ACCENT, BG_3, CREAM, CREAM_DIM, CREAM_FAINT } from './tokens'
 
 export function AnnouncementBar() {
   return (
@@ -12,7 +12,7 @@ export function AnnouncementBar() {
       >
         데모
       </span>
-      <span style={{ color: 'rgba(241,236,227,0.78)' }}>로그인 없이 데모 즉시 체험 가능</span>
+      <span style={{ color: CREAM_DIM }}>로그인 없이 데모 즉시 체험 가능</span>
       <a
         href="/demo"
         className="underline font-medium hover:opacity-80"

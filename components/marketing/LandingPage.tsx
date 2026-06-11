@@ -12,12 +12,13 @@ import { BG, CREAM } from './landing/tokens'
 import { isFull } from '@/lib/feature-flags'
 
 /**
- * 2026-06-11 재구성:
- * - 제거: TechStackStrip · ApproachSection (4-step AI 파이프라인) · PowerfulTechnology (3-tier 라우팅·CLIProxy)
- *   사용자 input: "경진대회용 기술적인 것들 다 빼고 기능적으로 재구성"
- * - Hero 미니멀 v2 (Antigravity 스타일)
- * - 흐름: Hero → CoreFeatures(기능 4가지) → Comparison(뱅샐 대비) → Closing
- *   full만 Comparison·Closing 노출 (lite는 진입 마찰 ↓ 위해 Hero+CoreFeatures만)
+ * 2026-06-11 라이트 단일 전환:
+ * - 사용자 input: "다크가 부담스러워서" → dark-luxury 폐기.
+ * - tokens.ts 값만 라이트 팔레트로 교체 (이름은 호환 유지, 추후 rename PR).
+ * - ACCENT gold → forest green (#2F5D4F), BG dark canvas → warm off-white(#FAF8F3).
+ *
+ * 흐름 (기능 중심): Hero → CoreFeatures → Comparison(full) → Closing(full).
+ * lite는 진입 마찰 ↓ 위해 Hero+CoreFeatures만.
  */
 export function LandingPage() {
   return (

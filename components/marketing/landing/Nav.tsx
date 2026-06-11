@@ -8,7 +8,7 @@ export function Nav() {
       <div className="flex items-center gap-8">
         <Link href="/" className="flex items-center gap-2.5">
           <Image
-            src="/brand-mark-dark.svg"
+            src="/brand-mark.svg"
             alt="돈Doc"
             width={32}
             height={32}
