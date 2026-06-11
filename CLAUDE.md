@@ -72,6 +72,10 @@ components/
 lib/
   feature-flags.ts  # 제품 라인 분리 (full/lite) — 단일 진입점, features 7-flag
   actions/          # 서버 액션 ('use server')
+    transactions/
+      bulk.ts            # createManyTransactions·syncAccountBalancesOnly (server action)
+      _account-sync.ts   # resolveAccountSyncPlan helper (private, testable, no 'use server')
+      _dedup.ts          # dedupPendings helper
     transaction.ts  # 거래 CRUD, bulkUpdate
     investments.ts  # 매매 기록 (addTradeRecord — prisma.$transaction 원자성)
     categories.ts   # getFamilyCategories, addCustomCategory
