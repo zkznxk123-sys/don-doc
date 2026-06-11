@@ -118,7 +118,7 @@ export function Hero() {
           className="text-base lg:text-[17px] leading-[1.6] mt-12 max-w-[480px] mx-auto"
           style={{ color: CREAM_DIM }}
         >
-          현금·금융·부동산·연금·부채를 한 곳에 모으고, AI가 분류·분석까지 연결합니다.
+          현금·금융·부동산·연금·부채를 한 곳에. 분류와 분석은 AI가 — 매달 정리는 30분이면 끝납니다.
         </motion.p>
 
         {/* CTA */}

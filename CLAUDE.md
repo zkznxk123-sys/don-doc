@@ -65,11 +65,12 @@ components/
     AppSidebar.tsx           # core/beta/admin 3그룹 nav
     Header.tsx               # 디자인 토큰 기반 (bg-card·border-border)
   marketing/
-    LandingPage.tsx          # 랜딩 Dark Luxury sub-palette (BRAND_GUIDE §7)
+    LandingPage.tsx          # 랜딩 라이트 단일 (2026-06-11 dark-luxury 폐기). isFull()로 Comparison 분기
   dashboard/
     InputGuide.tsx
 
 lib/
+  feature-flags.ts  # 제품 라인 분리 (full/lite) — 단일 진입점, features 7-flag
   actions/          # 서버 액션 ('use server')
     transaction.ts  # 거래 CRUD, bulkUpdate
     investments.ts  # 매매 기록 (addTradeRecord — prisma.$transaction 원자성)
@@ -144,6 +145,22 @@ const categories = await getFamilyCategories()
 - `BALANCE_ONLY` — 이름·금액만, 거래 마스킹
 - `PRIVATE` — 본인만
 
+### 제품 라인 분리 (full / lite)
+2026-06-10 도입. `NEXT_PUBLIC_PRODUCT_LINE=full|lite` 빌드 타임 환경변수 1개로 두 라인 분기. `lib/feature-flags.ts` 단일 진입점:
+
+```typescript
+import { features, isFull, isLite } from '@/lib/feature-flags'
+
+if (features.familyManagement) { /* full 전용 */ }
+if (isLite()) { /* lite 분기 */ }
+```
+
+- **features 7-flag**: `scenarios`·`familyFeed`·`familyManagement`·`tradeAutoLink`·`pensionDetail`·`familyOAuth`·`visibilityRoles`
+- **lite 라인**: 위 7개 모두 false. 가입 직후 `createFamily('내 자산')` 자동 1인 가족. 초대 UI 미노출.
+- **route 차단**: `middleware.ts`의 `LITE_BLOCKED_ROUTES`(`/dashboard/scenario`, `/family`, `/feed`)는 lite 빌드에서 redirect.
+- **랜딩 분기**: `LandingPage.tsx`에서 `{isFull() && <ComparisonSection />}`. CoreFeatures·Closing은 양쪽 공통.
+- ⚠️ **lite API 가드는 middleware·UI 레벨뿐** (서버 액션·API 라우트에 lite 가드 없음 — lite 별도 배포 시 추가 필요).
+
 ---
 
 ## DB 주요 모델
@@ -202,6 +219,7 @@ const categories = await getFamilyCategories()
 ## 환경 변수 (.env.local)
 
 ```
+NEXT_PUBLIC_PRODUCT_LINE=full   # full | lite (제품 라인 분리, 미설정 시 full)
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
 CLERK_SECRET_KEY=
 DATABASE_URL=          # Prisma (pooled)

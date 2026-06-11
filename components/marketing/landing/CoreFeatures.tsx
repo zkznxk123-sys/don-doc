@@ -58,12 +58,12 @@ export function CoreFeatures() {
               <s.Icon className="w-[18px] h-[18px]" />
             </div>
             <div>
-              <p
+              <h3
                 className="font-serif font-medium text-[22px] m-0 tracking-[-0.02em]"
                 style={{ color: CREAM }}
               >
                 {s.t}
-              </p>
+              </h3>
               <p
                 className="text-[13px] m-0 mt-2 leading-[1.6]"
                 style={{ color: CREAM_DIM }}

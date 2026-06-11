@@ -69,15 +69,15 @@ Semantic shorthand utilities: `text-income` (emerald), `text-expense` (red), `te
 
 ### Fonts
 
-- **Sans**: `Pretendard` → `Noto Sans KR` → system-ui (UI labels, body, metadata)
-- **Serif**: `Noto Serif KR` → Georgia (display numbers, page titles h1/h2)
+- **Sans**: `Pretendard` → `Noto Sans KR` → system-ui (UI labels, body, metadata, **default for h1/h2**)
+- **Serif**: `Noto Serif KR` → Georgia — **opt-in only**. 2026-06-11 globals 전역 `h1,h2 = serif` 규칙 폐기. Hero·KPI display(`.numeric-display`)·editorial 헤딩에만 `font-serif` 명시.
 - **Mono**: `ui-monospace` / Menlo (code only)
 
 ### Scale
 
 | Element | Font | Size | Weight | Notes |
 |---------|------|------|--------|-------|
-| `h1`, `h2` | Serif | fluid | 700 | `tracking-tight`, `leading-[1.1]` |
+| `h1`, `h2` | Sans (default) · Serif opt-in | fluid | 700 | `tracking-tight`, `leading-[1.1]`. serif가 필요한 헤딩에만 `font-serif` 명시 |
 | `h3` | Sans | 16px | 600 | Section headings |
 | `h4` | Sans | 12px | 600 | Card labels |
 | Body | Sans | 14px | 400 | `leading-[1.6]` |
