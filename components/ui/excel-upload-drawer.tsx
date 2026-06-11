@@ -18,6 +18,7 @@ import {
 import { autoDetectAndExcludeTransfers, autoDetectAndExcludeCancellations, autoDetectAndExcludeSharedCardDuplicates } from '@/lib/actions/transactions/auto-exclude'
 import { syncBanksaladCategories } from '@/lib/actions/categories'
 import { useDefaultVisibility } from '@/lib/hooks/useDefaultVisibility'
+import { track } from '@/lib/posthog'
 import {
   type ColMap, type ExcelPreset,
   detectPreset, buildColMap,
@@ -343,6 +344,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
 
   const handleSubmit = async () => {
     setIsLoading(true)
+    const startedAt = Date.now()
     try {
       // 사용자가 unchecked한 항목은 동기화에서 제외
       const filteredBalances = accountBalances.filter(ab => !excludedAccountNames.has(ab.name))
@@ -359,6 +361,13 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
           } else {
             toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료`)
           }
+          track('excel_upload_completed', {
+            upload_mode: 'assets',
+            row_count: 0,
+            account_count: result.syncedCount ?? 0,
+            skipped_sync_count: skipCount,
+            duration_ms: Date.now() - startedAt,
+          })
           handleClose(); onSuccess()
         } else {
           toast.error(result.error ?? '잔액 업데이트에 실패했습니다.')
@@ -376,6 +385,13 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
             const baseDesc = '새로 등록할 거래 내역이 없습니다.'
             const desc = skipCount > 0 ? `${baseDesc} 매칭 안 된 ${skipCount}개 row는 신규 계좌 자동 생성 차단 — 자산 페이지에서 직접 추가 후 다시 업로드하세요.` : baseDesc
             toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료`, { description: desc })
+            track('excel_upload_completed', {
+              upload_mode: 'both_assets_only',
+              row_count: 0,
+              account_count: result.syncedCount ?? 0,
+              skipped_sync_count: skipCount,
+              duration_ms: Date.now() - startedAt,
+            })
             handleClose(); onSuccess()
           } else {
             toast.error(result.error ?? '잔액 업데이트에 실패했습니다.')
@@ -451,6 +467,14 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
           if (parts.length > 0) toast.info(`${parts.join(', ')} 자동 제외 처리됨`)
         })
 
+        track('excel_upload_completed', {
+          upload_mode: uploadMode,
+          row_count: saved,
+          duplicate_row_count: skipped,
+          account_count: result.syncedAccountCount ?? 0,
+          skipped_sync_count: skippedSyncCount,
+          duration_ms: Date.now() - startedAt,
+        })
         handleClose(); onSuccess()
       } else {
         toast.error(result.error ?? '등록에 실패했습니다.')

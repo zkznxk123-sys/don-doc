@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import { getProductLine } from '@/lib/feature-flags'
 
 /** PostHog를 클라이언트에서만 동적으로 로드 */
 export function PostHogProvider({ children }: { children: React.ReactNode }) {
@@ -20,6 +21,8 @@ export function PostHogPageView() {
           capture_pageview: false,
           capture_pageleave: true,
         })
+        // super property — 모든 event에 자동 첨부 (build-time product line)
+        posthog.register({ product_line: getProductLine() })
       }
     })
   }, [])

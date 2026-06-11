@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -12,6 +12,9 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Image from 'next/image'
 import { createFamily, joinFamily } from '@/lib/actions/family'
 import { isFull } from '@/lib/feature-flags'
+import { track } from '@/lib/posthog'
+
+const SIGNUP_FLAG_KEY = 'dondoc_signup_captured_v1'
 
 type Step = 'select' | 'create' | 'join'
 
@@ -37,6 +40,15 @@ function OnboardingContent() {
   const [step, setStep] = useState<Step>(codeFromUrl ? 'join' : 'select')
   const [isLoading, setIsLoading] = useState(false)
 
+  // PostHog: signup_completed (1회) + 마운트 시점 기록 (onboarding_completed duration_ms 계산용).
+  const mountedAtRef = useRef<number>(Date.now())
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    if (localStorage.getItem(SIGNUP_FLAG_KEY)) return
+    localStorage.setItem(SIGNUP_FLAG_KEY, '1')
+    track('signup_completed')
+  }, [])
+
   // lite 라인은 가족 공유 기능 없음 → 가입 시 개인 1인 가족 자동 생성.
   // 초대 코드 진입도 lite에서 무시 (full 전용 메커니즘).
   const [autoSetupTriggered, setAutoSetupTriggered] = useState(false)
@@ -45,6 +57,12 @@ function OnboardingContent() {
     setAutoSetupTriggered(true)
     setIsLoading(true)
     createFamily('내 자산')
+      .then(() => {
+        track('onboarding_completed', {
+          onboarding_path: 'lite_auto',
+          duration_ms: Date.now() - mountedAtRef.current,
+        })
+      })
       .catch(() => toast.error('초기 설정 중 오류가 발생했습니다.'))
   }, [autoSetupTriggered])
 
@@ -78,6 +96,11 @@ function OnboardingContent() {
       const result = await createFamily(data.name)
       if (result?.error) {
         toast.error(result.error)
+      } else {
+        track('onboarding_completed', {
+          onboarding_path: 'create_family',
+          duration_ms: Date.now() - mountedAtRef.current,
+        })
       }
     } catch {
       toast.error('오류가 발생했습니다. 다시 시도해주세요.')
@@ -92,6 +115,11 @@ function OnboardingContent() {
       const result = await joinFamily(data.code)
       if (result?.error) {
         toast.error(result.error)
+      } else {
+        track('onboarding_completed', {
+          onboarding_path: 'join_family',
+          duration_ms: Date.now() - mountedAtRef.current,
+        })
       }
     } catch {
       toast.error('오류가 발생했습니다. 다시 시도해주세요.')
