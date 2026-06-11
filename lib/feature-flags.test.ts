@@ -63,12 +63,15 @@ describe('feature-flags', () => {
     expect(isRouteBlockedInLite('/dashboard/feed')).toBe(false)
   })
 
-  it('blockIfLite — lite 빌드에서 404 Response 반환', async () => {
+  it('blockIfLite — lite 빌드에서 JSON body 포함 404 Response 반환', async () => {
     process.env[ENV_KEY] = 'lite'
     const { blockIfLite } = await import('./feature-flags')
     const result = blockIfLite()
     expect(result).not.toBeNull()
     expect(result?.status).toBe(404)
+    // 빈 body면 클라이언트의 무조건 .json() 파싱이 SyntaxError로 터진다
+    const body = await result?.json()
+    expect(body.success).toBe(false)
   })
 
   it('blockIfLite — full 빌드에서 null 반환 (통과)', async () => {

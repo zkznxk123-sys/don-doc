@@ -91,6 +91,12 @@ export function isRouteBlockedInLite(pathname: string): boolean {
  *   }
  */
 export function blockIfLite(): Response | null {
-  if (isLite()) return new Response(null, { status: 404 })
+  // 빈 body는 클라이언트의 무조건 .json() 파싱을 깨뜨린다 — 항상 JSON body 포함
+  if (isLite()) {
+    return Response.json(
+      { success: false, error: 'lite 제품에서 제공하지 않는 기능입니다.' },
+      { status: 404 }
+    )
+  }
   return null
 }

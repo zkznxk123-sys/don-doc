@@ -4,12 +4,14 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
 import { isCFOLevel } from '@/lib/roles'
-import { blockIfLite } from '@/lib/feature-flags'
+import { isFull } from '@/lib/feature-flags'
 
-/** GET /api/family/info — 가족 정보 + 초대 코드 조회 */
+/**
+ * GET /api/family/info — 가족 정보 + 초대 코드 조회.
+ * lite에서도 차단하지 않는다: 1인 가족 member 목록을 budget·엑셀 업로드
+ * (이체 필터링)가 읽는다. 초대 코드 조회·자동 생성만 full 전용.
+ */
 export async function GET() {
-  const blocked = blockIfLite()
-  if (blocked) return blocked
   try {
     const user = await getAuthUser()
     if (!user) return NextResponse.json({ success: false, error: '인증이 필요합니다.' }, { status: 401 })
@@ -21,18 +23,22 @@ export async function GET() {
     })
     if (!family) return NextResponse.json({ success: false, error: '가족 그룹을 찾을 수 없습니다.' }, { status: 404 })
 
-    let invite = await prisma.familyInvite.findFirst({
-      where: { familyId: user.familyId, expiresAt: { gt: new Date() }, usedBy: null },
-      orderBy: { createdAt: 'desc' },
-    })
-
-    if (!invite) {
-      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
-      let code = ''
-      for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)]
-      invite = await prisma.familyInvite.create({
-        data: { code, familyId: user.familyId, createdBy: user.id, expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
+    let inviteCode: string | null = null
+    if (isFull()) {
+      let invite = await prisma.familyInvite.findFirst({
+        where: { familyId: user.familyId, expiresAt: { gt: new Date() }, usedBy: null },
+        orderBy: { createdAt: 'desc' },
       })
+
+      if (!invite) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
+        let code = ''
+        for (let i = 0; i < 6; i++) code += chars[Math.floor(Math.random() * chars.length)]
+        invite = await prisma.familyInvite.create({
+          data: { code, familyId: user.familyId, createdBy: user.id, expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) },
+        })
+      }
+      inviteCode = invite.code
     }
 
     return NextResponse.json({
@@ -41,7 +47,7 @@ export async function GET() {
         id: family.id,
         name: family.name,
         members: family.users.map((u) => ({ id: u.id, name: u.name, email: u.email, role: u.role })),
-        inviteCode: invite.code,
+        inviteCode,
       },
     })
   } catch (e) {
