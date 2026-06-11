@@ -133,10 +133,10 @@ async function main() {
   // 4. 자산/부채 계좌
   // ══════════════════════════════════════════════════════════════════
 
-  // ─ 4-1. 아파트 (마포구 래미안)
+  // ─ 4-1. 아파트 (마포구 신축, 단지명 익명화 — 마케팅 캡처 위생)
   const apartment = await prisma.account.create({
     data: {
-      name: '마포 래미안 84㎡',
+      name: '마포 신축 84㎡',
       type: 'REAL_ESTATE',
       balance: 1_450_000_000,
       shareLevel: 'PUBLIC',
@@ -145,7 +145,7 @@ async function main() {
       realEstateDetail: {
         create: {
           propertyType: '아파트',
-          complexName: '래미안 마포 리버웰',
+          complexName: '마포 신축 단지',
           area: 84.3,
           floor: 12,
           purchasePrice: 1_050_000_000,
