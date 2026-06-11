@@ -17,6 +17,7 @@ import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
 import { ACCENT, BG, CREAM, CREAM_DIM, CREAM_FAINT } from './tokens'
+import { ScreenshotMockup } from './ScreenshotMockup'
 
 export function Hero() {
   return (
@@ -145,6 +146,9 @@ export function Hero() {
           </a>
         </motion.div>
       </div>
+
+      {/* 제품 실물 mockup — PODO·Linear·Stripe 패턴. 사용자 PNG 캡처 대기 (현재 placeholder) */}
+      <ScreenshotMockup />
     </div>
   )
 }
