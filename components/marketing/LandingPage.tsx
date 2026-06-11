@@ -5,31 +5,33 @@ import { DemoErrorBanner } from './landing/DemoErrorBanner'
 import { AnnouncementBar } from './landing/AnnouncementBar'
 import { Nav } from './landing/Nav'
 import { Hero } from './landing/Hero'
-import { TechStackStrip } from './landing/TechStackStrip'
-import { ApproachSection } from './landing/ApproachSection'
 import { CoreFeatures } from './landing/CoreFeatures'
-import { PowerfulTechnology } from './landing/PowerfulTechnology'
 import { ComparisonSection } from './landing/ComparisonSection'
 import { ClosingSection } from './landing/ClosingSection'
 import { BG, CREAM } from './landing/tokens'
 import { isFull } from '@/lib/feature-flags'
 
+/**
+ * 2026-06-11 재구성:
+ * - 제거: TechStackStrip · ApproachSection (4-step AI 파이프라인) · PowerfulTechnology (3-tier 라우팅·CLIProxy)
+ *   사용자 input: "경진대회용 기술적인 것들 다 빼고 기능적으로 재구성"
+ * - Hero 미니멀 v2 (Antigravity 스타일)
+ * - 흐름: Hero → CoreFeatures(기능 4가지) → Comparison(뱅샐 대비) → Closing
+ *   full만 Comparison·Closing 노출 (lite는 진입 마찰 ↓ 위해 Hero+CoreFeatures만)
+ */
 export function LandingPage() {
   return (
     <div
       className="min-h-screen"
       style={{ background: BG, color: CREAM, fontFamily: 'var(--font-sans)' }}
     >
-      {/* keyframes — global to this landing only.
-          WCAG 2.3.3: prefers-reduced-motion 사용자는 모든 데코 모션 정지. */}
+      {/* keyframes — landing 전용. WCAG 2.3.3 reduced-motion 가드 포함. */}
       <style jsx global>{`
         @keyframes cpDot { 0%, 100% { opacity: 0.5; transform: scale(1); } 50% { opacity: 1; transform: scale(1.4); } }
-        @keyframes cpTicker { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
         @keyframes cpDraw { from { stroke-dashoffset: 600; } to { stroke-dashoffset: 0; } }
 
         @media (prefers-reduced-motion: reduce) {
           [style*="cpDot"], [style*="cpDraw"] { animation: none !important; }
-          .inline-flex[style*="cpTicker"], div[style*="cpTicker"] { animation: none !important; }
           * { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
         }
       `}</style>
@@ -39,12 +41,7 @@ export function LandingPage() {
       <AnnouncementBar />
       <Nav />
       <Hero />
-      <TechStackStrip />
-      {/* full 전용 섹션 — lite에는 가족·시나리오 등이 없으므로 광고-실물 불일치 차단.
-          designer-2026-06-10-v2 권고. 본격 lite 전용 랜딩 재작성은 별도 스프린트. */}
-      {isFull() && <ApproachSection />}
       <CoreFeatures />
-      {isFull() && <PowerfulTechnology />}
       {isFull() && <ComparisonSection />}
       {isFull() && <ClosingSection />}
     </div>
