@@ -62,4 +62,18 @@ describe('feature-flags', () => {
     expect(isRouteBlockedInLite('/dashboard/family')).toBe(false)
     expect(isRouteBlockedInLite('/dashboard/feed')).toBe(false)
   })
+
+  it('blockIfLite — lite 빌드에서 404 Response 반환', async () => {
+    process.env[ENV_KEY] = 'lite'
+    const { blockIfLite } = await import('./feature-flags')
+    const result = blockIfLite()
+    expect(result).not.toBeNull()
+    expect(result?.status).toBe(404)
+  })
+
+  it('blockIfLite — full 빌드에서 null 반환 (통과)', async () => {
+    process.env[ENV_KEY] = 'full'
+    const { blockIfLite } = await import('./feature-flags')
+    expect(blockIfLite()).toBeNull()
+  })
 })

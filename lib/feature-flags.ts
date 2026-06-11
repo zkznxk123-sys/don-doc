@@ -77,3 +77,20 @@ export function isRouteBlockedInLite(pathname: string): boolean {
   if (isFull()) return false
   return LITE_BLOCKED_ROUTES.some(prefix => pathname === prefix || pathname.startsWith(prefix + '/'))
 }
+
+/**
+ * API route 진입부에서 lite 빌드 차단 (방어심층). middleware가 dashboard
+ * 페이지만 차단하므로 API endpoint는 별도 가드 필요. lite 사용자는 가족이
+ * 없어 빈 응답이 되지만, 응답 자체를 막아 정보 노출·기능 우회 차단.
+ *
+ * 사용:
+ *   export async function GET(req: Request) {
+ *     const blocked = blockIfLite()
+ *     if (blocked) return blocked
+ *     // ... 정상 로직
+ *   }
+ */
+export function blockIfLite(): Response | null {
+  if (isLite()) return new Response(null, { status: 404 })
+  return null
+}

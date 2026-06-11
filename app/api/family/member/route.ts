@@ -4,12 +4,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
 import { isCFOLevel, type AppRole } from '@/lib/roles'
+import { blockIfLite } from '@/lib/feature-flags'
 
 /**
  * PATCH /api/family/member — 멤버 역할 변경 (CFO/CO_CFO만 가능)
  * body: { memberId: string, role: 'CO_CFO' | 'MEMBER' }
  */
 export async function PATCH(req: NextRequest) {
+  const blocked = blockIfLite()
+  if (blocked) return blocked
   try {
     const user = await getAuthUser()
     if (!user) return NextResponse.json({ success: false, error: '인증이 필요합니다.' }, { status: 401 })

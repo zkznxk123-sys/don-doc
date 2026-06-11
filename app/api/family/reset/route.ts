@@ -4,8 +4,11 @@ import { NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth'
 import { isCFOLevel } from '@/lib/roles'
 import { resetFamilyData } from '@/lib/actions/family'
+import { blockIfLite } from '@/lib/feature-flags'
 
 export async function POST() {
+  const blocked = blockIfLite()
+  if (blocked) return blocked
   const user = await getAuthUser()
   if (!user) return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 })
   if (!user.familyId) return NextResponse.json({ error: '가족 그룹이 없습니다.' }, { status: 400 })

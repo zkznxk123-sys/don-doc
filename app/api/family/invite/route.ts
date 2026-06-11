@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
 import { isCFOLevel } from '@/lib/roles'
+import { blockIfLite } from '@/lib/feature-flags'
 
 function generateCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -18,6 +19,8 @@ function generateCode(): string {
  * POST /api/family/invite — CFO가 초대 코드 발급
  */
 export async function POST() {
+  const blocked = blockIfLite()
+  if (blocked) return blocked
   try {
     const user = await getAuthUser()
     if (!user) {
@@ -66,6 +69,8 @@ export async function POST() {
  * GET /api/family/invite — 현재 가족의 초대 코드 목록
  */
 export async function GET() {
+  const blocked = blockIfLite()
+  if (blocked) return blocked
   try {
     const user = await getAuthUser()
     if (!user) {

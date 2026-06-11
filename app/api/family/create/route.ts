@@ -3,12 +3,15 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
+import { blockIfLite } from '@/lib/feature-flags'
 
 /**
  * POST /api/family/create — 새 가족 그룹 생성 (CFO로 등록)
  * body: { name: string }
  */
 export async function POST(req: NextRequest) {
+  const blocked = blockIfLite()
+  if (blocked) return blocked
   try {
     const user = await getAuthUser()
     if (!user) {
