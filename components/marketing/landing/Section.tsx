@@ -1,4 +1,4 @@
-import { ACCENT, CREAM, CREAM_DIM } from './tokens'
+import { ACCENT, INK, INK_DIM } from './tokens'
 
 export function Section({
   kicker,
@@ -29,7 +29,7 @@ export function Section({
             </p>
             <h2
               className="font-serif font-medium m-0 leading-[1.05] tracking-tight text-[40px] sm:text-[48px] lg:text-[56px]"
-              style={{ color: CREAM }}
+              style={{ color: INK }}
             >
               {title}
             </h2>
@@ -37,7 +37,7 @@ export function Section({
           {body && (
             <p
               className="text-base lg:text-[16px] leading-[1.7] m-0 pt-3 max-w-[540px]"
-              style={{ color: CREAM_DIM }}
+              style={{ color: INK_DIM }}
             >
               {body}
             </p>

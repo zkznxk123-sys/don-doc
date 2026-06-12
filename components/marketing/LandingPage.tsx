@@ -9,7 +9,7 @@ import { Hero } from './landing/Hero'
 import { CoreFeatures } from './landing/CoreFeatures'
 import { ComparisonSection } from './landing/ComparisonSection'
 import { ClosingSection } from './landing/ClosingSection'
-import { BG, CREAM } from './landing/tokens'
+import { ACCENT, BG, INK } from './landing/tokens'
 import { isFull } from '@/lib/feature-flags'
 
 /**
@@ -26,7 +26,14 @@ export function LandingPage() {
     <MotionConfig reducedMotion="user">
       <div
         className="min-h-screen"
-        style={{ background: BG, color: CREAM, fontFamily: 'var(--font-sans)' }}
+        style={{
+          background: BG,
+          color: INK,
+          fontFamily: 'var(--font-sans)',
+          // focus ring 등 클래스에서 참조하는 단일 출처 — tokens.ts와 동기
+          '--landing-accent': ACCENT,
+          '--landing-bg': BG,
+        } as React.CSSProperties}
       >
         {/* keyframes — landing 전용. CSS 가드는 cpDot/cpDraw 한정 (orb는 framer가 MotionConfig로 처리). */}
         <style jsx global>{`

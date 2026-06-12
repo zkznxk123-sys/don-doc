@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import { motion } from 'framer-motion'
-import { ACCENT, BG_2, BG_3, CREAM, CREAM_DIM, CREAM_FAINT } from './tokens'
+import { ACCENT, BG_2, BG_3, INK, INK_DIM, INK_FAINT } from './tokens'
 
 /**
  * Hero 아래 들어가는 macOS-window chrome mockup.
@@ -27,14 +27,14 @@ export function ScreenshotMockup() {
         className="rounded-2xl overflow-hidden"
         style={{
           background: BG_2,
-          border: `1px solid ${CREAM_FAINT}`,
+          border: `1px solid ${INK_FAINT}`,
           boxShadow: '0 30px 80px -20px rgba(26,31,30,0.15), 0 10px 30px -10px rgba(26,31,30,0.08)',
         }}
       >
         {/* macOS chrome bar */}
         <div
           className="flex items-center gap-2 px-4 py-3 border-b"
-          style={{ background: BG_3, borderColor: CREAM_FAINT }}
+          style={{ background: BG_3, borderColor: INK_FAINT }}
         >
           <span className="w-3 h-3 rounded-full" style={{ background: '#ff5f57' }} />
           <span className="w-3 h-3 rounded-full" style={{ background: '#febc2e' }} />
@@ -43,8 +43,8 @@ export function ScreenshotMockup() {
             className="ml-4 px-3 py-1 rounded-md text-[11px] font-medium tabular-nums"
             style={{
               background: 'rgba(26,31,30,0.05)',
-              color: CREAM_DIM,
-              border: `1px solid ${CREAM_FAINT}`,
+              color: INK_DIM,
+              border: `1px solid ${INK_FAINT}`,
             }}
           >
             dondoc.app/demo
@@ -84,7 +84,7 @@ function Placeholder() {
         <div
           className="absolute inset-0 opacity-[0.04]"
           style={{
-            backgroundImage: `radial-gradient(circle, ${CREAM} 1px, transparent 1px)`,
+            backgroundImage: `radial-gradient(circle, ${INK} 1px, transparent 1px)`,
             backgroundSize: '32px 32px',
           }}
         />
@@ -109,13 +109,13 @@ function Placeholder() {
           </div>
           <p
             className="font-serif font-medium tracking-[-0.02em] mt-5 text-[24px] sm:text-[32px]"
-            style={{ color: CREAM }}
+            style={{ color: INK }}
           >
             5종 자산 통합 대시보드
           </p>
-          <p className="mt-3 text-[13px] leading-[1.6] max-w-[420px] mx-auto" style={{ color: CREAM_DIM }}>
+          <p className="mt-3 text-[13px] leading-[1.6] max-w-[420px] mx-auto" style={{ color: INK_DIM }}>
             12개월 순자산 추이 · 자산 구성 · 카테고리별 현금흐름. <br />
-            실시간 데모는 메뉴 우측 상단 "데모 둘러보기"에서.
+            바로 위 “데모 둘러보기”에서 실제 데이터로 체험할 수 있어요.
           </p>
         </div>
       </div>

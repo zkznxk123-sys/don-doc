@@ -7,7 +7,7 @@
  * v3 → v4 변경:
  * - orb 색·opacity 라이트 BG 위에서 보이는 톤으로 (forest tint + warm gold tint)
  * - dot pulse glow gold → forest 약한 glow
- * - focus ring·offset 라이트 톤(#2F5D4F·#FAF8F3)
+ * - focus ring·offset은 --landing-accent/--landing-bg CSS 변수 참조 (LandingPage root 선언)
  * - secondary CTA hover: white/5 → black/5
  *
  * v3 (다크) 유지 요소: floating orb 2개, stagger 입장, 이탤릭 단어 SVG draw, grid dot ambient.
@@ -16,7 +16,7 @@
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { ArrowRight } from 'lucide-react'
-import { ACCENT, BG, CREAM, CREAM_DIM, CREAM_FAINT } from './tokens'
+import { ACCENT, BG, INK, INK_DIM, INK_FAINT } from './tokens'
 import { ScreenshotMockup } from './ScreenshotMockup'
 
 export function Hero() {
@@ -46,7 +46,7 @@ export function Hero() {
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.06]"
         style={{
-          backgroundImage: `radial-gradient(circle, ${CREAM} 1px, transparent 1px)`,
+          backgroundImage: `radial-gradient(circle, ${INK} 1px, transparent 1px)`,
           backgroundSize: '40px 40px',
         }}
       />
@@ -74,7 +74,7 @@ export function Hero() {
         {/* 큰 카피 — 단어 단위 stagger. "한 화면에"는 별도 wrapping (밑줄 draw 위) */}
         <h1
           className="font-serif font-medium leading-[1.0] tracking-[-0.03em] text-[56px] sm:text-[80px] lg:text-[112px]"
-          style={{ color: CREAM }}
+          style={{ color: INK }}
         >
           <motion.span
             initial={{ opacity: 0, y: 30 }}
@@ -117,7 +117,7 @@ export function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 0.5, ease: 'easeOut' }}
           className="text-base lg:text-[17px] leading-[1.6] mt-12 max-w-[480px] mx-auto"
-          style={{ color: CREAM_DIM }}
+          style={{ color: INK_DIM }}
         >
           현금·금융·부동산·연금·부채를 한 곳에. 분류와 분석은 AI가 — 매달 정리는 30분이면 끝납니다.
         </motion.p>
@@ -131,16 +131,16 @@ export function Hero() {
         >
           <Link
             href="/sign-up"
-            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-[13px] font-semibold transition-all active:scale-[0.97] hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F5D4F] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF8F3]"
-            style={{ background: CREAM, color: BG }}
+            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-[13px] font-semibold transition-all active:scale-[0.97] hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--landing-bg)]"
+            style={{ background: INK, color: BG }}
           >
             무료로 시작하기
             <ArrowRight className="w-4 h-4" />
           </Link>
           <a
             href="/demo"
-            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-[13px] font-medium transition-all hover:bg-black/5 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F5D4F] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF8F3]"
-            style={{ color: CREAM, border: `1px solid ${CREAM_FAINT}` }}
+            className="inline-flex items-center gap-2 px-8 py-3.5 rounded-full text-[13px] font-medium transition-all hover:bg-black/5 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--landing-bg)]"
+            style={{ color: INK, border: `1px solid ${INK_FAINT}` }}
           >
             데모 둘러보기
           </a>

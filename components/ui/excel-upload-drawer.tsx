@@ -356,7 +356,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
           const skipCount = result.skipped?.length ?? 0
           if (skipCount > 0) {
             toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료`, {
-              description: `매칭 안 된 ${skipCount}개 row는 신규 계좌 자동 생성 차단 — 자산 페이지에서 직접 추가 후 다시 업로드하세요.`,
+              description: `계좌를 찾지 못한 ${skipCount}건은 건너뛰었어요. 자산 페이지에서 계좌를 추가한 뒤 다시 업로드해 주세요.`,
             })
           } else {
             toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료`)
@@ -383,7 +383,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
           if (result.success) {
             const skipCount = result.skipped?.length ?? 0
             const baseDesc = '새로 등록할 거래 내역이 없습니다.'
-            const desc = skipCount > 0 ? `${baseDesc} 매칭 안 된 ${skipCount}개 row는 신규 계좌 자동 생성 차단 — 자산 페이지에서 직접 추가 후 다시 업로드하세요.` : baseDesc
+            const desc = skipCount > 0 ? `${baseDesc} 계좌를 찾지 못한 ${skipCount}건은 건너뛰었어요. 자산 페이지에서 계좌를 추가한 뒤 다시 업로드해 주세요.` : baseDesc
             toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료`, { description: desc })
             track('excel_upload_completed', {
               upload_mode: 'both_assets_only',
@@ -593,6 +593,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                       <button
                         key={opt.value}
                         onClick={() => setUploadMode(opt.value)}
+                        aria-pressed={uploadMode === opt.value}
                         className={cn(
                           'flex flex-col items-center py-2 px-1 rounded-lg border text-center transition-colors',
                           uploadMode === opt.value

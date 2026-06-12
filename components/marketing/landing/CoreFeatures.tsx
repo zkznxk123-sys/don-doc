@@ -1,6 +1,6 @@
 import { Upload, Sparkles, TrendingUp, Calendar } from 'lucide-react'
 import { Section } from './Section'
-import { ACCENT, BG, BG_2, CREAM, CREAM_DIM, CREAM_FAINT } from './tokens'
+import { ACCENT, BG, BG_2, INK, INK_DIM, INK_FAINT } from './tokens'
 
 /**
  * 2026-06-11 v2: 기능 중심 4 카드 — 양쪽 라인 공통 본질 가치.
@@ -49,7 +49,7 @@ export function CoreFeatures() {
           <div
             key={s.t}
             className="rounded-[18px] p-7 min-h-[200px] flex flex-col justify-between"
-            style={{ background: BG, border: `1px solid ${CREAM_FAINT}` }}
+            style={{ background: BG, border: `1px solid ${INK_FAINT}` }}
           >
             <div
               className="w-11 h-11 rounded-xl flex items-center justify-center"
@@ -60,13 +60,13 @@ export function CoreFeatures() {
             <div>
               <h3
                 className="font-serif font-medium text-[22px] m-0 tracking-[-0.02em]"
-                style={{ color: CREAM }}
+                style={{ color: INK }}
               >
                 {s.t}
               </h3>
               <p
                 className="text-[13px] m-0 mt-2 leading-[1.6]"
-                style={{ color: CREAM_DIM }}
+                style={{ color: INK_DIM }}
               >
                 {s.d}
               </p>

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { BG, CREAM, CREAM_DIM } from './tokens'
+import { BG, INK, INK_DIM } from './tokens'
 
 export function Nav() {
   return (
@@ -14,7 +14,7 @@ export function Nav() {
             height={32}
             priority
           />
-          <span className="font-black text-[16px] tracking-[-0.02em]" style={{ color: CREAM }}>
+          <span className="font-black text-[16px] tracking-[-0.02em]" style={{ color: INK }}>
             돈Doc
           </span>
         </Link>
@@ -23,21 +23,21 @@ export function Nav() {
         <a
           href="/demo"
           className="hidden sm:inline-flex text-[12px] px-3 py-1.5 hover:opacity-80"
-          style={{ color: CREAM_DIM }}
+          style={{ color: INK_DIM }}
         >
           데모
         </a>
         <Link
           href="/sign-in"
           className="text-[12px] px-3 py-1.5 hover:opacity-80"
-          style={{ color: CREAM_DIM }}
+          style={{ color: INK_DIM }}
         >
           로그인
         </Link>
         <Link
           href="/sign-up"
           className="text-[12px] font-semibold px-[18px] py-2.5 rounded-full transition hover:opacity-90"
-          style={{ background: CREAM, color: BG }}
+          style={{ background: INK, color: BG }}
         >
           무료 시작
         </Link>

@@ -1,5 +1,5 @@
 import { Section } from './Section'
-import { ACCENT, BG, BG_2, BG_3, CREAM, CREAM_DIM, CREAM_FAINT, POSITIVE } from './tokens'
+import { ACCENT, BG, BG_2, BG_3, INK, INK_DIM, INK_FAINT, POSITIVE } from './tokens'
 
 export function ComparisonSection() {
   return (
@@ -20,18 +20,18 @@ export function ComparisonSection() {
     >
       <div
         className="mt-10 rounded-[20px] overflow-hidden overflow-x-auto"
-        style={{ border: `1px solid ${CREAM_FAINT}`, background: BG }}
+        style={{ border: `1px solid ${INK_FAINT}`, background: BG }}
       >
         <div className="min-w-[640px]">
           {/* header */}
           <div
             className="grid grid-cols-[1.6fr_1fr_1fr_1fr]"
-            style={{ background: BG_3, borderBottom: `1px solid ${CREAM_FAINT}` }}
+            style={{ background: BG_3, borderBottom: `1px solid ${INK_FAINT}` }}
           >
             <div className="px-6 py-5">
               <p
                 className="text-[10px] tracking-[0.14em] uppercase font-semibold m-0"
-                style={{ color: CREAM_DIM }}
+                style={{ color: INK_DIM }}
               >
                 기능
               </p>
@@ -45,13 +45,13 @@ export function ComparisonSection() {
                 key={c.l}
                 className="px-6 py-5 text-center"
                 style={{
-                  borderLeft: `1px solid ${CREAM_FAINT}`,
+                  borderLeft: `1px solid ${INK_FAINT}`,
                   background: c.highlight ? `${ACCENT}1A` : 'transparent',
                 }}
               >
                 <p
                   className="font-serif font-medium text-[18px] m-0 tracking-[-0.02em]"
-                  style={{ color: c.highlight ? ACCENT : CREAM }}
+                  style={{ color: c.highlight ? ACCENT : INK }}
                 >
                   {c.l}
                 </p>
@@ -71,9 +71,9 @@ export function ComparisonSection() {
             <div
               key={r.f}
               className="grid grid-cols-[1.6fr_1fr_1fr_1fr]"
-              style={i ? { borderTop: `1px solid ${CREAM_FAINT}` } : {}}
+              style={i ? { borderTop: `1px solid ${INK_FAINT}` } : {}}
             >
-              <div className="px-6 py-[18px] text-[13px]" style={{ color: CREAM }}>
+              <div className="px-6 py-[18px] text-[13px]" style={{ color: INK }}>
                 {r.f}
               </div>
               {[r.a, r.b, r.c].map((v, j) => (
@@ -81,7 +81,7 @@ export function ComparisonSection() {
                   key={j}
                   className="px-6 py-[18px] text-center"
                   style={{
-                    borderLeft: `1px solid ${CREAM_FAINT}`,
+                    borderLeft: `1px solid ${INK_FAINT}`,
                     background: j === 0 ? `${ACCENT}0D` : 'transparent',
                   }}
                 >
@@ -96,13 +96,13 @@ export function ComparisonSection() {
                   {v === false && (
                     <span
                       className="w-[22px] h-[22px] rounded-full inline-flex items-center justify-center text-[12px]"
-                      style={{ background: CREAM_FAINT, color: CREAM_DIM }}
+                      style={{ background: INK_FAINT, color: INK_DIM }}
                     >
                       —
                     </span>
                   )}
                   {v === 'half' && (
-                    <span className="text-[11px] italic" style={{ color: CREAM_DIM }}>
+                    <span className="text-[11px] italic" style={{ color: INK_DIM }}>
                       일부
                     </span>
                   )}
@@ -110,7 +110,7 @@ export function ComparisonSection() {
                     <span
                       className="text-[12px]"
                       style={{
-                        color: j === 0 ? ACCENT : CREAM_DIM,
+                        color: j === 0 ? ACCENT : INK_DIM,
                         fontWeight: j === 0 ? 600 : 400,
                       }}
                     >

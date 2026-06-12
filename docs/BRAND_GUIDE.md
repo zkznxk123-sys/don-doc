@@ -132,21 +132,24 @@ CSS 변수는 `app/globals.css` 에 이미 반영됨. 요약:
 
 **골드의 역할**: 브랜드 강조색. 제한적으로 — eyebrow 라벨, "돈Doc" 강조, hover ring, 데이터 viz 중 accent 지표.
 
-### Landing · Dark Luxury sub-palette
+### Landing · Light sub-palette
 
-랜딩 페이지는 product-app(warm off-white)과 컨텍스트가 다른 **에디토리얼 다크 럭셔리** 톤을 유지한다. 위 product-app 토큰과 별개의 인라인 상수로 사용 (`components/marketing/LandingPage.tsx`). 이 팔레트는 **랜딩 트리에서만** 허용 — 다른 페이지는 globals.css 토큰을 우회 금지.
+> **2026-06-11 다크 럭셔리 폐기.** 사유: 사용자 결정("다크가 부담스러워서") + 1인 운영에서 다크/라이트 토글 유지비 회피. 랜딩도 product-app과 같은 warm off-white 계열의 라이트 단일 톤. 구 다크 팔레트(`BG #0B0F0E`·`ACCENT Gold #B49B3E` 등)는 사어 — 참조 금지.
+
+토큰은 `components/marketing/landing/tokens.ts`의 인라인 상수 (2026-06-12 `CREAM`→`INK` rename). 이 팔레트는 **랜딩 트리에서만** 허용 — 다른 페이지는 globals.css 토큰을 우회 금지. focus ring 등 Tailwind 클래스에서는 LandingPage root에 선언된 `--landing-accent`/`--landing-bg` CSS 변수를 참조한다 (단일 출처).
 
 | 역할 | Hex / RGBA | 상수명 |
 |---|---|---|
-| Surface BG | `#0B0F0E` | `BG` |
-| Surface BG_2 | `#11171A` | `BG_2` |
-| Surface BG_3 | `#070A09` | `BG_3` |
-| Type CREAM | `#F1ECE3` | `CREAM` |
-| Type CREAM_DIM | `rgba(241,236,227,0.6)` | `CREAM_DIM` |
-| Type CREAM_FAINT | `rgba(241,236,227,0.12)` | `CREAM_FAINT` |
-| Accent Gold | `#B49B3E` | `ACCENT` |
-| Accent Forest | `#2F5D4F` | `FOREST` |
-| Positive | `#7CC9A9` | `POSITIVE` |
+| Surface BG | `#FAF8F3` warm off-white | `BG` |
+| Surface BG_2 | `#F2EEE3` subtle alt | `BG_2` |
+| Surface BG_3 | `#E8E2D0` accent zones | `BG_3` |
+| Type INK | `#1A1F1E` deep forest ink | `INK` |
+| Type INK_DIM | `rgba(26,31,30,0.64)` | `INK_DIM` |
+| Type INK_FAINT | `rgba(26,31,30,0.14)` | `INK_FAINT` |
+| Accent Forest | `#2F5D4F` primary action | `ACCENT` |
+| Positive | `#2F8A6E` | `POSITIVE` |
+
+**랜딩 라이트에서 골드의 역할**: primary accent는 forest(`ACCENT`)다. 골드(`#B49B3E`)는 라이트 BG 위 컨트라스트 ~2.2:1로 텍스트·CTA 부적격 — **로고 코인과 Hero ambient orb 한정** (§9 "골드 5–10% 이하" 규칙과 정합).
 
 ---
 

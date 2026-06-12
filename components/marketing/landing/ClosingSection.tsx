@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ArrowRight } from 'lucide-react'
-import { ACCENT, BG, BG_2, CREAM, CREAM_DIM, CREAM_FAINT } from './tokens'
+import { ACCENT, BG, BG_2, INK, INK_DIM, INK_FAINT } from './tokens'
 
 /**
  * 2026-06-11 v2: 추상 "분석하는 AI / 실행하는 AI" 카피 제거.
@@ -13,13 +13,13 @@ export function ClosingSection() {
       className="relative px-6 md:px-14 py-24 md:py-[120px]"
       style={{
         background: `linear-gradient(180deg, ${BG} 0%, ${BG_2} 100%)`,
-        borderTop: `1px solid ${CREAM_FAINT}`,
+        borderTop: `1px solid ${INK_FAINT}`,
       }}
     >
       <div className="max-w-5xl mx-auto">
         <h2
           className="font-serif font-medium leading-[1.05] tracking-[-0.03em] text-center text-[40px] sm:text-[56px] lg:text-[72px] m-0"
-          style={{ color: CREAM }}
+          style={{ color: INK }}
         >
           이번 달 정리,{' '}
           <span className="font-serif italic font-normal" style={{ color: ACCENT }}>
@@ -30,7 +30,7 @@ export function ClosingSection() {
 
         <p
           className="text-[15px] sm:text-[16px] leading-[1.7] text-center max-w-[560px] mx-auto m-0 mt-10"
-          style={{ color: CREAM_DIM }}
+          style={{ color: INK_DIM }}
         >
           엑셀을 한 번 올리면, AI가 분류하고 분석합니다. 매달 같은 흐름.
         </p>
@@ -38,16 +38,16 @@ export function ClosingSection() {
         <div className="flex flex-wrap gap-3 justify-center mt-14">
           <Link
             href="/sign-up"
-            className="inline-flex items-center gap-2 px-9 py-4 rounded-full text-[14px] font-semibold transition active:scale-[0.97] hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F5D4F] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF8F3]"
-            style={{ background: CREAM, color: BG }}
+            className="inline-flex items-center gap-2 px-9 py-4 rounded-full text-[14px] font-semibold transition active:scale-[0.97] hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--landing-bg)]"
+            style={{ background: INK, color: BG }}
           >
             무료로 시작하기
             <ArrowRight className="w-4 h-4" />
           </Link>
           <a
             href="/demo"
-            className="inline-flex items-center gap-2 px-9 py-4 rounded-full text-[14px] font-medium transition hover:bg-black/5 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2F5D4F] focus-visible:ring-offset-2 focus-visible:ring-offset-[#FAF8F3]"
-            style={{ color: CREAM, border: `1px solid ${CREAM_FAINT}` }}
+            className="inline-flex items-center gap-2 px-9 py-4 rounded-full text-[14px] font-medium transition hover:bg-black/5 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--landing-accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--landing-bg)]"
+            style={{ color: INK, border: `1px solid ${INK_FAINT}` }}
           >
             데모 둘러보기
           </a>
@@ -55,7 +55,7 @@ export function ClosingSection() {
 
         <div
           className="mt-20 pt-8 flex flex-col sm:flex-row justify-between items-center gap-3 text-[11px]"
-          style={{ borderTop: `1px solid ${CREAM_FAINT}`, color: CREAM_DIM }}
+          style={{ borderTop: `1px solid ${INK_FAINT}`, color: INK_DIM }}
         >
           <span>© 2026 돈Doc · 한 사람의 자산 본부</span>
           <span className="flex gap-6">
