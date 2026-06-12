@@ -51,6 +51,7 @@ describe('feature-flags', () => {
     expect(isRouteBlockedInLite('/dashboard/family')).toBe(true)
     expect(isRouteBlockedInLite('/dashboard/feed')).toBe(true)
     expect(isRouteBlockedInLite('/dashboard/feed/123')).toBe(true)
+    expect(isRouteBlockedInLite('/dashboard/screen')).toBe(true)
     expect(isRouteBlockedInLite('/dashboard/cashflow')).toBe(false)
     expect(isRouteBlockedInLite('/dashboard')).toBe(false)
   })

@@ -61,6 +61,9 @@ export const features = {
 
   /** 거래 visibility 3-Layer (Role/Share/Visibility) */
   get visibilityRoles(): boolean { return isFull() },
+
+  /** 종목 검색 스크리너 (/dashboard/screen) — Beta + Yahoo 무료 API 의존, 대중 lite 부적합 */
+  get stockScreen(): boolean { return isFull() },
 } as const
 
 /**
@@ -71,6 +74,7 @@ export const LITE_BLOCKED_ROUTES: readonly string[] = [
   '/dashboard/scenario',
   '/dashboard/family',
   '/dashboard/feed',
+  '/dashboard/screen',
 ] as const
 
 export function isRouteBlockedInLite(pathname: string): boolean {

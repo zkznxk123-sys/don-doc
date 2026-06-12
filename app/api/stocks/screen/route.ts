@@ -4,8 +4,11 @@ export const maxDuration = 60
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth'
 import { runScreener, type ScreenInput } from '@/lib/utils/stock-screener'
+import { blockIfLite } from '@/lib/feature-flags'
 
 export async function POST(req: NextRequest) {
+  const blocked = blockIfLite()
+  if (blocked) return blocked
   const user = await getAuthUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   if (!user.familyId) return NextResponse.json({ error: 'No family' }, { status: 403 })

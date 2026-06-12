@@ -159,11 +159,11 @@ if (features.familyManagement) { /* full 전용 */ }
 if (isLite()) { /* lite 분기 */ }
 ```
 
-- **features 7-flag**: `scenarios`·`familyFeed`·`familyManagement`·`tradeAutoLink`·`pensionDetail`·`familyOAuth`·`visibilityRoles`
-- **lite 라인**: 위 7개 모두 false. 가입 직후 `createFamily('내 자산')` 자동 1인 가족. 초대 UI 미노출.
-- **route 차단**: `middleware.ts`의 `LITE_BLOCKED_ROUTES`(`/dashboard/scenario`, `/family`, `/feed`)는 lite 빌드에서 redirect.
+- **features 8-flag**: `scenarios`·`familyFeed`·`familyManagement`·`tradeAutoLink`·`pensionDetail`·`familyOAuth`·`visibilityRoles`·`stockScreen`
+- **lite 라인**: 위 8개 모두 false. 가입 직후 `createFamily('내 자산')` 자동 1인 가족. 초대 UI 미노출.
+- **route 차단**: `middleware.ts`의 `LITE_BLOCKED_ROUTES`(`/dashboard/scenario`, `/family`, `/feed`, `/screen`)는 lite 빌드에서 redirect.
 - **랜딩 분기**: `LandingPage.tsx`에서 `{isFull() && <ComparisonSection />}`. CoreFeatures·Closing은 양쪽 공통.
-- **lite 가드 3층**: middleware(route redirect) + API route(`blockIfLite()` — family 5종·scenario 3종, `family/info` GET은 lite 1인 가족도 필요해 제외) + 서버 액션(`isLite()` 진입부 가드 — feed·scenario·oauth 전체, family는 `getLatestInviteCode`/`joinFamily`만). 과잉 가드 주의: lite도 1인 가족이 존재한다 (`7f6fc0e` budget crash 사례).
+- **lite 가드 3층**: middleware(route redirect) + API route(`blockIfLite()` — family 5종·scenario 3종·stocks/screen, `family/info` GET은 lite 1인 가족도 필요해 제외) + 서버 액션(`isLite()` 진입부 가드 — feed·scenario·oauth 전체, family는 `getLatestInviteCode`/`joinFamily`만). 과잉 가드 주의: lite도 1인 가족이 존재한다 (`7f6fc0e` budget crash 사례).
 
 ---
 
