@@ -367,6 +367,8 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
             account_count: result.syncedCount ?? 0,
             skipped_sync_count: skipCount,
             duration_ms: Date.now() - startedAt,
+            // person property — 최초 1회만 기록 (is_first_upload 판정, spec posthog-metrics)
+            $set_once: { first_upload_at: new Date().toISOString() },
           })
           handleClose(); onSuccess()
         } else {
@@ -391,6 +393,8 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
               account_count: result.syncedCount ?? 0,
               skipped_sync_count: skipCount,
               duration_ms: Date.now() - startedAt,
+              // person property — 최초 1회만 기록 (is_first_upload 판정, spec posthog-metrics)
+              $set_once: { first_upload_at: new Date().toISOString() },
             })
             handleClose(); onSuccess()
           } else {
@@ -474,6 +478,8 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
           account_count: result.syncedAccountCount ?? 0,
           skipped_sync_count: skippedSyncCount,
           duration_ms: Date.now() - startedAt,
+          // person property — 최초 1회만 기록 (is_first_upload 판정, spec posthog-metrics)
+          $set_once: { first_upload_at: new Date().toISOString() },
         })
         handleClose(); onSuccess()
       } else {
