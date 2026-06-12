@@ -163,7 +163,7 @@ if (isLite()) { /* lite 분기 */ }
 - **lite 라인**: 위 7개 모두 false. 가입 직후 `createFamily('내 자산')` 자동 1인 가족. 초대 UI 미노출.
 - **route 차단**: `middleware.ts`의 `LITE_BLOCKED_ROUTES`(`/dashboard/scenario`, `/family`, `/feed`)는 lite 빌드에서 redirect.
 - **랜딩 분기**: `LandingPage.tsx`에서 `{isFull() && <ComparisonSection />}`. CoreFeatures·Closing은 양쪽 공통.
-- ⚠️ **lite API 가드는 middleware·UI 레벨뿐** (서버 액션·API 라우트에 lite 가드 없음 — lite 별도 배포 시 추가 필요).
+- **lite 가드 3층**: middleware(route redirect) + API route(`blockIfLite()` — family 5종·scenario 3종, `family/info` GET은 lite 1인 가족도 필요해 제외) + 서버 액션(`isLite()` 진입부 가드 — feed·scenario·oauth 전체, family는 `getLatestInviteCode`/`joinFamily`만). 과잉 가드 주의: lite도 1인 가족이 존재한다 (`7f6fc0e` budget crash 사례).
 
 ---
 
@@ -180,7 +180,7 @@ if (isLite()) { /* lite 분기 */ }
 - **InvestmentHolding** — 종목 보유 (accountId, ticker, name, quantity, avgPrice, currency)
 - **TradeRecord** — 매매 기록 (holdingId, type=BUY/SELL/DIVIDEND/SPLIT). 등록 시 Transaction 자동 생성 — 실현손익·배당·수수료를 가계부에 반영
 - **ExchangeRate** — USD-KRW 환율 스냅샷
-- **FeedPost** — 가족 피드 게시물
+- **FamilyPost** — 가족 피드 게시물 (+PostComment·PostReaction)
 - **Scenario** — 시나리오 분석 (임베딩 기반 부분 대체·비교 뷰)
 - **ExcelMapping** — 엑셀 표기명 → dondoc 계좌 매핑 (Phase A~D 신규, 6/5 도입). 일괄 등록 시 자동 lookup + 사용자 결정 자동 upsert. 관리 UI: `/dashboard/settings/excel-mappings`
 

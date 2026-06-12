@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
+import { isLite, LITE_BLOCKED_MESSAGE } from '@/lib/feature-flags'
 import { SCENARIO_CATEGORIES } from '@/lib/scenario-constants'
 import type { ContentSourceData } from './types'
 import { summarizeSource, toContentSourceData } from './helpers'
@@ -9,6 +10,7 @@ import { summarizeSource, toContentSourceData } from './helpers'
 export async function addContentSource(
   input: { type: 'url'; url: string } | { type: 'text'; title: string; text: string },
 ): Promise<{ success: boolean; data?: ContentSourceData; error?: string }> {
+  if (isLite()) return { success: false, error: LITE_BLOCKED_MESSAGE }
   const user = await getAuthUser()
   if (!user?.familyId) return { success: false, error: 'Unauthorized' }
 
@@ -38,6 +40,7 @@ export async function addContentSource(
 export async function resummarizeContentSource(
   id: string,
 ): Promise<{ success: boolean; data?: ContentSourceData; error?: string }> {
+  if (isLite()) return { success: false, error: LITE_BLOCKED_MESSAGE }
   const user = await getAuthUser()
   if (!user?.familyId) return { success: false, error: 'Unauthorized' }
 
@@ -82,6 +85,7 @@ export async function updateContentSourceCategories(
   id: string,
   categories: string[],
 ): Promise<{ success: boolean; error?: string }> {
+  if (isLite()) return { success: false, error: LITE_BLOCKED_MESSAGE }
   const user = await getAuthUser()
   if (!user?.familyId) return { success: false, error: 'Unauthorized' }
 
@@ -101,6 +105,7 @@ export async function updateContentSourceCategories(
 }
 
 export async function getContentSources(): Promise<ContentSourceData[]> {
+  if (isLite()) return []
   const user = await getAuthUser()
   if (!user?.familyId) return []
 
@@ -113,6 +118,7 @@ export async function getContentSources(): Promise<ContentSourceData[]> {
 }
 
 export async function deleteContentSource(id: string): Promise<{ success: boolean }> {
+  if (isLite()) return { success: false }
   const user = await getAuthUser()
   if (!user) return { success: false }
   await prisma.contentSource.delete({ where: { id } })

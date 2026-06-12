@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
+import { isLite, LITE_BLOCKED_MESSAGE } from '@/lib/feature-flags'
 
 // ── 타입 ────────────────────────────────────────────────────────────────────
 
@@ -60,6 +61,7 @@ export interface FeedPreviewItem {
 }
 
 export async function getRecentFeedPreview(limit = 5): Promise<FeedPreviewItem[]> {
+  if (isLite()) return []
   const user = await getAuthUser()
   if (!user?.familyId) return []
   const posts = await prisma.familyPost.findMany({
@@ -84,6 +86,7 @@ export async function getRecentFeedPreview(limit = 5): Promise<FeedPreviewItem[]
 // ── 가족 멤버 조회 (태그용) ────────────────────────────────────────────────────
 
 export async function getFamilyMembersForTag(): Promise<PostAuthor[]> {
+  if (isLite()) return []
   const user = await getAuthUser()
   if (!user?.familyId) return []
   const members = await prisma.user.findMany({
@@ -96,6 +99,7 @@ export async function getFamilyMembersForTag(): Promise<PostAuthor[]> {
 // ── 게시물 조회 ──────────────────────────────────────────────────────────────
 
 export async function getFeedPosts(): Promise<FamilyPostData[]> {
+  if (isLite()) return []
   const user = await getAuthUser()
   if (!user?.familyId) return []
 
@@ -206,6 +210,7 @@ export async function createPost(
   content: string,
   taggedUserIds: string[] = [],
 ): Promise<{ success: boolean; post?: FamilyPostData; error?: string }> {
+  if (isLite()) return { success: false, error: LITE_BLOCKED_MESSAGE }
   const user = await getAuthUser()
   if (!user?.familyId) return { success: false, error: 'Unauthorized' }
   if (!content.trim()) return { success: false, error: '내용을 입력해주세요' }
@@ -254,6 +259,7 @@ export async function createTxnRefPost(
   content: string,
   taggedUserIds: string[] = [],
 ): Promise<{ success: boolean; post?: FamilyPostData; error?: string }> {
+  if (isLite()) return { success: false, error: LITE_BLOCKED_MESSAGE }
   const user = await getAuthUser()
   if (!user?.familyId) return { success: false, error: 'Unauthorized' }
   if (!content.trim()) return { success: false, error: '내용을 입력해주세요' }
@@ -292,6 +298,7 @@ export async function createTxnRefPost(
 export async function deletePost(
   postId: string,
 ): Promise<{ success: boolean; error?: string }> {
+  if (isLite()) return { success: false, error: LITE_BLOCKED_MESSAGE }
   const user = await getAuthUser()
   if (!user) return { success: false, error: 'Unauthorized' }
 
@@ -308,6 +315,7 @@ export async function deletePost(
 export async function togglePostPin(
   postId: string,
 ): Promise<{ success: boolean; isPinned?: boolean; error?: string }> {
+  if (isLite()) return { success: false, error: LITE_BLOCKED_MESSAGE }
   const user = await getAuthUser()
   if (!user) return { success: false, error: 'Unauthorized' }
   if (user.role !== 'CFO') return { success: false, error: 'CFO만 핀 설정 가능합니다' }
@@ -328,6 +336,7 @@ export async function createComment(
   postId: string,
   content: string,
 ): Promise<{ success: boolean; comment?: PostCommentData; error?: string }> {
+  if (isLite()) return { success: false, error: LITE_BLOCKED_MESSAGE }
   const user = await getAuthUser()
   if (!user) return { success: false, error: 'Unauthorized' }
   if (!content.trim()) return { success: false, error: '내용을 입력해주세요' }
@@ -352,6 +361,7 @@ export async function createComment(
 export async function deleteComment(
   commentId: string,
 ): Promise<{ success: boolean; error?: string }> {
+  if (isLite()) return { success: false, error: LITE_BLOCKED_MESSAGE }
   const user = await getAuthUser()
   if (!user) return { success: false, error: 'Unauthorized' }
 
@@ -369,6 +379,7 @@ export async function toggleReaction(
   postId: string,
   emoji: string,
 ): Promise<{ success: boolean; reactions?: PostReactionSummary[]; error?: string }> {
+  if (isLite()) return { success: false, error: LITE_BLOCKED_MESSAGE }
   const user = await getAuthUser()
   if (!user) return { success: false, error: 'Unauthorized' }
 

@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
+import { isLite, LITE_BLOCKED_MESSAGE } from '@/lib/feature-flags'
 
 const PROXY_URL = process.env.CLI_PROXY_URL ?? 'http://localhost:8317'
 const MGMT_SECRET = process.env.CLI_PROXY_MGMT_SECRET ?? ''
@@ -48,6 +49,7 @@ async function fetchAuthFiles(): Promise<CLIProxyAuthFile[]> {
 export async function startOAuthFlow(
   provider: OAuthProvider,
 ): Promise<{ url?: string; state?: string; error?: string }> {
+  if (isLite()) return { error: LITE_BLOCKED_MESSAGE }
   const user = await getAuthUser()
   if (!user) return { error: '인증이 필요합니다.' }
   if (!user.familyId) return { error: '가족 그룹이 없습니다.' }
@@ -100,6 +102,7 @@ export async function completeOAuthFlow(
   provider: OAuthProvider,
   callbackUrl: string,
 ): Promise<{ success: boolean; email?: string; error?: string }> {
+  if (isLite()) return { success: false, error: LITE_BLOCKED_MESSAGE }
   const user = await getAuthUser()
   if (!user) return { success: false, error: '인증이 필요합니다.' }
   if (!user.familyId) return { success: false, error: '가족 그룹이 없습니다.' }
@@ -213,6 +216,7 @@ export async function listOAuthAccounts(): Promise<{
   data?: OAuthAccountSummary[]
   error?: string
 }> {
+  if (isLite()) return { error: LITE_BLOCKED_MESSAGE }
   const user = await getAuthUser()
   if (!user?.familyId) return { error: '가족 그룹이 없습니다.' }
 
@@ -238,6 +242,7 @@ export async function listOAuthAccounts(): Promise<{
 export async function disconnectOAuthAccount(
   provider: OAuthProvider,
 ): Promise<{ success: boolean; error?: string }> {
+  if (isLite()) return { success: false, error: LITE_BLOCKED_MESSAGE }
   const user = await getAuthUser()
   if (!user?.familyId) return { success: false, error: '권한이 없습니다.' }
 

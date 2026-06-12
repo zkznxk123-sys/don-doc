@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
+import { isLite, LITE_BLOCKED_MESSAGE } from '@/lib/feature-flags'
 import { chat, embed, cosineSimilarity } from '@/lib/ai'
 import { SCENARIO_CATEGORIES } from '@/lib/scenario-constants'
 import type { GenerateScenariosOptions } from './types'
@@ -10,6 +11,7 @@ import { buildFinancialContext, buildFeedbackContext, extractJsonBlock } from '.
 export async function generateScenarios(
   options: GenerateScenariosOptions = {},
 ): Promise<{ success: boolean; count?: number; replacedCount?: number; error?: string; hasFeedback?: boolean }> {
+  if (isLite()) return { success: false, error: LITE_BLOCKED_MESSAGE }
   const user = await getAuthUser()
   if (!user?.familyId) return { success: false, error: 'Unauthorized' }
 

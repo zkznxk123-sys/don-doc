@@ -2,6 +2,7 @@
 
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
+import { isLite, LITE_BLOCKED_MESSAGE } from '@/lib/feature-flags'
 import { chat } from '@/lib/ai'
 import type { ScenarioData, ScenarioExpansion, GenerationBatch, ScenarioChatMessageData } from './types'
 import { buildFinancialContext, mapScenario, extractJsonBlock } from './helpers'
@@ -9,6 +10,7 @@ import { buildFinancialContext, mapScenario, extractJsonBlock } from './helpers'
 // ── Scenario 조회/업데이트 ────────────────────────────────────────────────────
 
 export async function getScenarios(): Promise<ScenarioData[]> {
+  if (isLite()) return []
   const user = await getAuthUser()
   if (!user?.familyId) return []
 
@@ -21,6 +23,7 @@ export async function getScenarios(): Promise<ScenarioData[]> {
 }
 
 export async function getScenarioHistory(): Promise<GenerationBatch[]> {
+  if (isLite()) return []
   const user = await getAuthUser()
   if (!user?.familyId) return []
 
@@ -48,6 +51,7 @@ export async function updateScenarioStatus(
   id: string,
   status: 'active' | 'interested' | 'dismissed',
 ): Promise<{ success: boolean }> {
+  if (isLite()) return { success: false }
   const user = await getAuthUser()
   if (!user) return { success: false }
   await prisma.scenario.update({ where: { id }, data: { status } })
@@ -59,6 +63,7 @@ export async function updateActionProgress(
   actionIndex: number,
   done: boolean,
 ): Promise<{ success: boolean; completedActions?: number[] }> {
+  if (isLite()) return { success: false }
   const user = await getAuthUser()
   if (!user) return { success: false }
 
@@ -79,6 +84,7 @@ export async function updateActionProgress(
 export async function expandScenario(
   id: string,
 ): Promise<{ success: boolean; expansion?: ScenarioExpansion; error?: string }> {
+  if (isLite()) return { success: false, error: LITE_BLOCKED_MESSAGE }
   const user = await getAuthUser()
   if (!user?.familyId) return { success: false, error: 'Unauthorized' }
 
@@ -145,6 +151,7 @@ ${financialContext}
 export async function getScenarioChatMessages(
   scenarioId: string,
 ): Promise<ScenarioChatMessageData[]> {
+  if (isLite()) return []
   const user = await getAuthUser()
   if (!user) return []
 
@@ -165,6 +172,7 @@ export async function chatWithScenario(
   scenarioId: string,
   userMessage: string,
 ): Promise<{ success: boolean; reply?: string; error?: string }> {
+  if (isLite()) return { success: false, error: LITE_BLOCKED_MESSAGE }
   const user = await getAuthUser()
   if (!user?.familyId) return { success: false, error: 'Unauthorized' }
 

@@ -3,6 +3,7 @@
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
+import { isLite, LITE_BLOCKED_MESSAGE } from '@/lib/feature-flags'
 import { isCFOLevel, type AppRole } from '@/lib/roles'
 
 function generateInviteCode(): string {
@@ -57,6 +58,7 @@ export async function createFamily(name: string): Promise<{ error?: string }> {
 }
 
 export async function getLatestInviteCode(): Promise<{ code: string | null; error?: string }> {
+  if (isLite()) return { code: null, error: LITE_BLOCKED_MESSAGE }
   const user = await getAuthUser()
   if (!user) return { code: null, error: '인증이 필요합니다.' }
   if (!user.familyId) return { code: null, error: '가족 그룹이 없습니다.' }
@@ -199,6 +201,7 @@ export async function resetFamilyData(
 }
 
 export async function joinFamily(inviteCode: string): Promise<{ error?: string }> {
+  if (isLite()) return { error: LITE_BLOCKED_MESSAGE }
   const user = await getAuthUser()
   if (!user) return { error: '인증이 필요합니다.' }
 

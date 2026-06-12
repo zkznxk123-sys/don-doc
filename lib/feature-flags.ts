@@ -90,13 +90,22 @@ export function isRouteBlockedInLite(pathname: string): boolean {
  *     // ... 정상 로직
  *   }
  */
+export const LITE_BLOCKED_MESSAGE = 'lite 제품에서 제공하지 않는 기능입니다.'
+
 export function blockIfLite(): Response | null {
   // 빈 body는 클라이언트의 무조건 .json() 파싱을 깨뜨린다 — 항상 JSON body 포함
   if (isLite()) {
-    return Response.json(
-      { success: false, error: 'lite 제품에서 제공하지 않는 기능입니다.' },
-      { status: 404 }
-    )
+    return Response.json({ success: false, error: LITE_BLOCKED_MESSAGE }, { status: 404 })
   }
   return null
+}
+
+/**
+ * 서버 액션 진입부에서 lite 빌드 차단 (방어심층). 서버 액션도 POST 엔드포인트로
+ * 직접 호출 가능하므로, lite UI에서 가려진 것과 별개로 액션 자체를 막는다.
+ * lite에서도 쓰이는 액션(createFamily 자동 1인 가족 등)에는 걸지 말 것 —
+ * 과잉 가드 회귀 사례: 7f6fc0e (family/info 차단 → budget crash).
+ */
+export function assertFullProduct(): void {
+  if (isLite()) throw new Error(LITE_BLOCKED_MESSAGE)
 }
