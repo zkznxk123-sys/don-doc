@@ -28,6 +28,7 @@ import { KpiCard } from '@/components/dashboard/KpiCard'
 import { CashflowChart } from '@/components/dashboard/CashflowChart'
 import { TopExpenseCategories } from '@/components/dashboard/TopExpenseCategories'
 import { TransactionFeedRow } from '@/components/dashboard/TransactionFeedRow'
+import { EmptyTransactions } from '@/components/dashboard/EmptyTransactions'
 import { MemberBudgetCard } from '@/components/dashboard/MemberBudgetCard'
 import { features } from '@/lib/feature-flags'
 import {
@@ -427,9 +428,11 @@ export default function Dashboard() {
                     </div>
                   </div>
                   {filteredTx.length === 0 ? (
-                    <p className="text-sm text-muted-foreground/60 text-center py-6">
-                      {txFilter !== 'all' ? `${txFilter === 'income' ? '수입' : '지출'} 내역이 없습니다` : '거래 내역이 없습니다'}
-                    </p>
+                    <EmptyTransactions
+                      className="py-6"
+                      onUpload={txFilter === 'all' ? () => openExcelDrawer() : undefined}
+                      message={txFilter !== 'all' ? `${txFilter === 'income' ? '수입' : '지출'} 내역이 없습니다` : undefined}
+                    />
                   ) : (
                     <div>
                       {filteredTx
@@ -474,7 +477,7 @@ export default function Dashboard() {
                   <Link href="/dashboard/transactions" className="text-xs text-muted-foreground hover:text-foreground transition-colors">더보기 →</Link>
                 </div>
                 {transactions.filter(tx => tx.userId === currentUserId).length === 0 ? (
-                  <p className="text-sm text-muted-foreground/60 text-center py-6">거래 내역이 없습니다</p>
+                  <EmptyTransactions className="py-6" onUpload={() => openExcelDrawer()} />
                 ) : (
                   <div>
                     {transactions

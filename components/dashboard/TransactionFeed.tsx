@@ -2,6 +2,7 @@
 
 import { cn, formatCurrency } from '@/lib/utils'
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '@/constants/categories'
+import { EmptyTransactions } from './EmptyTransactions'
 
 export interface FeedTransaction {
   id: string
@@ -89,6 +90,8 @@ interface TransactionFeedProps {
   filterUserId?: string
   onEdit?: (tx: FeedTransaction) => void
   emptyMessage?: string
+  /** 빈 상태에서 엑셀 업로드 CTA를 띄울 콜백 (신규 가입자 funnel) */
+  onUpload?: () => void
   limit?: number
 }
 
@@ -98,7 +101,8 @@ export function TransactionFeed({
   userRole = 'MEMBER',
   filterUserId,
   onEdit,
-  emptyMessage = '거래 내역이 없습니다',
+  emptyMessage,
+  onUpload,
   limit,
 }: TransactionFeedProps) {
   const source = filterUserId ? transactions.filter(t => t.userId === filterUserId) : transactions
@@ -107,7 +111,7 @@ export function TransactionFeed({
   const groups = groupByDate(limited)
 
   if (groups.length === 0) {
-    return <p className="text-center py-12 text-sm text-muted-foreground">{emptyMessage}</p>
+    return <EmptyTransactions onUpload={onUpload} message={emptyMessage} />
   }
 
   return (

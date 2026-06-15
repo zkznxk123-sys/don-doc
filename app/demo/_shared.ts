@@ -3,6 +3,7 @@ import {
   Sparkles, MessageSquare,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { isLite } from '@/lib/feature-flags'
 
 export interface Member { id: string; name: string | null; role: string; email?: string }
 export interface Holding { name: string; ticker?: string | null; market: string | null; quantity: number; avgPrice: number; currentPrice: number | null; currency: string }
@@ -67,11 +68,15 @@ export const TYPE_BG: Record<string, string> = {
   PENSION: 'bg-income-soft',     DEBT: 'bg-expense-soft',       CRYPTO: 'bg-warning-soft',
 }
 
+// lite는 시나리오 허브·가족 피드가 제외 라인 — 데모 nav에서도 빼서
+// "없는 기능을 인터랙티브로 시연"하는 오광고를 차단 (designer 2026-06-15 A-1)
 export const NAV_ITEMS: { key: PageKey; label: string; icon: React.ElementType }[] = [
   { key: 'dashboard', label: '대시보드', icon: LayoutDashboard },
   { key: 'cashflow', label: '현금흐름', icon: ArrowLeftRight },
   { key: 'assets', label: '자산 관리', icon: Wallet },
   { key: 'budget', label: '예산 관리', icon: Calculator },
-  { key: 'scenario', label: '시나리오 허브', icon: Sparkles },
-  { key: 'feed', label: '가족 피드', icon: MessageSquare },
+  ...(isLite() ? [] : [
+    { key: 'scenario' as PageKey, label: '시나리오 허브', icon: Sparkles },
+    { key: 'feed' as PageKey, label: '가족 피드', icon: MessageSquare },
+  ]),
 ]

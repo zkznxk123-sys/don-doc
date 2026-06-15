@@ -6,6 +6,7 @@ import { ClerkThemeProvider } from "@/components/ClerkThemeProvider"
 import { PostHogProvider } from "@/components/PostHogProvider"
 import { PostHogPageView } from "@/components/PostHogPageView"
 import { Suspense } from "react"
+import { isLite } from "@/lib/feature-flags"
 import "./globals.css"
 
 // Serif used for numeric-display (large hero amounts) and editorial headlines
@@ -16,9 +17,14 @@ const notoSerif = Noto_Serif({
   display: "swap",
 })
 
+// 배포단위 env(NEXT_PUBLIC_PRODUCT_LINE) 분기 — 검색결과·링크카드 첫 노출면 (designer 2026-06-15 A-2)
+const description = isLite()
+  ? "흩어진 자산을 한 화면에. 시간은 최소로. 엑셀 한 번 업로드로 AI가 분류까지 끝내는 자산 통합 관리."
+  : "흩어진 자산을 한 화면에. 시간은 최소로. 현금·금융·부동산·연금·부채를 통합 운영하는 자산 관리 시스템. 혼자든 가족이든 — 공유는 필요할 때만 선별적으로."
+
 export const metadata: Metadata = {
   title: "돈Doc — 흩어진 자산을 한 화면에",
-  description: "흩어진 자산을 한 화면에. 시간은 최소로. 자산 관리를 책임진 한 사람이 통합 운영할 수 있는 자산 운영 시스템. 혼자 써도 충분, 필요하면 가족·동업자와 선별 공유.",
+  description,
   openGraph: {
     title: "돈Doc",
     description: "흩어진 자산을 한 화면에. 시간은 최소로.",

@@ -70,7 +70,7 @@ components/
     InputGuide.tsx
 
 lib/
-  feature-flags.ts  # 제품 라인 분리 (full/lite) — 단일 진입점, features 7-flag
+  feature-flags.ts  # 제품 라인 분리 (full/lite) — 단일 진입점, features 8-flag
   actions/          # 서버 액션 ('use server')
     transactions/
       bulk.ts            # createManyTransactions·syncAccountBalancesOnly (server action)
