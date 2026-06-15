@@ -68,7 +68,7 @@ export function Hero() {
               animation: 'cpDot 1.6s ease-in-out infinite',
             }}
           />
-          한 사람의 자산 본부
+          가장 쉬운 자산 관리
         </motion.p>
 
         {/* 큰 카피 — 단어 단위 stagger. "한 화면에"는 별도 wrapping (밑줄 draw 위) */}

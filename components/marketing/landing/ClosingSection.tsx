@@ -57,7 +57,7 @@ export function ClosingSection() {
           className="mt-20 pt-8 flex flex-col sm:flex-row justify-between items-center gap-3 text-[11px]"
           style={{ borderTop: `1px solid ${INK_FAINT}`, color: INK_DIM }}
         >
-          <span>© 2026 돈Doc · 한 사람의 자산 본부</span>
+          <span>© 2026 돈Doc · 가장 쉬운 자산 관리</span>
           <span className="flex gap-6">
             <a href="/demo" className="hover:opacity-80">데모</a>
             <Link href="/sign-in" className="hover:opacity-80">로그인</Link>
