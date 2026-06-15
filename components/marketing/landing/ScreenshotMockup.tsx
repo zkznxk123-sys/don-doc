@@ -14,7 +14,7 @@ import { ACCENT, BG_2, BG_3, INK, INK_DIM, INK_FAINT } from './tokens'
  * 비율 16:10 (PODO·Stripe 표준), 2x retina 해상도 가정.
  */
 export function ScreenshotMockup() {
-  const hasImage = false // PNG 파일 추가 후 true로 toggle
+  const hasImage = true // public/landing/hero-screenshot.png (2880×1800, /demo lite 캡처)
 
   return (
     <motion.div
