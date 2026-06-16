@@ -14,6 +14,7 @@ import { getFamilyCategories, addCustomCategory, type CategoryOption } from '@/l
 import { upsertSubTransactions, type SubTransactionInput } from '@/lib/actions/transactions/sub'
 import { useDefaultVisibility } from '@/lib/hooks/useDefaultVisibility'
 import { suggestCategory, QUICK_AMOUNTS } from './transaction-drawer/keywords'
+import { isFull } from '@/lib/feature-flags'
 
 export interface EditTransactionData {
   id: string
@@ -607,7 +608,8 @@ export function TransactionDrawer({
               )}
             </div>
 
-            {/* Visibility Toggle */}
+            {/* Visibility Toggle — lite는 1인이라 공유 개념 없음 → 숨김 */}
+            {isFull() && (
             <div
               className={cn(
                 "flex items-center justify-between rounded-xl p-4 border transition-colors",
@@ -633,6 +635,7 @@ export function TransactionDrawer({
               </div>
               <Switch checked={isShared} onCheckedChange={setIsShared} />
             </div>
+            )}
 
             {/* 항목 제외 — 수정 모드 + 권한 있을 때 */}
             {isEditMode && canEdit && (
@@ -698,7 +701,7 @@ export function TransactionDrawer({
               </button>
             )}
 
-            {!isShared && (
+            {isFull() && !isShared && (
               <div className="flex items-start gap-2.5 rounded-xl px-4 py-3 bg-warning-soft/50 border border-(--viz-amber)/15">
                 <Lock className="w-4 h-4 text-warning mt-0.5 shrink-0" />
                 <p className="text-xs text-warning/80 leading-relaxed">

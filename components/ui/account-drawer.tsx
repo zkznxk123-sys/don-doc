@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Loader2, Trash2, ChevronDown } from 'lucide-react'
 import { ApartmentSearchInput, type ApartmentResult } from '@/components/ui/apartment-search-input'
 import { cn, toKoreanUnit } from '@/lib/utils'
+import { isFull } from '@/lib/feature-flags'
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose } from '@/components/ui/drawer'
 import { Label } from '@/components/ui/label'
 import {
@@ -729,8 +730,8 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
             </div>
           )}
 
-          {/* 가족 공유 설정 */}
-          {!isProductMode && <div>
+          {/* 가족 공유 설정 — lite는 1인이라 공유 개념 없음 → 숨김 */}
+          {!isProductMode && isFull() && <div>
             <Label className="text-muted-foreground text-xs mb-3 block">가족 공유 설정</Label>
             <div className="space-y-2">
               {SHARE_LEVELS.map((s) => {
