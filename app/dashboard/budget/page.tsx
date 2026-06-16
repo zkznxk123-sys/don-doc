@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { ArrowLeft, Users, Wallet, AlertCircle, CheckCircle2, ChevronLeft, ChevronRight, Target, TrendingUp, TrendingDown, PiggyBank } from 'lucide-react'
+import { isLite } from '@/lib/feature-flags'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { formatCurrency, cn } from '@/lib/utils'
@@ -285,8 +286,8 @@ export default function BudgetPage() {
           <ArrowLeft className="w-5 h-5" />
         </Link>
         <div>
-          <h1 className="text-xl font-sans font-bold text-foreground">가족 예산 관리</h1>
-          <p className="text-xs text-muted-foreground">재무 목표를 설정하고 예산을 배분하세요</p>
+          <h1 className="text-xl font-sans font-bold text-foreground">{isLite() ? '예산 관리' : '가족 예산 관리'}</h1>
+          <p className="text-xs text-muted-foreground">{isLite() ? '재무 목표를 설정하고 지출 한도를 정하세요' : '재무 목표를 설정하고 예산을 배분하세요'}</p>
         </div>
       </div>
 
@@ -407,12 +408,12 @@ export default function BudgetPage() {
         )}
       </div>
 
-      {/* ── 가족 전체 지출 한도 ── */}
+      {/* ── 지출 한도 ── */}
       <div className="bg-card rounded-2xl p-6 border border-border mb-4">
         <div className="flex items-center gap-2 mb-4">
           <Wallet className="w-5 h-5 text-income" />
-          <h3 className="text-base font-semibold text-foreground">가족 지출 한도</h3>
-          <span className="text-[10px] text-muted-foreground/60 bg-muted px-2 py-0.5 rounded-full ml-auto">구성원 배분 기준</span>
+          <h3 className="text-base font-semibold text-foreground">{isLite() ? '월 지출 한도' : '가족 지출 한도'}</h3>
+          {!isLite() && <span className="text-[10px] text-muted-foreground/60 bg-muted px-2 py-0.5 rounded-full ml-auto">구성원 배분 기준</span>}
         </div>
 
         {isCFO ? (
@@ -451,8 +452,8 @@ export default function BudgetPage() {
         )}
       </div>
 
-      {/* 미배정 예산 요약 */}
-      {parsedFamilyBudget > 0 && (
+      {/* 미배정 예산 요약 — lite는 구성원 배분 없음 */}
+      {!isLite() && parsedFamilyBudget > 0 && (
         <div className={cn(
           'rounded-2xl p-4 border mb-6 flex items-center justify-between',
           overAllocated
@@ -484,7 +485,8 @@ export default function BudgetPage() {
         </div>
       )}
 
-      {/* 구성원별 예산 */}
+      {/* 구성원별 예산 — lite는 1인이라 배분 무의미 */}
+      {!isLite() && (
       <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border mb-6 overflow-hidden">
         <div className="flex items-center gap-2 px-6 py-4 border-b border-border">
           <Users className="w-4 h-4 text-muted-foreground" />
@@ -588,9 +590,10 @@ export default function BudgetPage() {
           })}
         </div>
       </div>
+      )}
 
-      {/* 전체 배분 시각화 */}
-      {parsedFamilyBudget > 0 && (data?.members ?? []).some(m => (parsedMemberBudgets[m.id] ?? 0) > 0) && (
+      {/* 전체 배분 시각화 — lite는 구성원 배분 없음 */}
+      {!isLite() && parsedFamilyBudget > 0 && (data?.members ?? []).some(m => (parsedMemberBudgets[m.id] ?? 0) > 0) && (
         <div className="bg-card rounded-2xl p-6 border border-border mb-6">
           <h3 className="text-sm font-semibold text-muted-foreground mb-4">예산 배분 현황</h3>
           <div className="flex rounded-full overflow-hidden h-4 mb-4 bg-muted">

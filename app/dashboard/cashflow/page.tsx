@@ -465,6 +465,7 @@ export default function CashflowPage() {
               }
             }}
             disabled={cleanupLoading}
+            title="결제 취소·이체·중복 등록처럼 서로 상쇄되는 거래를 찾아 한 번에 정리합니다"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-ring transition-colors disabled:opacity-60"
           >
             {cleanupLoading

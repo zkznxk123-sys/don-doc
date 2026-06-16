@@ -95,6 +95,13 @@ export function AutoCleanupDialog({ open, groups, onClose, onDone }: Props) {
           </button>
         </div>
 
+        {/* 기능 설명 */}
+        <div className="px-5 py-2.5 bg-muted/30 border-b border-border shrink-0">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            결제 취소·이체·중복 등록처럼 서로 상쇄되는 거래를 찾아 한 번에 정리해요. 선택한 항목은 수입·지출 집계에서 제외됩니다.
+          </p>
+        </div>
+
         {/* 전체 선택 */}
         <div className="px-5 py-2.5 border-b border-border shrink-0">
           <button
