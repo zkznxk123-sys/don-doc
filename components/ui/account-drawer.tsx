@@ -148,7 +148,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
     }
 
     if (initialData) {
-      setName(initialData.name)
+      setName(initialData.name ?? '')
       setType(initialData.type)
       setBalance(initialData.balance > 0 ? initialData.balance.toLocaleString() : '')
       setShareLevel(initialData.shareLevel ?? (initialData.isShared ? 'PUBLIC' : 'PRIVATE'))

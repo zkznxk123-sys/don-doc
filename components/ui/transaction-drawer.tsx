@@ -172,11 +172,11 @@ export function TransactionDrawer({
     if (!isOpen) return
     getFamilyCategories().then(setAllCategories).catch(() => {})
     if (editTransaction) {
-      setAmount(String(Math.abs(editTransaction.amount)))
-      setIsExpense(editTransaction.amount < 0)
-      setDate(editTransaction.date)
-      setCategory(editTransaction.category)
-      setDescription(editTransaction.description)
+      setAmount(String(Math.abs(editTransaction.amount ?? 0)))
+      setIsExpense((editTransaction.amount ?? 0) < 0)
+      setDate(editTransaction.date ?? new Date().toISOString().split('T')[0])
+      setCategory(editTransaction.category ?? '')
+      setDescription(editTransaction.description ?? '')
       setIsShared(editTransaction.visibility === 'SHARED')
       setIsExcluded(editTransaction.isExcluded ?? false)
       setExcludeFromBudget(editTransaction.excludeFromBudget ?? false)
