@@ -30,7 +30,7 @@ import { TopExpenseCategories } from '@/components/dashboard/TopExpenseCategorie
 import { TransactionFeedRow } from '@/components/dashboard/TransactionFeedRow'
 import { EmptyTransactions } from '@/components/dashboard/EmptyTransactions'
 import { MemberBudgetCard } from '@/components/dashboard/MemberBudgetCard'
-import { features } from '@/lib/feature-flags'
+import { features, isLite } from '@/lib/feature-flags'
 import {
   getCurrentYearMonth, filterDashboardAssets,
   type Transaction, type BudgetData, type Insights,
@@ -169,30 +169,34 @@ export default function Dashboard() {
   return (
     <div className="max-w-5xl mx-auto space-y-5">
 
-      {/* 헤더: 뷰 전환 + 월 선택 */}
+      {/* 헤더: 뷰 전환 + 월 선택. lite는 1인 가족이라 개인/패밀리 구분 무의미 → 토글 숨김 */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center bg-card rounded-xl border border-border p-0.5 shrink-0">
-          <button
-            onClick={() => setViewMode('MEMBER')}
-            className={cn(
-              'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap',
-              viewMode === 'MEMBER' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground/70'
-            )}
-          >
-            <User className="w-3.5 h-3.5 shrink-0" />
-            개인
-          </button>
-          <button
-            onClick={() => setViewMode('CFO')}
-            className={cn(
-              'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap',
-              viewMode === 'CFO' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground/70'
-            )}
-          >
-            <Users className="w-3.5 h-3.5 shrink-0" />
-            패밀리
-          </button>
-        </div>
+        {isLite() ? (
+          <div />
+        ) : (
+          <div className="flex items-center bg-card rounded-xl border border-border p-0.5 shrink-0">
+            <button
+              onClick={() => setViewMode('MEMBER')}
+              className={cn(
+                'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap',
+                viewMode === 'MEMBER' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground/70'
+              )}
+            >
+              <User className="w-3.5 h-3.5 shrink-0" />
+              개인
+            </button>
+            <button
+              onClick={() => setViewMode('CFO')}
+              className={cn(
+                'flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors whitespace-nowrap',
+                viewMode === 'CFO' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground/70'
+              )}
+            >
+              <Users className="w-3.5 h-3.5 shrink-0" />
+              패밀리
+            </button>
+          </div>
+        )}
         <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
       </div>
 
@@ -225,7 +229,7 @@ export default function Dashboard() {
               {baseLoading ? <KpiCardSkeleton /> : (
                 <KpiCard
                   icon={<Wallet className="w-3.5 h-3.5 text-income" />}
-                  label="가족 순자산"
+                  label={isLite() ? '내 순자산' : '가족 순자산'}
                   value={formatLargeNumber(totalNetWorth)}
                   sub={`총자산 ${formatLargeNumber(totalAssets)}`}
                 />
@@ -407,7 +411,7 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-muted-foreground" />
-                      <h3 className="text-sm font-semibold text-foreground">최근 가족 거래</h3>
+                      <h3 className="text-sm font-semibold text-foreground">{isLite() ? '최근 거래' : '최근 가족 거래'}</h3>
                       <span className="text-[10px] text-muted-foreground/60 bg-muted px-1.5 py-0.5 rounded-full">
                         {filteredTx.length}건
                         {txFilter !== 'all' && <span className="ml-1 text-ring">({txFilter === 'income' ? '수입' : '지출'})</span>}
