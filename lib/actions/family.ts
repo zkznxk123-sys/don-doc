@@ -1,6 +1,5 @@
 'use server'
 
-import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
 import { isLite, LITE_BLOCKED_MESSAGE } from '@/lib/feature-flags'
@@ -54,7 +53,7 @@ export async function createFamily(name: string): Promise<{ error?: string }> {
     }),
   ])
 
-  redirect('/dashboard')
+  return {}
 }
 
 export async function getLatestInviteCode(): Promise<{ code: string | null; error?: string }> {
@@ -229,7 +228,7 @@ export async function joinFamily(inviteCode: string): Promise<{ error?: string }
     }),
   ])
 
-  redirect('/dashboard')
+  return {}
 }
 
 export type AiModeSetting = 'api' | 'claude' | 'chatgpt' | 'gemini'

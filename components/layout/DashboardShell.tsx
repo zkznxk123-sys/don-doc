@@ -10,6 +10,7 @@ import { FloatingChatButton } from '@/components/chat/FloatingChatButton'
 import { AlertCircle, X } from 'lucide-react'
 import Link from 'next/link'
 import type { AppRole } from '@/lib/roles'
+import { isLite } from '@/lib/feature-flags'
 
 export interface ShellUser {
   id: string
@@ -141,6 +142,7 @@ function NameWarningBanner({ name }: { name: string | null }) {
   const [dismissed, setDismissed] = useState(true)
 
   useEffect(() => {
+    if (isLite()) return // lite는 1인 가족 — 가족 간 이체 자동 제외 자체가 없어 경고 무의미
     const isKoreanName = name && /[가-힣]/.test(name)
     if (isKoreanName) return
     setDismissed(false)

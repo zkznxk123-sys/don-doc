@@ -57,13 +57,22 @@ function OnboardingContent() {
     setAutoSetupTriggered(true)
     setIsLoading(true)
     createFamily('내 자산')
-      .then(() => {
+      .then((result) => {
+        if (result?.error) {
+          toast.error(result.error)
+          setIsLoading(false)
+          return
+        }
         track('onboarding_completed', {
           onboarding_path: 'lite_auto',
           duration_ms: Date.now() - mountedAtRef.current,
         })
+        window.location.href = '/dashboard'
       })
-      .catch(() => toast.error('초기 설정 중 오류가 발생했습니다.'))
+      .catch(() => {
+        toast.error('초기 설정 중 오류가 발생했습니다.')
+        setIsLoading(false)
+      })
   }, [autoSetupTriggered])
 
   const createForm = useForm<CreateFormData>({
@@ -96,15 +105,16 @@ function OnboardingContent() {
       const result = await createFamily(data.name)
       if (result?.error) {
         toast.error(result.error)
+        setIsLoading(false)
       } else {
         track('onboarding_completed', {
           onboarding_path: 'create_family',
           duration_ms: Date.now() - mountedAtRef.current,
         })
+        window.location.href = '/dashboard'
       }
     } catch {
       toast.error('오류가 발생했습니다. 다시 시도해주세요.')
-    } finally {
       setIsLoading(false)
     }
   }
@@ -115,15 +125,16 @@ function OnboardingContent() {
       const result = await joinFamily(data.code)
       if (result?.error) {
         toast.error(result.error)
+        setIsLoading(false)
       } else {
         track('onboarding_completed', {
           onboarding_path: 'join_family',
           duration_ms: Date.now() - mountedAtRef.current,
         })
+        window.location.href = '/dashboard'
       }
     } catch {
       toast.error('오류가 발생했습니다. 다시 시도해주세요.')
-    } finally {
       setIsLoading(false)
     }
   }
