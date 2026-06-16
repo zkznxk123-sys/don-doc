@@ -66,7 +66,7 @@ export function ComparisonSection() {
             { f: '3-Layer 가족 권한 분리 (Role/Share/Visibility)', a: true, b: false, c: false },
             { f: 'AI 시나리오 생성 + 실행 액션', a: true, b: false, c: false },
             { f: '본인 구독 계정 직접 연결 (Claude/ChatGPT/Gemini)', a: true, b: false, c: false },
-            { f: '월 정리 시간', a: '30분' as const, b: '수시' as const, c: '3~4h' as const },
+            { f: '월 정리 시간', a: '10분' as const, b: '수시' as const, c: '3~4h' as const },
           ].map((r, i) => (
             <div
               key={r.f}

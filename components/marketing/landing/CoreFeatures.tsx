@@ -16,7 +16,7 @@ export function CoreFeatures() {
           엑셀 한 번으로
           <br />
           <span className="font-serif italic font-normal" style={{ color: ACCENT }}>
-            월 정리 30분
+            월 정리 10분
           </span>
         </>
       }
@@ -43,7 +43,7 @@ export function CoreFeatures() {
           {
             Icon: Calendar,
             t: '월 결산 자동화',
-            d: '거래 내역·카테고리·예산·저축률까지 매달 같은 흐름으로. 한 번 세팅 → 매달 30분 안에 마감.',
+            d: '거래 내역·카테고리·예산·저축률까지 매달 같은 흐름으로. 한 번 세팅 → 매달 10분 안에 마감.',
           },
         ].map(s => (
           <div
