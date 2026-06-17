@@ -23,16 +23,17 @@
 ## 2. Tagline & Mission
 
 ### Primary Tagline
-> **흩어진 자산을 한 화면에. 시간은 최소로.**
+> **가장 쉬운 자산 관리 — 흩어진 자산을 한 화면에.**
 
-- Hero, SEO description, OG image, App Store description 에 사용
-- 영문 버전: *Scattered assets, one view. Minimal time.*
+- Hero, SEO description, OG image, App Store description, 채널 bio 에 사용
+- 구조: 랜딩 Hero eyebrow(「가장 쉬운 자산 관리」) + H1(「흩어진 자산을 한 화면에」) 결합 = Threads bio 정본과 1:1 일치
+- 영문 버전: *The easiest way to manage your assets — scattered assets, one view.*
 
 ### One-liner (elevator)
 > 돈 관리는 똑똑하게, 관계는 더 돈독하게.
 
 ### Mission
-> 자산 관리를 책임진 한 사람이 시간을 최소화하는 도구. 혼자 써도 충분하고, 필요하면 가족·동업자와 선별적으로 공유한다.
+> 복잡하게 흩어진 자산을 가장 쉽게 한 화면으로 통합하는 도구. 혼자 써도 충분하고, 필요하면 가족·동업자와 선별적으로 공유한다.
 
 ---
 
@@ -55,7 +56,7 @@
 새 카피 · 메시지 · 마케팅 자산의 톤 체크리스트.
 
 **Must-have (필수)**
-- Owner-first (자산 주도자 중심 — 한 사람이 시간 최소화)
+- Owner-first (자산 주도자 중심 — 가장 쉽게 한 화면으로)
 - Connected (연결된, 유대)
 - Trusted (신뢰, 프라이버시)
 
@@ -77,7 +78,7 @@
 
 | 상황 | 톤 | 예시 |
 |---|---|---|
-| Hero / 헤드라인 | Confident, editorial, 짧음 | "흩어진 자산을 한 화면에. 시간은 최소로." |
+| Hero / 헤드라인 | Confident, editorial, 짧음 | "가장 쉬운 자산 관리 — 흩어진 자산을 한 화면에." |
 | 본문 설명 | Clear, 존댓말, 단정 | "가족 각자의 사생활은 지키면서, 자산은 한 화면에서 투명하게." |
 | CTA 버튼 | 동사 원형, 간결 | "무료로 시작하기", "데모 체험하기" |
 | 빈 상태 / 안내 | Warm, 부드러움 | "아직 가족이 초대되지 않았어요." |
