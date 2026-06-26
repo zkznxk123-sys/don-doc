@@ -344,8 +344,16 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         setRows(parsed)
         // 컬럼 매핑 확인/수정할 시간을 주고 사용자가 직접 AI 분류 시작하도록
         setAiStatus('pending')
-      } catch {
-        toast.error('파일을 읽는 중 오류가 발생했습니다.')
+      } catch (err) {
+        // 비밀번호(암호화) 걸린 엑셀 — SheetJS가 "password-protected" 류 에러를 던진다.
+        const msg = err instanceof Error ? err.message : ''
+        if (/password|encrypt/i.test(msg)) {
+          toast.error('비밀번호가 걸린 파일은 열 수 없어요.', {
+            description: '엑셀에서 비밀번호(읽기 암호)를 해제하고 다시 올려주세요.',
+          })
+        } else {
+          toast.error('파일을 읽는 중 오류가 발생했습니다.')
+        }
       }
     }
     reader.readAsArrayBuffer(file)
