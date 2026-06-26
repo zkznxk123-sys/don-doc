@@ -43,6 +43,69 @@ export function parseNum(raw: unknown): number {
   return parseFloat(String(raw).replace(/[,\s원+]/g, ''))
 }
 
+/**
+ * "월간 지출 가계부" 감지 — 상단 요약에 'N월' + 지출/사용액 마커, 단일 금액열(출금/입금 분리 아님),
+ * 날짜가 '일자만'(1일·2일…)인 양식. 감지되면 { year, month } 컨텍스트 반환, 아니면 null.
+ * fullGrid = sheet_to_json(header:1) 원본 2D, headerRow = 감지된 헤더 행 인덱스.
+ */
+export function detectMonthlyLedger(
+  fullGrid: unknown[][],
+  headerRow: number,
+  col: ColMap,
+  fileName?: string,
+): { year: number; month: number } | null {
+  if (!col.date || !col.amount || col.withdraw || col.deposit) return null
+
+  const preamble = fullGrid.slice(0, headerRow).flat().map(c => String(c ?? '')).join(' ')
+  const monthMatch = preamble.match(/(\d{1,2})\s*월/)
+  if (!monthMatch || !/지출|사용액/.test(preamble)) return null
+  const month = Number(monthMatch[1])
+  if (month < 1 || month > 12) return null
+
+  // 날짜 열이 '일자만'인지 — 헤더 다음 비어있지 않은 첫 값들로 확인
+  const dateColIdx = (fullGrid[headerRow] ?? []).findIndex(h => String(h ?? '').trim() === col.date!.trim())
+  if (dateColIdx < 0) return null
+  const samples = fullGrid.slice(headerRow + 1)
+    .map(r => String((r as unknown[])?.[dateColIdx] ?? '').trim())
+    .filter(Boolean).slice(0, 5)
+  if (samples.length === 0 || !samples.every(s => /^\d{1,2}\s*일?$/.test(s))) return null
+
+  // 연도 — 파일명 'YYYY' 또는 'NN년' 우선, 없으면 현재연도
+  let year = new Date().getFullYear()
+  const ym = fileName?.match(/(20\d{2})|(\d{2})\s*년/)
+  if (ym?.[1]) year = Number(ym[1])
+  else if (ym?.[2]) year = 2000 + Number(ym[2])
+
+  return { year, month }
+}
+
+/**
+ * 월간 지출 가계부 → ParsedRow[]. 날짜 carry-forward(빈칸=직전 날) + 풀 날짜 조립 + 지출(−) 부호.
+ */
+export function parseMonthlyLedger(
+  json: Record<string, unknown>[],
+  col: ColMap,
+  ctx: { year: number; month: number },
+  visibility: 'SHARED' | 'PRIVATE',
+): ParsedRow[] {
+  const mm = String(ctx.month).padStart(2, '0')
+  let lastDay = ''
+  const out: ParsedRow[] = []
+  for (const raw of json) {
+    const dm = String(raw[col.date!] ?? '').trim().match(/(\d{1,2})/)
+    if (dm) lastDay = dm[1].padStart(2, '0')
+    const description = col.description ? String(raw[col.description] ?? '').trim() : ''
+    const amtRaw = col.amount ? parseNum(raw[col.amount]) : NaN
+    if (!description && (isNaN(amtRaw) || amtRaw === 0)) continue   // 빈 행 skip
+    const amount = isNaN(amtRaw) ? 0 : -Math.abs(amtRaw)           // 지출 = 음수
+    const category = (col.category ? String(raw[col.category] ?? '').trim() : '') || '기타'
+    const date = lastDay ? `${ctx.year}-${mm}-${lastDay}` : ''
+    const _error = !date ? '날짜 오류' : isNaN(amtRaw) ? '금액 오류' : undefined
+    out.push({ date, description, amount, category, visibility, _error })
+  }
+  return out
+}
+
 export function mapRow(raw: Record<string, unknown>, col: ColMap, visibility: 'SHARED' | 'PRIVATE'): ParsedRow {
   const date = parseDate(col.date ? raw[col.date] : undefined)
   const description = col.description ? String(raw[col.description] ?? '').trim() : ''

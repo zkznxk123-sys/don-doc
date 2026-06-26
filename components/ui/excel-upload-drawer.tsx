@@ -32,7 +32,7 @@ import { importNetWorthSnapshots } from '@/lib/actions/networth'
 import type { MappingResult } from '@/app/api/ai/map-categories/route'
 import { InputGuide } from '@/components/dashboard/InputGuide'
 
-import { mapRow, type ParsedRow, type AiStatus, type UploadMode } from './excel-upload-drawer/parsers'
+import { mapRow, detectMonthlyLedger, parseMonthlyLedger, type ParsedRow, type AiStatus, type UploadMode } from './excel-upload-drawer/parsers'
 import {
   AiMappingStatus, BanksaladPreviewRow, GenericPreviewRow, AccountBalanceDiff, ColSelect,
   listToggleableBalanceNames,
@@ -343,7 +343,11 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         const headers = Object.keys(json[0])
         const preset = detectPreset(headers)
         const col = buildColMap(headers, preset)
-        const parsed = json.map(r => mapRow(r, col, visibility))
+        // 월간 지출 가계부('N월 지출' + 일자만 날짜 + 단일 금액열) — 날짜 조립 + 지출 부호 전용 처리.
+        const ledger = detectMonthlyLedger(fullGrid, headerRow, col, file.name)
+        const parsed = ledger
+          ? parseMonthlyLedger(json, col, ledger, visibility)
+          : json.map(r => mapRow(r, col, visibility))
 
         // LLM 폴백용 raw 2D 그리드 — 헤더부터(상단 요약 블록 제거)
         const grid = headerRow > 0 ? fullGrid.slice(headerRow) : fullGrid
