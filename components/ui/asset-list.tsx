@@ -408,7 +408,7 @@ function HoldingSubRow({
                 {pnlPct != null && ` (${pnlPct >= 0 ? '+' : ''}${pnlPct.toFixed(1)}%)`}
               </p>
             ) : (
-              <p className="text-[10px] text-muted-foreground/30 group-hover/price:text-violet-500/60 transition-colors">
+              <p className="text-[10px] text-muted-foreground/30 group-hover/price:text-ai-500/60 transition-colors">
                 시세 입력
               </p>
             )}
@@ -532,7 +532,7 @@ export function AssetList({
                           <div className="flex items-center justify-end pl-[52px] pr-4 py-1.5 border-t border-border/30 bg-background/20">
                             <button
                               onClick={() => onMigrateSubAccounts(account.id, account.name)}
-                              className="flex items-center gap-1 text-[11px] text-violet-500/70 hover:text-violet-500 transition-colors"
+                              className="flex items-center gap-1 text-[11px] text-ai-500/70 hover:text-ai-500 transition-colors"
                             >
                               <TrendingUp className="w-3 h-3" />
                               종목으로 변환

@@ -56,7 +56,7 @@ export default function DemoPage() {
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
       {/* 데모 배너 */}
-      <div className="sticky top-0 z-50 w-full bg-linear-to-r from-violet-600 to-indigo-600 text-white px-4 py-2.5 flex items-center justify-between gap-3 shadow-md">
+      <div className="sticky top-0 z-50 w-full bg-linear-to-r from-ai-600 to-indigo-600 text-white px-4 py-2.5 flex items-center justify-between gap-3 shadow-md">
         <div className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 shrink-0" />
           <span className="text-sm font-medium">데모 체험 중 — 실제 시연용 데이터</span>
@@ -108,8 +108,8 @@ export default function DemoPage() {
             </AnimatePresence>
 
             {/* 하단 CTA */}
-            <div className="mt-8 bg-linear-to-br from-violet-600/10 to-indigo-600/10 border border-violet-500/20 rounded-2xl p-6 text-center space-y-3">
-              <Sparkles className="w-6 h-6 text-violet-400 mx-auto" />
+            <div className="mt-8 bg-linear-to-br from-ai-600/10 to-indigo-600/10 border border-ai-500/20 rounded-2xl p-6 text-center space-y-3">
+              <Sparkles className="w-6 h-6 text-ai-400 mx-auto" />
               <p className="text-base font-bold">우리 가족 재정, 직접 관리해볼까요?</p>
               <p className="text-sm text-muted-foreground">가족을 초대하고 함께 자산을 기록하세요.</p>
               <Link href="/sign-up"

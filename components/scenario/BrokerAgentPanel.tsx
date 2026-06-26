@@ -109,7 +109,7 @@ export function BrokerAgentPanel({
         {/* 헤더 */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-border shrink-0">
           <div className="flex items-center gap-2">
-            <Bot className="w-4 h-4 text-violet-400" />
+            <Bot className="w-4 h-4 text-ai-400" />
             <span className="text-sm font-semibold">AI 에이전트 실행</span>
             <span className="text-[10px] bg-warning-soft text-warning border border-warning/20 px-1.5 py-0.5 rounded-full">
               {process.env.NEXT_PUBLIC_KIS_IS_MOCK !== 'false' ? '모의투자' : '실계좌'}
@@ -166,7 +166,7 @@ export function BrokerAgentPanel({
               <button
                 onClick={handleAnalyze}
                 disabled={accounts.length === 0}
-                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-violet-500 text-white text-sm font-semibold hover:bg-violet-600 transition-colors disabled:opacity-50"
+                className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-ai-500 text-white text-sm font-semibold hover:bg-ai-600 transition-colors disabled:opacity-50"
               >
                 <Sparkles className="w-4 h-4" />
                 시나리오 분석 시작
@@ -177,7 +177,7 @@ export function BrokerAgentPanel({
           {/* 분석 중 */}
           {analyzing && (
             <div className="flex flex-col items-center py-8 gap-3">
-              <Loader2 className="w-6 h-6 animate-spin text-violet-400" />
+              <Loader2 className="w-6 h-6 animate-spin text-ai-400" />
               <p className="text-sm text-muted-foreground">시나리오를 분석하여 종목을 선택하고 있습니다...</p>
               <p className="text-[11px] text-muted-foreground/50">KIS API로 현재가를 조회 중</p>
             </div>
@@ -187,8 +187,8 @@ export function BrokerAgentPanel({
           {orders.length > 0 && (
             <div className="space-y-3">
               {summary && (
-                <div className="bg-violet-500/5 border border-violet-500/20 rounded-xl px-4 py-3">
-                  <p className="text-[10px] text-violet-400 font-medium mb-1">에이전트 분석</p>
+                <div className="bg-ai-500/5 border border-ai-500/20 rounded-xl px-4 py-3">
+                  <p className="text-[10px] text-ai-400 font-medium mb-1">에이전트 분석</p>
                   <p className="text-xs text-foreground/80">{summary}</p>
                 </div>
               )}

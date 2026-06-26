@@ -650,7 +650,7 @@ export default function CashflowPage() {
                   </span>
                 )}
                 {selectedCategory && (
-                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-semibold normal-case tracking-normal bg-violet-100 text-violet-700 border border-violet-300 dark:bg-violet-500/15 dark:text-violet-400 dark:border-violet-500/30">
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-semibold normal-case tracking-normal bg-ai-100 text-ai-700 border border-ai-300 dark:bg-ai-500/15 dark:text-ai-400 dark:border-ai-500/30">
                     {selectedCategory}
                     <button onClick={() => setSelectedCategory(null)} className="hover:opacity-70 transition-opacity">
                       <X className="w-2.5 h-2.5" />

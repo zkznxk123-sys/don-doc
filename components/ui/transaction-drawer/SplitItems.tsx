@@ -53,7 +53,7 @@ export function SplitItems({
           <Scissors className="w-3.5 h-3.5 text-muted-foreground" />
           <span className="text-sm font-medium text-foreground">분할 입력</span>
           {subItems.length > 0 && showSplit && (
-            <span className="text-[10px] bg-violet-500/20 text-violet-400 px-1.5 py-0.5 rounded-md">{subItems.length}개</span>
+            <span className="text-[10px] bg-ai-500/20 text-ai-400 px-1.5 py-0.5 rounded-md">{subItems.length}개</span>
           )}
         </div>
         {showSplit ? <ChevronUp className="w-4 h-4 text-muted-foreground" /> : <ChevronDown className="w-4 h-4 text-muted-foreground" />}
@@ -98,7 +98,7 @@ export function SplitItems({
                         return remaining > 0 && (
                           <button
                             onClick={() => setSubItems(prev => prev.map((s, i) => i === idx ? { ...s, amount: String(remaining) } : s))}
-                            className="absolute -top-2 -right-1 text-[9px] bg-violet-500/20 text-violet-400 hover:bg-violet-500/30 px-1 py-0.5 rounded whitespace-nowrap transition-colors"
+                            className="absolute -top-2 -right-1 text-[9px] bg-ai-500/20 text-ai-400 hover:bg-ai-500/30 px-1 py-0.5 rounded whitespace-nowrap transition-colors"
                           >
                             {remaining.toLocaleString()}
                           </button>

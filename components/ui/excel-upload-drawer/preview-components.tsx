@@ -28,7 +28,7 @@ export function AiMappingStatus({
       </div>
       <button
         onClick={onStart}
-        className="px-3 py-1.5 rounded-lg bg-violet-500/10 text-violet-400 hover:bg-violet-500/20 text-xs font-semibold transition-colors border border-violet-500/20"
+        className="px-3 py-1.5 rounded-lg bg-ai-500/10 text-ai-400 hover:bg-ai-500/20 text-xs font-semibold transition-colors border border-ai-500/20"
       >
         분류 시작
       </button>
@@ -38,9 +38,9 @@ export function AiMappingStatus({
   if (status === 'loading') return (
     <div className="flex items-center justify-between p-3 rounded-xl bg-card border border-border">
       <div className="flex items-center gap-2.5">
-        <Loader2 className="w-4 h-4 text-violet-500 dark:text-violet-400 animate-spin shrink-0" />
+        <Loader2 className="w-4 h-4 text-ai-500 dark:text-ai-400 animate-spin shrink-0" />
         <div>
-          <p className="text-xs font-semibold text-violet-700 dark:text-violet-300">AI 카테고리 분류 중...</p>
+          <p className="text-xs font-semibold text-ai-700 dark:text-ai-300">AI 카테고리 분류 중...</p>
           <p className="text-[11px] text-muted-foreground mt-0.5">고유 내역 {totalUnique}건을 분류하고 있어요</p>
         </div>
       </div>
@@ -51,11 +51,11 @@ export function AiMappingStatus({
   )
 
   if (status === 'done') return (
-    <div className="flex items-center gap-2.5 p-3 rounded-xl bg-violet-50 dark:bg-violet-950/20 border border-violet-300 dark:border-violet-800/30">
-      <Wand2 className="w-4 h-4 text-violet-500 dark:text-violet-400 shrink-0" />
-      <p className="text-xs text-violet-700 dark:text-violet-300">
+    <div className="flex items-center gap-2.5 p-3 rounded-xl bg-ai-50 dark:bg-ai-950/20 border border-ai-300 dark:border-ai-800/30">
+      <Wand2 className="w-4 h-4 text-ai-500 dark:text-ai-400 shrink-0" />
+      <p className="text-xs text-ai-700 dark:text-ai-300">
         <span className="font-semibold">AI 분류 완료</span>
-        <span className="text-violet-500 dark:text-violet-600 ml-1.5">{mappedCount}가지 내역 카테고리 매핑됨</span>
+        <span className="text-ai-500 dark:text-ai-600 ml-1.5">{mappedCount}가지 내역 카테고리 매핑됨</span>
       </p>
     </div>
   )
@@ -66,7 +66,7 @@ export function AiMappingStatus({
         <AlertCircle className="w-4 h-4 text-muted-foreground shrink-0" />
         <p className="text-xs text-muted-foreground">AI 분류 실패 — 기존 매핑 사용 중</p>
       </div>
-      <button onClick={onRetry} className="text-[11px] text-violet-400 hover:text-violet-300 transition-colors">
+      <button onClick={onRetry} className="text-[11px] text-ai-400 hover:text-ai-300 transition-colors">
         재시도
       </button>
     </div>
@@ -317,7 +317,7 @@ export function AccountBalanceDiff({
               <div className="min-w-0">
                 <p className="text-xs text-foreground truncate">{d.name}</p>
                 {isNew && (
-                  <span className="text-[10px] text-violet-400">신규 계좌</span>
+                  <span className="text-[10px] text-ai-400">신규 계좌</span>
                 )}
               </div>
               <div className="text-right pl-2 shrink-0">

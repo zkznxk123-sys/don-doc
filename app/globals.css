@@ -59,6 +59,21 @@
   --color-viz-mint: var(--viz-mint);
   --color-viz-gold: var(--viz-gold);
 
+  /* AI semantic — violet 스케일 1:1 별칭. de-facto "AI/feed" 색을 의미화(ad-hoc violet-* 금지).
+     색은 violet과 동일, 이름만 ai-*. 다크/라이트 대비용 음영 보존. 차트는 별도 viz-violet 사용. */
+  --color-ai-50: #f5f3ff;
+  --color-ai-100: #ede9fe;
+  --color-ai-200: #ddd6fe;
+  --color-ai-300: #c4b5fd;
+  --color-ai-400: #a78bfa;
+  --color-ai-500: #8b5cf6;
+  --color-ai-600: #7c3aed;
+  --color-ai-700: #6d28d9;
+  --color-ai-800: #5b21b6;
+  --color-ai-900: #4c1d95;
+  --color-ai-950: #2e1065;
+  --color-ai: var(--viz-violet);
+
   --radius-sm: var(--radius-sm);
   --radius: var(--radius);
   --radius-md: var(--radius);

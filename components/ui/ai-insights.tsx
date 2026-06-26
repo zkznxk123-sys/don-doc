@@ -64,8 +64,8 @@ export function AiInsights({}: AiInsightsProps) {
         onClick={() => setIsExpanded(v => !v)}
       >
         <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-linear-to-br from-violet-500/20 to-blue-500/20 border border-violet-500/20 flex items-center justify-center">
-            <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+          <div className="w-7 h-7 rounded-lg bg-linear-to-br from-ai-500/20 to-blue-500/20 border border-ai-500/20 flex items-center justify-center">
+            <Sparkles className="w-3.5 h-3.5 text-ai-400" />
           </div>
           <div>
             <span className="text-sm font-semibold text-foreground">AI 가계 인사이트</span>
@@ -161,7 +161,7 @@ export function AiInsights({}: AiInsightsProps) {
                 'w-full py-3.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2',
                 llmStatus === 'offline'
                   ? 'bg-muted/50 text-muted-foreground/60 cursor-not-allowed'
-                  : 'bg-linear-to-r from-violet-500/20 to-blue-500/20 border border-violet-500/20 text-violet-300 hover:from-violet-500/30 hover:to-blue-500/30 active:scale-[0.98]'
+                  : 'bg-linear-to-r from-ai-500/20 to-blue-500/20 border border-ai-500/20 text-ai-300 hover:from-ai-500/30 hover:to-blue-500/30 active:scale-[0.98]'
               )}
             >
               <Zap className="w-4 h-4" />

@@ -25,7 +25,7 @@ export function ScenarioView({ data }: { data: DemoData }) {
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2">
-        <Sparkles className="w-5 h-5 text-violet-400" />
+        <Sparkles className="w-5 h-5 text-ai-400" />
         <h2 className="text-base font-bold">AI 시나리오 허브</h2>
       </div>
 
@@ -35,7 +35,7 @@ export function ScenarioView({ data }: { data: DemoData }) {
           {scenarios.map(sc => (
             <button key={sc.id} onClick={() => setSelected(sc.id)}
               className={cn('w-full text-left bg-card rounded-2xl border p-4 transition-all',
-                selected === sc.id ? 'border-violet-500/40 shadow-xs' : 'border-border hover:border-border/80')}>
+                selected === sc.id ? 'border-ai-500/40 shadow-xs' : 'border-border hover:border-border/80')}>
               <div className="flex items-start justify-between gap-2 mb-2">
                 <p className="text-xs font-semibold leading-snug flex-1">{sc.title}</p>
                 <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-full border shrink-0', STATUS_COLOR[sc.status])}>
@@ -45,7 +45,7 @@ export function ScenarioView({ data }: { data: DemoData }) {
               {sc.category && <p className="text-[10px] text-muted-foreground/60 mb-2">{sc.category}</p>}
               <div className="flex items-center gap-2">
                 <div className="flex-1 bg-muted rounded-full h-1">
-                  <div className="h-1 rounded-full bg-violet-400" style={{ width: `${sc.feasibility}%` }} />
+                  <div className="h-1 rounded-full bg-ai-400" style={{ width: `${sc.feasibility}%` }} />
                 </div>
                 <span className={cn('text-[10px] font-semibold', feasibilityColor(sc.feasibility))}>
                   {sc.feasibility}%
@@ -74,7 +74,7 @@ export function ScenarioView({ data }: { data: DemoData }) {
                     <span className={cn('font-semibold', feasibilityColor(selectedSc.feasibility))}>{selectedSc.feasibility}%</span>
                   </div>
                   <div className="w-full bg-background rounded-full h-2">
-                    <div className="h-2 rounded-full bg-violet-500" style={{ width: `${selectedSc.feasibility}%` }} />
+                    <div className="h-2 rounded-full bg-ai-500" style={{ width: `${selectedSc.feasibility}%` }} />
                   </div>
                 </div>
               </div>
@@ -112,7 +112,7 @@ export function ScenarioView({ data }: { data: DemoData }) {
             {selectedSc.chatMessages.length > 0 && (
               <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border overflow-hidden">
                 <div className="flex items-center gap-2 px-4 py-3 border-b border-border/60">
-                  <MessageCircle className="w-4 h-4 text-violet-400" />
+                  <MessageCircle className="w-4 h-4 text-ai-400" />
                   <h4 className="text-sm font-semibold">AI 상담 내역</h4>
                 </div>
                 <div className="p-4 space-y-3 max-h-64 overflow-y-auto">

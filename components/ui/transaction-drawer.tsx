@@ -480,7 +480,7 @@ export function TransactionDrawer({
                     'flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all',
                     isAiCategorizing || (!description.trim() && !amount)
                       ? 'text-muted-foreground/60 cursor-not-allowed'
-                      : 'text-violet-400 hover:text-violet-300 hover:bg-violet-500/10 active:scale-95'
+                      : 'text-ai-400 hover:text-ai-300 hover:bg-ai-500/10 active:scale-95'
                   )}
                 >
                   {isAiCategorizing

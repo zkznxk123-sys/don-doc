@@ -709,7 +709,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
               {/* ── 이미지(스크린샷) 추출 전 — 썸네일 + AI로 읽기 ── */}
               <div className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
                 <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0">
-                  <ImageIcon className="w-4 h-4 text-violet-400" />
+                  <ImageIcon className="w-4 h-4 text-ai-400" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{fileName}</p>
@@ -733,7 +733,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                     'w-full flex items-center justify-center gap-2 h-11 rounded-xl text-sm font-semibold transition-colors',
                     aiExtracting
                       ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                      : 'bg-violet-500 text-white hover:bg-violet-600 dark:bg-violet-600 dark:hover:bg-violet-500'
+                      : 'bg-ai-500 text-white hover:bg-ai-600 dark:bg-ai-600 dark:hover:bg-ai-500'
                   )}
                 >
                   {aiExtracting
@@ -750,7 +750,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
               {/* ── 파일 정보 ── */}
               <div className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
                 <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0">
-                  <FileSpreadsheet className={cn("w-4 h-4", isBanksalad ? "text-violet-400" : "text-income")} />
+                  <FileSpreadsheet className={cn("w-4 h-4", isBanksalad ? "text-ai-400" : "text-income")} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground truncate">{fileName}</p>
@@ -767,11 +767,11 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
 
               {/* ── 양식 감지 배지 ── */}
               {isBanksalad ? (
-                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-violet-50 dark:bg-violet-950/30 border border-violet-300 dark:border-violet-700/40">
-                  <Sparkles className="w-4 h-4 text-violet-500 dark:text-violet-400 shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-ai-50 dark:bg-ai-950/30 border border-ai-300 dark:border-ai-700/40">
+                  <Sparkles className="w-4 h-4 text-ai-500 dark:text-ai-400 shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-violet-700 dark:text-violet-300">뱅크샐러드 양식이 감지되었습니다</p>
-                    <p className="text-[11px] text-violet-500 dark:text-violet-700 mt-0.5">
+                    <p className="text-xs font-semibold text-ai-700 dark:text-ai-300">뱅크샐러드 양식이 감지되었습니다</p>
+                    <p className="text-[11px] text-ai-500 dark:text-ai-700 mt-0.5">
                       시트: {banksaladMeta?.sheet} · 날짜·시간·대분류·소분류 자동 매핑
                     </p>
                     {banksaladMeta?.skipped ? (
@@ -783,11 +783,11 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                   </div>
                 </div>
               ) : assetTemplate ? (
-                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-violet-50 dark:bg-violet-950/30 border border-violet-300 dark:border-violet-700/40">
-                  <Sparkles className="w-4 h-4 text-violet-500 dark:text-violet-400 shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-ai-50 dark:bg-ai-950/30 border border-ai-300 dark:border-ai-700/40">
+                  <Sparkles className="w-4 h-4 text-ai-500 dark:text-ai-400 shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-violet-700 dark:text-violet-300">{assetTemplate.name} 양식이 감지되었습니다</p>
-                    <p className="text-[11px] text-violet-500 dark:text-violet-700 mt-0.5">
+                    <p className="text-xs font-semibold text-ai-700 dark:text-ai-300">{assetTemplate.name} 양식이 감지되었습니다</p>
+                    <p className="text-[11px] text-ai-500 dark:text-ai-700 mt-0.5">
                       {assetTemplate.monthlyCount > 1
                         ? `${assetTemplate.latestLabel ?? '최신'} 기준 ${assetTemplate.count}건 · 순자산 추이 ${assetTemplate.monthlyCount}개월 함께 등록`
                         : `자산·부채 ${assetTemplate.count}건 추출 · 현금·투자·부동산·연금·부채 자동 분류`}
@@ -817,7 +817,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                           'w-full flex items-center justify-center gap-2 h-9 rounded-lg text-xs font-semibold transition-colors',
                           aiExtracting
                             ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                            : 'bg-violet-500 text-white hover:bg-violet-600 dark:bg-violet-600 dark:hover:bg-violet-500'
+                            : 'bg-ai-500 text-white hover:bg-ai-600 dark:bg-ai-600 dark:hover:bg-ai-500'
                         )}
                       >
                         {aiExtracting

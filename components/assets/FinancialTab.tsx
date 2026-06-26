@@ -191,7 +191,7 @@ export function FinancialTab({
         <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-4">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <BarChart2 className="w-4 h-4 text-violet-500" />
+              <BarChart2 className="w-4 h-4 text-ai-500" />
               <span className="text-xs font-semibold text-muted-foreground">투자 종목 현황</span>
             </div>
             <div className="flex items-center gap-2">

@@ -85,7 +85,7 @@ export function ExpansionView({ expansion }: { expansion: ScenarioExpansion }) {
         <>
           <button
             onClick={() => setAgentOpen(true)}
-            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-violet-500/10 border border-violet-500/30 text-violet-500 dark:text-violet-400 text-xs font-semibold hover:bg-violet-500/20 transition-colors"
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-ai-500/10 border border-ai-500/30 text-ai-500 dark:text-ai-400 text-xs font-semibold hover:bg-ai-500/20 transition-colors"
           >
             <Bot className="w-3.5 h-3.5" />
             AI 에이전트로 실행하기

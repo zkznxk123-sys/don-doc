@@ -195,7 +195,7 @@ export function HoldingDrawer({ isOpen, onClose, onSuccess, accountId, accountNa
                         <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-md ${
                           r.market === 'KOSPI'  ? 'bg-savings/10 text-savings' :
                           r.market === 'KOSDAQ' ? 'bg-income-soft text-income' :
-                          r.market === 'NASDAQ' ? 'bg-violet-500/10 text-violet-500' :
+                          r.market === 'NASDAQ' ? 'bg-ai-500/10 text-ai-500' :
                           r.market === 'NYSE'   ? 'bg-warning-soft text-warning' :
                           r.market === 'ETF'    ? 'bg-teal-500/10 text-teal-500' :
                           'bg-muted text-muted-foreground'

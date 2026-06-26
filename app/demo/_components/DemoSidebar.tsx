@@ -51,8 +51,8 @@ export function DemoSidebar({ activePage, onNav, open, onClose, familyName }: {
         {/* 데모 배지 */}
         {open && (
           <div className="px-3 pb-3">
-            <div className="bg-violet-500/10 border border-violet-500/20 rounded-xl px-3 py-2 text-center">
-              <p className="text-[10px] text-violet-400 font-medium">시연용 데이터</p>
+            <div className="bg-ai-500/10 border border-ai-500/20 rounded-xl px-3 py-2 text-center">
+              <p className="text-[10px] text-ai-400 font-medium">시연용 데이터</p>
             </div>
           </div>
         )}

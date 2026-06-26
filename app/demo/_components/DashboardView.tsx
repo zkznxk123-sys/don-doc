@@ -141,7 +141,7 @@ export function DashboardView({ data }: { data: DemoData }) {
       {scenarios.length > 0 && (
         <div className="bg-card rounded-2xl shadow-card dark:border dark:border-border p-5">
           <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="w-4 h-4 text-violet-400" />
+            <Sparkles className="w-4 h-4 text-ai-400" />
             <h3 className="text-sm font-semibold">AI 시나리오 허브</h3>
             <span className="text-[10px] text-muted-foreground/60 bg-muted px-1.5 py-0.5 rounded-full">{scenarios.length}개</span>
           </div>
@@ -152,7 +152,7 @@ export function DashboardView({ data }: { data: DemoData }) {
                 <p className="text-[11px] text-muted-foreground/70 line-clamp-2 mb-2">{sc.rationale}</p>
                 <div className="flex items-center gap-2">
                   <div className="flex-1 bg-muted rounded-full h-1">
-                    <div className="h-1 rounded-full bg-violet-400" style={{ width: `${sc.feasibility}%` }} />
+                    <div className="h-1 rounded-full bg-ai-400" style={{ width: `${sc.feasibility}%` }} />
                   </div>
                   <span className="text-[10px] text-muted-foreground/60">실행가능성 {sc.feasibility}%</span>
                 </div>
