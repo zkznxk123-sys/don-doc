@@ -87,6 +87,11 @@ export async function saveNetWorthSnapshot(data: NetWorthSnapshotData): Promise<
     return { success: false, error: '잘못된 연월 형식입니다. (YYYY-MM)' }
   }
 
+  // 빈 스냅샷 가드 — 자산·부채 모두 0이면 추이 차트에 가짜 0 크레이터를 만든다. 저장 거부.
+  if (totalAssets === 0 && totalLiabilities === 0) {
+    return { success: false, error: '자산·부채가 모두 0인 빈 스냅샷은 저장하지 않아요.' }
+  }
+
   // 과거 수동 입력 시 typeBreakdown 없으면 기존 값 유지 (있으면 갱신).
   // 자동 스냅샷(createSnapshotFromCurrentBalances)은 항상 채움.
   await prisma.netWorthSnapshot.upsert({
@@ -119,7 +124,10 @@ export async function importNetWorthSnapshots(
   if (!isCFOLevel(authUser.role)) return { success: false, error: 'CFO만 스냅샷을 저장할 수 있습니다.' }
 
   const familyId = authUser.familyId
-  const valid = snapshots.filter(s => s.yearMonth && /^\d{4}-\d{2}$/.test(s.yearMonth))
+  // yearMonth 유효 + 빈 스냅샷(자산·부채 0) 제외 — 0 크레이터 유입 차단.
+  const valid = snapshots.filter(
+    s => s.yearMonth && /^\d{4}-\d{2}$/.test(s.yearMonth) && !(s.totalAssets === 0 && s.totalLiabilities === 0)
+  )
   if (valid.length === 0) return { success: true, importedCount: 0 }
 
   try {
@@ -200,6 +208,11 @@ export async function createSnapshotFromCurrentBalances(
 
   const netWorth = totalAssets - totalLiabilities
   const typeBreakdown = aggregateTypeBreakdown(accounts)
+
+  // 빈 스냅샷 가드 — 계좌가 없거나 잔액 합이 0이면 0 크레이터를 만든다. 기록하지 않음.
+  if (totalAssets === 0 && totalLiabilities === 0) {
+    return { success: false, error: '기록할 잔액이 없어요. 자산을 먼저 추가해 주세요.' }
+  }
 
   await prisma.netWorthSnapshot.upsert({
     where: { familyId_yearMonth: { familyId: authUser.familyId, yearMonth } },
