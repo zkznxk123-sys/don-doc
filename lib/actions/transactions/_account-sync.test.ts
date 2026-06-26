@@ -267,6 +267,39 @@ describe('resolveAccountSyncPlan — 분기 검증', () => {
     expect(result.mappingsToUpsert).toEqual([])
   })
 
+  it('4c+autoCreate. 매칭 실패 + 자산 템플릿 import → 파서 type으로 신규 생성', async () => {
+    // 부자공식 등 자산 템플릿 import 경로. autoCreate=true면 미매칭 이름을
+    // 파서 type(REAL_ESTATE 등)으로 신규 생성. 신규 사용자 순자산 통째 등록.
+    setupAccounts([])
+    ;(prisma.account.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue(null)
+    ;(prisma.account.create as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'acc_buja' })
+    ;(prisma.account.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({ balance: 0 })
+
+    const result = await resolveAccountSyncPlan({
+      familyId: fam, userId: uid,
+      accountBalances: [{ name: '아파트', balance: 300_000_000, type: 'REAL_ESTATE' }],
+      autoCreate: true,
+    })
+
+    expect(prisma.account.create).toHaveBeenCalled()
+    expect(result.pendings).toEqual([
+      { accountId: 'acc_buja', oldBalance: 0, newBalance: 300_000_000 },
+    ])
+    expect(result.skipped).toEqual([])
+    // 매핑은 저장 안 함 — 다음 업로드는 fuzzy match로 잡힘
+    expect(result.mappingsToUpsert).toEqual([])
+  })
+
+  it('autoCreate 기본값 false → 미지정 시 기존 차단 동작 유지', async () => {
+    setupAccounts([])
+    const result = await resolveAccountSyncPlan({
+      familyId: fam, userId: uid,
+      accountBalances: [{ name: '미지의 계좌', balance: 100_000 }],
+    })
+    expect(prisma.account.create).not.toHaveBeenCalled()
+    expect(result.skipped).toEqual(['미지의 계좌 (no_match)'])
+  })
+
   it('4b. 매칭 실패 + NEW_ACCOUNT 명시 매핑 → 신규 생성 허용', async () => {
     setupAccounts([])
     ;(findExcelMapping as ReturnType<typeof vi.fn>).mockResolvedValue({

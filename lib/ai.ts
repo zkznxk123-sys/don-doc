@@ -295,6 +295,66 @@ export async function chatJSON<T>(
 }
 
 /**
+ * 이미지(스크린샷)에서 JSON 추출 — vision.
+ *
+ * 현 chat() 경로는 content:string 전용이라 멀티모달 불가 → OpenAI vision을
+ * 직접 호출한다. vision은 OpenAI 포맷이 표준이고 lite는 어차피 OpenAI라
+ * 프로바이더 무관 경로(CLIProxy)는 쓰지 않는다. JSON 추출·zod 검증은 재사용.
+ *
+ * imageDataUrl: "data:image/png;base64,..." 형식.
+ */
+export async function chatVisionJSON<T>(
+  imageDataUrl: string,
+  prompt: string,
+  schema: ZodType<T>,
+  options: { model?: string; temperature?: number; maxTokens?: number; timeoutMs?: number } = {},
+): Promise<T> {
+  const { model = 'gpt-4o-mini', temperature = 0.1, maxTokens = 3000, timeoutMs = 60_000 } = options
+
+  const enhancedPrompt =
+    prompt +
+    '\n\n중요: 응답은 오직 유효한 JSON 객체로만. 마크다운 코드 블록(```), 설명, 머리말 모두 금지. 첫 글자가 { 로 시작해야 함.'
+
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model,
+      messages: [{
+        role: 'user',
+        content: [
+          { type: 'text', text: enhancedPrompt },
+          { type: 'image_url', image_url: { url: imageDataUrl } },
+        ],
+      }],
+      temperature,
+      max_tokens: maxTokens,
+      stream: false,
+    }),
+    signal: AbortSignal.timeout(timeoutMs),
+  })
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText)
+    throw new Error(`OpenAI vision ${res.status}: ${text}`)
+  }
+
+  const data = await res.json()
+  const text = data.choices?.[0]?.message?.content?.trim() ?? ''
+  const extracted = extractJSON(text)
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(extracted)
+  } catch {
+    throw new Error(`Vision 응답을 JSON으로 파싱할 수 없습니다: ${extracted.slice(0, 200)}`)
+  }
+  return schema.parse(parsed)
+}
+
+/**
  * 텍스트에서 JSON 부분만 뽑아내기.
  * 우선순위: ```json``` 블록 > ``` 블록 > 첫 { 또는 [ 부터 매칭되는 끝까지.
  */

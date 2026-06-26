@@ -237,7 +237,7 @@ export async function syncAccountBalancesOnly(
   familyId: string,
   userId: string,
   accountBalances: { name: string; balance: number; type?: 'CASH' | 'INVESTMENT' | 'PENSION' | 'REAL_ESTATE' | 'DEBT' }[],
-  options?: { fileName?: string }
+  options?: { fileName?: string; autoCreate?: boolean }
 ): Promise<{ success: boolean; syncedCount?: number; batchId?: string; error?: string; skipped?: string[] }> {
   const user = await getAuthUser()
   if (!user) return { success: false, error: 'Unauthorized' }
@@ -246,7 +246,7 @@ export async function syncAccountBalancesOnly(
 
   try {
     // 1. 분류 + plan 수립 (helper) — ExcelMapping lookup·cash-sub 분리·holding-skip·일반 분기
-    const plan = await resolveAccountSyncPlan({ familyId, userId, accountBalances })
+    const plan = await resolveAccountSyncPlan({ familyId, userId, accountBalances, autoCreate: options?.autoCreate })
     if (plan.skipped.length > 0) console.log('[syncAccountBalancesOnly] skipped:', plan.skipped)
     if (plan.cashSubCreated.length > 0) console.log('[syncAccountBalancesOnly] created cash sub-accounts:', plan.cashSubCreated)
 

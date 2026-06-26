@@ -5,7 +5,7 @@ import * as XLSX from 'xlsx'
 import { toast } from 'sonner'
 import {
   Upload, X, FileSpreadsheet, Loader2, AlertCircle,
-  Sparkles, SkipForward,
+  Sparkles, SkipForward, Image as ImageIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -26,6 +26,9 @@ import {
 import {
   tryParseBanksalad, type BanksaladRow, type AccountBalance,
 } from '@/utils/excel-parser'
+import { detectAssetTemplate, type PeriodSnapshot } from '@/utils/asset-templates'
+import { aggregateSnapshot } from '@/utils/asset-templates/types'
+import { importNetWorthSnapshots } from '@/lib/actions/networth'
 import type { MappingResult } from '@/app/api/ai/map-categories/route'
 import { InputGuide } from '@/components/dashboard/InputGuide'
 
@@ -62,6 +65,15 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
   const [colMap, setColMap] = useState<ColMap | null>(null)
   const [isBanksalad, setIsBanksalad] = useState(false)
   const [banksaladMeta, setBanksaladMeta] = useState<{ skipped: number; sheet: string } | null>(null)
+  // 자산 템플릿(부자공식 등) — 거래 없이 자산 잔액만, 미매칭 계좌 자동 생성
+  const [assetTemplate, setAssetTemplate] = useState<{
+    name: string; count: number; latestLabel: string | null; periods: PeriodSnapshot[]; monthlyCount: number
+  } | null>(null)
+  // Phase 3a — 결정형 실패 시 LLM 폴백용 raw 2D 그리드 + 추출 상태
+  const [llmGrid, setLlmGrid] = useState<unknown[][] | null>(null)
+  const [aiExtracting, setAiExtracting] = useState(false)
+  // Phase 3b — 스크린샷(자산 캡처) 대기 이미지 data URL
+  const [pendingImage, setPendingImage] = useState<string | null>(null)
 
   // AI 매핑
   const [aiStatus, setAiStatus] = useState<AiStatus>('idle')
@@ -197,6 +209,23 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
     setFileName(file.name)
     setAiStatus('idle')
     setAiMappedCount(0)
+    setAssetTemplate(null)
+    setLlmGrid(null)
+    setPendingImage(null)
+
+    // 이미지(스크린샷) → vision 추출 대기 상태로 (결정형 파싱 없음)
+    if (file.type.startsWith('image/')) {
+      const imgReader = new FileReader()
+      imgReader.onload = () => {
+        setIsBanksalad(false); setBanksaladMeta(null); setDetectedPreset(null)
+        setColMap(null); setRawData([]); setRows([]); setRawHeaders([])
+        setAccountBalances([]); setExcludedAccountNames(new Set())
+        setPendingImage(imgReader.result as string)
+        setUploadMode('assets')
+      }
+      imgReader.readAsDataURL(file)
+      return
+    }
 
     const reader = new FileReader()
     reader.onload = async (e) => {
@@ -204,9 +233,11 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         const data = new Uint8Array(e.target!.result as ArrayBuffer)
         const wb = XLSX.read(data, { type: 'array', cellDates: false })
 
-        // 뱅크샐러드 전용 파서 우선 시도
+        // 뱅크샐러드 전용 파서 우선 시도.
+        // 단 내용 0건(거래·잔액 모두 0)이면 오탐 — 부자공식 등 '가계부' 시트명만
+        // 일치하는 파일을 뱅샐로 가로채지 않게 통과시켜 아래 자산 템플릿으로 보낸다.
         const banksaladResult = tryParseBanksalad(wb, familyMemberNames)
-        if (banksaladResult) {
+        if (banksaladResult && (banksaladResult.rows.length > 0 || banksaladResult.accountBalances.length > 0)) {
           const parsed: ParsedRow[] = banksaladResult.rows.map((r: BanksaladRow) => ({
             date: r.date, description: r.description, amount: r.amount,
             category: r.category, visibility,
@@ -222,6 +253,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
 
           setIsBanksalad(true)
           setBanksaladMeta({ skipped: banksaladResult.skippedCount, sheet: banksaladResult.sheetName })
+          setExcludedAccountNames(new Set())   // 새 파일 = 전부 선택 상태로 시작
           setAccountBalances(banksaladResult.accountBalances)
           setRows(parsed)
 
@@ -255,6 +287,43 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
           return
         }
 
+        // 자산 템플릿(부자공식·대차대조표 등) — 거래 없이 자산 잔액만
+        const assetResult = detectAssetTemplate(wb)
+        if (assetResult) {
+          const balances: AccountBalance[] = assetResult.rows.map(r => ({
+            name: r.name, balance: r.balance, type: r.type,
+          }))
+          setIsBanksalad(false); setBanksaladMeta(null)
+          setRawHeaders([]); setColMap(null); setRawData([]); setRows([])
+          setExcludedAccountNames(new Set())   // 새 파일 = 전부 선택 상태로 시작
+          setAccountBalances(balances)
+          setAssetTemplate({
+            name: assetResult.name, count: balances.length,
+            latestLabel: assetResult.latestLabel, periods: assetResult.periods,
+            monthlyCount: assetResult.monthlyCount,
+          })
+          setUploadMode('assets')   // 거래 없음 — 자산만 고정
+
+          fetch('/api/accounts')
+            .then(r => r.json())
+            .then(d => {
+              if (d.success && d.accounts) {
+                setDbAccounts((d.accounts as DbAccountWithHoldings[]).map(a => ({
+                  name: a.name, balance: a.balance, holdingNames: a.holdingNames ?? [],
+                })))
+              }
+            })
+            .catch(() => {})
+
+          toast.success(`${assetResult.name} 양식이 감지되었습니다.`, {
+            description: assetResult.monthlyCount > 1
+              ? `${assetResult.latestLabel ?? '최신'} 기준 ${balances.length}건 · 순자산 추이 ${assetResult.monthlyCount}개월`
+              : `자산·부채 ${balances.length}건 추출 완료`,
+          })
+          setAiStatus('idle')
+          return
+        }
+
         // 범용 파서 폴백
         const ws = wb.Sheets[wb.SheetNames[0]]
         const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: '', raw: true })
@@ -264,6 +333,10 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         const preset = detectPreset(headers)
         const col = buildColMap(headers, preset)
         const parsed = json.map(r => mapRow(r, col, visibility))
+
+        // LLM 폴백용 raw 2D 그리드 stash (결정형·범용 다 약하면 "AI로 읽기"에 사용)
+        const grid = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: '', raw: true })
+        setLlmGrid(grid)
 
         setIsBanksalad(false); setBanksaladMeta(null)
         setRawHeaders(headers); setRawData(json)
@@ -293,6 +366,84 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
     setAiMappedCount(0)
   }, [rawData, visibility])
 
+  // Phase 3a — "AI로 읽기": 모르는 양식을 LLM이 자산/거래로 추출
+  const handleAiExtract = useCallback(async () => {
+    if (!llmGrid) return
+    setAiExtracting(true)
+    try {
+      const res = await fetch('/api/ai/extract-sheet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ grid: llmGrid }),
+      })
+      const result = await res.json()
+
+      if (result.kind === 'assets' && Array.isArray(result.assets) && result.assets.length > 0) {
+        const balances: AccountBalance[] = result.assets.map((a: { name: string; balance: number; type: AccountBalance['type'] }) => ({
+          name: a.name, balance: a.balance, type: a.type,
+        }))
+        setExcludedAccountNames(new Set())
+        setAccountBalances(balances)
+        setRows([]); setColMap(null); setDetectedPreset(null)
+        setAssetTemplate({
+          name: 'AI 인식 (자산)', count: balances.length, latestLabel: null,
+          periods: [{ yearMonth: result.yearMonth ?? null, label: 'AI', rows: result.assets }],
+          monthlyCount: 0,   // 단일 시점 — 추이 import 안 함(LLM 추정이라 보수적)
+        })
+        setUploadMode('assets')
+        toast.success('AI가 자산으로 읽었어요.', { description: `${balances.length}건 — 확인 후 등록하세요.` })
+      } else if (result.kind === 'transactions' && result.colMap) {
+        const next = result.colMap as ColMap
+        setColMap(next)
+        setRows(rawData.map(r => mapRow(r, next, visibility)))
+        setAiStatus('pending')
+        toast.success('AI가 거래 내역으로 읽었어요.', { description: '컬럼 매핑을 확인 후 등록하세요.' })
+      } else {
+        toast.error('AI도 양식을 인식하지 못했어요.', { description: '아래 헤더 셀렉트에서 직접 지정해 주세요.' })
+      }
+    } catch {
+      toast.error('AI 추출 중 오류가 발생했어요.')
+    } finally {
+      setAiExtracting(false)
+    }
+  }, [llmGrid, rawData, visibility])
+
+  // Phase 3b — "AI로 읽기"(이미지): 스크린샷을 vision으로 자산 추출
+  const handleAiExtractImage = useCallback(async () => {
+    if (!pendingImage) return
+    setAiExtracting(true)
+    try {
+      const res = await fetch('/api/ai/extract-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image: pendingImage }),
+      })
+      const result = await res.json()
+
+      if (result.kind === 'assets' && Array.isArray(result.assets) && result.assets.length > 0) {
+        const balances: AccountBalance[] = result.assets.map((a: { name: string; balance: number; type: AccountBalance['type'] }) => ({
+          name: a.name, balance: a.balance, type: a.type,
+        }))
+        setExcludedAccountNames(new Set())
+        setAccountBalances(balances)
+        setRows([]); setColMap(null); setDetectedPreset(null)
+        setAssetTemplate({
+          name: 'AI 인식 (스크린샷)', count: balances.length, latestLabel: null,
+          periods: [{ yearMonth: result.yearMonth ?? null, label: 'AI', rows: result.assets }],
+          monthlyCount: 0,
+        })
+        setUploadMode('assets')
+        toast.success('AI가 스크린샷에서 자산을 읽었어요.', { description: `${balances.length}건 — 확인 후 등록하세요.` })
+      } else {
+        toast.error('이미지에서 자산을 인식하지 못했어요.', { description: '잔액이 또렷이 보이는 캡처로 다시 시도해 주세요.' })
+      }
+    } catch {
+      toast.error('AI 이미지 추출 중 오류가 발생했어요.')
+    } finally {
+      setAiExtracting(false)
+    }
+  }, [pendingImage])
+
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault(); setIsDragging(false)
     const file = e.dataTransfer.files[0]
@@ -301,11 +452,13 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
 
   const handleReset = () => {
     setFileName(null); setDetectedPreset(null); setIsBanksalad(false)
+    setAssetTemplate(null)
     setBanksaladMeta(null); setColMap(null); setRawData([])
     setRows([]); setRawHeaders([]); setAiStatus('idle'); setAiMappedCount(0)
     setAccountBalances([]); setDbAccounts([]); setExcludedAccountNames(new Set())
     setAvailableMonths([]); setSelectedMonths(new Set())
     setUploadMode('cashflow')
+    setLlmGrid(null); setAiExtracting(false); setPendingImage(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -351,15 +504,28 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
 
       // ── 자산만 업데이트 모드 ──
       if (uploadMode === 'assets') {
-        const result = await syncAccountBalancesOnly(familyId, userId, filteredBalances, { fileName: fileName ?? undefined })
+        // 자산 템플릿 import는 미매칭 계좌 자동 생성 (신규 사용자 순자산 통째 등록)
+        const result = await syncAccountBalancesOnly(familyId, userId, filteredBalances, { fileName: fileName ?? undefined, autoCreate: !!assetTemplate })
         if (result.success) {
           const skipCount = result.skipped?.length ?? 0
+
+          // 월별 스냅샷이 2개↑면 순자산 추이로 일괄 import (최신달은 위 현재잔액 겸용)
+          let historyCount = 0
+          if (assetTemplate && assetTemplate.monthlyCount > 1) {
+            const snaps = assetTemplate.periods
+              .filter(p => p.yearMonth)
+              .map(p => ({ yearMonth: p.yearMonth as string, ...aggregateSnapshot(p.rows) }))
+            const hist = await importNetWorthSnapshots(snaps)
+            if (hist.success) historyCount = hist.importedCount ?? 0
+          }
+
+          const histDesc = historyCount > 0 ? ` · 순자산 추이 ${historyCount}개월 등록` : ''
           if (skipCount > 0) {
-            toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료`, {
+            toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료${histDesc}`, {
               description: `계좌를 찾지 못한 ${skipCount}건은 건너뛰었어요. 자산 페이지에서 계좌를 추가한 뒤 다시 업로드해 주세요.`,
             })
           } else {
-            toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료`)
+            toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료${histDesc}`)
           }
           track('excel_upload_completed', {
             upload_mode: 'assets',
@@ -490,7 +656,11 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
     }
   }
 
-  const hasFile = rows.length > 0
+  // 거래(rows) 또는 자산 잔액(accountBalances) 또는 대기 이미지 중 하나라도 있으면 로드됨.
+  // 자산 템플릿(부자공식·대차대조표)은 거래 0건 + 잔액만이라 accountBalances로 판정.
+  const hasFile = rows.length > 0 || accountBalances.length > 0 || !!pendingImage
+  // 이미지 추출 전 상태 — 전용 UI(썸네일+AI버튼)만 보이고 일반 컨텐츠는 숨김
+  const imagePreExtract = !!pendingImage && accountBalances.length === 0
   const headerOptions = ['', ...rawHeaders]
 
   return (
@@ -528,11 +698,52 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                 <Upload className="w-6 h-6 text-muted-foreground" />
               </div>
               <div className="text-center">
-                <p className="text-sm font-medium text-foreground">파일을 드래그하거나 탭해서 선택</p>
-                <p className="text-xs text-muted-foreground mt-1">뱅크샐러드 · 신한 · KB · 카카오페이 · 하나 · 우리</p>
+                <p className="text-sm font-medium text-foreground">파일·스크린샷을 드래그하거나 탭해서 선택</p>
+                <p className="text-xs text-muted-foreground mt-1">엑셀(뱅샐·신한·KB·카카오페이·하나·우리) · 자산 캡처 이미지</p>
               </div>
-              <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) processFile(f) }} />
+              <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv,image/png,image/jpeg,image/webp" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) processFile(f) }} />
             </div>
+            </>
+          ) : imagePreExtract ? (
+            <>
+              {/* ── 이미지(스크린샷) 추출 전 — 썸네일 + AI로 읽기 ── */}
+              <div className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
+                <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                  <ImageIcon className="w-4 h-4 text-violet-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground truncate">{fileName}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">자산 캡처 이미지</p>
+                </div>
+                <button onClick={handleReset} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {pendingImage && (
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img src={pendingImage} alt="업로드한 자산 캡처" className="w-full max-h-72 object-contain rounded-xl border border-border bg-muted/30" />
+              )}
+
+              <div className="space-y-1.5">
+                <button
+                  onClick={handleAiExtractImage}
+                  disabled={aiExtracting}
+                  className={cn(
+                    'w-full flex items-center justify-center gap-2 h-11 rounded-xl text-sm font-semibold transition-colors',
+                    aiExtracting
+                      ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                      : 'bg-violet-500 text-white hover:bg-violet-600 dark:bg-violet-600 dark:hover:bg-violet-500'
+                  )}
+                >
+                  {aiExtracting
+                    ? <><Loader2 className="w-4 h-4 animate-spin" />AI가 읽는 중...</>
+                    : <><Sparkles className="w-4 h-4" />AI로 자산 읽기</>}
+                </button>
+                <p className="text-[10px] text-muted-foreground/60 text-center">
+                  AI 분석 시 이미지가 OpenAI를 경유합니다 · 읽은 결과는 등록 전 확인할 수 있어요
+                </p>
+              </div>
             </>
           ) : (
             <>
@@ -571,6 +782,18 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                     ) : null}
                   </div>
                 </div>
+              ) : assetTemplate ? (
+                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-violet-50 dark:bg-violet-950/30 border border-violet-300 dark:border-violet-700/40">
+                  <Sparkles className="w-4 h-4 text-violet-500 dark:text-violet-400 shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-semibold text-violet-700 dark:text-violet-300">{assetTemplate.name} 양식이 감지되었습니다</p>
+                    <p className="text-[11px] text-violet-500 dark:text-violet-700 mt-0.5">
+                      {assetTemplate.monthlyCount > 1
+                        ? `${assetTemplate.latestLabel ?? '최신'} 기준 ${assetTemplate.count}건 · 순자산 추이 ${assetTemplate.monthlyCount}개월 함께 등록`
+                        : `자산·부채 ${assetTemplate.count}건 추출 · 현금·투자·부동산·연금·부채 자동 분류`}
+                    </p>
+                  </div>
+                </div>
               ) : detectedPreset ? (
                 <div className="flex items-center gap-2.5 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800/40">
                   <Sparkles className="w-4 h-4 text-income shrink-0" />
@@ -580,9 +803,32 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center gap-2.5 p-3 rounded-xl bg-card border border-border">
-                  <AlertCircle className="w-4 h-4 text-muted-foreground shrink-0" />
-                  <p className="text-xs text-muted-foreground">양식 자동 감지 실패 — 아래 헤더 셀렉트에서 직접 지정해주세요</p>
+                <div className="p-3 rounded-xl bg-card border border-border space-y-2.5">
+                  <div className="flex items-center gap-2.5">
+                    <AlertCircle className="w-4 h-4 text-muted-foreground shrink-0" />
+                    <p className="text-xs text-muted-foreground">양식 자동 감지 실패 — AI로 읽거나 아래 헤더에서 직접 지정하세요</p>
+                  </div>
+                  {llmGrid && (
+                    <div className="space-y-1.5">
+                      <button
+                        onClick={handleAiExtract}
+                        disabled={aiExtracting}
+                        className={cn(
+                          'w-full flex items-center justify-center gap-2 h-9 rounded-lg text-xs font-semibold transition-colors',
+                          aiExtracting
+                            ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                            : 'bg-violet-500 text-white hover:bg-violet-600 dark:bg-violet-600 dark:hover:bg-violet-500'
+                        )}
+                      >
+                        {aiExtracting
+                          ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />AI가 읽는 중...</>
+                          : <><Sparkles className="w-3.5 h-3.5" />AI로 읽기</>}
+                      </button>
+                      <p className="text-[10px] text-muted-foreground/60 text-center">
+                        AI 분석 시 시트 데이터가 OpenAI를 경유합니다
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -730,7 +976,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
               )}
 
               {/* ── 3. 🏦 자산 카드 — 계좌별 잔액 변경 (uploadMode !== 'cashflow') ── */}
-              {isBanksalad && accountBalances.length > 0 && uploadMode !== 'cashflow' && (
+              {(isBanksalad || assetTemplate) && accountBalances.length > 0 && uploadMode !== 'cashflow' && (
                 <section className="rounded-xl border border-border overflow-hidden">
                   <header className="flex items-center gap-2 px-3 py-2 bg-muted/40 border-b border-border">
                     <span className="text-base">🏦</span>

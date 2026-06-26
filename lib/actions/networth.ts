@@ -106,6 +106,46 @@ export async function saveNetWorthSnapshot(data: NetWorthSnapshotData): Promise<
 }
 
 /**
+ * 자산 템플릿(부자공식 등)의 월별 스냅샷을 순자산 추이로 일괄 import.
+ * 각 월의 자산/부채 합계·typeBreakdown을 직접 받아 upsert(현재 계좌 잔액과 무관한
+ * 과거 시점 기록). 가입 첫날부터 순자산 추이 차트를 채우는 온보딩 경로.
+ */
+export async function importNetWorthSnapshots(
+  snapshots: NetWorthSnapshotData[]
+): Promise<{ success: boolean; importedCount?: number; error?: string }> {
+  const authUser = await getAuthUser()
+  if (!authUser) return { success: false, error: '인증이 필요합니다.' }
+  if (!authUser.familyId) return { success: false, error: '가족 그룹이 없습니다.' }
+  if (!isCFOLevel(authUser.role)) return { success: false, error: 'CFO만 스냅샷을 저장할 수 있습니다.' }
+
+  const familyId = authUser.familyId
+  const valid = snapshots.filter(s => s.yearMonth && /^\d{4}-\d{2}$/.test(s.yearMonth))
+  if (valid.length === 0) return { success: true, importedCount: 0 }
+
+  try {
+    for (const s of valid) {
+      await prisma.netWorthSnapshot.upsert({
+        where: { familyId_yearMonth: { familyId, yearMonth: s.yearMonth } },
+        update: {
+          totalAssets: s.totalAssets, totalLiabilities: s.totalLiabilities, netWorth: s.netWorth,
+          ...(s.typeBreakdown ? { typeBreakdown: s.typeBreakdown } : {}),
+          updatedAt: new Date(),
+        },
+        create: {
+          familyId, yearMonth: s.yearMonth,
+          totalAssets: s.totalAssets, totalLiabilities: s.totalLiabilities, netWorth: s.netWorth,
+          ...(s.typeBreakdown ? { typeBreakdown: s.typeBreakdown } : {}),
+        },
+      })
+    }
+    return { success: true, importedCount: valid.length }
+  } catch (e) {
+    console.error('[importNetWorthSnapshots] ERROR:', e)
+    return { success: false, error: '순자산 추이 저장 중 오류가 발생했습니다.' }
+  }
+}
+
+/**
  * 지난달 스냅샷이 누락됐는지 확인
  * returns: { missing: true, yearMonth: "YYYY-MM" } 또는 { missing: false, yearMonth: "YYYY-MM" }
  */

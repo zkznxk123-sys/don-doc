@@ -106,8 +106,15 @@ export async function resolveAccountSyncPlan(args: {
   familyId: string
   userId: string
   accountBalances: AccountBalanceInput[]
+  /**
+   * 미매칭 계좌 자동 생성 허용. 기본 false(1b 차단 유지 — 은행 export 잔액
+   * 동기화는 지저분한 이름이 쓰레기 계좌를 만들지 않게 skip). 자산 템플릿
+   * import(부자공식 등)는 "내 순자산을 통째로 등록"이 목적이고 type이 신뢰
+   * 가능하므로 true로 호출 → 미매칭 이름을 파서 type으로 신규 생성.
+   */
+  autoCreate?: boolean
 }): Promise<BalanceSyncPlan> {
-  const { familyId, userId, accountBalances } = args
+  const { familyId, userId, accountBalances, autoCreate = false } = args
   const pendings: PendingBalance[] = []
   const mappingsToUpsert: MappingToUpsert[] = []
   const skipped: string[] = []
@@ -225,7 +232,16 @@ export async function resolveAccountSyncPlan(args: {
       continue
     }
 
-    // 4c. 매칭 실패 + 명시 의도 없음: 신규 자동 생성 차단(1b)
+    // 4c. 매칭 실패 + 자산 템플릿 import: 파서 type으로 신규 생성.
+    // 매핑은 저장 안 함 — 같은 이름으로 생성됐으니 다음 업로드는 4a fuzzy match로 잡힘.
+    if (autoCreate) {
+      const id = await findOrCreateAccount(ab.name, familyId, ab.type ?? 'CASH', userId)
+      const acc = await prisma.account.findUnique({ where: { id }, select: { balance: true } })
+      pendings.push({ accountId: id, oldBalance: acc?.balance ?? 0, newBalance: ab.balance })
+      continue
+    }
+
+    // 4d. 매칭 실패 + 명시 의도 없음: 신규 자동 생성 차단(1b)
     skipped.push(`${ab.name} (no_match)`)
   }
 
