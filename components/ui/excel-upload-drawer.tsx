@@ -21,7 +21,7 @@ import { useDefaultVisibility } from '@/lib/hooks/useDefaultVisibility'
 import { track } from '@/lib/posthog'
 import {
   type ColMap, type ExcelPreset,
-  detectPreset, buildColMap,
+  detectPreset, buildColMap, detectHeaderRow,
 } from '@/constants/excel-presets'
 import {
   tryParseBanksalad, type BanksaladRow, type AccountBalance,
@@ -326,7 +326,18 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
 
         // 범용 파서 폴백
         const ws = wb.Sheets[wb.SheetNames[0]]
-        const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: '', raw: true })
+        // 헤더가 0행이 아닌 양식(상단 요약 블록) 대응 — 실제 헤더 행을 찾아 거기서부터 파싱.
+        const fullGrid = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: '', raw: true })
+        const headerRow = detectHeaderRow(fullGrid)
+        // 숫자 range는 오프셋 시트(!ref가 A1이 아닌 경우)에서 어긋난다 → !ref 기준 절대 주소로 변환.
+        let json: Record<string, unknown>[]
+        if (headerRow > 0 && ws['!ref']) {
+          const rng = XLSX.utils.decode_range(ws['!ref'])
+          const shifted = XLSX.utils.encode_range({ s: { r: rng.s.r + headerRow, c: rng.s.c }, e: rng.e })
+          json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { range: shifted, defval: '', raw: true })
+        } else {
+          json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: '', raw: true })
+        }
         if (json.length === 0) { toast.error('데이터가 없습니다.'); return }
 
         const headers = Object.keys(json[0])
@@ -334,8 +345,8 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         const col = buildColMap(headers, preset)
         const parsed = json.map(r => mapRow(r, col, visibility))
 
-        // LLM 폴백용 raw 2D 그리드 stash (결정형·범용 다 약하면 "AI로 읽기"에 사용)
-        const grid = XLSX.utils.sheet_to_json<unknown[]>(ws, { header: 1, defval: '', raw: true })
+        // LLM 폴백용 raw 2D 그리드 — 헤더부터(상단 요약 블록 제거)
+        const grid = headerRow > 0 ? fullGrid.slice(headerRow) : fullGrid
         setLlmGrid(grid)
 
         setIsBanksalad(false); setBanksaladMeta(null)

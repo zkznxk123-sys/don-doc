@@ -153,6 +153,41 @@ export function detectPreset(headers: string[]): ExcelPreset | null {
   return best
 }
 
+// 헤더 토큰 집합 (행 감지용) — GENERIC_MAP 별칭 평탄화.
+const _norm = (s: unknown) => String(s ?? '').trim().toLowerCase()
+const ALL_HEADER_TOKENS = new Set(Object.values(GENERIC_MAP).flat().map(_norm))
+const DATE_TOKENS = new Set(GENERIC_MAP.date.map(_norm))
+const AMOUNT_TOKENS = new Set([...GENERIC_MAP.amount, ...GENERIC_MAP.withdraw, ...GENERIC_MAP.deposit].map(_norm))
+
+/**
+ * 2D 그리드에서 실제 헤더 행 인덱스를 찾는다.
+ * 요약 블록이 상단에 있어 헤더가 0행이 아닌 가계부 양식 대응.
+ * 기준: 상위 maxScan 행 중 '날짜류 + 금액류' 토큰을 동시에 갖고 매칭 토큰이 가장 많은 행.
+ * 후보가 없으면 0(기존 동작 유지).
+ */
+export function detectHeaderRow(grid: unknown[][], maxScan = 15): number {
+  let best = 0
+  let bestScore = 0
+  const lim = Math.min(maxScan, grid.length)
+  for (let i = 0; i < lim; i++) {
+    const cells = (grid[i] ?? []).map(_norm)
+    let score = 0
+    let hasDate = false
+    let hasAmount = false
+    for (const c of cells) {
+      if (!c) continue
+      if (ALL_HEADER_TOKENS.has(c)) score++
+      if (DATE_TOKENS.has(c)) hasDate = true
+      if (AMOUNT_TOKENS.has(c)) hasAmount = true
+    }
+    if (hasDate && hasAmount && score > bestScore) {
+      bestScore = score
+      best = i
+    }
+  }
+  return best
+}
+
 /**
  * 프리셋(또는 범용 패턴)을 사용해 실제 헤더에서 ColMap을 구성.
  */
