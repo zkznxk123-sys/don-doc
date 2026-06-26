@@ -131,21 +131,24 @@ export async function importNetWorthSnapshots(
   if (valid.length === 0) return { success: true, importedCount: 0 }
 
   try {
-    for (const s of valid) {
-      await prisma.netWorthSnapshot.upsert({
-        where: { familyId_yearMonth: { familyId, yearMonth: s.yearMonth } },
-        update: {
-          totalAssets: s.totalAssets, totalLiabilities: s.totalLiabilities, netWorth: s.netWorth,
-          ...(s.typeBreakdown ? { typeBreakdown: s.typeBreakdown } : {}),
-          updatedAt: new Date(),
-        },
-        create: {
-          familyId, yearMonth: s.yearMonth,
-          totalAssets: s.totalAssets, totalLiabilities: s.totalLiabilities, netWorth: s.netWorth,
-          ...(s.typeBreakdown ? { typeBreakdown: s.typeBreakdown } : {}),
-        },
-      })
-    }
+    // 원자성 — 중간 실패 시 부분 import 노출 방지. 전부 커밋되거나 전부 롤백.
+    await prisma.$transaction(
+      valid.map(s =>
+        prisma.netWorthSnapshot.upsert({
+          where: { familyId_yearMonth: { familyId, yearMonth: s.yearMonth } },
+          update: {
+            totalAssets: s.totalAssets, totalLiabilities: s.totalLiabilities, netWorth: s.netWorth,
+            ...(s.typeBreakdown ? { typeBreakdown: s.typeBreakdown } : {}),
+            updatedAt: new Date(),
+          },
+          create: {
+            familyId, yearMonth: s.yearMonth,
+            totalAssets: s.totalAssets, totalLiabilities: s.totalLiabilities, netWorth: s.netWorth,
+            ...(s.typeBreakdown ? { typeBreakdown: s.typeBreakdown } : {}),
+          },
+        })
+      )
+    )
     return { success: true, importedCount: valid.length }
   } catch (e) {
     console.error('[importNetWorthSnapshots] ERROR:', e)
