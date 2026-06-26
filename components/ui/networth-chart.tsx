@@ -134,17 +134,20 @@ const formatYAxis = (value: number): string => {
 export function NetWorthChart({ data, onDataSaved, onQuickSnapshot }: NetWorthChartProps) {
   const [modalOpen, setModalOpen] = useState(false)
 
-  const chartData: ChartPoint[] = data.map((d, i) => ({
+  // 빈 스냅샷(자산·부채 모두 0 = 그 달 미기록)은 0으로 꺾여 가짜 크레이터를 만든다 → 스킵.
+  const points = data.filter(d => !(d.totalAssets === 0 && d.totalLiabilities === 0))
+
+  const chartData: ChartPoint[] = points.map((d, i) => ({
     yearMonth: d.yearMonth,
     totalAssets: d.totalAssets,
     totalLiabilities: d.totalLiabilities,
     netWorth: d.netWorth,
     typeBreakdown: (d.typeBreakdown ?? null) as TypeBreakdownData | null,
-    prevTypeBreakdown: (i > 0 ? (data[i - 1].typeBreakdown ?? null) : null) as TypeBreakdownData | null,
+    prevTypeBreakdown: (i > 0 ? (points[i - 1].typeBreakdown ?? null) : null) as TypeBreakdownData | null,
     label: formatYearMonth(d.yearMonth),
   }))
 
-  const isEmpty = data.length === 0
+  const isEmpty = chartData.length === 0
 
   return (
     <>
@@ -154,8 +157,8 @@ export function NetWorthChart({ data, onDataSaved, onQuickSnapshot }: NetWorthCh
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-income" />
             <h2 className="text-sm font-semibold text-foreground font-serif tracking-tight">순자산 추이</h2>
-            {data.length > 0 && (
-              <span className="text-xs text-muted-foreground/60">{data.length}개월</span>
+            {chartData.length > 0 && (
+              <span className="text-xs text-muted-foreground/60">{chartData.length}개월</span>
             )}
           </div>
           <button
