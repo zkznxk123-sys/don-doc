@@ -274,7 +274,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
           }
           setRawHeaders([]); setColMap(null); setRawData([])
 
-          toast.success('뱅크샐러드 양식이 감지되었습니다.', {
+          toast.success('뱅크샐러드 양식을 감지했어요.', {
             description: `${banksaladResult.rows.length}건 파싱 완료 · 이체 ${banksaladResult.skippedCount}건 제외`,
           })
 
@@ -315,7 +315,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
             })
             .catch(() => {})
 
-          toast.success(`${assetResult.name} 양식이 감지되었습니다.`, {
+          toast.success(`${assetResult.name} 양식을 감지했어요.`, {
             description: assetResult.monthlyCount > 1
               ? `${assetResult.latestLabel ?? '최신'} 기준 ${balances.length}건 · 순자산 추이 ${assetResult.monthlyCount}개월`
               : `자산·부채 ${balances.length}건 추출 완료`,
@@ -367,7 +367,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
             description: '엑셀에서 비밀번호(읽기 암호)를 해제하고 다시 올려주세요.',
           })
         } else {
-          toast.error('파일을 읽는 중 오류가 발생했습니다.')
+          toast.error('파일을 읽는 중 오류가 발생했어요.')
         }
       }
     }
@@ -561,7 +561,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
           })
           handleClose(); onSuccess()
         } else {
-          toast.error(result.error ?? '잔액 업데이트에 실패했습니다.')
+          toast.error(result.error ?? '잔액 업데이트에 실패했어요.')
         }
         return
       }
@@ -587,7 +587,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
             })
             handleClose(); onSuccess()
           } else {
-            toast.error(result.error ?? '잔액 업데이트에 실패했습니다.')
+            toast.error(result.error ?? '잔액 업데이트에 실패했어요.')
           }
           return
         }
@@ -672,7 +672,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         })
         handleClose(); onSuccess()
       } else {
-        toast.error(result.error ?? '등록에 실패했습니다.')
+        toast.error(result.error ?? '등록에 실패했어요.')
       }
     } finally {
       setIsLoading(false)
@@ -793,7 +793,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                 <div className="flex items-start gap-2.5 p-3 rounded-xl bg-ai-50 dark:bg-ai-950/30 border border-ai-300 dark:border-ai-700/40">
                   <Sparkles className="w-4 h-4 text-ai-500 dark:text-ai-400 shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-ai-700 dark:text-ai-300">뱅크샐러드 양식이 감지되었습니다</p>
+                    <p className="text-xs font-semibold text-ai-700 dark:text-ai-300">뱅크샐러드 양식을 감지했어요</p>
                     <p className="text-[11px] text-ai-500 dark:text-ai-700 mt-0.5">
                       시트: {banksaladMeta?.sheet} · 날짜·시간·대분류·소분류 자동 매핑
                     </p>
@@ -809,7 +809,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                 <div className="flex items-start gap-2.5 p-3 rounded-xl bg-ai-50 dark:bg-ai-950/30 border border-ai-300 dark:border-ai-700/40">
                   <Sparkles className="w-4 h-4 text-ai-500 dark:text-ai-400 shrink-0 mt-0.5" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-ai-700 dark:text-ai-300">{assetTemplate.name} 양식이 감지되었습니다</p>
+                    <p className="text-xs font-semibold text-ai-700 dark:text-ai-300">{assetTemplate.name} 양식을 감지했어요</p>
                     <p className="text-[11px] text-ai-500 dark:text-ai-700 mt-0.5">
                       {assetTemplate.monthlyCount > 1
                         ? `${assetTemplate.latestLabel ?? '최신'} 기준 ${assetTemplate.count}건 · 순자산 추이 ${assetTemplate.monthlyCount}개월 함께 등록`
