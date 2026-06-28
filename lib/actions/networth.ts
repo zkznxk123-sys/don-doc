@@ -157,24 +157,46 @@ export async function importNetWorthSnapshots(
 }
 
 /**
- * 지난달 스냅샷이 누락됐는지 확인
- * returns: { missing: true, yearMonth: "YYYY-MM" } 또는 { missing: false, yearMonth: "YYYY-MM" }
+ * 스냅샷 누락 알림 판정.
+ * 우선순위 1) 지난달 스냅샷이 비었으면 지난달 기록을 권한다(kind: 'last').
+ * 우선순위 2) 지난달은 기록됐고 + 이번 달 말일 D-3 구간(현재 잔액이 곧 월 마감값)인데
+ *            이번 달 스냅샷이 비었으면 이번 달 기록을 권한다(kind: 'current').
+ * 6/28 도입 — 배너가 '지난달'만 검사하던 탓에 당월 정산 버튼을 잊는 1차 사용자 마찰 해소.
  */
-export async function checkMissingSnapshot(): Promise<{ missing: boolean; yearMonth: string }> {
+export async function checkMissingSnapshot(): Promise<{
+  missing: boolean
+  yearMonth: string
+  kind: 'last' | 'current'
+}> {
   const authUser = await getAuthUser()
 
   const now = new Date()
   const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
-  const yearMonth = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`
+  const lastYearMonth = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`
+  const currentYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 
-  if (!authUser?.familyId) return { missing: false, yearMonth }
+  if (!authUser?.familyId) return { missing: false, yearMonth: lastYearMonth, kind: 'last' }
 
-  const existing = await prisma.netWorthSnapshot.findUnique({
-    where: { familyId_yearMonth: { familyId: authUser.familyId, yearMonth } },
+  const lastExisting = await prisma.netWorthSnapshot.findUnique({
+    where: { familyId_yearMonth: { familyId: authUser.familyId, yearMonth: lastYearMonth } },
     select: { id: true },
   })
 
-  return { missing: !existing, yearMonth }
+  // 1순위: 지난달 누락이 더 시급
+  if (!lastExisting) return { missing: true, yearMonth: lastYearMonth, kind: 'last' }
+
+  // 2순위: 월말 D-3 구간이면 당월 스냅샷 넛지
+  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+  const isMonthEnd = now.getDate() >= daysInMonth - 2  // 말일 포함 마지막 3일
+  if (isMonthEnd) {
+    const currentExisting = await prisma.netWorthSnapshot.findUnique({
+      where: { familyId_yearMonth: { familyId: authUser.familyId, yearMonth: currentYearMonth } },
+      select: { id: true },
+    })
+    if (!currentExisting) return { missing: true, yearMonth: currentYearMonth, kind: 'current' }
+  }
+
+  return { missing: false, yearMonth: lastYearMonth, kind: 'last' }
 }
 
 /**

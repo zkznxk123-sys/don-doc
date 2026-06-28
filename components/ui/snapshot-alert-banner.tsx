@@ -6,6 +6,7 @@ import { createSnapshotFromCurrentBalances } from '@/lib/actions/networth'
 
 interface SnapshotAlertBannerProps {
   yearMonth: string   // "YYYY-MM"
+  kind?: 'last' | 'current'   // 'current' = 월말 당월 넛지
   onSaved: () => void
   onDismiss: () => void
 }
@@ -15,7 +16,7 @@ function formatYearMonth(ym: string): string {
   return `${year}년 ${month}월`
 }
 
-export function SnapshotAlertBanner({ yearMonth, onSaved, onDismiss }: SnapshotAlertBannerProps) {
+export function SnapshotAlertBanner({ yearMonth, kind = 'last', onSaved, onDismiss }: SnapshotAlertBannerProps) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -41,10 +42,14 @@ export function SnapshotAlertBanner({ yearMonth, onSaved, onDismiss }: SnapshotA
       {/* 텍스트 + 버튼 */}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
-          {formatYearMonth(yearMonth)} 자산 스냅샷이 기록되지 않았습니다
+          {kind === 'current'
+            ? `${formatYearMonth(yearMonth)} 마무리 — 순자산 스냅샷을 남기세요`
+            : `${formatYearMonth(yearMonth)} 자산 스냅샷이 기록되지 않았습니다`}
         </p>
-        <p className="text-xs text-warning/80/80 mt-0.5">
-          현재 잔액 기준으로 지난달 순자산을 기록할 수 있습니다.
+        <p className="text-xs text-warning/80 mt-0.5">
+          {kind === 'current'
+            ? '월말입니다. 현재 잔액으로 이번 달 기록을 남겨두면 추이가 끊기지 않습니다.'
+            : '현재 잔액 기준으로 지난달 순자산을 기록할 수 있습니다.'}
         </p>
 
         {error && (

@@ -99,6 +99,7 @@ export default function AssetsPage() {
 
   // 스냅샷 알림 배너
   const [missingYearMonth, setMissingYearMonth] = useState<string | null>(null)
+  const [missingKind, setMissingKind] = useState<'last' | 'current'>('last')
   const [bannerDismissed, setBannerDismissed] = useState(false)
 
   // 수동 저장 다이얼로그
@@ -159,6 +160,7 @@ export default function AssetsPage() {
   const checkSnapshot = useCallback(async () => {
     const result = await checkMissingSnapshot()
     setMissingYearMonth(result.missing ? result.yearMonth : null)
+    setMissingKind(result.kind)
     setBannerDismissed(false)
   }, [])
 
@@ -265,6 +267,7 @@ export default function AssetsPage() {
       {showBanner && (
         <SnapshotAlertBanner
           yearMonth={missingYearMonth!}
+          kind={missingKind}
           onSaved={handleBannerSaved}
           onDismiss={() => setBannerDismissed(true)}
         />
