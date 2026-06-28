@@ -315,43 +315,52 @@ export async function chatVisionJSON<T>(
     prompt +
     '\n\n중요: 응답은 오직 유효한 JSON 객체로만. 마크다운 코드 블록(```), 설명, 머리말 모두 금지. 첫 글자가 { 로 시작해야 함.'
 
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model,
-      messages: [{
-        role: 'user',
-        content: [
-          { type: 'text', text: enhancedPrompt },
-          { type: 'image_url', image_url: { url: imageDataUrl } },
-        ],
-      }],
-      temperature,
-      max_tokens: maxTokens,
-      stream: false,
-    }),
-    signal: AbortSignal.timeout(timeoutMs),
-  })
+  // vision은 확률적으로 잘린/오염된 JSON을 뱉어 parse·schema가 실패하는 일이 있다
+  // (2026-06-28 E2E: 동일 이미지가 1회차 실패→2회차 성공). 1회 재시도로 무마 —
+  // 재시도 없이는 출력 변동 1회에 전체 추출이 0건으로 날아가 "스샷 안 읽힘" UX가 된다.
+  const maxAttempts = 2
+  let lastExtracted = ''
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const res = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: JSON.stringify({
+        model,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'text', text: enhancedPrompt },
+            { type: 'image_url', image_url: { url: imageDataUrl } },
+          ],
+        }],
+        temperature,
+        max_tokens: maxTokens,
+        stream: false,
+      }),
+      signal: AbortSignal.timeout(timeoutMs),
+    })
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => res.statusText)
-    throw new Error(`OpenAI vision ${res.status}: ${text}`)
-  }
+    if (!res.ok) {
+      // HTTP 오류(인증·쿼터 등)는 재시도해도 같으니 즉시 throw
+      const text = await res.text().catch(() => res.statusText)
+      throw new Error(`OpenAI vision ${res.status}: ${text}`)
+    }
 
-  const data = await res.json()
-  const text = data.choices?.[0]?.message?.content?.trim() ?? ''
-  const extracted = extractJSON(text)
-  let parsed: unknown
-  try {
-    parsed = JSON.parse(extracted)
-  } catch {
-    throw new Error(`Vision 응답을 JSON으로 파싱할 수 없습니다: ${extracted.slice(0, 200)}`)
+    const data = await res.json()
+    const text = data.choices?.[0]?.message?.content?.trim() ?? ''
+    lastExtracted = extractJSON(text)
+    try {
+      return schema.parse(JSON.parse(lastExtracted))
+    } catch (e) {
+      if (attempt < maxAttempts) continue   // 출력 변동 — 한 번 더
+      throw new Error(`Vision 응답을 JSON으로 파싱할 수 없습니다(${maxAttempts}회 시도): ${lastExtracted.slice(0, 200)}`)
+    }
   }
-  return schema.parse(parsed)
+  // 도달 불가(루프가 return 또는 throw) — 타입 satisfier
+  throw new Error('Vision 추출 실패')
 }
 
 /**
