@@ -5,7 +5,6 @@ import * as XLSX from 'xlsx'
 import { toast } from 'sonner'
 import {
   Upload, X, FileSpreadsheet, Loader2, AlertCircle,
-  Sparkles, SkipForward, Image as ImageIcon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
@@ -35,7 +34,7 @@ import { InputGuide } from '@/components/dashboard/InputGuide'
 import { mapRow, detectMonthlyLedger, parseMonthlyLedger, type ParsedRow, type AiStatus, type UploadMode } from './excel-upload-drawer/parsers'
 import {
   AiMappingStatus, BanksaladPreviewRow, GenericPreviewRow, AccountBalanceDiff, ColSelect,
-  listToggleableBalanceNames,
+  listToggleableBalanceNames, DetectionBadge, ImagePreExtractPanel,
   type DbAccountWithHoldings,
 } from './excel-upload-drawer/preview-components'
 
@@ -728,46 +727,13 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
             </div>
             </>
           ) : imagePreExtract ? (
-            <>
-              {/* ── 이미지(스크린샷) 추출 전 — 썸네일 + AI로 읽기 ── */}
-              <div className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border">
-                <div className="w-9 h-9 rounded-xl bg-muted flex items-center justify-center shrink-0">
-                  <ImageIcon className="w-4 h-4 text-ai-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground truncate">{fileName}</p>
-                  <p className="text-xs text-muted-foreground mt-0.5">자산 캡처 이미지</p>
-                </div>
-                <button onClick={handleReset} className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {pendingImage && (
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img src={pendingImage} alt="업로드한 자산 캡처" className="w-full max-h-72 object-contain rounded-xl border border-border bg-muted/30" />
-              )}
-
-              <div className="space-y-1.5">
-                <button
-                  onClick={handleAiExtractImage}
-                  disabled={aiExtracting}
-                  className={cn(
-                    'w-full flex items-center justify-center gap-2 h-11 rounded-xl text-sm font-semibold transition-colors',
-                    aiExtracting
-                      ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                      : 'bg-ai-500 text-white hover:bg-ai-600 dark:bg-ai-600 dark:hover:bg-ai-500'
-                  )}
-                >
-                  {aiExtracting
-                    ? <><Loader2 className="w-4 h-4 animate-spin" />AI가 읽는 중...</>
-                    : <><Sparkles className="w-4 h-4" />AI로 자산 읽기</>}
-                </button>
-                <p className="text-[10px] text-muted-foreground/60 text-center">
-                  AI 분석 시 이미지가 OpenAI를 경유합니다 · 읽은 결과는 등록 전 확인할 수 있어요
-                </p>
-              </div>
-            </>
+            <ImagePreExtractPanel
+              fileName={fileName}
+              pendingImage={pendingImage}
+              aiExtracting={aiExtracting}
+              onExtract={handleAiExtractImage}
+              onReset={handleReset}
+            />
           ) : (
             <>
               {/* ── 파일 정보 ── */}
@@ -789,71 +755,15 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
               </div>
 
               {/* ── 양식 감지 배지 ── */}
-              {isBanksalad ? (
-                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-ai-50 dark:bg-ai-950/30 border border-ai-300 dark:border-ai-700/40">
-                  <Sparkles className="w-4 h-4 text-ai-500 dark:text-ai-400 shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-ai-700 dark:text-ai-300">뱅크샐러드 양식을 감지했어요</p>
-                    <p className="text-[11px] text-ai-500 dark:text-ai-700 mt-0.5">
-                      시트: {banksaladMeta?.sheet} · 날짜·시간·대분류·소분류 자동 매핑
-                    </p>
-                    {banksaladMeta?.skipped ? (
-                      <div className="flex items-center gap-1 mt-1">
-                        <SkipForward className="w-3 h-3 text-muted-foreground" />
-                        <p className="text-[11px] text-muted-foreground">&ldquo;이체&rdquo; {banksaladMeta.skipped}건 자동 제외</p>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              ) : assetTemplate ? (
-                <div className="flex items-start gap-2.5 p-3 rounded-xl bg-ai-50 dark:bg-ai-950/30 border border-ai-300 dark:border-ai-700/40">
-                  <Sparkles className="w-4 h-4 text-ai-500 dark:text-ai-400 shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-semibold text-ai-700 dark:text-ai-300">{assetTemplate.name} 양식을 감지했어요</p>
-                    <p className="text-[11px] text-ai-500 dark:text-ai-700 mt-0.5">
-                      {assetTemplate.monthlyCount > 1
-                        ? `${assetTemplate.latestLabel ?? '최신'} 기준 ${assetTemplate.count}건 · 순자산 추이 ${assetTemplate.monthlyCount}개월 함께 등록`
-                        : `자산·부채 ${assetTemplate.count}건 추출 · 현금·투자·부동산·연금·부채 자동 분류`}
-                    </p>
-                  </div>
-                </div>
-              ) : detectedPreset ? (
-                <div className="flex items-center gap-2.5 p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-300 dark:border-emerald-800/40">
-                  <Sparkles className="w-4 h-4 text-income shrink-0" />
-                  <div>
-                    <p className="text-xs font-semibold text-income">{detectedPreset.name} 양식 감지됨</p>
-                    <p className="text-[10px] text-income dark:text-income mt-0.5">{detectedPreset.description}</p>
-                  </div>
-                </div>
-              ) : (
-                <div className="p-3 rounded-xl bg-card border border-border space-y-2.5">
-                  <div className="flex items-center gap-2.5">
-                    <AlertCircle className="w-4 h-4 text-muted-foreground shrink-0" />
-                    <p className="text-xs text-muted-foreground">양식 자동 감지 실패 — AI로 읽거나 아래 헤더에서 직접 지정하세요</p>
-                  </div>
-                  {llmGrid && (
-                    <div className="space-y-1.5">
-                      <button
-                        onClick={handleAiExtract}
-                        disabled={aiExtracting}
-                        className={cn(
-                          'w-full flex items-center justify-center gap-2 h-9 rounded-lg text-xs font-semibold transition-colors',
-                          aiExtracting
-                            ? 'bg-muted text-muted-foreground cursor-not-allowed'
-                            : 'bg-ai-500 text-white hover:bg-ai-600 dark:bg-ai-600 dark:hover:bg-ai-500'
-                        )}
-                      >
-                        {aiExtracting
-                          ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />AI가 읽는 중...</>
-                          : <><Sparkles className="w-3.5 h-3.5" />AI로 읽기</>}
-                      </button>
-                      <p className="text-[10px] text-muted-foreground/60 text-center">
-                        AI 분석 시 시트 데이터가 OpenAI를 경유합니다
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
+              <DetectionBadge
+                isBanksalad={isBanksalad}
+                banksaladMeta={banksaladMeta}
+                assetTemplate={assetTemplate}
+                detectedPreset={detectedPreset}
+                llmGrid={llmGrid}
+                aiExtracting={aiExtracting}
+                onAiExtract={handleAiExtract}
+              />
 
               {/* ── 1. 업데이트 범위 — 최상위 결정 ── */}
               {isBanksalad && accountBalances.length > 0 && (
