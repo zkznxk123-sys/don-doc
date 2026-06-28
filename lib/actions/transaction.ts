@@ -16,17 +16,17 @@ import { canManageTransaction } from './transactions/permissions'
 // ━━ Zod 스키마: 거래 입력 유효성 검사 ━━
 const CreateTransactionSchema = z.object({
   amount: z
-    .number({ required_error: '금액을 입력해주세요.' })
+    .number({ error: '금액을 입력해주세요.' })
     .refine(v => v !== 0, { message: '금액은 0이 될 수 없습니다.' }),
   date: z
-    .string({ required_error: '날짜를 입력해주세요.' })
+    .string({ error: '날짜를 입력해주세요.' })
     .regex(/^\d{4}-\d{2}-\d{2}$/, '날짜 형식이 올바르지 않습니다. (YYYY-MM-DD)'),
   category: z
-    .string({ required_error: '카테고리를 선택해주세요.' })
+    .string({ error: '카테고리를 선택해주세요.' })
     .min(1, '카테고리를 선택해주세요.'),
   description: z.string().optional().default(''),
   visibility: z.enum(['SHARED', 'PRIVATE'], {
-    required_error: '공개 범위를 선택해주세요.',
+    error: '공개 범위를 선택해주세요.',
   }),
   accountId: z.string().optional(),
 })
@@ -366,7 +366,7 @@ export async function createTransaction(
   // 1. Zod 유효성 검사
   const parsed = CreateTransactionSchema.safeParse(rawInput)
   if (!parsed.success) {
-    const firstError = parsed.error.errors[0]
+    const firstError = parsed.error.issues[0]
     return { success: false, error: firstError?.message || '입력값이 올바르지 않습니다.' }
   }
   const input = parsed.data
