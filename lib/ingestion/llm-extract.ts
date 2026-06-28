@@ -22,7 +22,10 @@ const AssetRowSchema = z.object({
   name: z.string().min(1),
   balance: z.number(),
   type: z.enum(['CASH', 'INVESTMENT', 'PENSION', 'REAL_ESTATE', 'DEBT']),
-  sourceCategory: z.string().default(''),
+  // LLM이 카테고리 없을 때 "" 대신 null을 반환하는 경우가 잦다. .default()는 undefined에만
+  // 적용돼 null이면 parse 실패 → 추출 전체가 unknown으로 뭉개졌다(2026-06-28 E2E 발견).
+  // null 허용 후 shapeAssets에서 `?? ''`로 정규화. extract-image도 이 스키마 공유.
+  sourceCategory: z.string().nullable().optional().default(''),
 })
 
 const ColMapSchema = z.object({
@@ -117,7 +120,7 @@ export async function extractSheetWithLLM(
 
 /** LLM 자산 배열 → 표준 AssetRow[] (양수·uncertain·0/빈값 제외). 텍스트·이미지 공용. */
 function shapeAssets(
-  raw: Array<{ name: string; balance: number; type: AssetRow['type']; sourceCategory?: string }> | undefined,
+  raw: Array<{ name: string; balance: number; type: AssetRow['type']; sourceCategory?: string | null }> | undefined,
   yearMonth: string | null,
 ): LlmExtractResult {
   const assets: AssetRow[] = (raw ?? [])
