@@ -26,8 +26,8 @@ export function DashboardView({ data }: { data: DemoData }) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
           { icon: <Wallet className="w-3.5 h-3.5 text-income" />, label: '순자산', value: formatLargeNumber(wealth.netWorth), sub: `총자산 ${formatLargeNumber(wealth.totalAssets)}` },
-          { icon: <ArrowUpRight className="w-3.5 h-3.5 text-income" />, label: `${monthLabel} 수입`, value: formatLargeNumber(cashflow.monthlyIncome), sub: '이번 달 가족 합산' },
-          { icon: <ArrowDownRight className="w-3.5 h-3.5 text-expense" />, label: `${monthLabel} 지출`, value: formatLargeNumber(cashflow.monthlyExpense), sub: '이번 달 가족 합산' },
+          { icon: <ArrowUpRight className="w-3.5 h-3.5 text-income" />, label: `${monthLabel} 수입`, value: formatLargeNumber(cashflow.monthlyIncome), sub: '이번 달' },
+          { icon: <ArrowDownRight className="w-3.5 h-3.5 text-expense" />, label: `${monthLabel} 지출`, value: formatLargeNumber(cashflow.monthlyExpense), sub: '이번 달' },
           { icon: <PiggyBank className="w-3.5 h-3.5 text-savings" />, label: `${monthLabel} 저축률`, value: `${cashflow.savingsRate}%`, sub: '목표 35% 대비 초과', subColor: 'text-income' },
         ].map(item => (
           <div key={item.label} className="bg-card rounded-2xl p-4 border border-border flex flex-col gap-1">
