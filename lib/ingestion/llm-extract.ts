@@ -175,7 +175,7 @@ function buildImagePrompt(): string {
  */
 export async function extractImageWithLLM(imageDataUrl: string): Promise<LlmExtractResult> {
   const parsed = await chatVisionJSON(imageDataUrl, buildImagePrompt(), ImageAssetSchema, {
-    model: 'gpt-4o-mini', temperature: 0.1, maxTokens: 3000, timeoutMs: 60_000,
+    model: 'gpt-4o', temperature: 0.1, maxTokens: 3000, timeoutMs: 60_000,
   })
   if (parsed.kind === 'assets') return shapeAssets(parsed.assets, parsed.yearMonth ?? null)
   return { kind: 'unknown' }
