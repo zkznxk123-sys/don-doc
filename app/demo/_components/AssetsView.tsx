@@ -57,7 +57,7 @@ export function AssetsView({ data }: { data: DemoData }) {
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
             <XAxis dataKey="label" style={{ fontSize: 10 }} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" interval={2} />
             <YAxis style={{ fontSize: 10 }} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" tickFormatter={v => `${v.toFixed(0)}억`} width={34} />
-            <RechartsTooltip formatter={(v: number, name: string) => [`${v.toFixed(2)}억`, name]} contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, fontSize: 12 }} />
+            <RechartsTooltip formatter={(v, name) => [`${Number(v).toFixed(2)}억`, name]} contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, fontSize: 12 }} />
             <Area type="monotone" dataKey="자산" stroke="#10b981" strokeWidth={1.5} fill="#10b98120" dot={false} />
             <Area type="monotone" dataKey="순자산" stroke="#6366f1" strokeWidth={2} fill="#6366f110" dot={false} />
             <Bar dataKey="부채" fill="#f8717130" radius={[2, 2, 0, 0]} maxBarSize={16} />

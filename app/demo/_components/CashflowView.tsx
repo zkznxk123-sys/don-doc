@@ -59,7 +59,7 @@ export function CashflowView({ data }: { data: DemoData }) {
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
               <XAxis dataKey="label" style={{ fontSize: 10 }} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" />
               <YAxis style={{ fontSize: 10 }} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" tickFormatter={v => `${(v / 10000).toFixed(0)}만`} width={38} />
-              <RechartsTooltip formatter={(v: number, name: string) => [formatLargeNumber(v), name === 'income' ? '수입' : '지출']} contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, fontSize: 12 }} />
+              <RechartsTooltip formatter={(v, name) => [formatLargeNumber(Number(v)), name === 'income' ? '수입' : '지출']} contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, fontSize: 12 }} />
               <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={24} />
               <Bar dataKey="expense" fill="#f87171" radius={[4, 4, 0, 0]} maxBarSize={24} />
             </ComposedChart>

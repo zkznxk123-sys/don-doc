@@ -55,7 +55,7 @@ export function DashboardView({ data }: { data: DemoData }) {
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
             <XAxis dataKey="label" style={{ fontSize: 10 }} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" interval={2} />
             <YAxis style={{ fontSize: 10 }} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" tickFormatter={v => `${v.toFixed(0)}억`} width={34} />
-            <RechartsTooltip formatter={(v: number) => [`${v.toFixed(2)}억`, '순자산']} contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, fontSize: 12 }} />
+            <RechartsTooltip formatter={(v) => [`${Number(v).toFixed(2)}억`, '순자산']} contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, fontSize: 12 }} />
             <Area type="monotone" dataKey="netWorth" stroke="#10b981" strokeWidth={2} fill="url(#nwGrad)" dot={false} activeDot={{ r: 4 }} />
           </ComposedChart>
         </ResponsiveContainer>

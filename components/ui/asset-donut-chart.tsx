@@ -132,7 +132,6 @@ export function AssetDonutChart({ data, totalAssets, manageLink, hideZeroAccount
                 outerRadius={84}
                 paddingAngle={3}
                 dataKey="value"
-                activeIndex={activeIndex !== null ? activeIndex : undefined}
                 activeShape={renderActiveShape}
                 onMouseEnter={(_, index) => setActiveIndex(index)}
                 onMouseLeave={() => setActiveIndex(null)}
