@@ -15,6 +15,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { AccountBoard } from '@/components/ipo/account-board'
 import { AllocationSim } from '@/components/ipo/allocation-sim'
+import { SpacList } from '@/components/ipo/spac-list'
 import { IpoEntryBar, IpoDatalists, DeleteBtn, EditBtn, SubForm } from '@/components/ipo/entry-forms'
 import { useIpoData } from '@/lib/ipo/store'
 import {
@@ -125,6 +126,7 @@ export default function IpoLedgerPage() {
         <TabsList>
           <TabsTrigger value="accounts">계좌 운용</TabsTrigger>
           <TabsTrigger value="allocate">자금 배분</TabsTrigger>
+          <TabsTrigger value="spac">스팩 시세</TabsTrigger>
           <TabsTrigger value="offerings">종목별 원장</TabsTrigger>
         </TabsList>
 
@@ -134,6 +136,10 @@ export default function IpoLedgerPage() {
 
         <TabsContent value="allocate">
           <AllocationSim accounts={accounts} />
+        </TabsContent>
+
+        <TabsContent value="spac">
+          <SpacList data={data} />
         </TabsContent>
 
         <TabsContent value="offerings">

@@ -152,6 +152,52 @@ export function readinessIssues(acct: Account): number {
   return Object.values(acct.readiness).filter(s => s !== 'OK').length
 }
 
+// ─────────────────────────────────────────────────────────────
+// 스팩 시세 — 시총 버킷별·가격 낮은순 스크리너.
+// 스팩은 만기 시 2,000원+이자 상환이 사실상 floor → 2,000 근처/미만이 차익 후보.
+// ─────────────────────────────────────────────────────────────
+
+export const SPAC_BASELINE = 2_000   // 상환 기준가(원)
+
+export interface Spac {
+  id: string
+  name: string
+  marketCapEok: number    // 시가총액(억원)
+  price: number           // 현재가(원)
+  maturityDate?: string   // 존속기한(만기) "YYYY-MM-DD"
+}
+
+export const SPAC_BUCKETS: { key: string; label: string; max: number }[] = [
+  { key: 'small', label: '소형 (~100억)', max: 100 },
+  { key: 'mid', label: '중형 (100~200억)', max: 200 },
+  { key: 'large', label: '대형 (200억~)', max: Infinity },
+]
+
+export function spacBucket(cap: number) {
+  return SPAC_BUCKETS.find(b => cap < b.max) ?? SPAC_BUCKETS[SPAC_BUCKETS.length - 1]
+}
+
+/** 버킷별로 묶고, 각 버킷 안에서 가격 낮은순 정렬. */
+export function groupSpacsByCap(spacs: Spac[]): { bucket: typeof SPAC_BUCKETS[number]; items: Spac[] }[] {
+  return SPAC_BUCKETS.map(bucket => ({
+    bucket,
+    items: spacs.filter(s => spacBucket(s.marketCapEok).key === bucket.key)
+      .sort((a, b) => a.price - b.price),
+  })).filter(g => g.items.length > 0)
+}
+
+/** 데모 스팩 시세 — 실 어댑터가 뽑은 스팩명 + 데모 시총·현재가. (실시간 시세 연동은 다음) */
+export const DEMO_SPACS: Spac[] = [
+  { id: 'spac-hk16', name: '한국제16호스팩',     marketCapEok: 80,  price: 1_995, maturityDate: '2029-06-25' },
+  { id: 'spac-sh17', name: '신한제17호스팩',     marketCapEok: 100, price: 1_998, maturityDate: '2029-04-01' },
+  { id: 'spac-mr2',  name: '메리츠제2호스팩',    marketCapEok: 90,  price: 2_005, maturityDate: '2029-06-19' },
+  { id: 'spac-ds20', name: '대신밸런스제20호스팩', marketCapEok: 130, price: 2_010, maturityDate: '2029-06-05' },
+  { id: 'spac-sh18', name: '신한제18호스팩',     marketCapEok: 150, price: 2_000, maturityDate: '2029-04-30' },
+  { id: 'spac-nh33', name: '엔에이치스팩33호',    marketCapEok: 200, price: 2_040, maturityDate: '2029-03-27' },
+  { id: 'spac-kw2',  name: '키움히어로제2호스팩', marketCapEok: 110, price: 2_025, maturityDate: '2029-04-23' },
+  { id: 'spac-gb20', name: '교보20호스팩',       marketCapEok: 250, price: 2_080, maturityDate: '2029-04-02' },
+]
+
 /** D-day 계산. 음수면 지남. */
 export function ddays(dateStr: string, today: Date): number {
   const [y, m, d] = dateStr.split('-').map(Number)

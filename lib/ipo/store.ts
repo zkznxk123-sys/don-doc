@@ -8,8 +8,8 @@
  */
 import { useCallback, useEffect, useState } from 'react'
 import {
-  DEMO_ACCOUNTS, DEMO_LEDGER, OFFERING_BY_NAME,
-  type Account, type LedgerRow,
+  DEMO_ACCOUNTS, DEMO_LEDGER, DEMO_SPACS, OFFERING_BY_NAME,
+  type Account, type LedgerRow, type Spac,
 } from '@/components/ipo/board-data'
 
 const KEY = 'dondoc.ipo.v1'
@@ -17,15 +17,24 @@ const KEY = 'dondoc.ipo.v1'
 interface IpoState {
   accounts: Account[]
   ledger: LedgerRow[]
+  spacs: Spac[]
   initialized: boolean   // 사용자가 직접 입력하기 시작했나
 }
 
-const EMPTY: IpoState = { accounts: [], ledger: [], initialized: false }
+const EMPTY: IpoState = { accounts: [], ledger: [], spacs: [], initialized: false }
 
 function load(): IpoState | null {
   try {
     const raw = localStorage.getItem(KEY)
-    return raw ? (JSON.parse(raw) as IpoState) : null
+    if (!raw) return null
+    const s = JSON.parse(raw) as Partial<IpoState>
+    // 스키마 진화 방어: 옛 저장본에 없던 필드 백필
+    return {
+      accounts: s.accounts ?? [],
+      ledger: s.ledger ?? [],
+      spacs: s.spacs ?? [],
+      initialized: !!s.initialized,
+    }
   } catch { return null }
 }
 
@@ -38,12 +47,16 @@ export interface IpoData {
   showDemo: boolean              // 데모 보기(읽기전용) 여부
   accounts: Account[]
   ledger: LedgerRow[]
+  spacs: Spac[]
   addAccount: (a: Omit<Account, 'id'>) => void
   updateAccount: (id: string, patch: Omit<Account, 'id'>) => void
   removeAccount: (id: string) => void
   addSub: (r: Omit<LedgerRow, 'kind' | 'subStart' | 'refundDate' | 'listingDate'>) => void
   updateSub: (index: number, patch: Omit<LedgerRow, 'kind' | 'subStart' | 'refundDate' | 'listingDate'>) => void
   removeSub: (index: number) => void
+  addSpac: (s: Omit<Spac, 'id'>) => void
+  updateSpac: (id: string, patch: Omit<Spac, 'id'>) => void
+  removeSpac: (id: string) => void
   seedDemo: () => void           // 데모를 내 작업본으로 복사
   reset: () => void              // 데모 보기로 복귀(내 데이터 삭제)
 }
@@ -79,10 +92,11 @@ export function useIpoData(): IpoData {
   const showDemo = !state.initialized
   const accounts = showDemo ? DEMO_ACCOUNTS : state.accounts
   const ledger = showDemo ? DEMO_LEDGER : state.ledger
+  const spacs = showDemo ? DEMO_SPACS : state.spacs
 
   const addAccount = useCallback((a: Omit<Account, 'id'>) => {
     setState(prev => {
-      const base = prev.initialized ? prev : { accounts: [], ledger: [], initialized: true }
+      const base = prev.initialized ? prev : { accounts: [], ledger: [], spacs: [], initialized: true }
       return { ...base, accounts: [...base.accounts, { ...a, id: newId() }] }
     })
   }, [])
@@ -98,7 +112,7 @@ export function useIpoData(): IpoData {
   const addSub = useCallback((r: Omit<LedgerRow, 'kind' | 'subStart' | 'refundDate' | 'listingDate'>) => {
     const row = buildRow(r)
     setState(prev => {
-      const base = prev.initialized ? prev : { accounts: [], ledger: [], initialized: true }
+      const base = prev.initialized ? prev : { accounts: [], ledger: [], spacs: [], initialized: true }
       return { ...base, ledger: [...base.ledger, row] }
     })
   }, [])
@@ -112,11 +126,26 @@ export function useIpoData(): IpoData {
     setState(prev => ({ ...prev, ledger: prev.ledger.filter((_, i) => i !== index) }))
   }, [])
 
+  const addSpac = useCallback((s: Omit<Spac, 'id'>) => {
+    setState(prev => {
+      const base = prev.initialized ? prev : { accounts: [], ledger: [], spacs: [], initialized: true }
+      return { ...base, spacs: [...base.spacs, { ...s, id: newId() }] }
+    })
+  }, [])
+
+  const updateSpac = useCallback((id: string, patch: Omit<Spac, 'id'>) => {
+    setState(prev => ({ ...prev, spacs: prev.spacs.map(s => s.id === id ? { ...patch, id } : s) }))
+  }, [])
+
+  const removeSpac = useCallback((id: string) => {
+    setState(prev => ({ ...prev, spacs: prev.spacs.filter(s => s.id !== id) }))
+  }, [])
+
   const seedDemo = useCallback(() => {
-    setState({ accounts: [...DEMO_ACCOUNTS], ledger: [...DEMO_LEDGER], initialized: true })
+    setState({ accounts: [...DEMO_ACCOUNTS], ledger: [...DEMO_LEDGER], spacs: [...DEMO_SPACS], initialized: true })
   }, [])
 
   const reset = useCallback(() => setState(EMPTY), [])
 
-  return { hydrated, showDemo, accounts, ledger, addAccount, updateAccount, removeAccount, addSub, updateSub, removeSub, seedDemo, reset }
+  return { hydrated, showDemo, accounts, ledger, spacs, addAccount, updateAccount, removeAccount, addSub, updateSub, removeSub, addSpac, updateSpac, removeSpac, seedDemo, reset }
 }

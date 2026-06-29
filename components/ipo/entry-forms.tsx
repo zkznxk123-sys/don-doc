@@ -9,7 +9,7 @@ import { Plus, X, Database, RotateCcw, Pencil } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import {
-  OFFERINGS, READINESS_LABELS, type ReadinessState, type SubStatus, type Account, type LedgerRow,
+  OFFERINGS, READINESS_LABELS, type ReadinessState, type SubStatus, type Account, type LedgerRow, type Spac,
 } from '@/components/ipo/board-data'
 import type { IpoData } from '@/lib/ipo/store'
 
@@ -208,6 +208,38 @@ function FormActions({ onCancel, onSubmit, disabled, edit }: { onCancel: () => v
       <button onClick={onCancel} className="rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground">취소</button>
       <button onClick={onSubmit} disabled={disabled}
         className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background disabled:opacity-40">{edit ? '저장' : '추가'}</button>
+    </div>
+  )
+}
+
+export function SpacForm({ data, onDone, initial }: { data: IpoData; onDone: () => void; initial?: Spac }) {
+  const [name, setName] = useState(initial?.name ?? '')
+  const [cap, setCap] = useState(initial ? String(initial.marketCapEok) : '')
+  const [price, setPrice] = useState(initial ? String(initial.price) : '2000')
+  const [maturity, setMaturity] = useState(initial?.maturityDate ?? '')
+
+  const submit = () => {
+    if (!name.trim()) return
+    const values = {
+      name: name.trim(),
+      marketCapEok: parseFloat(cap) || 0,
+      price: parseInt(price) || 0,
+      maturityDate: maturity.trim() || undefined,
+    }
+    if (initial) data.updateSpac(initial.id, values)
+    else data.addSpac(values)
+    onDone()
+  }
+
+  return (
+    <div className="rounded-md border border-border p-3 space-y-3">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Field label="종목"><input list="ipo-offerings" className={inputCls} value={name} onChange={e => setName(e.target.value)} placeholder="○○스팩" /></Field>
+        <Field label="시가총액(억)"><input type="number" className={inputCls} value={cap} onChange={e => setCap(e.target.value)} placeholder="100" /></Field>
+        <Field label="현재가(원)"><input type="number" className={inputCls} value={price} onChange={e => setPrice(e.target.value)} placeholder="2000" /></Field>
+        <Field label="만기(YYYY-MM-DD)"><input className={inputCls} value={maturity} onChange={e => setMaturity(e.target.value)} placeholder="2029-06-25" /></Field>
+      </div>
+      <FormActions onCancel={onDone} onSubmit={submit} disabled={!name.trim()} edit={!!initial} />
     </div>
   )
 }
