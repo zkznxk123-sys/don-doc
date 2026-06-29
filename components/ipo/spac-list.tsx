@@ -8,7 +8,7 @@
  * ⚠️ 컴플라이언스: 사실(시총·현재가·괴리·만기) 표시·정렬만. 매수 추천 아님.
  */
 import { useMemo, useState } from 'react'
-import { Layers, Pencil, X } from 'lucide-react'
+import { Layers, Pencil, X, RefreshCw } from 'lucide-react'
 import { cn, formatLargeNumber } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { SpacForm } from '@/components/ipo/entry-forms'
@@ -20,9 +20,29 @@ export function SpacList({ data }: { data: IpoData }) {
   const today = useMemo(() => new Date(), [])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const [asOf, setAsOf] = useState<string | null>(null)
 
   const groups = useMemo(() => groupSpacsByCap(spacs), [spacs])
   const belowBaseline = spacs.filter(s => s.price < SPAC_BASELINE).length
+
+  const refresh = async () => {
+    if (refreshing || spacs.length === 0) return
+    setRefreshing(true)
+    try {
+      const res = await fetch('/api/ipo/quote', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: spacs.map(s => ({ name: s.name, code: s.code })) }),
+      })
+      const { quotes } = await res.json()
+      ;(quotes as { code: string | null; price: number | null; asOf: string }[]).forEach((q, i) => {
+        const s = spacs[i]
+        if (s && q.price != null) data.updateSpac(s.id, { ...s, price: q.price, code: q.code ?? s.code, live: true, quotedAt: q.asOf })
+      })
+      setAsOf(new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }))
+    } catch { /* 네트워크 실패 무시 */ }
+    setRefreshing(false)
+  }
 
   return (
     <div className="space-y-4">
@@ -30,6 +50,13 @@ export function SpacList({ data }: { data: IpoData }) {
         <h3 className="text-sm font-medium flex items-center gap-1.5"><Layers className="size-4" /> 스팩 시세 · 시총별 · 가격 낮은순</h3>
         <div className="flex items-center gap-3">
           {belowBaseline > 0 && <span className="text-xs text-emerald-600 dark:text-emerald-400">기준가 미만 {belowBaseline}</span>}
+          {asOf && <span className="text-[11px] text-muted-foreground">{asOf} 기준</span>}
+          {!showDemo && (
+            <button onClick={refresh} disabled={refreshing}
+              className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs font-medium hover:bg-muted/70 disabled:opacity-50">
+              <RefreshCw className={cn('size-3.5', refreshing && 'animate-spin')} /> 시세 새로고침
+            </button>
+          )}
           {!showDemo && (
             <button onClick={() => setAdding(v => !v)}
               className={cn('rounded-md px-2 py-1 text-xs font-medium', adding ? 'bg-foreground text-background' : 'bg-muted hover:bg-muted/70')}>
@@ -65,7 +92,7 @@ export function SpacList({ data }: { data: IpoData }) {
       ))}
 
       <p className="text-[11px] text-muted-foreground">
-        기준가 {SPAC_BASELINE.toLocaleString()}원(만기 상환 floor) 대비 괴리 표시. 사실·정렬만 제공하며 매수 추천 아닙니다.{showDemo && ' 데모 시세(실시간 연동은 다음 단계).'}
+        기준가 {SPAC_BASELINE.toLocaleString()}원(만기 상환 floor) 대비 괴리 표시. 사실·정렬만 제공하며 매수 추천 아닙니다. 시세 출처: 네이버 금융.{showDemo && ' 지금은 데모 시세 — “데모를 작업본으로” 전환 후 시세 새로고침으로 실시간 조회.'}
       </p>
     </div>
   )
@@ -79,7 +106,10 @@ function SpacRow({ spac, today, showDemo, onEdit, onRemove }: {
   const d = spac.maturityDate ? ddays(spac.maturityDate, today) : null
   return (
     <div className="grid grid-cols-12 items-center gap-2 py-2 text-sm">
-      <span className="col-span-4 font-medium truncate">{spac.name}</span>
+      <span className="col-span-4 font-medium truncate flex items-center gap-1.5">
+        {spac.live && <span className="size-1.5 rounded-full bg-emerald-500" title={`실시간 (${spac.code ?? ''})`} />}
+        {spac.name}
+      </span>
       <span className="col-span-2 text-right text-xs text-muted-foreground tabular-nums">{spac.marketCapEok}억</span>
       <span className="col-span-2 text-right tabular-nums font-medium">{spac.price.toLocaleString()}</span>
       <span className={cn('col-span-2 text-right text-xs tabular-nums', below ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground')}>
