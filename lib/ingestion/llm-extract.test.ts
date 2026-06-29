@@ -102,3 +102,47 @@ describe('extractImageWithLLM (vision)', () => {
     expect(r.kind).toBe('unknown')
   })
 })
+
+// 2026-06-28 E2E 회귀 가드 — 고친 버그가 shaping 계층에서 재발하지 않도록 고정.
+// (프롬프트 품질 버그: 연금 래퍼 PENSION·손익≠DEBT·계좌총액 중복은 모델 행동이라
+//  단위테스트 불가 → 커밋 b1d7bfb/93a65ae + 실 LLM E2E로 검증. 여기선 결정적 불변만.)
+describe('shapeAssets 회귀 가드', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('sourceCategory null → "" 정규화 (extract-sheet)', async () => {
+    // 버그 b1d7bfb: LLM이 sourceCategory를 null로 줘서 추출 전체가 unknown으로 뭉개짐
+    chatJSONMock.mockResolvedValue({
+      kind: 'assets',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      assets: [{ name: '토스뱅크', balance: 3_000_000, type: 'CASH', sourceCategory: null as any }],
+    })
+    const r = await extractSheetWithLLM([['x']], { mode: 'api' })
+    expect(r.kind).toBe('assets')
+    if (r.kind !== 'assets') throw new Error()
+    expect(r.assets[0].sourceCategory).toBe('')
+  })
+
+  it('sourceCategory null → "" 정규화 (vision, 동일 shapeAssets)', async () => {
+    chatVisionJSONMock.mockResolvedValue({
+      kind: 'assets',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      assets: [{ name: '신한', balance: 1_430_905, type: 'CASH', sourceCategory: null as any }],
+    })
+    const r = await extractImageWithLLM('data:image/png;base64,xxx')
+    expect(r.kind).toBe('assets')
+    if (r.kind !== 'assets') throw new Error()
+    expect(r.assets[0].sourceCategory).toBe('')
+  })
+
+  it('음수 잔액(마이너스통장) → 양수 magnitude + DEBT 유지 (vision)', async () => {
+    // 버그 93a65ae 맥락: 마이너스통장 -93,929,060이 DEBT로 잡혀야(부호는 type으로 표현)
+    chatVisionJSONMock.mockResolvedValue({
+      kind: 'assets',
+      assets: [{ name: '입출금통장', balance: -93_929_060, type: 'DEBT', sourceCategory: '' }],
+    })
+    const r = await extractImageWithLLM('data:image/png;base64,xxx')
+    expect(r.kind).toBe('assets')
+    if (r.kind !== 'assets') throw new Error()
+    expect(r.assets[0]).toMatchObject({ type: 'DEBT', balance: 93_929_060 })
+  })
+})
