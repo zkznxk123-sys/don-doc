@@ -25,8 +25,8 @@ async function resolveCode(name: string): Promise<string | null> {
   } catch { return null }
 }
 
-/** 종목코드 → 현재가·장상태. */
-async function fetchPrice(code: string): Promise<{ price: number; status: string; name: string } | null> {
+/** 종목코드 → 현재가·시가총액(억)·장상태. */
+async function fetchQuote(code: string): Promise<{ price: number; marketCapEok: number | null; status: string; name: string } | null> {
   try {
     const url = `https://polling.finance.naver.com/api/realtime/domestic/stock/${encodeURIComponent(code)}`
     const r = await fetch(url, { headers: NAVER_HEADERS, cache: 'no-store' })
@@ -36,7 +36,9 @@ async function fetchPrice(code: string): Promise<{ price: number; status: string
     if (!row?.closePrice) return null
     const price = parseInt(String(row.closePrice).replace(/[,\s]/g, ''), 10)
     if (!Number.isFinite(price)) return null
-    return { price, status: row.marketStatus ?? '', name: row.stockName ?? '' }
+    const capRaw = Number(String(row.marketValueFullRaw ?? '').replace(/[,\s]/g, ''))   // 원 단위
+    const marketCapEok = Number.isFinite(capRaw) && capRaw > 0 ? Math.round(capRaw / 1e8) : null
+    return { price, marketCapEok, status: row.marketStatus ?? '', name: row.stockName ?? '' }
   } catch { return null }
 }
 
@@ -48,9 +50,9 @@ export async function POST(req: NextRequest) {
   const asOf = new Date().toISOString()
   const quotes = await Promise.all(items.map(async it => {
     const code = it.code || (await resolveCode(it.name))
-    if (!code) return { name: it.name, code: null, price: null, status: null, asOf }
-    const q = await fetchPrice(code)
-    return { name: it.name, code, price: q?.price ?? null, status: q?.status ?? null, asOf }
+    if (!code) return { name: it.name, code: null, price: null, marketCapEok: null, status: null, asOf }
+    const q = await fetchQuote(code)
+    return { name: it.name, code, price: q?.price ?? null, marketCapEok: q?.marketCapEok ?? null, status: q?.status ?? null, asOf }
   }))
 
   return NextResponse.json({ quotes, asOf })

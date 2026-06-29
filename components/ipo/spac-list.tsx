@@ -35,9 +35,13 @@ export function SpacList({ data }: { data: IpoData }) {
         body: JSON.stringify({ items: spacs.map(s => ({ name: s.name, code: s.code })) }),
       })
       const { quotes } = await res.json()
-      ;(quotes as { code: string | null; price: number | null; asOf: string }[]).forEach((q, i) => {
+      ;(quotes as { code: string | null; price: number | null; marketCapEok: number | null; asOf: string }[]).forEach((q, i) => {
         const s = spacs[i]
-        if (s && q.price != null) data.updateSpac(s.id, { ...s, price: q.price, code: q.code ?? s.code, live: true, quotedAt: q.asOf })
+        if (s && q.price != null) data.updateSpac(s.id, {
+          ...s, price: q.price,
+          marketCapEok: q.marketCapEok ?? s.marketCapEok,
+          code: q.code ?? s.code, live: true, quotedAt: q.asOf,
+        })
       })
       setAsOf(new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }))
     } catch { /* 네트워크 실패 무시 */ }

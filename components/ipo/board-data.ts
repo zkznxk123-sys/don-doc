@@ -190,15 +190,16 @@ export function groupSpacsByCap(spacs: Spac[]): { bucket: typeof SPAC_BUCKETS[nu
 }
 
 /** 데모 스팩 시세 — 실 어댑터가 뽑은 스팩명 + 데모 시총·현재가. (실시간 시세 연동은 다음) */
+// 시총·가격은 2026-06 네이버 실측 baseline(데모). 새로고침 시 실시간으로 덮어씀.
 export const DEMO_SPACS: Spac[] = [
   { id: 'spac-hk16', name: '한국제16호스팩',     marketCapEok: 80,  price: 1_995, maturityDate: '2029-06-25' },
-  { id: 'spac-sh17', name: '신한제17호스팩',     marketCapEok: 100, price: 1_998, maturityDate: '2029-04-01', code: '0130D0' },
-  { id: 'spac-mr2',  name: '메리츠제2호스팩',    marketCapEok: 90,  price: 2_005, maturityDate: '2029-06-19', code: '0165X0' },
-  { id: 'spac-ds20', name: '대신밸런스제20호스팩', marketCapEok: 130, price: 2_010, maturityDate: '2029-06-05', code: '0134X0' },
-  { id: 'spac-sh18', name: '신한제18호스팩',     marketCapEok: 150, price: 2_000, maturityDate: '2029-04-30', code: '0129K0' },
-  { id: 'spac-nh33', name: '엔에이치스팩33호',    marketCapEok: 200, price: 2_040, maturityDate: '2029-03-27', code: '0130H0' },
-  { id: 'spac-kw2',  name: '키움히어로제2호스팩', marketCapEok: 110, price: 2_025, maturityDate: '2029-04-23', code: '0131D0' },
-  { id: 'spac-gb20', name: '교보20호스팩',       marketCapEok: 250, price: 2_080, maturityDate: '2029-04-02', code: '0132G0' },
+  { id: 'spac-sh17', name: '신한제17호스팩',     marketCapEok: 106, price: 1_993, maturityDate: '2029-04-01', code: '0130D0' },
+  { id: 'spac-mr2',  name: '메리츠제2호스팩',    marketCapEok: 141, price: 1_947, maturityDate: '2029-06-19', code: '0165X0' },
+  { id: 'spac-ds20', name: '대신밸런스제20호스팩', marketCapEok: 134, price: 1_982, maturityDate: '2029-06-05', code: '0134X0' },
+  { id: 'spac-sh18', name: '신한제18호스팩',     marketCapEok: 111, price: 1_967, maturityDate: '2029-04-30', code: '0129K0' },
+  { id: 'spac-nh33', name: '엔에이치스팩33호',    marketCapEok: 155, price: 2_010, maturityDate: '2029-03-27', code: '0130H0' },
+  { id: 'spac-kw2',  name: '키움히어로제2호스팩', marketCapEok: 125, price: 1_976, maturityDate: '2029-04-23', code: '0131D0' },
+  { id: 'spac-gb20', name: '교보20호스팩',       marketCapEok: 119, price: 1_999, maturityDate: '2029-04-02', code: '0132G0' },
 ]
 
 /** D-day 계산. 음수면 지남. */
