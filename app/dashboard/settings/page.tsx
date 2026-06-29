@@ -115,7 +115,7 @@ function SettingsClient() {
       toast.success('연결 해제됨')
       refreshFamilyAccounts()
     } else {
-      toast.error(result.error ?? '해제에 실패했습니다.')
+      toast.error(result.error ?? '해제에 실패했어요.')
     }
   }
 
@@ -168,7 +168,7 @@ function SettingsClient() {
 
   const handleConnectProvider = async (provider: 'claude' | 'chatgpt' | 'gemini') => {
     if (proxyOnline === false) {
-      toast.error('AI 프록시 서버가 오프라인입니다.')
+      toast.error('AI 프록시 서버가 오프라인이에요.')
       return
     }
     if (!isProviderUsable(provider)) {
@@ -186,7 +186,7 @@ function SettingsClient() {
   const handleSwitchToApi = async () => {
     await setAiMode('api')
     setAiModeState('api')
-    toast.success('앱 기본 AI로 전환되었습니다.')
+    toast.success('앱 기본 AI로 전환됐어요.')
   }
 
   const handleSaveName = async () => {
@@ -198,7 +198,7 @@ function SettingsClient() {
     } else {
       setCurrentName(nameInput)
       setIsEditingName(false)
-      toast.success('이름이 변경되었습니다.')
+      toast.success('이름이 변경됐어요.')
       router.refresh()
     }
   }
@@ -208,7 +208,7 @@ function SettingsClient() {
     const result = await deleteZeroBalanceAccounts()
     setIsDeletingZero(false)
     if (result.success) {
-      toast.success(result.deleted > 0 ? `0원 계좌 ${result.deleted}개 삭제 완료` : '삭제할 0원 계좌가 없습니다')
+      toast.success(result.deleted > 0 ? `0원 계좌 ${result.deleted}개 삭제 완료` : '삭제할 0원 계좌가 없어요')
     } else {
       toast.error(result.error ?? '삭제 실패')
     }
@@ -223,7 +223,7 @@ function SettingsClient() {
       if (data.error) {
         toast.error(data.error)
       } else {
-        toast.success('모든 거래 데이터가 초기화되었습니다.')
+        toast.success('모든 거래 데이터가 초기화됐어요.')
         router.refresh()
       }
     } finally {

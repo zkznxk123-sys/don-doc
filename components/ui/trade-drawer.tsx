@@ -50,7 +50,7 @@ export function TradeDrawer({ isOpen, onClose, onSuccess, holding }: TradeDrawer
         memo: memo.trim() || undefined,
       })
       if (!res.success) { toast.error(res.error); return }
-      toast.success('매매 기록이 추가되었습니다.')
+      toast.success('매매 기록이 추가됐어요.')
       setQuantity(''); setPrice(''); setFee(''); setMemo('')
       setShowForm(false)
       onSuccess()
@@ -64,7 +64,7 @@ export function TradeDrawer({ isOpen, onClose, onSuccess, holding }: TradeDrawer
     try {
       const res = await deleteTradeRecord(tradeId)
       if (!res.success) { toast.error(res.error); return }
-      toast.success('기록이 삭제되었습니다.')
+      toast.success('기록이 삭제됐어요.')
       onSuccess()
     } finally {
       setDeletingId(null)

@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbo",
-    "build": "prisma generate && next build",
+    "build": "node scripts/check-tone.mjs && prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
+    "check:tone": "node scripts/check-tone.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "seed": "npx tsx prisma/seed.ts",

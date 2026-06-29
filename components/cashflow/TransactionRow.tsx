@@ -59,7 +59,7 @@ function TxnShareModal({ tx, onClose }: { tx: Transaction; onClose: () => void }
     setSending(true)
     const res = await createTxnRefPost(tx.id, message.trim(), Array.from(taggedIds))
     if (res.success) {
-      toast.success('피드에 공유됐습니다')
+      toast.success('피드에 공유됐어요')
       onClose()
     } else {
       toast.error(res.error ?? '공유 실패')

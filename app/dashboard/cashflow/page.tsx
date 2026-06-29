@@ -271,7 +271,7 @@ export default function CashflowPage() {
 
       if (!data.suggestions || data.suggestions.length === 0) {
         setAiModal(null)
-        toast.info(data.message ?? '재분류할 항목이 없습니다')
+        toast.info(data.message ?? '재분류할 항목이 없어요')
         return
       }
 
@@ -329,7 +329,7 @@ export default function CashflowPage() {
         setPreviewModal(p => p ? { ...p, applying: false } : null)
       }
     } catch {
-      toast.error('오류가 발생했습니다')
+      toast.error('오류가 발생했어요')
       setPreviewModal(p => p ? { ...p, applying: false } : null)
     }
   }, [previewModal, router])
@@ -377,7 +377,7 @@ export default function CashflowPage() {
         toast.error(result.error || '저장 실패')
       }
     } catch (e) {
-      toast.error('저장 중 오류가 발생했습니다: ' + String(e))
+      toast.error('저장 중 오류가 발생했어요: ' + String(e))
     } finally {
       setSaving(false)
     }
@@ -457,8 +457,8 @@ export default function CashflowPage() {
               setCleanupLoading(true)
               try {
                 const r = await detectAutoExcludeItems()
-                if (!r.success) { toast.error(r.error ?? '감지 중 오류가 발생했습니다'); return }
-                if (r.groups.length === 0) { toast.info('감지된 이체·취소·중복 내역이 없습니다'); return }
+                if (!r.success) { toast.error(r.error ?? '감지 중 오류가 발생했어요'); return }
+                if (r.groups.length === 0) { toast.info('감지된 이체·취소·중복 내역이 없어요'); return }
                 setCleanupDialog({ open: true, groups: r.groups })
               } finally {
                 setCleanupLoading(false)

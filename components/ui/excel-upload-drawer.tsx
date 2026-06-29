@@ -337,7 +337,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         } else {
           json = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: '', raw: true })
         }
-        if (json.length === 0) { toast.error('데이터가 없습니다.'); return }
+        if (json.length === 0) { toast.error('데이터가 없어요.'); return }
 
         const headers = Object.keys(json[0])
         const preset = detectPreset(headers)
@@ -590,7 +590,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
           }
           return
         }
-        toast.error('등록 가능한 내역이 없습니다.')
+        toast.error('등록 가능한 내역이 없어요.')
         return
       }
 
@@ -627,7 +627,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
 
         if (saved === 0) {
           const desc = [dupDesc, syncSkipDesc].filter(Boolean).join(' · ') || undefined
-          toast.info('모든 내역이 이미 등록되어 있습니다.', { description: desc })
+          toast.info('모든 내역이 이미 등록되어 있어요.', { description: desc })
         } else {
           const stats = result.monthStats ?? []
           let title = ''

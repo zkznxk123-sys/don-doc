@@ -196,7 +196,7 @@ export default function BudgetPage() {
   const handleSave = async () => {
     if (isSaving) return
     if (overAllocated) {
-      toast.error(`구성원 배분 합계(${formatCurrency(totalAllocated)})가 가족 지출 한도(${formatCurrency(parsedFamilyBudget)})를 초과했습니다.`)
+      toast.error(`구성원 배분 합계(${formatCurrency(totalAllocated)})가 가족 지출 한도(${formatCurrency(parsedFamilyBudget)})를 초과했어요.`)
       return
     }
     setSaveStatus('idle')
@@ -243,18 +243,18 @@ export default function BudgetPage() {
       const results = await Promise.all(responses.map(r => r.json()))
       const failed = results.find(r => !r.success)
       if (failed) {
-        toast.error(failed.error || '저장에 실패했습니다.')
+        toast.error(failed.error || '저장에 실패했어요.')
         setSaveStatus('error')
         setSaveError(failed.error || '저장 실패')
         return
       }
 
-      toast.success('저장되었습니다.')
+      toast.success('저장됐어요.')
       setSaveStatus('success')
       await loadData()
       setTimeout(() => setSaveStatus('idle'), 3000)
     } catch (e) {
-      toast.error('오류가 발생했습니다. 다시 시도해주세요.')
+      toast.error('오류가 발생했어요. 다시 시도해주세요.')
       setSaveStatus('error')
       setSaveError(String(e))
     } finally {

@@ -138,11 +138,11 @@ export function HoldingDrawer({ isOpen, onClose, onSuccess, accountId, accountNa
 
       const data = await res.json()
       if (!data.success) { toast.error(data.error ?? '저장 실패'); return }
-      toast.success(isEdit ? '종목이 수정되었습니다.' : '종목이 추가되었습니다.')
+      toast.success(isEdit ? '종목이 수정됐어요.' : '종목이 추가됐어요.')
       onSuccess()
       onClose()
     } catch {
-      toast.error('네트워크 오류가 발생했습니다.')
+      toast.error('네트워크 오류가 발생했어요.')
     } finally {
       setSaving(false)
     }

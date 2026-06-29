@@ -52,10 +52,10 @@ export function TargetPropertyDrawer({
       }
       if (isEdit) {
         await updateTargetProperty(initialData!.id, data)
-        toast.success('목표 단지가 수정됐습니다')
+        toast.success('목표 단지가 수정됐어요')
       } else {
         await addTargetProperty(data)
-        toast.success('목표 단지가 추가됐습니다')
+        toast.success('목표 단지가 추가됐어요')
       }
       onSuccess()
       onClose()

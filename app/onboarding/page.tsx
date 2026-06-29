@@ -70,7 +70,7 @@ function OnboardingContent() {
         window.location.href = '/dashboard'
       })
       .catch(() => {
-        toast.error('초기 설정 중 오류가 발생했습니다.')
+        toast.error('초기 설정 중 오류가 발생했어요.')
         setIsLoading(false)
       })
   }, [autoSetupTriggered])
@@ -114,7 +114,7 @@ function OnboardingContent() {
         window.location.href = '/dashboard'
       }
     } catch {
-      toast.error('오류가 발생했습니다. 다시 시도해주세요.')
+      toast.error('오류가 발생했어요. 다시 시도해주세요.')
       setIsLoading(false)
     }
   }
@@ -134,7 +134,7 @@ function OnboardingContent() {
         window.location.href = '/dashboard'
       }
     } catch {
-      toast.error('오류가 발생했습니다. 다시 시도해주세요.')
+      toast.error('오류가 발생했어요. 다시 시도해주세요.')
       setIsLoading(false)
     }
   }

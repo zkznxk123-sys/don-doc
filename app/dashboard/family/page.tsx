@@ -47,7 +47,7 @@ export default function FamilyPage() {
       const familyRes = await fetch('/api/family/info')
       const data = await familyRes.json()
       if (!data.success) {
-        toast.error(data.error ?? '데이터를 불러오지 못했습니다.')
+        toast.error(data.error ?? '데이터를 불러오지 못했어요.')
       } else {
         setFamily(data.family)
         setInviteCode(data.family.inviteCode)
@@ -85,10 +85,10 @@ export default function FamilyPage() {
     })
     const data = await res.json()
     if (!data.success) {
-      toast.error(data.error ?? '수정에 실패했습니다.')
+      toast.error(data.error ?? '수정에 실패했어요.')
     } else {
       setFamily((prev) => prev ? { ...prev, name: editName.trim() } : prev)
-      toast.success('가족 이름이 업데이트되었습니다.')
+      toast.success('가족 이름이 업데이트됐어요.')
       setIsEditing(false)
     }
     setIsSaving(false)
@@ -99,7 +99,7 @@ export default function FamilyPage() {
     const res = await fetch('/api/family/info')
     const data = await res.json()
     if (!data.success) {
-      toast.error(data.error ?? '코드를 불러오지 못했습니다.')
+      toast.error(data.error ?? '코드를 불러오지 못했어요.')
     } else {
       setInviteCode(data.family.inviteCode)
     }
@@ -113,7 +113,7 @@ export default function FamilyPage() {
       const res = await fetch('/api/family/info')
       const data = await res.json()
       setInviteLoading(false)
-      if (!data.success || !data.family?.inviteCode) { toast.error('초대 코드를 불러오지 못했습니다.'); return }
+      if (!data.success || !data.family?.inviteCode) { toast.error('초대 코드를 불러오지 못했어요.'); return }
       code = data.family.inviteCode
       setInviteCode(code)
     }
@@ -132,7 +132,7 @@ export default function FamilyPage() {
       document.body.removeChild(el)
     }
     setCopied(true)
-    toast.success('초대 링크가 복사되었습니다. 배우자에게 전달해보세요!')
+    toast.success('초대 링크가 복사됐어요. 배우자에게 전달해보세요!')
     setTimeout(() => setCopied(false), 2000)
   }
 
@@ -145,13 +145,13 @@ export default function FamilyPage() {
     })
     const data = await res.json()
     if (!data.success) {
-      toast.error(data.error ?? '역할 변경에 실패했습니다.')
+      toast.error(data.error ?? '역할 변경에 실패했어요.')
     } else {
       setFamily(prev => prev
         ? { ...prev, members: prev.members.map(m => m.id === memberId ? { ...m, role: newRole } : m) }
         : prev
       )
-      toast.success(newRole === 'CO_CFO' ? '공동 CFO로 변경되었습니다.' : '구성원으로 변경되었습니다.')
+      toast.success(newRole === 'CO_CFO' ? '공동 CFO로 변경됐어요.' : '구성원으로 변경됐어요.')
     }
     setChangingRoleFor(null)
   }

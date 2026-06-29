@@ -54,7 +54,7 @@ export default function ScenarioPage() {
               toast.error(res.error ?? '시나리오 생성 실패', { id: 'gen' })
             }
           })
-          .catch(() => toast.error('시나리오 생성 중 오류가 발생했습니다', { id: 'gen' }))
+          .catch(() => toast.error('시나리오 생성 중 오류가 발생했어요', { id: 'gen' }))
           .finally(() => setGenerating(false))
       }
     })
@@ -87,7 +87,7 @@ export default function ScenarioPage() {
       const updated = res.data
       setSources(prev => prev.map(s => s.id === id ? updated : s))
       if (updated.summaryStatus === 'success') {
-        toast.success('요약을 새로 생성했습니다')
+        toast.success('요약을 새로 생성했어요')
       } else {
         toast.error(updated.summaryError ?? '요약 실패')
       }

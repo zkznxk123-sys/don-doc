@@ -33,7 +33,7 @@ export function FamilyAction({ userRole }: FamilyActionProps) {
         setFamilyName(infoResult.data.name)
       }
     }).catch(() => {
-      toast.error('정보를 불러오지 못했습니다.')
+      toast.error('정보를 불러오지 못했어요.')
     }).finally(() => setLoading(false))
   }, [open, userRole])
 
@@ -54,7 +54,7 @@ export function FamilyAction({ userRole }: FamilyActionProps) {
       document.body.removeChild(textarea)
     }
     setCopied(true)
-    toast.success('초대 링크가 복사되었습니다!')
+    toast.success('초대 링크가 복사됐어요!')
     setTimeout(() => setCopied(false), 2000)
   }
 

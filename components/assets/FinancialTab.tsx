@@ -64,7 +64,7 @@ export function FinancialTab({
         label: '변환',
         onClick: async () => {
           const res = await migrateSubAccountsToHoldings(accountId)
-          if (res.success) { toast.success(`${res.count}개 종목으로 변환됐습니다.`); onReload() }
+          if (res.success) { toast.success(`${res.count}개 종목으로 변환됐어요.`); onReload() }
           else toast.error(res.error ?? '변환 실패')
         },
       },
@@ -96,7 +96,7 @@ export function FinancialTab({
       })
     })
     if (!tickerHoldings.length) {
-      if (!silent) toast.info('조회할 티커가 없습니다. 종목에 티커를 입력해주세요.')
+      if (!silent) toast.info('조회할 티커가 없어요. 종목에 티커를 입력해주세요.')
       return
     }
 
@@ -130,7 +130,7 @@ export function FinancialTab({
         localStorage.setItem(CACHE_KEY, String(Date.now()))
         if (!silent) toast.success(`${updates.length}개 종목 시세 업데이트`)
         onReload()
-      } else if (!silent) toast.warning('유효한 시세 데이터가 없습니다.')
+      } else if (!silent) toast.warning('유효한 시세 데이터가 없어요.')
     } catch { if (!silent) toast.error('시세 조회 오류') }
     finally { setRefreshingTickers(false) }
   }

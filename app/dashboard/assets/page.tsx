@@ -401,9 +401,9 @@ export default function AssetsPage() {
                   setRePriceHistories(prev => ({ ...prev, [accountId]: updated }))
                   // RealEstateDetail.currentPrice 가 갱신되었으니 카드 재로드 트리거
                   bumpRefresh()
-                  toast.success(`${data.history.length}개월 시세 데이터 업데이트됐습니다`)
+                  toast.success(`${data.history.length}개월 시세 데이터 업데이트됐어요`)
                 } else {
-                  toast.error('실거래가 데이터를 찾지 못했습니다')
+                  toast.error('실거래가 데이터를 찾지 못했어요')
                 }
               } catch { toast.error('시세 조회 실패') }
               finally { setFetchingPrice(null) }
@@ -420,9 +420,9 @@ export default function AssetsPage() {
                   await saveTargetMolitHistory(target.id, data.history)
                   const updated = await getTargetProperties()
                   setTargetProperties(updated)
-                  toast.success(`${data.history.length}개월 시세 업데이트됐습니다`)
+                  toast.success(`${data.history.length}개월 시세 업데이트됐어요`)
                 } else {
-                  toast.error('실거래가 데이터를 찾지 못했습니다')
+                  toast.error('실거래가 데이터를 찾지 못했어요')
                 }
               } catch { toast.error('시세 조회 실패') }
               finally { setFetchingPrice(null) }
@@ -436,7 +436,7 @@ export default function AssetsPage() {
             onDeleteTarget={async (id) => {
               await deleteTargetProperty(id)
               setTargetProperties(prev => prev.filter(t => t.id !== id))
-              toast.success('삭제됐습니다')
+              toast.success('삭제됐어요')
             }}
           />
         </TabsContent>

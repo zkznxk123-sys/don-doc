@@ -28,7 +28,7 @@ export function SnapshotAlertBanner({ yearMonth, kind = 'last', onSaved, onDismi
     if (result.success) {
       onSaved()
     } else {
-      setError(result.error ?? '저장에 실패했습니다.')
+      setError(result.error ?? '저장에 실패했어요.')
     }
   }
 
@@ -44,12 +44,12 @@ export function SnapshotAlertBanner({ yearMonth, kind = 'last', onSaved, onDismi
         <p className="text-sm font-medium text-amber-900 dark:text-amber-200">
           {kind === 'current'
             ? `${formatYearMonth(yearMonth)} 마무리 — 순자산 스냅샷을 남기세요`
-            : `${formatYearMonth(yearMonth)} 자산 스냅샷이 기록되지 않았습니다`}
+            : `${formatYearMonth(yearMonth)} 자산 스냅샷이 아직 없어요`}
         </p>
         <p className="text-xs text-warning/80 mt-0.5">
           {kind === 'current'
-            ? '월말입니다. 현재 잔액으로 이번 달 기록을 남겨두면 추이가 끊기지 않습니다.'
-            : '현재 잔액 기준으로 지난달 순자산을 기록할 수 있습니다.'}
+            ? '월말이에요. 현재 잔액으로 이번 달 기록을 남겨두면 추이가 끊기지 않아요.'
+            : '현재 잔액으로 지난달 순자산을 기록할 수 있어요.'}
         </p>
 
         {error && (

@@ -96,7 +96,7 @@ export function BrokerAgentPanel({
         toast.error(`${order.name} 주문 실패: ${data.error}`)
       }
     } catch {
-      toast.error('주문 중 오류가 발생했습니다')
+      toast.error('주문 중 오류가 발생했어요')
     } finally {
       setExecuting(p => ({ ...p, [key]: false }))
     }

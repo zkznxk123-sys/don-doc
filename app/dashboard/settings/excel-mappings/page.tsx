@@ -98,7 +98,7 @@ export default function ExcelMappingsPage() {
         targetAccountId: needsAccount ? formAccountId : null,
       })
       if (res.success) {
-        toast.success('매핑이 저장되었습니다')
+        toast.success('매핑이 저장됐어요')
         setMappings(prev => {
           const filtered = prev.filter(m => m.id !== res.data.id)
           return [res.data, ...filtered]
@@ -118,7 +118,7 @@ export default function ExcelMappingsPage() {
       const res = await deleteExcelMapping(id)
       if (res.success) {
         setMappings(prev => prev.filter(m => m.id !== id))
-        toast.success('매핑이 삭제되었습니다')
+        toast.success('매핑이 삭제됐어요')
       } else {
         toast.error(res.error ?? '삭제 실패')
       }

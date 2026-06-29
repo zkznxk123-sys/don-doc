@@ -511,7 +511,7 @@ export function AssetList({
                           if (!confirm(`'${h.name}' 종목을 삭제할까요?`)) return
                           const res = await fetch(`/api/accounts/${account.id}/holdings/${h.id}`, { method: 'DELETE' })
                           const data = await res.json()
-                          if (data.success) { toast.success('삭제되었습니다.'); onReload?.() }
+                          if (data.success) { toast.success('삭제됐어요.'); onReload?.() }
                           else toast.error(data.error)
                         }}
                       />

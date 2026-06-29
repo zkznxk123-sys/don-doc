@@ -338,8 +338,8 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
           linkedAssetId: isDebt ? (linkedAssetId || null) : null,
           realEstateDetail, financialAssetDetail, debtDetail, pensionDetail,
         })
-        if (!result.success) { toast.error(result.error || '수정에 실패했습니다.'); return }
-        toast.success(`"${name.trim()}" 계좌가 수정되었습니다.`)
+        if (!result.success) { toast.error(result.error || '수정에 실패했어요.'); return }
+        toast.success(`"${name.trim()}" 계좌가 수정됐어요.`)
       } else {
         const result = await createAccount({
           name: name.trim(), type, balance: parsedBalance, shareLevel,
@@ -348,13 +348,13 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
           linkedAssetId: isDebt ? (linkedAssetId || null) : null,
           realEstateDetail, financialAssetDetail, debtDetail, pensionDetail,
         })
-        if (!result.success) { toast.error(result.error || '계좌 생성에 실패했습니다.'); return }
-        toast.success(`"${name.trim()}" 계좌가 추가되었습니다.`)
+        if (!result.success) { toast.error(result.error || '계좌 생성에 실패했어요.'); return }
+        toast.success(`"${name.trim()}" 계좌가 추가됐어요.`)
       }
       onSuccess()
       onClose()
     } catch {
-      toast.error('오류가 발생했습니다. 다시 시도해주세요.')
+      toast.error('오류가 발생했어요. 다시 시도해주세요.')
     } finally {
       setIsLoading(false)
     }
@@ -369,7 +369,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
       const result = await deleteAccount(initialData.id, confirmDelete ? { force: true } : undefined)
 
       if (result.success) {
-        toast.success(`"${initialData.name}" 계좌가 삭제되었습니다.`)
+        toast.success(`"${initialData.name}" 계좌가 삭제됐어요.`)
         setConfirmDelete(false); setDeleteCounts(null)
         onSuccess(); onClose()
         return
@@ -384,10 +384,10 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
           subAccountCount: result.subAccountCount ?? 0,
         })
       } else {
-        toast.error(result.error || '삭제에 실패했습니다.')
+        toast.error(result.error || '삭제에 실패했어요.')
       }
     } catch {
-      toast.error('오류가 발생했습니다. 다시 시도해주세요.')
+      toast.error('오류가 발생했어요. 다시 시도해주세요.')
     } finally {
       setIsDeleting(false)
     }
