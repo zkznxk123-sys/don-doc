@@ -1,6 +1,6 @@
 # 돈Doc (Don-Doc) — CLAUDE.md
 
-1인 자산 본부 도구 (선택적 가족·동업자 공유). Next.js 15 App Router 기반.
+1인 자산 본부 도구 (선택적 가족·동업자 공유). Next.js 16 App Router 기반.
 
 ---
 
@@ -13,9 +13,9 @@
 | 런타임 | React 19 + TypeScript 6 |
 | DB | PostgreSQL + Prisma 6 |
 | 스타일 | Tailwind CSS 4 (CSS-first @theme) + shadcn/ui (Radix UI) |
-| AI | Vercel AI SDK + OpenAI gpt-4o-mini (LLM-Mux 경유) |
+| AI | Vercel AI SDK 7 + OpenAI — 텍스트=gpt-4o-mini(LLM-Mux 경유), vision(자산 스샷)=gpt-4o(extract-image 직접 호출) |
 | 알림 | Sonner (toast) |
-| 차트 | Recharts |
+| 차트 | Recharts 3 |
 | 엑셀 | xlsx 라이브러리 |
 | 배포 | Vercel |
 
@@ -58,7 +58,8 @@ components/
   ui/               # 공용 UI
     transaction-drawer.tsx   # 거래 개별수정
     trade-drawer.tsx         # 매매 기록 (viz 토큰 사용)
-    excel-upload-drawer.tsx
+    excel-upload-drawer.tsx  # 본체 (<1,000줄)
+    excel-upload-drawer/     # 서브모듈 — parsers·preview-components(DetectionBadge·ImagePreExtractPanel 등)
     account-drawer.tsx
   layout/
     DashboardShell.tsx       # 컨텍스트 + openTransactionDrawer
@@ -89,6 +90,8 @@ lib/
   agent/            # AI 채팅 어시스턴트
     tools/          # tool calling 정의 (도메인별 분할 완료)
     system-prompt.ts
+  ingestion/        # 자산 적재 — LLM/vision 추출
+    llm-extract.ts  # extractSheetWithLLM(텍스트)·extractImageWithLLM(vision) — utils/asset-templates 미감지 시 폴백
   data/             # 종목 universe·preset·섹터 매핑
     stock-universe.ts
     screen-presets.ts
