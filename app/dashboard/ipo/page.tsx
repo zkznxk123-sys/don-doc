@@ -16,6 +16,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { AccountBoard } from '@/components/ipo/account-board'
 import { AllocationSim } from '@/components/ipo/allocation-sim'
 import { SpacList } from '@/components/ipo/spac-list'
+import { ScheduleView } from '@/components/ipo/schedule-view'
 import { IpoEntryBar, IpoDatalists, DeleteBtn, EditBtn, SubForm } from '@/components/ipo/entry-forms'
 import { useIpoData } from '@/lib/ipo/store'
 import {
@@ -34,6 +35,7 @@ export default function IpoLedgerPage() {
   const data = useIpoData()
   const { ledger, accounts, showDemo } = data
   const [editingSub, setEditingSub] = useState<number | null>(null)
+  const [tab, setTab] = useState('accounts')
 
   // KPI 집계
   const kpi = useMemo(() => {
@@ -65,10 +67,10 @@ export default function IpoLedgerPage() {
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold flex items-center gap-2">
-            <TrendingUp className="size-5" /> 공모주 청약 원장
+            <TrendingUp className="size-5" /> 공모주 · 스팩주
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            명의·계좌 흩어짐 없이 청약~회수를 한 화면에
+            청약·계좌·시세를 한 화면에 — 명의 흩어짐 없이 청약~회수까지
           </p>
         </div>
         <span className={cn('shrink-0 rounded-full px-2.5 py-1 text-xs font-medium',
@@ -92,9 +94,12 @@ export default function IpoLedgerPage() {
 
       {/* 다가올 일정 */}
       <section className="space-y-2">
-        <h2 className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
-          <Calendar className="size-4" /> 다가올 일정
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
+            <Calendar className="size-4" /> 다가올 일정
+          </h2>
+          <button onClick={() => setTab('schedule')} className="text-xs text-muted-foreground hover:text-foreground">전체 일정 →</button>
+        </div>
         <div className="flex gap-2 overflow-x-auto pb-1">
           {OFFERINGS.flatMap(o => {
             const items: { name: string; kind: 'IPO' | 'SPAC'; type: string; date: string }[] = []
@@ -122,13 +127,18 @@ export default function IpoLedgerPage() {
       </section>
 
       {/* 계좌 축 / 종목 축 전환 */}
-      <Tabs defaultValue="accounts">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
+          <TabsTrigger value="schedule">전체 일정</TabsTrigger>
           <TabsTrigger value="accounts">계좌 운용</TabsTrigger>
           <TabsTrigger value="allocate">자금 배분</TabsTrigger>
           <TabsTrigger value="spac">스팩 시세</TabsTrigger>
           <TabsTrigger value="offerings">종목별 원장</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="schedule">
+          <ScheduleView />
+        </TabsContent>
 
         <TabsContent value="accounts">
           <AccountBoard accounts={accounts} ledger={ledger} showDemo={showDemo} data={data} />

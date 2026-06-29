@@ -49,7 +49,7 @@ const ALL_NAV_ITEMS: NavItem[] = [
   { href: '/dashboard/budget',   label: '예산 관리',     icon: Calculator,      group: 'core' },
   { href: '/dashboard/scenario', label: '시나리오 허브', icon: Sparkles,        group: 'beta', beta: true },
   { href: '/dashboard/screen',   label: '종목 검색',     icon: TrendingUp,      group: 'beta', beta: true },
-  { href: '/dashboard/ipo',      label: '공모주 원장',   icon: Ticket,          group: 'beta', beta: true },
+  { href: '/dashboard/ipo',      label: '공모주·스팩주', icon: Ticket,          group: 'beta', beta: true },
   { href: '/dashboard/feed',     label: '가족 피드',     icon: Rss,             group: 'beta', beta: true },
   { href: '/dashboard/uploads',  label: '업로드 이력',   icon: History,         group: 'admin' },
   { href: '/dashboard/settings', label: '설정',          icon: Settings,        group: 'admin' },
