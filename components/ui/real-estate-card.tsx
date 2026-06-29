@@ -106,14 +106,14 @@ export function RealEstateCard({ account, onEdit }: RealEstateCardProps) {
       {/* 헤더 */}
       <div className="flex items-start justify-between px-5 py-4 border-b border-border">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-purple-400/10 flex items-center justify-center shrink-0">
-            <Building2 className="w-4 h-4 text-purple-400" />
+          <div className="w-9 h-9 rounded-xl bg-estate/10 flex items-center justify-center shrink-0">
+            <Building2 className="w-4 h-4 text-estate" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <p className="text-sm font-semibold text-foreground">{account.name}</p>
               {data?.propertyType && (
-                <span className="text-[10px] text-purple-400 bg-purple-400/10 px-2 py-0.5 rounded-full">
+                <span className="text-[10px] text-estate bg-estate/10 px-2 py-0.5 rounded-full">
                   {data.propertyType}
                 </span>
               )}

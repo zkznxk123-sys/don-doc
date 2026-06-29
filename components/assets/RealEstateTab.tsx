@@ -278,7 +278,7 @@ function RealEstateAggregatePanel({
       {/* 헤더 */}
       <div className="px-5 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Building2 className="w-4 h-4 text-purple-400" />
+          <Building2 className="w-4 h-4 text-estate" />
           <span className="text-sm font-semibold text-foreground">
             {multiProperty ? '전체 부동산 합산 요약' : '부동산 현황'}
           </span>

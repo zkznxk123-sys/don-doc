@@ -224,9 +224,9 @@ export function RealEstateTaxCalc({ data }: Props) {
         className="w-full flex items-center justify-between px-5 py-3 hover:bg-muted/30 transition-colors"
       >
         <div className="flex items-center gap-2">
-          <Calculator className="w-3.5 h-3.5 text-purple-400" />
+          <Calculator className="w-3.5 h-3.5 text-estate" />
           <span className="text-xs font-medium text-muted-foreground">세금 시뮬레이션</span>
-          <span className="text-[10px] text-purple-400 bg-purple-400/10 px-1.5 py-0.5 rounded-full">
+          <span className="text-[10px] text-estate bg-estate/10 px-1.5 py-0.5 rounded-full">
             부동산계산기.com
           </span>
         </div>
@@ -279,10 +279,10 @@ export function RealEstateTaxCalc({ data }: Props) {
                   type="number"
                   value={transferForm.sellAmt}
                   onChange={e => setTransferForm(p => ({ ...p, sellAmt: Number(e.target.value) }))}
-                  className="w-full bg-muted/40 rounded-lg px-3 py-2 text-xs text-foreground outline-hidden focus:ring-1 focus:ring-purple-400/50"
+                  className="w-full bg-muted/40 rounded-lg px-3 py-2 text-xs text-foreground outline-hidden focus:ring-1 focus:ring-estate/50"
                 />
                 {transferForm.sellAmt > 0 && (
-                  <p className="text-[11px] text-purple-400/80 mt-1 tabular-nums">{toKoreanUnit(transferForm.sellAmt)}</p>
+                  <p className="text-[11px] text-estate/80 mt-1 tabular-nums">{toKoreanUnit(transferForm.sellAmt)}</p>
                 )}
               </div>
               <div className="flex gap-2">
@@ -349,12 +349,12 @@ export function RealEstateTaxCalc({ data }: Props) {
                   value={propertyForm.amount}
                   onChange={e => setPropertyForm(p => ({ ...p, amount: Number(e.target.value) }))}
                   placeholder="공시가격을 입력하세요"
-                  className="w-full bg-muted/40 rounded-lg px-3 py-2 text-xs text-foreground outline-hidden focus:ring-1 focus:ring-purple-400/50"
+                  className="w-full bg-muted/40 rounded-lg px-3 py-2 text-xs text-foreground outline-hidden focus:ring-1 focus:ring-estate/50"
                 />
                 <div className="flex items-center justify-between mt-1">
                   <p className="text-[10px] text-muted-foreground/50">시세가 아닌 공시가격 기준 · 국토부 부동산공시가격알리미에서 확인</p>
                   {propertyForm.amount > 0 && (
-                    <p className="text-[11px] text-purple-400/80 tabular-nums">{toKoreanUnit(propertyForm.amount)}</p>
+                    <p className="text-[11px] text-estate/80 tabular-nums">{toKoreanUnit(propertyForm.amount)}</p>
                   )}
                 </div>
               </div>
@@ -377,7 +377,7 @@ export function RealEstateTaxCalc({ data }: Props) {
           <button
             onClick={handleCalc}
             disabled={loading}
-            className="mt-3 w-full py-2.5 rounded-xl text-xs font-semibold bg-purple-500 text-white hover:bg-purple-600 active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
+            className="mt-3 w-full py-2.5 rounded-xl text-xs font-semibold bg-estate text-white hover:bg-estate/85 active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2"
           >
             {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Calculator className="w-3.5 h-3.5" />}
             {loading ? '계산 중...' : '계산하기'}
@@ -430,7 +430,7 @@ function ToggleChip({
       className={cn(
         'px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors border',
         active
-          ? 'bg-purple-500/15 text-purple-400 border-purple-400/30'
+          ? 'bg-estate/15 text-estate border-estate/30'
           : 'bg-muted/40 text-muted-foreground border-border hover:border-muted-foreground/30'
       )}
     >

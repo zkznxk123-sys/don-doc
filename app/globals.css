@@ -50,6 +50,7 @@
   --color-viz-blue: var(--viz-blue);
   --color-viz-violet: var(--viz-violet);
   --color-viz-purple: var(--viz-purple);
+  --color-estate: var(--estate);
   --color-viz-amber: var(--viz-amber);
   --color-viz-orange: var(--viz-orange);
   --color-viz-red: var(--viz-red);
@@ -368,7 +369,8 @@
     --viz-emerald: #10b981;  /* income, savings-positive, investments */
     --viz-blue:    #3b82f6;  /* cash, links, rate-line               */
     --viz-violet:  #8b5cf6;  /* AI, feed, STO                        */
-    --viz-purple:  #c084fc;  /* real-estate                          */
+    --viz-purple:  #c084fc;  /* real-estate (차트 viz)                */
+    --estate:      var(--viz-purple);  /* real-estate 도메인 semantic — 컴포넌트는 estate 토큰 사용 */
     --viz-amber:   #f59e0b;  /* warnings, crypto                     */
     --viz-orange:  #f97316;  /* expense                              */
     --viz-red:     #ef4444;  /* liabilities, destructive             */

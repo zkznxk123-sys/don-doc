@@ -19,7 +19,7 @@ const TYPE_META: Record<string, { label: string; Icon: React.ElementType; color:
   INVESTMENT:  { label: '주식 · 펀드',   Icon: TrendingUp, color: 'text-income',      bg: 'bg-income-soft' },
   PENSION:     { label: '연금',           Icon: PiggyBank,  color: 'text-teal-400',    bg: 'bg-teal-400/10' },
   CRYPTO:      { label: '가상자산',       Icon: Bitcoin,    color: 'text-warning',   bg: 'bg-warning-soft' },
-  REAL_ESTATE: { label: '부동산',         Icon: Building2,  color: 'text-purple-400',  bg: 'bg-purple-400/10' },
+  REAL_ESTATE: { label: '부동산',         Icon: Building2,  color: 'text-estate',  bg: 'bg-estate/10' },
   STO:         { label: '토큰증권',       Icon: Layers,     color: 'text-pink-400',    bg: 'bg-pink-400/10' },
   DEBT:        { label: '대출',           Icon: HandCoins,  color: 'text-destructive',     bg: 'bg-destructive/10' },
   CREDIT_CARD: { label: '신용카드',       Icon: CreditCard, color: 'text-destructive',    bg: 'bg-destructive/10' },
