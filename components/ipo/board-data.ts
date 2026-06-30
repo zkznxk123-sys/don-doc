@@ -93,6 +93,7 @@ export interface Account {
   id: string
   person: string
   broker: string
+  accountNo?: string   // 계좌번호
   type: '종합' | 'CMA'
   cash: number   // 가용현금 잔액(원)
   readiness: {
@@ -120,12 +121,12 @@ export const READINESS_TONE: Record<ReadinessState, string> = {
 
 /** 계좌 데모 — 명의×증권사. 일부러 준비 미비(만료·대기)를 섞어 통증을 드러냄. */
 export const DEMO_ACCOUNTS: Account[] = [
-  { id: 'me-kb',   person: '본인',  broker: 'KB',  type: '종합', cash: 8_000_000, readiness: { cdd: 'OK', otp: 'OK', cert: 'OK', limit: 'OK', mail: 'OK' } },
-  { id: 'me-mr',   person: '본인',  broker: '미래', type: '종합', cash: 1_500_000, readiness: { cdd: 'OK', otp: 'OK', cert: 'OK', limit: 'OK', mail: 'OK' } },
-  { id: 'sp-kb',   person: '배우자', broker: 'KB',  type: '종합', cash: 2_000_000, readiness: { cdd: 'PENDING', otp: 'OK', cert: 'OK', limit: 'OK', mail: 'OK' } },
-  { id: 'sp-ss',   person: '배우자', broker: '삼성', type: '종합', cash: 3_000_000, readiness: { cdd: 'OK', otp: 'EXPIRED', cert: 'OK', limit: 'OK', mail: 'OK' } },
-  { id: 'ch-mr',   person: '자녀',  broker: '미래', type: '종합', cash: 1_000_000, readiness: { cdd: 'OK', otp: 'OK', cert: 'PENDING', limit: 'PENDING', mail: 'OK' } },
-  { id: 'ch-hk',   person: '자녀',  broker: '한국', type: '종합', cash: 0,         readiness: { cdd: 'OK', otp: 'OK', cert: 'OK', limit: 'PENDING', mail: 'PENDING' } },
+  { id: 'me-kb',   person: '본인',  broker: 'KB',  accountNo: '123-45-678901', type: '종합', cash: 8_000_000, readiness: { cdd: 'OK', otp: 'OK', cert: 'OK', limit: 'OK', mail: 'OK' } },
+  { id: 'me-mr',   person: '본인',  broker: '미래', accountNo: '987-65-432100', type: '종합', cash: 1_500_000, readiness: { cdd: 'OK', otp: 'OK', cert: 'OK', limit: 'OK', mail: 'OK' } },
+  { id: 'sp-kb',   person: '배우자', broker: 'KB',  accountNo: '111-22-333444', type: '종합', cash: 2_000_000, readiness: { cdd: 'PENDING', otp: 'OK', cert: 'OK', limit: 'OK', mail: 'OK' } },
+  { id: 'sp-ss',   person: '배우자', broker: '삼성', accountNo: '555-66-777888', type: '종합', cash: 3_000_000, readiness: { cdd: 'OK', otp: 'EXPIRED', cert: 'OK', limit: 'OK', mail: 'OK' } },
+  { id: 'ch-mr',   person: '자녀',  broker: '미래', accountNo: '222-33-444555', type: '종합', cash: 1_000_000, readiness: { cdd: 'OK', otp: 'OK', cert: 'PENDING', limit: 'PENDING', mail: 'OK' } },
+  { id: 'ch-hk',   person: '자녀',  broker: '한국', accountNo: '888-99-000111', type: '종합', cash: 0,         readiness: { cdd: 'OK', otp: 'OK', cert: 'OK', limit: 'PENDING', mail: 'PENDING' } },
 ]
 
 /** 한 계좌에 지금 머무는 돈 — 원장에서 도출(가용/묶임/환불대기/보유주). */

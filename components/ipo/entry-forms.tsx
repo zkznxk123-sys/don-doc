@@ -77,6 +77,7 @@ export function IpoEntryBar({ data }: { data: IpoData }) {
 export function AccountForm({ data, onDone, initial }: { data: IpoData; onDone: () => void; initial?: Account }) {
   const [person, setPerson] = useState(initial?.person ?? '본인')
   const [broker, setBroker] = useState(initial?.broker ?? '')
+  const [accountNo, setAccountNo] = useState(initial?.accountNo ?? '')
   const [type, setType] = useState<Account['type']>(initial?.type ?? '종합')
   const [cash, setCash] = useState(initial ? String(initial.cash / 10_000) : '')
   const [readiness, setReadiness] = useState<Account['readiness']>(initial?.readiness ?? { cdd: 'OK', otp: 'OK', cert: 'OK', limit: 'OK', mail: 'OK' })
@@ -86,7 +87,7 @@ export function AccountForm({ data, onDone, initial }: { data: IpoData; onDone: 
 
   const submit = () => {
     if (!broker.trim()) return
-    const values = { person: person.trim() || '본인', broker: broker.trim(), type, cash: won(cash), readiness }
+    const values = { person: person.trim() || '본인', broker: broker.trim(), accountNo: accountNo.trim() || undefined, type, cash: won(cash), readiness }
     if (initial) data.updateAccount(initial.id, values)
     else data.addAccount(values)
     onDone()
@@ -100,6 +101,9 @@ export function AccountForm({ data, onDone, initial }: { data: IpoData; onDone: 
         </Field>
         <Field label="증권사">
           <input list="ipo-brokers" className={inputCls} value={broker} onChange={e => setBroker(e.target.value)} placeholder="KB" />
+        </Field>
+        <Field label="계좌번호">
+          <input className={inputCls} value={accountNo} onChange={e => setAccountNo(e.target.value)} placeholder="123-45-678901" />
         </Field>
         <Field label="유형">
           <select className={inputCls} value={type} onChange={e => setType(e.target.value as Account['type'])}>

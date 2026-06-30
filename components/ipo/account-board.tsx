@@ -134,9 +134,10 @@ function AccountCard({ account, ledger, showDemo, onRemove, onEdit }: {
     <Card>
       <CardContent className="pt-3.5 space-y-2.5">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <span className="font-medium text-sm">{account.broker}</span>
-            <span className="text-[10px] text-muted-foreground">{account.type}</span>
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="font-medium text-sm shrink-0">{account.broker}</span>
+            <span className="text-[10px] text-muted-foreground shrink-0">{account.type}</span>
+            {account.accountNo && <span className="text-[11px] text-muted-foreground tabular-nums truncate">· {account.accountNo}</span>}
           </div>
           <div className="flex items-center gap-2">
             {issues === 0
