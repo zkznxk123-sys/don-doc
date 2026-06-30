@@ -1,6 +1,6 @@
 'use client'
 
-/** 스팩 탭 — [내 스팩(원장) | 전체 시장(KRX 유니버스)] 토글. */
+/** 스팩 탭 — [관심 스팩(원장) | 전체 시장(KRX 유니버스)] 토글. */
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { SpacList } from '@/components/ipo/spac-list'
@@ -12,7 +12,7 @@ export function SpacPanel({ data }: { data: IpoData }) {
   return (
     <div className="space-y-4">
       <div className="inline-flex rounded-lg bg-card border border-border p-0.5 text-xs">
-        {([['mine', '내 스팩'], ['market', '전체 시장']] as const).map(([v, label]) => (
+        {([['mine', '관심 스팩'], ['market', '전체 시장']] as const).map(([v, label]) => (
           <button key={v} onClick={() => setView(v)}
             className={cn('rounded-md px-3 py-1 font-medium', view === v ? 'bg-muted text-foreground' : 'text-muted-foreground')}>
             {label}
