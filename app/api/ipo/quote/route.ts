@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic'
  *  - 실패 항목은 price=null (그 종목만 스킵, 나머지는 정상).
  */
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser } from '@/lib/auth'
 
 const NAVER_HEADERS = { Referer: 'https://finance.naver.com', 'User-Agent': 'Mozilla/5.0' }
 
@@ -43,6 +44,10 @@ async function fetchQuote(code: string): Promise<{ price: number; marketCapEok: 
 }
 
 export async function POST(req: NextRequest) {
+  // 무인증 오픈 프록시 남용 차단 — 외부(네이버) 호출 전에 인증 확인
+  const user = await getAuthUser()
+  if (!user?.familyId) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
+
   let body: { items?: { name: string; code?: string }[] }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'bad json' }, { status: 400 }) }
   const items = Array.isArray(body.items) ? body.items.slice(0, 100) : []

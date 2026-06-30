@@ -9,8 +9,13 @@ export const dynamic = 'force-dynamic'
  *  → { subCompetition: 6610 | null, raw: "3304.76:1 (비례 6610:1)" | null, asOf }
  */
 import { NextRequest, NextResponse } from 'next/server'
+import { getAuthUser } from '@/lib/auth'
 
 export async function GET(req: NextRequest) {
+  // 무인증 오픈 프록시 남용 차단 — 외부(38.co.kr) 호출 전에 인증 확인
+  const user = await getAuthUser()
+  if (!user?.familyId) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
+
   const no = req.nextUrl.searchParams.get('no')
   if (!no || !/^\d+$/.test(no)) return NextResponse.json({ error: 'bad no' }, { status: 400 })
   const asOf = new Date().toISOString()
