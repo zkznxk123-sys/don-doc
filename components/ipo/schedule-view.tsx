@@ -4,8 +4,8 @@
  * 공모주·스팩 전체 일정 — 어댑터가 카톡 공지에서 뽑은 종목 전부(OFFERINGS)를
  * 월별로 묶어 청약·환불·상장일을 한눈에. 다가올/전체 토글.
  */
-import { useMemo, useState } from 'react'
-import { Calendar, ChevronDown } from 'lucide-react'
+import { Fragment, useMemo, useState } from 'react'
+import { Calendar, ChevronDown, Calculator } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { OFFERINGS, ddays, ddayLabel, type UpcomingOffering } from '@/components/ipo/board-data'
@@ -141,9 +141,66 @@ function OfferingDetail({ o, memo, onMemo, override, onOverride }: {
       </div>
       <p className="text-[10px] text-muted-foreground">시총·유통은 DART 증권신고서 자동(상장일 유통표) — 직접 수정 가능.</p>
       {!hasInfo && <p className="text-[11px] text-muted-foreground">공모 상세(공모가·경쟁률·확약)는 수요예측 후 38에서 자동 채워집니다.</p>}
+      <AllocationCalc o={o} />
       <textarea value={memo} onChange={e => onMemo(e.target.value)} rows={2}
         placeholder="개인 메모 — 본인 판단 기록용 (추천 아님)"
         className="w-full rounded-md border border-border bg-card px-2.5 py-1.5 text-sm outline-none focus:border-foreground/30 resize-none" />
+    </div>
+  )
+}
+
+/** 청약 배정 계산기 — 현재 경쟁률+균등 입력 → 목표 총배정별 필요 청약주수·증거금. */
+function AllocationCalc({ o }: { o: UpcomingOffering }) {
+  const [rate, setRate] = useState('')
+  const [gyun, setGyun] = useState('')
+  const r = parseFloat(rate) || 0
+  const g = parseFloat(gyun) || 0
+  const price = o.ipoPrice
+  const dr = (o.depositRate ?? 50) / 100
+  const limit = o.subLimit ? parseInt(o.subLimit.split('~')[0].replace(/[^\d]/g, ''), 10) : undefined
+  const won = (n: number) => (n >= 1e8 ? `${(n / 1e8).toFixed(2)}억` : `${Math.round(n / 1e4).toLocaleString()}만`)
+  const targets = [1, 2, 3, 5]
+
+  return (
+    <div className="rounded-md border border-border p-3 space-y-2">
+      <div className="text-xs font-medium flex items-center gap-1.5"><Calculator className="size-3.5" /> 청약 배정 계산기 <span className="text-[10px] font-normal text-muted-foreground">(청약일 증권사 앱 경쟁률 입력)</span></div>
+      <div className="grid grid-cols-2 gap-2">
+        <label className="flex flex-col gap-0.5">
+          <span className="text-[10px] text-muted-foreground">현재 비례경쟁률</span>
+          <input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="예: 2910"
+            className="rounded-md border border-border bg-card px-2 py-1 text-sm outline-none focus:border-foreground/30" />
+        </label>
+        <label className="flex flex-col gap-0.5">
+          <span className="text-[10px] text-muted-foreground">균등 예상수량(주)</span>
+          <input type="number" value={gyun} onChange={e => setGyun(e.target.value)} placeholder="예: 0.8"
+            className="rounded-md border border-border bg-card px-2 py-1 text-sm outline-none focus:border-foreground/30" />
+        </label>
+      </div>
+      {!price && <p className="text-[11px] text-muted-foreground">공모가 확정(수요예측 후) 이후 증거금 계산 가능.</p>}
+      {price != null && r > 0 && (
+        <div className="grid grid-cols-4 gap-x-2 gap-y-1 text-xs">
+          <span className="text-[10px] text-muted-foreground">목표 총배정</span>
+          <span className="text-[10px] text-muted-foreground text-right">필요 비례</span>
+          <span className="text-[10px] text-muted-foreground text-right">필요 청약주수</span>
+          <span className="text-[10px] text-muted-foreground text-right">증거금</span>
+          {targets.map(T => {
+            const need = Math.max(0, T - g)
+            const shares = Math.round(need * r)
+            const over = limit != null && shares > limit
+            return (
+              <Fragment key={T}>
+                <span className="font-medium">{T}주</span>
+                <span className="text-right tabular-nums text-muted-foreground">{need.toFixed(1)}</span>
+                <span className={cn('text-right tabular-nums', over && 'text-rose-600 dark:text-rose-400')}>{shares.toLocaleString()}{over ? '⚠' : ''}</span>
+                <span className="text-right tabular-nums">{won(shares * price * dr)}</span>
+              </Fragment>
+            )
+          })}
+        </div>
+      )}
+      <p className="text-[10px] text-muted-foreground">
+        총배정 = 균등{g ? ` ${g}주` : ''} + 비례. 필요 청약주수 = (목표−균등)×경쟁률(5사6입). 증거금 {Math.round(dr * 100)}%{limit != null && ` · 청약한도 ${limit.toLocaleString()}주(⚠초과)`}.
+      </p>
     </div>
   )
 }
