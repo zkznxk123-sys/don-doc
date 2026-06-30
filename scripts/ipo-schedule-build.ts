@@ -48,6 +48,7 @@ interface Offering {
   ipoPrice?: number; priceBand?: string; offerAmountEok?: number
   shares?: number; shareType?: string; instCompetition?: number; lockupRatio?: number
   marketCapEok?: number; floatAmountEok?: number; floatRatio?: number; redemptionRight?: boolean
+  allotShares?: number; subLimit?: string; depositRate?: number; minSubShares?: number
 }
 
 /** 38 종목 상세페이지 → {name, fields}. 플랫 텍스트 정규식 추출(레이아웃 변화에 강함). */
@@ -68,8 +69,14 @@ function parseDetail(html: string): { name: string; fields: Partial<Offering> } 
   const shareTypeFull = t.match(/상장공모\s*(신주모집|구주매출)\s*[:：]\s*[\d,]+\s*주\s*\(([\d.]+)%\)/)
   const inst = num(m(/기관경쟁률\s*([\d,.]+)\s*[:：]/))
   const lockup = num(m(/의무보유확약\s*([\d.]+)\s*%/))
+  const allot = num(m(/일반청약자\s*([\d,]+)\s*주/))
+  const subLimit = m(/청약한도\s*[:：]\s*([\d,]+\s*~\s*[\d,]+|[\d,]+)\s*주/)?.replace(/\s/g, '')
 
   const fields: Partial<Offering> = {}
+  if (allot) fields.allotShares = allot
+  if (subLimit) fields.subLimit = subLimit
+  fields.depositRate = 50      // IPO 표준
+  fields.minSubShares = 10     // 표준 최소청약
   if (ipoPrice) fields.ipoPrice = ipoPrice
   if (priceBand) fields.priceBand = priceBand
   if (offerBaekman) fields.offerAmountEok = Math.round(offerBaekman / 100)   // 백만원 → 억

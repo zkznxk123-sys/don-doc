@@ -126,6 +126,8 @@ function OfferingDetail({ o, memo, onMemo, override, onOverride }: {
         {o.instCompetition != null && <Info label="기관경쟁률" value={`${Math.round(o.instCompetition).toLocaleString()}:1`} />}
         {o.lockupRatio != null && <Info label="의무보유확약" value={`${o.lockupRatio}%`} />}
         {o.redemptionRight != null && <Info label="환매청구권" value={o.redemptionRight ? 'O' : 'X'} />}
+        {o.allotShares != null && <Info label="일반배정" value={`${o.allotShares.toLocaleString()}주`} sub={`균등물량 ${Math.round(o.allotShares / 2).toLocaleString()}`} />}
+        {o.subLimit && <Info label="청약한도" value={`${o.subLimit}주`} sub={o.minSubShares ? `최소 ${o.minSubShares}주·증거금${o.depositRate ?? 50}%` : undefined} />}
         <Info label="청약" value={o.subStart ? `${o.subStart.slice(5)}${o.subEnd ? `~${o.subEnd.slice(5)}` : ''}` : '—'} />
         <Info label="환불일" value={o.refundDate ? o.refundDate.slice(5) : '—'} />
         <Info label="상장일" value={o.listingDate ? o.listingDate.slice(5) : '—'} />

@@ -49,6 +49,11 @@ export interface UpcomingOffering {
   floatAmountEok?: number    // 유통금액(억) = 공모가×유통가능주식수
   floatRatio?: number        // 상장일 유통가능비율(%)
   redemptionRight?: boolean  // 환매청구권 유무
+  // ── 청약 조건(38) — 배정 계산기 입력 ──
+  allotShares?: number       // 일반청약자 배정주식수 (균등물량 = ×50%)
+  subLimit?: string          // 청약한도 "10,000~12,000"
+  depositRate?: number       // 청약증거금률(%) 기본 50
+  minSubShares?: number      // 최소청약수량(주) 기본 10
 }
 
 export const STATUS_META: Record<SubStatus, { label: string; tone: string }> = {
