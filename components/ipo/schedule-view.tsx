@@ -123,8 +123,8 @@ function OfferingDetail({ o, memo, onMemo, override, onOverride }: {
         {o.ipoPrice != null && <Info label="공모가" value={`${o.ipoPrice.toLocaleString()}원`} sub={o.priceBand ? `희망 ${o.priceBand}` : undefined} />}
         {o.offerAmountEok != null && <Info label="공모금액" value={`${o.offerAmountEok.toLocaleString()}억`} />}
         {o.shares != null && <Info label="총공모주식수" value={`${o.shares.toLocaleString()}주`} sub={o.shareType} />}
-        {o.instCompetition != null && <Info label="기관경쟁률" value={`${Math.round(o.instCompetition).toLocaleString()}:1`} />}
-        {o.lockupRatio != null && <Info label="의무보유확약" value={`${o.lockupRatio}%`} />}
+        {o.instCompetition != null && <Info label="기관경쟁률" value={`${Math.round(o.instCompetition).toLocaleString()}:1`} sub={o.instCount ? `참여 ${o.instCount.toLocaleString()}건` : undefined} />}
+        {o.lockupRatio != null && <Info label="의무보유확약" value={`${o.lockupRatio}%`} sub={o.lockupBreakdown ? `15일 ${o.lockupBreakdown.d15 ?? '—'} · 1·3·6M ${o.lockupBreakdown.m1 ?? '—'}·${o.lockupBreakdown.m3 ?? '—'}·${o.lockupBreakdown.m6 ?? '—'}` : undefined} />}
         {o.redemptionRight != null && <Info label="환매청구권" value={o.redemptionRight ? 'O' : 'X'} />}
         {o.allotShares != null && <Info label="일반배정" value={`${o.allotShares.toLocaleString()}주`} sub={`균등물량 ${Math.round(o.allotShares / 2).toLocaleString()}`} />}
         {o.subLimit && <Info label="청약한도" value={`${o.subLimit}주`} sub={o.minSubShares ? `최소 ${o.minSubShares}주·증거금${o.depositRate ?? 50}%` : undefined} />}
@@ -139,6 +139,12 @@ function OfferingDetail({ o, memo, onMemo, override, onOverride }: {
         <NumInput label="유통금액(억)" value={override.floatAmountEok ?? o.floatAmountEok} onChange={v => onOverride({ floatAmountEok: v })} />
         <NumInput label="유통가능비율(%)" value={override.floatRatio ?? o.floatRatio} onChange={v => onOverride({ floatRatio: v })} />
       </div>
+      {(() => {
+        const fr = override.floatRatio ?? o.floatRatio
+        if (fr == null || o.publicFloatRatio == null) return null
+        const existing = Math.round((fr - o.publicFloatRatio) * 100) / 100
+        return <p className="text-[10px] text-muted-foreground">유통 {fr}% 중 공모주주 {o.publicFloatRatio}% · 기존주주 {existing}%</p>
+      })()}
       <p className="text-[10px] text-muted-foreground">시총·유통은 DART 증권신고서 자동(상장일 유통표) — 직접 수정 가능.</p>
       {!hasInfo && <p className="text-[11px] text-muted-foreground">공모 상세(공모가·경쟁률·확약)는 수요예측 후 38에서 자동 채워집니다.</p>}
       <AllocationCalc o={o} />

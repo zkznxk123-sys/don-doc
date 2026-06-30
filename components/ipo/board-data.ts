@@ -43,7 +43,10 @@ export interface UpcomingOffering {
   shares?: number            // 총공모주식수
   shareType?: string         // 신주/구주 "신주 100%"
   instCompetition?: number   // 기관경쟁률 (예: 1146.41 → 1146:1)
+  instCount?: number         // 수요예측 참여기관 수(건)
   lockupRatio?: number       // 의무보유확약 비율(%)
+  lockupBreakdown?: { d15?: number; m1?: number; m3?: number; m6?: number } // 확약 기간별 비율(%)
+  publicFloatRatio?: number  // 공모주주 유통비율(%) — 기존주주 = floatRatio − publicFloatRatio
   // ── DART 증권신고서 자동(estkRs/본문 유통표) ──
   marketCapEok?: number      // 시가총액(억) = 공모가×총상장주식수
   floatAmountEok?: number    // 유통금액(억) = 공모가×유통가능주식수

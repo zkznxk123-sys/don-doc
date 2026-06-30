@@ -47,6 +47,8 @@ interface Offering {
   subStart?: string; subEnd?: string; refundDate?: string; listingDate?: string
   ipoPrice?: number; priceBand?: string; offerAmountEok?: number
   shares?: number; shareType?: string; instCompetition?: number; lockupRatio?: number
+  instCount?: number; lockupBreakdown?: { d15?: number; m1?: number; m3?: number; m6?: number }
+  publicFloatRatio?: number
   marketCapEok?: number; floatAmountEok?: number; floatRatio?: number; redemptionRight?: boolean
   allotShares?: number; subLimit?: string; depositRate?: number; minSubShares?: number
   subCompetition?: number; no38?: string
@@ -70,6 +72,24 @@ function parseDetail(html: string): { name: string; fields: Partial<Offering> } 
   const shareTypeFull = t.match(/상장공모\s*(신주모집|구주매출)\s*[:：]\s*[\d,]+\s*주\s*\(([\d.]+)%\)/)
   const inst = num(m(/기관경쟁률\s*([\d,.]+)\s*[:：]/))
   const lockup = num(m(/의무보유확약\s*([\d.]+)\s*%/))
+  // 수요예측 참여건수 + 총신청주식수(확약 비율 분모)
+  const sc = t.match(/단순경쟁\s*([\d,]+)\s+([\d,]+)\s+[\d,.]+\s*[:：]\s*1/)
+  const instCount = num(sc?.[1])
+  const totalReq = num(sc?.[2])
+  // 확약 기간별 신청수량 → 비율(%) = 수량 ÷ 총신청주식수
+  const lockQty = (k: string) => num(m(new RegExp(`${k}\\s*확약\\s*([\\d,]+)`)))
+  const pct = (v?: number) => (v && totalReq ? Math.round((v / totalReq) * 10000) / 100 : undefined)
+  const lockupBreakdown = totalReq
+    ? { d15: pct(lockQty('15일')), m1: pct(lockQty('1개월')), m3: pct(lockQty('3개월')), m6: pct(lockQty('6개월')) }
+    : undefined
+  // 공모주주 유통비율(기존주주 = floatRatio − 이 값). 상장후 유통표에서 공모주식수에 앵커.
+  // 종목별 표 레이아웃이 제각각이라 정확히 못 잡으면 생략(틀린 값보다 빈 값).
+  let publicFloatRatio: number | undefined
+  if (shares) {
+    const pm = t.match(new RegExp(`${shares.toLocaleString()}\\s+([\\d.]+)%`))
+    const v = pm ? parseFloat(pm[1]) : undefined
+    if (v && v > 0 && v < 100) publicFloatRatio = v
+  }
   const allot = num(m(/일반청약자\s*([\d,]+)\s*주/))
   const subLimit = m(/청약한도\s*[:：]\s*([\d,]+\s*~\s*[\d,]+|[\d,]+)\s*주/)?.replace(/\s/g, '')
   const subComp = num(m(/청약경쟁률[^(]*\(비례\s*([\d,.]+)/))   // 청약 마감 후 최종
@@ -86,7 +106,10 @@ function parseDetail(html: string): { name: string; fields: Partial<Offering> } 
   if (shares) fields.shares = shares
   if (shareTypeFull) fields.shareType = `${shareTypeFull[1] === '신주모집' ? '신주' : '구주'} ${shareTypeFull[2]}%`
   if (inst && inst > 0) fields.instCompetition = inst
+  if (instCount && instCount > 0) fields.instCount = instCount
   if (lockup && lockup > 0) fields.lockupRatio = lockup
+  if (lockupBreakdown && Object.values(lockupBreakdown).some(v => v != null)) fields.lockupBreakdown = lockupBreakdown
+  if (publicFloatRatio && publicFloatRatio > 0) fields.publicFloatRatio = publicFloatRatio
   const rf = t.match(/환불일\s*(\d{4})\.(\d{2})\.(\d{2})/)
   if (rf) fields.refundDate = `${rf[1]}-${rf[2]}-${rf[3]}`
   return { name, fields }
