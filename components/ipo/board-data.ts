@@ -14,7 +14,7 @@ export interface LedgerRow {
   kind: 'IPO' | 'SPAC'
   person: string
   broker: string
-  subType: '균등' | '비례' | '균등+비례'
+  subType: '균등' | '비례'
   deposit: number          // 증거금(원)
   allocatedShares: number  // 배정 주수 (미정 0)
   refundAmount: number     // 환불 예정/완료액
@@ -94,7 +94,7 @@ export const DEMO_LEDGER: LedgerRow[] = [
   { offering: '매드업', kind: 'IPO', person: '자녀', broker: '미래', subType: '균등', deposit: 1_500_000, allocatedShares: 1, refundAmount: 1_400_000, refunded: false, status: 'ALLOCATED', subStart: '2026-06-10', refundDate: '2026-06-26', listingDate: '2026-07-01' },
 
   // 레몬헬스케어 — 청약완료, 환불(6/29) 대기
-  { offering: '레몬헬스케어', kind: 'IPO', person: '본인', broker: 'KB', subType: '균등+비례', deposit: 3_200_000, allocatedShares: 0, refundAmount: 0, refunded: false, status: 'SUBMITTED', subStart: '2026-06-25', refundDate: '2026-06-29', listingDate: '2026-07-03' },
+  { offering: '레몬헬스케어', kind: 'IPO', person: '본인', broker: 'KB', subType: '비례', deposit: 3_200_000, allocatedShares: 0, refundAmount: 0, refunded: false, status: 'SUBMITTED', subStart: '2026-06-25', refundDate: '2026-06-29', listingDate: '2026-07-03' },
   { offering: '레몬헬스케어', kind: 'IPO', person: '배우자', broker: 'KB', subType: '균등', deposit: 1_250_000, allocatedShares: 0, refundAmount: 0, refunded: false, status: 'SUBMITTED', subStart: '2026-06-25', refundDate: '2026-06-29', listingDate: '2026-07-03' },
 
   // 레메디 — 청약예정(7/2)

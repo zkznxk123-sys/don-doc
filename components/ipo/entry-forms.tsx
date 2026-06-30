@@ -173,7 +173,7 @@ export function SubForm({ data, onDone, initial }: { data: IpoData; onDone: () =
         </Field>
         <Field label="청약유형">
           <select className={inputCls} value={subType} onChange={e => setSubType(e.target.value as LedgerRow['subType'])}>
-            <option value="균등">균등</option><option value="비례">비례</option><option value="균등+비례">균등+비례</option>
+            <option value="균등">균등</option><option value="비례">비례</option>
           </select>
         </Field>
         <Field label="상태">
