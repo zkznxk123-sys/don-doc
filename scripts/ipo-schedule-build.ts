@@ -44,6 +44,40 @@ const shortenBrokers = (s: string) =>
 interface Offering {
   name: string; kind: 'IPO' | 'SPAC'; brokers: string[]
   subStart?: string; subEnd?: string; refundDate?: string; listingDate?: string
+  ipoPrice?: number; priceBand?: string; offerAmountEok?: number
+  shares?: number; shareType?: string; instCompetition?: number; lockupRatio?: number
+}
+
+/** 38 종목 상세페이지 → {name, fields}. 플랫 텍스트 정규식 추출(레이아웃 변화에 강함). */
+function parseDetail(html: string): { name: string; fields: Partial<Offering> } | null {
+  const t = html.replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ')
+  // 브레드크럼 "IPO공모 > {종목명} 공모주청약" 우선, 없으면 "종목명 {값}"
+  const nm = t.match(/공모\s*>\s*([가-힣A-Za-z0-9()]+)\s*공모주/) || t.match(/종목명\s*([가-힣A-Za-z0-9()]+)/)
+  const name = nm ? nm[1].trim() : ''
+  if (!name) return null
+
+  const num = (s?: string) => (s ? parseFloat(s.replace(/[,\s]/g, '')) : undefined)
+  const m = (re: RegExp) => t.match(re)?.[1]?.trim()
+
+  const ipoPrice = num(m(/확정공모가\s*([\d,]+)\s*원/))
+  const priceBand = m(/희망공모가액\s*([\d,]+\s*~\s*[\d,]+)/)?.replace(/\s/g, '')
+  const offerBaekman = num(m(/공모금액\s*([\d,]+)\s*\(백만원\)/))   // 백만원
+  const shares = num(m(/총공모주식수\s*([\d,]+)\s*주/))
+  const shareTypeFull = t.match(/상장공모\s*(신주모집|구주매출)\s*[:：]\s*[\d,]+\s*주\s*\(([\d.]+)%\)/)
+  const inst = num(m(/기관경쟁률\s*([\d,.]+)\s*[:：]/))
+  const lockup = num(m(/의무보유확약\s*([\d.]+)\s*%/))
+
+  const fields: Partial<Offering> = {}
+  if (ipoPrice) fields.ipoPrice = ipoPrice
+  if (priceBand) fields.priceBand = priceBand
+  if (offerBaekman) fields.offerAmountEok = Math.round(offerBaekman / 100)   // 백만원 → 억
+  if (shares) fields.shares = shares
+  if (shareTypeFull) fields.shareType = `${shareTypeFull[1] === '신주모집' ? '신주' : '구주'} ${shareTypeFull[2]}%`
+  if (inst && inst > 0) fields.instCompetition = inst
+  if (lockup && lockup > 0) fields.lockupRatio = lockup
+  const rf = t.match(/환불일\s*(\d{4})\.(\d{2})\.(\d{2})/)
+  if (rf) fields.refundDate = `${rf[1]}-${rf[2]}-${rf[3]}`
+  return { name, fields }
 }
 
 async function main() {
@@ -80,6 +114,20 @@ async function main() {
     get(name).listingDate = `${dm[1]}-${dm[2]}-${dm[3]}`
   }
 
+  // 종목 상세(공모가·경쟁률·확약 등) — o=k 페이지에서 fund 상세 no 추출 후 각 상세 파싱.
+  try {
+    const k = await fetchEucKr('http://www.38.co.kr/html/fund/index.htm?o=k')
+    const nos = [...new Set([...k.matchAll(/\/html\/fund\/\?o=v&(?:amp;)?no=(\d+)/g)].map(m => m[1]))]
+    for (const no of nos) {
+      try {
+        const detail = await fetchEucKr(`http://www.38.co.kr/html/fund/?o=v&no=${no}&l=&page=1`)
+        const d = parseDetail(detail)
+        if (!d || !offerings.has(d.name)) continue
+        Object.assign(offerings.get(d.name)!, d.fields)
+      } catch { /* 개별 상세 실패 무시 */ }
+    }
+  } catch { /* 상세 단계 전체 실패해도 일정은 유지 */ }
+
   const list = [...offerings.values()]
     .filter(o => o.subStart || o.listingDate)
     .sort((a, b) => ((a.subStart ?? a.listingDate ?? '') < (b.subStart ?? b.listingDate ?? '') ? -1 : 1))
@@ -88,9 +136,9 @@ async function main() {
 import type { UpcomingOffering } from './board-data'
 
 export const GENERATED_AT = '${todayISO()}'
-export const SOURCE = '38커뮤니케이션 (38.co.kr) 청약·상장'
+export const SOURCE = '38커뮤니케이션 (38.co.kr) 청약·상장·종목상세'
 
-/** 38.co.kr에서 추출한 공모주·스팩 청약/상장 일정. (환불일은 38 미제공) */
+/** 38.co.kr에서 추출한 공모주·스팩 일정 + 종목 기본정보(공모가·경쟁률·확약 등). */
 export const GENERATED_OFFERINGS: UpcomingOffering[] = ${JSON.stringify(list, null, 2)}
 `
   fs.writeFileSync(path.resolve('components/ipo/offerings.generated.ts'), body)

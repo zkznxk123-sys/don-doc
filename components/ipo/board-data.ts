@@ -36,6 +36,15 @@ export interface UpcomingOffering {
   refundDate?: string
   listingDate?: string
   transferDate?: string
+  // ── 종목 기본정보(38 상세페이지 자동) ──
+  ipoPrice?: number          // 확정공모가(원)
+  priceBand?: string         // 희망공모가밴드 "17,800~20,700"
+  offerAmountEok?: number    // 공모금액(억원)
+  shares?: number            // 총공모주식수
+  shareType?: string         // 신주/구주 "신주 100%"
+  instCompetition?: number   // 기관경쟁률 (예: 1146.41 → 1146:1)
+  lockupRatio?: number       // 의무보유확약 비율(%)
+  // (시가총액·유통금액·유통가능비율은 38 미제공 — DART/수동, Phase 2)
 }
 
 export const STATUS_META: Record<SubStatus, { label: string; tone: string }> = {
