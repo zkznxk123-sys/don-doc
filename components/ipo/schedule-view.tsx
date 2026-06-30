@@ -8,7 +8,7 @@ import { useMemo, useState } from 'react'
 import { Calendar } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
-import { OFFERINGS, GENERATED_AT, ddays, ddayLabel, type UpcomingOffering } from '@/components/ipo/board-data'
+import { OFFERINGS, ddays, ddayLabel, type UpcomingOffering } from '@/components/ipo/board-data'
 
 /** 종목의 대표일(정렬·월그룹 기준): 청약 시작 → 상장 → 환불 순 우선. */
 function primaryDate(o: UpcomingOffering): string {
@@ -68,9 +68,6 @@ export function ScheduleView() {
         </div>
       ))}
 
-      <p className="text-[11px] text-muted-foreground">
-        서초감자 소통방 공지 파싱(생성 {GENERATED_AT}). 새 공지 반영은 일정 재생성 스크립트 실행.
-      </p>
     </div>
   )
 }

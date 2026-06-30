@@ -21,7 +21,7 @@ import { UpcomingStrip } from '@/components/ipo/upcoming-strip'
 import { IpoEntryBar, IpoDatalists, DeleteBtn, EditBtn, SubForm } from '@/components/ipo/entry-forms'
 import { useIpoData } from '@/lib/ipo/store'
 import {
-  OFFERINGS, OFFERING_BY_NAME, GENERATED_AT, SOURCE,
+  OFFERING_BY_NAME,
   STATUS_META,
   type LedgerRow,
 } from '@/components/ipo/board-data'
@@ -64,21 +64,13 @@ export default function IpoLedgerPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 space-y-6">
       {/* 헤더 */}
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold flex items-center gap-2">
-            <TrendingUp className="size-5" /> 공모주 · 스팩주
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            청약·계좌·시세를 한 화면에 — 명의 흩어짐 없이 청약~회수까지
-          </p>
-        </div>
-        <span className={cn('shrink-0 rounded-full px-2.5 py-1 text-xs font-medium',
-          showDemo
-            ? 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300'
-            : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300')}>
-          {showDemo ? '데모 데이터' : '내 데이터'}
-        </span>
+      <div>
+        <h1 className="text-lg font-semibold flex items-center gap-2">
+          <TrendingUp className="size-5" /> 공모주 · 스팩주
+        </h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          청약·계좌·시세를 한 화면에 — 명의 흩어짐 없이 청약~회수까지
+        </p>
       </div>
 
       {/* 다가올 일정 — 맨 위 고정 */}
@@ -188,10 +180,6 @@ export default function IpoLedgerPage() {
       </section>
         </TabsContent>
       </Tabs>
-
-      <p className="text-xs text-muted-foreground pt-2">
-        일정 {OFFERINGS.length}종목 · 어댑터가 <code className="text-[11px]">{SOURCE}</code>에서 생성 ({GENERATED_AT}) · 명의별 청약 내역은 시연용 데모(실제 입력 연결은 다음 단계).
-      </p>
     </div>
   )
 }
