@@ -8,7 +8,7 @@
  */
 import { useMemo, useState } from 'react'
 import {
-  TrendingUp, Coins, AlertCircle, CheckCircle2, Wallet, Calendar, ArrowRightLeft,
+  TrendingUp, Coins, AlertCircle, CheckCircle2, Wallet, ArrowRightLeft,
 } from 'lucide-react'
 import { cn, formatLargeNumber } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
@@ -21,7 +21,7 @@ import { IpoEntryBar, IpoDatalists, DeleteBtn, EditBtn, SubForm } from '@/compon
 import { useIpoData } from '@/lib/ipo/store'
 import {
   OFFERINGS, OFFERING_BY_NAME, GENERATED_AT, SOURCE,
-  STATUS_META, ddays, ddayLabel,
+  STATUS_META,
   type LedgerRow,
 } from '@/components/ipo/board-data'
 
@@ -31,7 +31,6 @@ const KIND_TONE = {
 }
 
 export default function IpoLedgerPage() {
-  const today = useMemo(() => new Date(), [])
   const data = useIpoData()
   const { ledger, accounts, showDemo } = data
   const [editingSub, setEditingSub] = useState<number | null>(null)
@@ -91,40 +90,6 @@ export default function IpoLedgerPage() {
         <Kpi icon={<CheckCircle2 className="size-4" />} label="실현손익" value={`${kpi.realized >= 0 ? '+' : ''}${formatLargeNumber(kpi.realized)}원`} hint="매도 정산(세후)" tone={kpi.realized >= 0 ? 'pos' : 'neg'} />
         <Kpi icon={<Coins className="size-4" />} label="할 일" value={`청약 ${kpi.planned} · 놓침 ${kpi.missed}`} hint="이번 주" tone={kpi.missed > 0 ? 'warn' : undefined} />
       </div>
-
-      {/* 다가올 일정 */}
-      <section className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
-            <Calendar className="size-4" /> 다가올 일정
-          </h2>
-          <button onClick={() => setTab('schedule')} className="text-xs text-muted-foreground hover:text-foreground">전체 일정 →</button>
-        </div>
-        <div className="flex gap-2 overflow-x-auto pb-1">
-          {OFFERINGS.flatMap(o => {
-            const items: { name: string; kind: 'IPO' | 'SPAC'; type: string; date: string }[] = []
-            if (o.subStart) items.push({ name: o.name, kind: o.kind, type: '청약', date: o.subStart })
-            if (o.refundDate) items.push({ name: o.name, kind: o.kind, type: '환불', date: o.refundDate })
-            if (o.listingDate) items.push({ name: o.name, kind: o.kind, type: '상장', date: o.listingDate })
-            return items
-          })
-            .map(it => ({ ...it, d: ddays(it.date, today) }))
-            .filter(it => it.d >= 0)
-            .sort((a, b) => a.d - b.d)
-            .map((it, i) => (
-              <div key={i} className="shrink-0 rounded-md bg-card px-3 py-2 shadow-[0_1px_3px_rgba(26,26,26,0.06)] dark:border dark:border-border dark:shadow-none">
-                <div className="flex items-center gap-1.5">
-                  <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-semibold', it.d <= 1 ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300' : 'bg-muted text-muted-foreground')}>
-                    {ddayLabel(it.d)}
-                  </span>
-                  <span className="text-xs text-muted-foreground">{it.type}</span>
-                </div>
-                <div className="mt-1 text-sm font-medium whitespace-nowrap">{it.name}</div>
-                <div className="text-[11px] text-muted-foreground">{it.date.slice(5)}</div>
-              </div>
-            ))}
-        </div>
-      </section>
 
       {/* 계좌 축 / 종목 축 전환 */}
       <Tabs value={tab} onValueChange={setTab}>
