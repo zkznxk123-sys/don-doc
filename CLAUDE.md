@@ -223,6 +223,23 @@ if (isLite()) { /* lite 분기 */ }
 
 ---
 
+## 공모주·스팩 청약 원장 (IPO, BETA · 2026-06-30 도입)
+
+⚠️ **상태: localStorage PoC — DB 미연동.** 입력은 `entry-forms.tsx`가 localStorage에 저장(가족 동기화·서버 영속 아직 없음). 정식화 시 Prisma 모델 + 서버 액션 연동 필요. 기획: vault `03_personal/projects/공모주-청약{-서비스-구상,원장-데이터모델-스펙}.md`.
+
+- **페이지**: `app/dashboard/ipo/page.tsx` ("공모주·스팩주").
+- **`components/ipo/`** (~2,600줄):
+  - `board-data.ts` — 뷰 타입(`Account`·`Offering`)·데모 데이터·`readinessIssues`·`computeAllocation`(균등 분산 증거금 산술, 순수·테스트됨).
+  - `allocation-sim.tsx` — 자금 배분 시뮬(종목×계좌 균등 분산). ⚠️ **사실 산술만 — 종목 추천·비례 유불리 예측 금지**(컴플라이언스).
+  - `account-board`·`entry-forms`·`schedule-view`·`spac-{list,universe,panel}`·`upcoming-strip`.
+  - `offerings.generated.ts`·`spac-universe.generated.ts` — 빌드 스크립트 산출(직접 수정 금지).
+- **`utils/ipo-ledger/`** — 운영자 카톡 "공모주 일정" 공지 → 이벤트 정규화(`schedule-notice.ts`)·캘린더 동기화(`calendar-sync.ts`).
+- **API** `app/api/ipo/`:
+  - `quote` — 네이버 금융 실시간 시세 프록시. `competition` — 38.co.kr 비례경쟁률. **둘 다 `getAuthUser` 가드**(무인증 오픈 프록시 남용 차단).
+- **`scripts/ipo-{schedule,offerings}-build.ts` + `ipo-schedule-cron.sh`** — 38.co.kr 라이브에서 일정·종목 유니버스 주간 재생성(launchd).
+
+---
+
 ## 환경 변수 (.env.local)
 
 ```
