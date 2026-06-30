@@ -18,10 +18,11 @@ interface IpoState {
   accounts: Account[]
   ledger: LedgerRow[]
   spacs: Spac[]
+  memos: Record<string, string>   // 종목명 → 개인메모(판단·추천 아님, 본인 기록)
   initialized: boolean   // 사용자가 직접 입력하기 시작했나
 }
 
-const EMPTY: IpoState = { accounts: [], ledger: [], spacs: [], initialized: false }
+const EMPTY: IpoState = { accounts: [], ledger: [], spacs: [], memos: {}, initialized: false }
 
 function load(): IpoState | null {
   try {
@@ -33,6 +34,7 @@ function load(): IpoState | null {
       accounts: s.accounts ?? [],
       ledger: s.ledger ?? [],
       spacs: s.spacs ?? [],
+      memos: s.memos ?? {},
       initialized: !!s.initialized,
     }
   } catch { return null }
@@ -57,6 +59,8 @@ export interface IpoData {
   addSpac: (s: Omit<Spac, 'id'>) => void
   updateSpac: (id: string, patch: Omit<Spac, 'id'>) => void
   removeSpac: (id: string) => void
+  memos: Record<string, string>
+  setMemo: (offering: string, text: string) => void
   seedDemo: () => void           // 데모를 내 작업본으로 복사
   reset: () => void              // 데모 보기로 복귀(내 데이터 삭제)
 }
@@ -96,7 +100,7 @@ export function useIpoData(): IpoData {
 
   const addAccount = useCallback((a: Omit<Account, 'id'>) => {
     setState(prev => {
-      const base = prev.initialized ? prev : { accounts: [], ledger: [], spacs: [], initialized: true }
+      const base = prev.initialized ? prev : { accounts: [], ledger: [], spacs: [], memos: prev.memos, initialized: true }
       return { ...base, accounts: [...base.accounts, { ...a, id: newId() }] }
     })
   }, [])
@@ -112,7 +116,7 @@ export function useIpoData(): IpoData {
   const addSub = useCallback((r: Omit<LedgerRow, 'kind' | 'subStart' | 'refundDate' | 'listingDate'>) => {
     const row = buildRow(r)
     setState(prev => {
-      const base = prev.initialized ? prev : { accounts: [], ledger: [], spacs: [], initialized: true }
+      const base = prev.initialized ? prev : { accounts: [], ledger: [], spacs: [], memos: prev.memos, initialized: true }
       return { ...base, ledger: [...base.ledger, row] }
     })
   }, [])
@@ -128,7 +132,7 @@ export function useIpoData(): IpoData {
 
   const addSpac = useCallback((s: Omit<Spac, 'id'>) => {
     setState(prev => {
-      const base = prev.initialized ? prev : { accounts: [], ledger: [], spacs: [], initialized: true }
+      const base = prev.initialized ? prev : { accounts: [], ledger: [], spacs: [], memos: prev.memos, initialized: true }
       return { ...base, spacs: [...base.spacs, { ...s, id: newId() }] }
     })
   }, [])
@@ -141,11 +145,15 @@ export function useIpoData(): IpoData {
     setState(prev => ({ ...prev, spacs: prev.spacs.filter(s => s.id !== id) }))
   }, [])
 
+  const setMemo = useCallback((offering: string, text: string) => {
+    setState(prev => ({ ...prev, memos: { ...prev.memos, [offering]: text } }))
+  }, [])
+
   const seedDemo = useCallback(() => {
-    setState({ accounts: [...DEMO_ACCOUNTS], ledger: [...DEMO_LEDGER], spacs: [...DEMO_SPACS], initialized: true })
+    setState(prev => ({ accounts: [...DEMO_ACCOUNTS], ledger: [...DEMO_LEDGER], spacs: [...DEMO_SPACS], memos: prev.memos, initialized: true }))
   }, [])
 
   const reset = useCallback(() => setState(EMPTY), [])
 
-  return { hydrated, showDemo, accounts, ledger, spacs, addAccount, updateAccount, removeAccount, addSub, updateSub, removeSub, addSpac, updateSpac, removeSpac, seedDemo, reset }
+  return { hydrated, showDemo, accounts, ledger, spacs, addAccount, updateAccount, removeAccount, addSub, updateSub, removeSub, addSpac, updateSpac, removeSpac, memos: state.memos, setMemo, seedDemo, reset }
 }

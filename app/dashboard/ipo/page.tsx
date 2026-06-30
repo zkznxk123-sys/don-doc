@@ -98,7 +98,7 @@ export default function IpoLedgerPage() {
         </TabsList>
 
         <TabsContent value="schedule">
-          <ScheduleView />
+          <ScheduleView data={data} />
         </TabsContent>
 
         <TabsContent value="accounts">

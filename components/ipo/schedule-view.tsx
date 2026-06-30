@@ -5,20 +5,22 @@
  * 월별로 묶어 청약·환불·상장일을 한눈에. 다가올/전체 토글.
  */
 import { useMemo, useState } from 'react'
-import { Calendar } from 'lucide-react'
+import { Calendar, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { OFFERINGS, ddays, ddayLabel, type UpcomingOffering } from '@/components/ipo/board-data'
+import type { IpoData } from '@/lib/ipo/store'
 
 /** 종목의 대표일(정렬·월그룹 기준): 청약 시작 → 상장 → 환불 순 우선. */
 function primaryDate(o: UpcomingOffering): string {
   return o.subStart ?? o.listingDate ?? o.refundDate ?? ''
 }
 
-export function ScheduleView() {
+export function ScheduleView({ data }: { data: IpoData }) {
   const today = useMemo(() => new Date(), [])
   const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
   const [scope, setScope] = useState<'upcoming' | 'all'>('upcoming')
+  const [expanded, setExpanded] = useState<string | null>(null)
 
   const months = useMemo(() => {
     const inScope = OFFERINGS.filter(o => {
@@ -61,7 +63,15 @@ export function ScheduleView() {
           <Card>
             <CardContent className="pt-2 pb-2">
               <div className="divide-y divide-border/60">
-                {items.map(o => <OfferingRow key={o.name} o={o} todayISO={todayISO} today={today} />)}
+                {items.map(o => (
+                  <div key={o.name}>
+                    <OfferingRow o={o} todayISO={todayISO} today={today}
+                      open={expanded === o.name} onToggle={() => setExpanded(expanded === o.name ? null : o.name)} />
+                    {expanded === o.name && (
+                      <OfferingDetail o={o} memo={data.memos[o.name] ?? ''} onMemo={t => data.setMemo(o.name, t)} />
+                    )}
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
@@ -72,11 +82,12 @@ export function ScheduleView() {
   )
 }
 
-function OfferingRow({ o, todayISO, today }: { o: UpcomingOffering; todayISO: string; today: Date }) {
+function OfferingRow({ o, todayISO, today, open, onToggle }: { o: UpcomingOffering; todayISO: string; today: Date; open: boolean; onToggle: () => void }) {
   const next = nextDate(o, todayISO)
   return (
-    <div className="grid grid-cols-12 items-center gap-2 py-2 text-sm">
+    <div className="grid grid-cols-12 items-center gap-2 py-2 text-sm cursor-pointer hover:bg-muted/30 -mx-1 px-1 rounded" onClick={onToggle}>
       <span className="col-span-4 flex items-center gap-1.5 min-w-0">
+        <ChevronDown className={cn('size-3.5 shrink-0 text-muted-foreground transition-transform', open && 'rotate-180')} />
         <span className="font-medium truncate">{o.name}</span>
         <span className={cn('shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold',
           o.kind === 'SPAC' ? 'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300' : 'bg-muted text-muted-foreground')}>{o.kind}</span>
@@ -95,6 +106,39 @@ function OfferingRow({ o, todayISO, today }: { o: UpcomingOffering; todayISO: st
           </span>
         )}
       </span>
+    </div>
+  )
+}
+
+function OfferingDetail({ o, memo, onMemo }: { o: UpcomingOffering; memo: string; onMemo: (t: string) => void }) {
+  const hasInfo = !!(o.ipoPrice || o.offerAmountEok || o.shares || o.instCompetition || o.lockupRatio != null)
+  return (
+    <div className="pb-3 pt-1 space-y-2">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        {o.ipoPrice != null && <Info label="공모가" value={`${o.ipoPrice.toLocaleString()}원`} sub={o.priceBand ? `희망 ${o.priceBand}` : undefined} />}
+        {o.offerAmountEok != null && <Info label="공모금액" value={`${o.offerAmountEok.toLocaleString()}억`} />}
+        {o.shares != null && <Info label="총공모주식수" value={`${o.shares.toLocaleString()}주`} sub={o.shareType} />}
+        {o.instCompetition != null && <Info label="기관경쟁률" value={`${Math.round(o.instCompetition).toLocaleString()}:1`} />}
+        {o.lockupRatio != null && <Info label="의무보유확약" value={`${o.lockupRatio}%`} />}
+        <Info label="청약" value={o.subStart ? `${o.subStart.slice(5)}${o.subEnd ? `~${o.subEnd.slice(5)}` : ''}` : '—'} />
+        <Info label="환불일" value={o.refundDate ? o.refundDate.slice(5) : '—'} />
+        <Info label="상장일" value={o.listingDate ? o.listingDate.slice(5) : '—'} />
+        <Info label="주관사" value={o.brokers.join(', ') || '—'} />
+      </div>
+      {!hasInfo && <p className="text-[11px] text-muted-foreground">공모 상세(공모가·경쟁률·확약)는 수요예측 후 38에서 자동 채워집니다.</p>}
+      <textarea value={memo} onChange={e => onMemo(e.target.value)} rows={2}
+        placeholder="개인 메모 — 본인 판단 기록용 (추천 아님)"
+        className="w-full rounded-md border border-border bg-card px-2.5 py-1.5 text-sm outline-none focus:border-foreground/30 resize-none" />
+    </div>
+  )
+}
+
+function Info({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="rounded-md bg-muted/40 px-2.5 py-1.5">
+      <div className="text-[10px] text-muted-foreground">{label}</div>
+      <div className="text-sm font-medium tabular-nums truncate">{value}</div>
+      {sub && <div className="text-[10px] text-muted-foreground truncate">{sub}</div>}
     </div>
   )
 }
