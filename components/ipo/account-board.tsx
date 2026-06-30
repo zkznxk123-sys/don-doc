@@ -12,7 +12,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { DeleteBtn, EditBtn, AccountForm } from '@/components/ipo/entry-forms'
 import type { IpoData } from '@/lib/ipo/store'
 import {
-  READINESS_LABELS, READINESS_TONE,
+  READINESS_LABELS, READINESS_TONE, ACCOUNT_STATUS_TONE,
   accountMoney, readinessIssues, type Account, type LedgerRow,
 } from '@/components/ipo/board-data'
 
@@ -137,6 +137,15 @@ function AccountCard({ account, ledger, showDemo, onRemove, onEdit }: {
           <div className="flex items-center gap-1.5 min-w-0">
             <span className="font-medium text-sm shrink-0">{account.broker}</span>
             <span className="text-[10px] text-muted-foreground shrink-0">{account.type}</span>
+            <span className={cn('shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold',
+              account.bankLinked
+                ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300'
+                : 'bg-muted text-muted-foreground')}>
+              {account.bankLinked ? '은행제휴' : '비대면'}
+            </span>
+            {account.status && account.status !== '정상' && (
+              <span className={cn('shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold', ACCOUNT_STATUS_TONE[account.status])}>{account.status}</span>
+            )}
             {account.accountNo && <span className="text-[11px] text-muted-foreground tabular-nums truncate">· {account.accountNo}</span>}
           </div>
           <div className="flex items-center gap-2">

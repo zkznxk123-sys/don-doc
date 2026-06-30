@@ -9,7 +9,8 @@ import { Plus, X, Database, RotateCcw, Pencil } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import {
-  OFFERINGS, READINESS_LABELS, type ReadinessState, type SubStatus, type Account, type LedgerRow, type Spac,
+  OFFERINGS, READINESS_LABELS, ACCOUNT_STATUSES,
+  type ReadinessState, type SubStatus, type Account, type AccountStatus, type LedgerRow, type Spac,
 } from '@/components/ipo/board-data'
 import type { IpoData } from '@/lib/ipo/store'
 
@@ -79,6 +80,8 @@ export function AccountForm({ data, onDone, initial }: { data: IpoData; onDone: 
   const [broker, setBroker] = useState(initial?.broker ?? '')
   const [accountNo, setAccountNo] = useState(initial?.accountNo ?? '')
   const [type, setType] = useState<Account['type']>(initial?.type ?? '종합')
+  const [status, setStatus] = useState<AccountStatus>(initial?.status ?? '정상')
+  const [bankLinked, setBankLinked] = useState(initial?.bankLinked ?? false)
   const [cash, setCash] = useState(initial ? String(initial.cash / 10_000) : '')
   const [readiness, setReadiness] = useState<Account['readiness']>(initial?.readiness ?? { cdd: 'OK', otp: 'OK', cert: 'OK', limit: 'OK', mail: 'OK' })
 
@@ -87,7 +90,7 @@ export function AccountForm({ data, onDone, initial }: { data: IpoData; onDone: 
 
   const submit = () => {
     if (!broker.trim()) return
-    const values = { person: person.trim() || '본인', broker: broker.trim(), accountNo: accountNo.trim() || undefined, type, cash: won(cash), readiness }
+    const values = { person: person.trim() || '본인', broker: broker.trim(), accountNo: accountNo.trim() || undefined, type, status, bankLinked, cash: won(cash), readiness }
     if (initial) data.updateAccount(initial.id, values)
     else data.addAccount(values)
     onDone()
@@ -110,10 +113,19 @@ export function AccountForm({ data, onDone, initial }: { data: IpoData; onDone: 
             <option value="종합">종합</option><option value="CMA">CMA</option>
           </select>
         </Field>
+        <Field label="계좌상태">
+          <select className={inputCls} value={status} onChange={e => setStatus(e.target.value as AccountStatus)}>
+            {ACCOUNT_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </Field>
         <Field label="가용현금(만원)">
           <input type="number" className={inputCls} value={cash} onChange={e => setCash(e.target.value)} placeholder="0" />
         </Field>
       </div>
+      <label className="flex items-center gap-1.5 text-sm">
+        <input type="checkbox" checked={bankLinked} onChange={e => setBankLinked(e.target.checked)} />
+        은행제휴 계좌 <span className="text-[11px] text-muted-foreground">(20영업일 제한 없이 여러 개 — 비대면 일반은 20일 1개)</span>
+      </label>
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="text-[11px] text-muted-foreground mr-1">준비상태(클릭해 전환):</span>
         {READINESS_LABELS.map(({ key, label }) => (
