@@ -18,6 +18,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "subLimit": "11,000~13,000",
     "depositRate": 50,
     "minSubShares": 10,
+    "subCompetition": 4857,
     "ipoPrice": 21600,
     "priceBand": "16,700~21,600",
     "offerAmountEok": 291,
@@ -26,6 +27,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "instCompetition": 1108.93,
     "lockupRatio": 75.4,
     "refundDate": "2026-03-19",
+    "no38": "2274",
     "floatRatio": 33,
     "floatAmountEok": 692,
     "marketCapEok": 2097,
@@ -43,6 +45,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "allotShares": 275000,
     "depositRate": 50,
     "minSubShares": 10,
+    "subCompetition": 3346,
     "ipoPrice": 19000,
     "priceBand": "17,000~19,000",
     "offerAmountEok": 209,
@@ -51,6 +54,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "instCompetition": 1172.59,
     "lockupRatio": 27.43,
     "refundDate": "2026-03-19",
+    "no38": "2276",
     "floatRatio": 31.63,
     "floatAmountEok": 635,
     "marketCapEok": 2009,
@@ -69,13 +73,15 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "subLimit": "158,750~190,500",
     "depositRate": 50,
     "minSubShares": 10,
+    "subCompetition": 1139,
     "ipoPrice": 2000,
     "priceBand": "2,000~2,000",
     "offerAmountEok": 127,
     "shares": 6350000,
     "shareType": "신주 100%",
     "instCompetition": 1228.71,
-    "refundDate": "2026-03-20"
+    "refundDate": "2026-03-20",
+    "no38": "2277"
   },
   {
     "name": "리센스메디컬",
@@ -90,6 +96,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "allotShares": 350000,
     "depositRate": 50,
     "minSubShares": 10,
+    "subCompetition": 4195,
     "ipoPrice": 11000,
     "priceBand": "9,000~11,000",
     "offerAmountEok": 154,
@@ -98,6 +105,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "instCompetition": 1352.63,
     "lockupRatio": 63.92,
     "refundDate": "2026-03-24",
+    "no38": "2270",
     "floatRatio": 31.69,
     "floatAmountEok": 378,
     "marketCapEok": 1194,
@@ -116,13 +124,15 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "subLimit": "40,000~50,000",
     "depositRate": 50,
     "minSubShares": 10,
+    "subCompetition": 2807,
     "ipoPrice": 2000,
     "priceBand": "2,000~2,000",
     "offerAmountEok": 100,
     "shares": 5000000,
     "shareType": "신주 100%",
     "instCompetition": 1343.8,
-    "refundDate": "2026-03-24"
+    "refundDate": "2026-03-24",
+    "no38": "2280"
   },
   {
     "name": "인벤테라",
@@ -137,6 +147,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "allotShares": 295000,
     "depositRate": 50,
     "minSubShares": 10,
+    "subCompetition": 3826,
     "ipoPrice": 16600,
     "priceBand": "12,100~16,600",
     "offerAmountEok": 196,
@@ -144,7 +155,8 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "shareType": "신주 100%",
     "instCompetition": 1328.82,
     "lockupRatio": 43.06,
-    "refundDate": "2026-03-26"
+    "refundDate": "2026-03-26",
+    "no38": "2275"
   },
   {
     "name": "교보스팩20호",
@@ -159,13 +171,15 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "subLimit": "66,000~80,000",
     "depositRate": 50,
     "minSubShares": 10,
+    "subCompetition": 1494,
     "ipoPrice": 2000,
     "priceBand": "2,000~2,000",
     "offerAmountEok": 108,
     "shares": 5400000,
     "shareType": "신주 100%",
     "instCompetition": 1196.99,
-    "refundDate": "2026-03-26"
+    "refundDate": "2026-03-26",
+    "no38": "2279"
   },
   {
     "name": "키움히어로스팩2호",
@@ -180,13 +194,15 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "subLimit": "100,000~120,000",
     "depositRate": 50,
     "minSubShares": 10,
+    "subCompetition": 3455,
     "ipoPrice": 2000,
     "priceBand": "2,000~2,000",
     "offerAmountEok": 120,
     "shares": 6000000,
     "shareType": "신주 100%",
     "instCompetition": 1271.12,
-    "refundDate": "2026-04-17"
+    "refundDate": "2026-04-17",
+    "no38": "2282"
   },
   {
     "name": "채비(구.대영채비)",
@@ -214,13 +230,15 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "subLimit": "40,000~50,000",
     "depositRate": 50,
     "minSubShares": 10,
+    "subCompetition": 3203,
     "ipoPrice": 2000,
     "priceBand": "2,000~2,000",
     "offerAmountEok": 100,
     "shares": 5000000,
     "shareType": "신주 100%",
     "instCompetition": 1388.6,
-    "refundDate": "2026-04-23"
+    "refundDate": "2026-04-23",
+    "no38": "2284"
   },
   {
     "name": "코스모로보틱스(구.엑소아틀레트아시아)",
@@ -247,6 +265,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "subLimit": "21,600~26,000",
     "depositRate": 50,
     "minSubShares": 10,
+    "subCompetition": 6340,
     "ipoPrice": 5000,
     "priceBand": "4,100~5,000",
     "offerAmountEok": 130,
@@ -255,6 +274,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "instCompetition": 1486.66,
     "lockupRatio": 67.24,
     "refundDate": "2026-05-08",
+    "no38": "2286",
     "floatRatio": 27.94,
     "floatAmountEok": 352,
     "marketCapEok": 1259,
@@ -272,6 +292,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "listingDate": "2026-05-20",
     "depositRate": 50,
     "minSubShares": 10,
+    "subCompetition": 5616,
     "ipoPrice": 15000,
     "priceBand": "12,500~15,000",
     "offerAmountEok": 395,
@@ -280,6 +301,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "instCompetition": 1196.08,
     "lockupRatio": 78.17,
     "refundDate": "2026-05-14",
+    "no38": "2285",
     "floatRatio": 38.48,
     "floatAmountEok": 1013,
     "marketCapEok": 2633,
@@ -298,13 +320,15 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "subLimit": "162,500~195,000",
     "depositRate": 50,
     "minSubShares": 10,
+    "subCompetition": 2938,
     "ipoPrice": 2000,
     "priceBand": "2,000~2,000",
     "offerAmountEok": 130,
     "shares": 6500000,
     "shareType": "신주 100%",
     "instCompetition": 1327.13,
-    "refundDate": "2026-05-28"
+    "refundDate": "2026-05-28",
+    "no38": "2288"
   },
   {
     "name": "피스피스스튜디오",
@@ -319,6 +343,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "allotShares": 568160,
     "depositRate": 50,
     "minSubShares": 10,
+    "subCompetition": 2390,
     "ipoPrice": 21500,
     "priceBand": "19,000~21,500",
     "offerAmountEok": 489,
@@ -327,6 +352,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "instCompetition": 847.76,
     "lockupRatio": 5.68,
     "refundDate": "2026-05-29",
+    "no38": "2287",
     "redemptionRight": false
   },
   {
@@ -348,7 +374,8 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "shares": 7000000,
     "shareType": "신주 100%",
     "instCompetition": 1087.58,
-    "refundDate": "2026-06-12"
+    "refundDate": "2026-06-12",
+    "no38": "2295"
   },
   {
     "name": "스트라드비젼",
@@ -363,6 +390,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "subLimit": "55,000~70,000",
     "depositRate": 50,
     "minSubShares": 10,
+    "subCompetition": 92,
     "ipoPrice": 12000,
     "priceBand": "12,000~14,000",
     "offerAmountEok": 840,
@@ -371,6 +399,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "instCompetition": 381.3,
     "lockupRatio": 2.77,
     "refundDate": "2026-06-23",
+    "no38": "2289",
     "floatRatio": 48.97,
     "floatAmountEok": 3129,
     "marketCapEok": 6390,
@@ -388,6 +417,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "subLimit": "20,000~24,000",
     "depositRate": 50,
     "minSubShares": 10,
+    "subCompetition": 4,
     "ipoPrice": 12500,
     "priceBand": "10,500~12,500",
     "offerAmountEok": 200,
@@ -396,6 +426,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "instCompetition": 1294.99,
     "lockupRatio": 47.2,
     "refundDate": "2026-06-23",
+    "no38": "2291",
     "floatRatio": 29.4,
     "floatAmountEok": 443,
     "marketCapEok": 1506,
@@ -416,7 +447,8 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "offerAmountEok": 440,
     "shares": 2000000,
     "shareType": "신주 100%",
-    "refundDate": "2026-06-24"
+    "refundDate": "2026-06-24",
+    "no38": "2294"
   },
   {
     "name": "한국스팩16호",
@@ -431,13 +463,15 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "subLimit": "22,500~27,500",
     "depositRate": 50,
     "minSubShares": 10,
+    "subCompetition": 2550,
     "ipoPrice": 2000,
     "priceBand": "2,000~2,000",
     "offerAmountEok": 110,
     "shares": 5500000,
     "shareType": "신주 100%",
     "instCompetition": 1364.09,
-    "refundDate": "2026-06-25"
+    "refundDate": "2026-06-25",
+    "no38": "2297"
   },
   {
     "name": "매드업",
@@ -452,6 +486,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "subLimit": "25,000~30,000",
     "depositRate": 50,
     "minSubShares": 10,
+    "subCompetition": 6610,
     "ipoPrice": 8000,
     "priceBand": "7,000~8,000",
     "offerAmountEok": 160,
@@ -460,6 +495,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "instCompetition": 1396.29,
     "lockupRatio": 27.39,
     "refundDate": "2026-06-26",
+    "no38": "2290",
     "floatRatio": 30.87,
     "floatAmountEok": 463,
     "marketCapEok": 1500,
@@ -478,6 +514,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "subLimit": "16,000~20,000",
     "depositRate": 50,
     "minSubShares": 10,
+    "subCompetition": 3021,
     "ipoPrice": 10000,
     "priceBand": "7,500~10,000",
     "offerAmountEok": 200,
@@ -486,6 +523,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "instCompetition": 1238,
     "lockupRatio": 6.92,
     "refundDate": "2026-06-29",
+    "no38": "2293",
     "floatRatio": 33.19,
     "floatAmountEok": 443,
     "marketCapEok": 1335,
@@ -512,6 +550,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "instCompetition": 1146.41,
     "lockupRatio": 17.93,
     "refundDate": "2026-07-06",
+    "no38": "2296",
     "floatRatio": 41.03,
     "floatAmountEok": 648,
     "marketCapEok": 1579,
@@ -533,7 +572,8 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "offerAmountEok": 475,
     "shares": 2565000,
     "shareType": "신주 100%",
-    "refundDate": "2026-07-16"
+    "refundDate": "2026-07-16",
+    "no38": "2301"
   },
   {
     "name": "인제니아테라퓨틱스",
@@ -550,7 +590,8 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "offerAmountEok": 600,
     "shares": 5000000,
     "shareType": "신주 100%",
-    "refundDate": "2026-07-28"
+    "refundDate": "2026-07-28",
+    "no38": "2298"
   },
   {
     "name": "케이앤에스아이앤씨",
@@ -567,7 +608,8 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "offerAmountEok": 216,
     "shares": 2400000,
     "shareType": "신주 100%",
-    "refundDate": "2026-07-30"
+    "refundDate": "2026-07-30",
+    "no38": "2299"
   },
   {
     "name": "딜리셔스",
@@ -583,7 +625,8 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "priceBand": "5,000~7,000",
     "shares": 2200000,
     "shareType": "신주 100%",
-    "refundDate": "2026-08-06"
+    "refundDate": "2026-08-06",
+    "no38": "2302"
   },
   {
     "name": "니어스랩",
@@ -600,7 +643,8 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "offerAmountEok": 273,
     "shares": 910000,
     "shareType": "신주 100%",
-    "refundDate": "2026-08-10"
+    "refundDate": "2026-08-10",
+    "no38": "2303"
   },
   {
     "name": "해치텍",
@@ -617,7 +661,8 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "offerAmountEok": 230,
     "shares": 1000000,
     "shareType": "신주 100%",
-    "refundDate": "2026-08-11"
+    "refundDate": "2026-08-11",
+    "no38": "2304"
   },
   {
     "name": "기도산업",
@@ -634,6 +679,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "offerAmountEok": 422,
     "shares": 17000000,
     "shareType": "신주 100%",
-    "refundDate": "2026-08-14"
+    "refundDate": "2026-08-14",
+    "no38": "2305"
   }
 ]

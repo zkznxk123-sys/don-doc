@@ -49,6 +49,7 @@ interface Offering {
   shares?: number; shareType?: string; instCompetition?: number; lockupRatio?: number
   marketCapEok?: number; floatAmountEok?: number; floatRatio?: number; redemptionRight?: boolean
   allotShares?: number; subLimit?: string; depositRate?: number; minSubShares?: number
+  subCompetition?: number; no38?: string
 }
 
 /** 38 종목 상세페이지 → {name, fields}. 플랫 텍스트 정규식 추출(레이아웃 변화에 강함). */
@@ -71,12 +72,14 @@ function parseDetail(html: string): { name: string; fields: Partial<Offering> } 
   const lockup = num(m(/의무보유확약\s*([\d.]+)\s*%/))
   const allot = num(m(/일반청약자\s*([\d,]+)\s*주/))
   const subLimit = m(/청약한도\s*[:：]\s*([\d,]+\s*~\s*[\d,]+|[\d,]+)\s*주/)?.replace(/\s/g, '')
+  const subComp = num(m(/청약경쟁률[^(]*\(비례\s*([\d,.]+)/))   // 청약 마감 후 최종
 
   const fields: Partial<Offering> = {}
   if (allot) fields.allotShares = allot
   if (subLimit) fields.subLimit = subLimit
   fields.depositRate = 50      // IPO 표준
   fields.minSubShares = 10     // 표준 최소청약
+  if (subComp && subComp > 0) fields.subCompetition = subComp
   if (ipoPrice) fields.ipoPrice = ipoPrice
   if (priceBand) fields.priceBand = priceBand
   if (offerBaekman) fields.offerAmountEok = Math.round(offerBaekman / 100)   // 백만원 → 억
@@ -132,7 +135,7 @@ async function main() {
         const detail = await fetchEucKr(`http://www.38.co.kr/html/fund/?o=v&no=${no}&l=&page=1`)
         const d = parseDetail(detail)
         if (!d || !offerings.has(d.name)) continue
-        Object.assign(offerings.get(d.name)!, d.fields)
+        Object.assign(offerings.get(d.name)!, d.fields, { no38: no })
       } catch { /* 개별 상세 실패 무시 */ }
     }
   } catch { /* 상세 단계 전체 실패해도 일정은 유지 */ }

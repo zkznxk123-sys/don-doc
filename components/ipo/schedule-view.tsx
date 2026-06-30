@@ -151,9 +151,25 @@ function OfferingDetail({ o, memo, onMemo, override, onOverride }: {
 
 /** 청약 배정 계산기 — 현재 경쟁률+균등 입력 → 목표 총배정별 필요 청약주수·증거금. */
 function AllocationCalc({ o }: { o: UpcomingOffering }) {
-  const [rate, setRate] = useState('')
+  const [rate, setRate] = useState(o.subCompetition ? String(o.subCompetition) : '')
   const [gyun, setGyun] = useState('')
+  const [fetching, setFetching] = useState(false)
+  const [fetchedAt, setFetchedAt] = useState<string | null>(null)
   const r = parseFloat(rate) || 0
+
+  const fetchLive = async () => {
+    if (!o.no38 || fetching) return
+    setFetching(true)
+    try {
+      const res = await fetch(`/api/ipo/competition?no=${o.no38}`)
+      const d = await res.json()
+      if (d.subCompetition != null) {
+        setRate(String(d.subCompetition))
+        setFetchedAt(new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }))
+      }
+    } catch { /* 무시 */ }
+    setFetching(false)
+  }
   const g = parseFloat(gyun) || 0
   const price = o.ipoPrice
   const dr = (o.depositRate ?? 50) / 100
@@ -163,7 +179,15 @@ function AllocationCalc({ o }: { o: UpcomingOffering }) {
 
   return (
     <div className="rounded-md border border-border p-3 space-y-2">
-      <div className="text-xs font-medium flex items-center gap-1.5"><Calculator className="size-3.5" /> 청약 배정 계산기 <span className="text-[10px] font-normal text-muted-foreground">(청약일 증권사 앱 경쟁률 입력)</span></div>
+      <div className="flex items-center justify-between">
+        <div className="text-xs font-medium flex items-center gap-1.5"><Calculator className="size-3.5" /> 청약 배정 계산기</div>
+        {o.no38 && (
+          <button onClick={fetchLive} disabled={fetching}
+            className="text-[11px] rounded bg-muted px-1.5 py-0.5 hover:bg-muted/70 disabled:opacity-50">
+            {fetching ? '조회 중…' : '38 경쟁률 가져오기'}{fetchedAt ? ` · ${fetchedAt}` : ''}
+          </button>
+        )}
+      </div>
       <div className="grid grid-cols-2 gap-2">
         <label className="flex flex-col gap-0.5">
           <span className="text-[10px] text-muted-foreground">현재 비례경쟁률</span>

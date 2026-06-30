@@ -54,6 +54,8 @@ export interface UpcomingOffering {
   subLimit?: string          // 청약한도 "10,000~12,000"
   depositRate?: number       // 청약증거금률(%) 기본 50
   minSubShares?: number      // 최소청약수량(주) 기본 10
+  subCompetition?: number    // 비례경쟁률(38 최종, 청약 마감 후). 당일 실시간은 증권사 앱 수동
+  no38?: string              // 38 상세 id — 계산기에서 경쟁률 실시간 조회용
 }
 
 export const STATUS_META: Record<SubStatus, { label: string; tone: string }> = {
