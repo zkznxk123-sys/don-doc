@@ -17,6 +17,7 @@ import { AccountBoard } from '@/components/ipo/account-board'
 import { AllocationSim } from '@/components/ipo/allocation-sim'
 import { SpacPanel } from '@/components/ipo/spac-panel'
 import { ScheduleView } from '@/components/ipo/schedule-view'
+import { UpcomingStrip } from '@/components/ipo/upcoming-strip'
 import { IpoEntryBar, IpoDatalists, DeleteBtn, EditBtn, SubForm } from '@/components/ipo/entry-forms'
 import { useIpoData } from '@/lib/ipo/store'
 import {
@@ -79,6 +80,9 @@ export default function IpoLedgerPage() {
           {showDemo ? '데모 데이터' : '내 데이터'}
         </span>
       </div>
+
+      {/* 다가올 일정 — 맨 위 고정 */}
+      <UpcomingStrip />
 
       <IpoDatalists accounts={accounts} />
       <IpoEntryBar data={data} />
