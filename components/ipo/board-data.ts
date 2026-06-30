@@ -44,7 +44,11 @@ export interface UpcomingOffering {
   shareType?: string         // 신주/구주 "신주 100%"
   instCompetition?: number   // 기관경쟁률 (예: 1146.41 → 1146:1)
   lockupRatio?: number       // 의무보유확약 비율(%)
-  // (시가총액·유통금액·유통가능비율은 38 미제공 — DART/수동, Phase 2)
+  // ── DART 증권신고서 자동(estkRs/본문 유통표) ──
+  marketCapEok?: number      // 시가총액(억) = 공모가×총상장주식수
+  floatAmountEok?: number    // 유통금액(억) = 공모가×유통가능주식수
+  floatRatio?: number        // 상장일 유통가능비율(%)
+  redemptionRight?: boolean  // 환매청구권 유무
 }
 
 export const STATUS_META: Record<SubStatus, { label: string; tone: string }> = {

@@ -125,18 +125,19 @@ function OfferingDetail({ o, memo, onMemo, override, onOverride }: {
         {o.shares != null && <Info label="총공모주식수" value={`${o.shares.toLocaleString()}주`} sub={o.shareType} />}
         {o.instCompetition != null && <Info label="기관경쟁률" value={`${Math.round(o.instCompetition).toLocaleString()}:1`} />}
         {o.lockupRatio != null && <Info label="의무보유확약" value={`${o.lockupRatio}%`} />}
+        {o.redemptionRight != null && <Info label="환매청구권" value={o.redemptionRight ? 'O' : 'X'} />}
         <Info label="청약" value={o.subStart ? `${o.subStart.slice(5)}${o.subEnd ? `~${o.subEnd.slice(5)}` : ''}` : '—'} />
         <Info label="환불일" value={o.refundDate ? o.refundDate.slice(5) : '—'} />
         <Info label="상장일" value={o.listingDate ? o.listingDate.slice(5) : '—'} />
         <Info label="주관사" value={o.brokers.join(', ') || '—'} />
       </div>
-      {/* 38 미제공 — 수동 입력 (증권신고서/서초감자 카드) */}
+      {/* DART 증권신고서 자동(수정 가능) */}
       <div className="grid grid-cols-3 gap-2">
-        <NumInput label="시가총액(억)" value={override.marketCapEok} onChange={v => onOverride({ marketCapEok: v })} />
-        <NumInput label="유통금액(억)" value={override.floatAmountEok} onChange={v => onOverride({ floatAmountEok: v })} />
-        <NumInput label="유통가능비율(%)" value={override.floatRatio} onChange={v => onOverride({ floatRatio: v })} />
+        <NumInput label="시가총액(억)" value={override.marketCapEok ?? o.marketCapEok} onChange={v => onOverride({ marketCapEok: v })} />
+        <NumInput label="유통금액(억)" value={override.floatAmountEok ?? o.floatAmountEok} onChange={v => onOverride({ floatAmountEok: v })} />
+        <NumInput label="유통가능비율(%)" value={override.floatRatio ?? o.floatRatio} onChange={v => onOverride({ floatRatio: v })} />
       </div>
-      <p className="text-[10px] text-muted-foreground">위 3개는 38 미제공 → 직접 입력(증권신고서/공시).</p>
+      <p className="text-[10px] text-muted-foreground">시총·유통은 DART 증권신고서 자동(상장일 유통표) — 직접 수정 가능.</p>
       {!hasInfo && <p className="text-[11px] text-muted-foreground">공모 상세(공모가·경쟁률·확약)는 수요예측 후 38에서 자동 채워집니다.</p>}
       <textarea value={memo} onChange={e => onMemo(e.target.value)} rows={2}
         placeholder="개인 메모 — 본인 판단 기록용 (추천 아님)"

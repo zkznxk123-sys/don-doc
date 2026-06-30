@@ -9,6 +9,7 @@
  */
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import { loadDartKey, enrichFromDart } from './ipo-dart-enrich'
 
 const URL_CHEONGYAK = 'http://www.38.co.kr/html/fund/index.htm?o=kk'  // 공모주 청약일정
 const URL_SANGJANG = 'http://www.38.co.kr/html/fund/index.htm?o=nw'   // 신규상장
@@ -46,6 +47,7 @@ interface Offering {
   subStart?: string; subEnd?: string; refundDate?: string; listingDate?: string
   ipoPrice?: number; priceBand?: string; offerAmountEok?: number
   shares?: number; shareType?: string; instCompetition?: number; lockupRatio?: number
+  marketCapEok?: number; floatAmountEok?: number; floatRatio?: number; redemptionRight?: boolean
 }
 
 /** 38 종목 상세페이지 → {name, fields}. 플랫 텍스트 정규식 추출(레이아웃 변화에 강함). */
@@ -127,6 +129,17 @@ async function main() {
       } catch { /* 개별 상세 실패 무시 */ }
     }
   } catch { /* 상세 단계 전체 실패해도 일정은 유지 */ }
+
+  // DART 증권신고서 enrichment (시총·유통금액·유통가능비율·환매청구권). 키 없으면 건너뜀.
+  const dartKey = loadDartKey()
+  if (dartKey) {
+    try {
+      const n = await enrichFromDart([...offerings.values()], dartKey)
+      console.log(`   DART enrichment: ${n}종목`)
+    } catch (e) { console.log('   DART enrichment 실패(일정은 유지):', (e as Error).message) }
+  } else {
+    console.log('   DART_API_KEY 없음 — 시총·유통은 수동')
+  }
 
   const list = [...offerings.values()]
     .filter(o => o.subStart || o.listingDate)

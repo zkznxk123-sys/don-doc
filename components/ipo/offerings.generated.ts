@@ -21,7 +21,11 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "shareType": "신주 100%",
     "instCompetition": 1108.93,
     "lockupRatio": 75.4,
-    "refundDate": "2026-03-19"
+    "refundDate": "2026-03-19",
+    "floatRatio": 33,
+    "floatAmountEok": 692,
+    "marketCapEok": 2097,
+    "redemptionRight": false
   },
   {
     "name": "한패스",
@@ -39,7 +43,11 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "shareType": "신주 100%",
     "instCompetition": 1172.59,
     "lockupRatio": 27.43,
-    "refundDate": "2026-03-19"
+    "refundDate": "2026-03-19",
+    "floatRatio": 31.63,
+    "floatAmountEok": 635,
+    "marketCapEok": 2009,
+    "redemptionRight": false
   },
   {
     "name": "NH스팩33호",
@@ -75,7 +83,11 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "shareType": "신주 100%",
     "instCompetition": 1352.63,
     "lockupRatio": 63.92,
-    "refundDate": "2026-03-24"
+    "refundDate": "2026-03-24",
+    "floatRatio": 31.69,
+    "floatAmountEok": 378,
+    "marketCapEok": 1194,
+    "redemptionRight": true
   },
   {
     "name": "신한스팩17호",
@@ -205,7 +217,11 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "shareType": "신주 100%",
     "instCompetition": 1486.66,
     "lockupRatio": 67.24,
-    "refundDate": "2026-05-08"
+    "refundDate": "2026-05-08",
+    "floatRatio": 27.94,
+    "floatAmountEok": 352,
+    "marketCapEok": 1259,
+    "redemptionRight": false
   },
   {
     "name": "마키나락스",
@@ -224,7 +240,11 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "shareType": "신주 100%",
     "instCompetition": 1196.08,
     "lockupRatio": 78.17,
-    "refundDate": "2026-05-14"
+    "refundDate": "2026-05-14",
+    "floatRatio": 38.48,
+    "floatAmountEok": 1013,
+    "marketCapEok": 2633,
+    "redemptionRight": false
   },
   {
     "name": "대신밸런스스팩20호",
@@ -260,7 +280,8 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "shareType": "신주 92.4%",
     "instCompetition": 847.76,
     "lockupRatio": 5.68,
-    "refundDate": "2026-05-29"
+    "refundDate": "2026-05-29",
+    "redemptionRight": false
   },
   {
     "name": "메리츠스팩2호",
@@ -295,7 +316,11 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "shareType": "신주 100%",
     "instCompetition": 381.3,
     "lockupRatio": 2.77,
-    "refundDate": "2026-06-23"
+    "refundDate": "2026-06-23",
+    "floatRatio": 48.97,
+    "floatAmountEok": 3129,
+    "marketCapEok": 6390,
+    "redemptionRight": false
   },
   {
     "name": "져스텍",
@@ -313,7 +338,11 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "shareType": "신주 100%",
     "instCompetition": 1294.99,
     "lockupRatio": 47.2,
-    "refundDate": "2026-06-23"
+    "refundDate": "2026-06-23",
+    "floatRatio": 29.4,
+    "floatAmountEok": 443,
+    "marketCapEok": 1506,
+    "redemptionRight": false
   },
   {
     "name": "빅웨이브로보틱스",
@@ -363,7 +392,11 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "shareType": "신주 100%",
     "instCompetition": 1396.29,
     "lockupRatio": 27.39,
-    "refundDate": "2026-06-26"
+    "refundDate": "2026-06-26",
+    "floatRatio": 30.87,
+    "floatAmountEok": 463,
+    "marketCapEok": 1500,
+    "redemptionRight": true
   },
   {
     "name": "레몬헬스케어",
@@ -381,7 +414,11 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "shareType": "신주 100%",
     "instCompetition": 1238,
     "lockupRatio": 6.92,
-    "refundDate": "2026-06-29"
+    "refundDate": "2026-06-29",
+    "floatRatio": 33.19,
+    "floatAmountEok": 443,
+    "marketCapEok": 1335,
+    "redemptionRight": false
   },
   {
     "name": "레메디",
@@ -399,7 +436,11 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "shareType": "신주 100%",
     "instCompetition": 1146.41,
     "lockupRatio": 17.93,
-    "refundDate": "2026-07-06"
+    "refundDate": "2026-07-06",
+    "floatRatio": 41.03,
+    "floatAmountEok": 648,
+    "marketCapEok": 1579,
+    "redemptionRight": false
   },
   {
     "name": "에이치엘지노믹스",
