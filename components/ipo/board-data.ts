@@ -176,6 +176,29 @@ export function readinessIssues(acct: Account): number {
   return Object.values(acct.readiness).filter(s => s !== 'OK').length
 }
 
+export interface AllocationResult {
+  ready: Account[]          // 청약 가능(broker 일치 + 준비 완료)
+  blocked: Account[]        // broker 일치하나 준비 미비
+  totalNeed: number         // 가능 계좌 수 × 계좌당 증거금
+  totalCash: number         // 가능 계좌 가용현금 합
+  surplus: number           // totalCash - totalNeed (음수 = 부족)
+  shortAccounts: Account[]  // 가용현금 < 계좌당 증거금
+}
+
+/**
+ * 균등 분산 증거금 계산 — 사실 산술만(종목 추천·비례 유불리 예측 없음).
+ * per = 계좌당 청약 증거금(원). brokers = 종목의 청약 가능 증권사.
+ * allocation-sim 컴포넌트의 표시 계산을 순수 함수로 분리(돈 숫자 직결 → 테스트 대상).
+ */
+export function computeAllocation(accounts: Account[], brokers: string[], per: number): AllocationResult {
+  const eligible = accounts.filter(a => brokers.includes(a.broker))
+  const ready = eligible.filter(a => readinessIssues(a) === 0)
+  const blocked = eligible.filter(a => readinessIssues(a) > 0)
+  const totalNeed = ready.length * per
+  const totalCash = ready.reduce((s, a) => s + a.cash, 0)
+  return { ready, blocked, totalNeed, totalCash, surplus: totalCash - totalNeed, shortAccounts: ready.filter(a => a.cash < per) }
+}
+
 // ─────────────────────────────────────────────────────────────
 // 스팩 시세 — 시총 버킷별·가격 낮은순 스크리너.
 // 스팩은 만기 시 2,000원+이자 상환이 사실상 floor → 2,000 근처/미만이 차익 후보.

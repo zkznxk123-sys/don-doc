@@ -14,7 +14,7 @@ import { Calculator, CheckCircle2, XCircle, AlertTriangle } from 'lucide-react'
 import { cn, formatLargeNumber } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import {
-  OFFERINGS, READINESS_LABELS, readinessIssues, type Account,
+  OFFERINGS, READINESS_LABELS, readinessIssues, computeAllocation, type Account,
 } from '@/components/ipo/board-data'
 
 const inputCls = 'rounded-md border border-border bg-card px-2.5 py-1.5 text-sm outline-none focus:border-foreground/30'
@@ -45,18 +45,10 @@ export function AllocationSim({ accounts }: { accounts: Account[] }) {
   const offering = OFFERINGS.find(o => o.name === offeringName)
   const brokers = offering?.brokers ?? []
 
-  const { ready, blocked } = useMemo(() => {
-    const eligible = accounts.filter(a => brokers.includes(a.broker))
-    return {
-      ready: eligible.filter(a => readinessIssues(a) === 0),
-      blocked: eligible.filter(a => readinessIssues(a) > 0),
-    }
-  }, [accounts, brokers])
-
-  const totalNeed = ready.length * per
-  const totalCash = ready.reduce((s, a) => s + a.cash, 0)
-  const surplus = totalCash - totalNeed
-  const shortAccounts = ready.filter(a => a.cash < per)
+  const { ready, blocked, totalNeed, totalCash, surplus, shortAccounts } = useMemo(
+    () => computeAllocation(accounts, brokers, per),
+    [accounts, brokers, per],
+  )
 
   return (
     <div className="space-y-4">
