@@ -15,7 +15,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { AccountBoard } from '@/components/ipo/account-board'
 import { AllocationSim } from '@/components/ipo/allocation-sim'
-import { SpacList } from '@/components/ipo/spac-list'
+import { SpacPanel } from '@/components/ipo/spac-panel'
 import { ScheduleView } from '@/components/ipo/schedule-view'
 import { IpoEntryBar, IpoDatalists, DeleteBtn, EditBtn, SubForm } from '@/components/ipo/entry-forms'
 import { useIpoData } from '@/lib/ipo/store'
@@ -149,7 +149,7 @@ export default function IpoLedgerPage() {
         </TabsContent>
 
         <TabsContent value="spac">
-          <SpacList data={data} />
+          <SpacPanel data={data} />
         </TabsContent>
 
         <TabsContent value="offerings">

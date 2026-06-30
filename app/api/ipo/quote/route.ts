@@ -45,7 +45,7 @@ async function fetchQuote(code: string): Promise<{ price: number; marketCapEok: 
 export async function POST(req: NextRequest) {
   let body: { items?: { name: string; code?: string }[] }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'bad json' }, { status: 400 }) }
-  const items = Array.isArray(body.items) ? body.items.slice(0, 50) : []
+  const items = Array.isArray(body.items) ? body.items.slice(0, 100) : []
 
   const asOf = new Date().toISOString()
   const quotes = await Promise.all(items.map(async it => {
