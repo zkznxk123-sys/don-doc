@@ -14,15 +14,23 @@ import {
 
 const KEY = 'dondoc.ipo.v1'
 
+/** 38 미제공 종목 필드(수동 입력) — 시총·유통금액·유통가능비율. */
+export interface OfferingOverride {
+  marketCapEok?: number   // 시가총액(억)
+  floatAmountEok?: number // 유통금액(억)
+  floatRatio?: number     // 유통가능비율(%)
+}
+
 interface IpoState {
   accounts: Account[]
   ledger: LedgerRow[]
   spacs: Spac[]
   memos: Record<string, string>   // 종목명 → 개인메모(판단·추천 아님, 본인 기록)
+  overrides: Record<string, OfferingOverride>  // 종목명 → 38 미제공 수동 필드
   initialized: boolean   // 사용자가 직접 입력하기 시작했나
 }
 
-const EMPTY: IpoState = { accounts: [], ledger: [], spacs: [], memos: {}, initialized: false }
+const EMPTY: IpoState = { accounts: [], ledger: [], spacs: [], memos: {}, overrides: {}, initialized: false }
 
 function load(): IpoState | null {
   try {
@@ -35,6 +43,7 @@ function load(): IpoState | null {
       ledger: s.ledger ?? [],
       spacs: s.spacs ?? [],
       memos: s.memos ?? {},
+      overrides: s.overrides ?? {},
       initialized: !!s.initialized,
     }
   } catch { return null }
@@ -61,6 +70,8 @@ export interface IpoData {
   removeSpac: (id: string) => void
   memos: Record<string, string>
   setMemo: (offering: string, text: string) => void
+  overrides: Record<string, OfferingOverride>
+  setOverride: (offering: string, patch: OfferingOverride) => void
   seedDemo: () => void           // 데모를 내 작업본으로 복사
   reset: () => void              // 데모 보기로 복귀(내 데이터 삭제)
 }
@@ -100,7 +111,7 @@ export function useIpoData(): IpoData {
 
   const addAccount = useCallback((a: Omit<Account, 'id'>) => {
     setState(prev => {
-      const base = prev.initialized ? prev : { accounts: [], ledger: [], spacs: [], memos: prev.memos, initialized: true }
+      const base = prev.initialized ? prev : { accounts: [], ledger: [], spacs: [], memos: prev.memos, overrides: prev.overrides, initialized: true }
       return { ...base, accounts: [...base.accounts, { ...a, id: newId() }] }
     })
   }, [])
@@ -116,7 +127,7 @@ export function useIpoData(): IpoData {
   const addSub = useCallback((r: Omit<LedgerRow, 'kind' | 'subStart' | 'refundDate' | 'listingDate'>) => {
     const row = buildRow(r)
     setState(prev => {
-      const base = prev.initialized ? prev : { accounts: [], ledger: [], spacs: [], memos: prev.memos, initialized: true }
+      const base = prev.initialized ? prev : { accounts: [], ledger: [], spacs: [], memos: prev.memos, overrides: prev.overrides, initialized: true }
       return { ...base, ledger: [...base.ledger, row] }
     })
   }, [])
@@ -132,7 +143,7 @@ export function useIpoData(): IpoData {
 
   const addSpac = useCallback((s: Omit<Spac, 'id'>) => {
     setState(prev => {
-      const base = prev.initialized ? prev : { accounts: [], ledger: [], spacs: [], memos: prev.memos, initialized: true }
+      const base = prev.initialized ? prev : { accounts: [], ledger: [], spacs: [], memos: prev.memos, overrides: prev.overrides, initialized: true }
       return { ...base, spacs: [...base.spacs, { ...s, id: newId() }] }
     })
   }, [])
@@ -149,11 +160,15 @@ export function useIpoData(): IpoData {
     setState(prev => ({ ...prev, memos: { ...prev.memos, [offering]: text } }))
   }, [])
 
+  const setOverride = useCallback((offering: string, patch: OfferingOverride) => {
+    setState(prev => ({ ...prev, overrides: { ...prev.overrides, [offering]: { ...prev.overrides[offering], ...patch } } }))
+  }, [])
+
   const seedDemo = useCallback(() => {
-    setState(prev => ({ accounts: [...DEMO_ACCOUNTS], ledger: [...DEMO_LEDGER], spacs: [...DEMO_SPACS], memos: prev.memos, initialized: true }))
+    setState(prev => ({ accounts: [...DEMO_ACCOUNTS], ledger: [...DEMO_LEDGER], spacs: [...DEMO_SPACS], memos: prev.memos, overrides: prev.overrides, initialized: true }))
   }, [])
 
   const reset = useCallback(() => setState(EMPTY), [])
 
-  return { hydrated, showDemo, accounts, ledger, spacs, addAccount, updateAccount, removeAccount, addSub, updateSub, removeSub, addSpac, updateSpac, removeSpac, memos: state.memos, setMemo, seedDemo, reset }
+  return { hydrated, showDemo, accounts, ledger, spacs, addAccount, updateAccount, removeAccount, addSub, updateSub, removeSub, addSpac, updateSpac, removeSpac, memos: state.memos, setMemo, overrides: state.overrides, setOverride, seedDemo, reset }
 }

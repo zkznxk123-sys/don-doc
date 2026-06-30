@@ -9,7 +9,7 @@ import { Calendar, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { OFFERINGS, ddays, ddayLabel, type UpcomingOffering } from '@/components/ipo/board-data'
-import type { IpoData } from '@/lib/ipo/store'
+import type { IpoData, OfferingOverride } from '@/lib/ipo/store'
 
 /** 종목의 대표일(정렬·월그룹 기준): 청약 시작 → 상장 → 환불 순 우선. */
 function primaryDate(o: UpcomingOffering): string {
@@ -68,7 +68,8 @@ export function ScheduleView({ data }: { data: IpoData }) {
                     <OfferingRow o={o} todayISO={todayISO} today={today}
                       open={expanded === o.name} onToggle={() => setExpanded(expanded === o.name ? null : o.name)} />
                     {expanded === o.name && (
-                      <OfferingDetail o={o} memo={data.memos[o.name] ?? ''} onMemo={t => data.setMemo(o.name, t)} />
+                      <OfferingDetail o={o} memo={data.memos[o.name] ?? ''} onMemo={t => data.setMemo(o.name, t)}
+                        override={data.overrides[o.name] ?? {}} onOverride={p => data.setOverride(o.name, p)} />
                     )}
                   </div>
                 ))}
@@ -110,10 +111,14 @@ function OfferingRow({ o, todayISO, today, open, onToggle }: { o: UpcomingOfferi
   )
 }
 
-function OfferingDetail({ o, memo, onMemo }: { o: UpcomingOffering; memo: string; onMemo: (t: string) => void }) {
+function OfferingDetail({ o, memo, onMemo, override, onOverride }: {
+  o: UpcomingOffering; memo: string; onMemo: (t: string) => void
+  override: OfferingOverride; onOverride: (p: OfferingOverride) => void
+}) {
   const hasInfo = !!(o.ipoPrice || o.offerAmountEok || o.shares || o.instCompetition || o.lockupRatio != null)
   return (
     <div className="pb-3 pt-1 space-y-2">
+      {/* 38 자동 */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {o.ipoPrice != null && <Info label="공모가" value={`${o.ipoPrice.toLocaleString()}원`} sub={o.priceBand ? `희망 ${o.priceBand}` : undefined} />}
         {o.offerAmountEok != null && <Info label="공모금액" value={`${o.offerAmountEok.toLocaleString()}억`} />}
@@ -125,11 +130,28 @@ function OfferingDetail({ o, memo, onMemo }: { o: UpcomingOffering; memo: string
         <Info label="상장일" value={o.listingDate ? o.listingDate.slice(5) : '—'} />
         <Info label="주관사" value={o.brokers.join(', ') || '—'} />
       </div>
+      {/* 38 미제공 — 수동 입력 (증권신고서/서초감자 카드) */}
+      <div className="grid grid-cols-3 gap-2">
+        <NumInput label="시가총액(억)" value={override.marketCapEok} onChange={v => onOverride({ marketCapEok: v })} />
+        <NumInput label="유통금액(억)" value={override.floatAmountEok} onChange={v => onOverride({ floatAmountEok: v })} />
+        <NumInput label="유통가능비율(%)" value={override.floatRatio} onChange={v => onOverride({ floatRatio: v })} />
+      </div>
+      <p className="text-[10px] text-muted-foreground">위 3개는 38 미제공 → 직접 입력(증권신고서/공시).</p>
       {!hasInfo && <p className="text-[11px] text-muted-foreground">공모 상세(공모가·경쟁률·확약)는 수요예측 후 38에서 자동 채워집니다.</p>}
       <textarea value={memo} onChange={e => onMemo(e.target.value)} rows={2}
         placeholder="개인 메모 — 본인 판단 기록용 (추천 아님)"
         className="w-full rounded-md border border-border bg-card px-2.5 py-1.5 text-sm outline-none focus:border-foreground/30 resize-none" />
     </div>
+  )
+}
+
+function NumInput({ label, value, onChange }: { label: string; value?: number; onChange: (v: number | undefined) => void }) {
+  return (
+    <label className="rounded-md bg-muted/40 px-2.5 py-1.5 block">
+      <span className="text-[10px] text-muted-foreground">{label}</span>
+      <input type="number" value={value ?? ''} onChange={e => onChange(e.target.value === '' ? undefined : parseFloat(e.target.value))}
+        placeholder="—" className="w-full bg-transparent text-sm font-medium tabular-nums outline-none" />
+    </label>
   )
 }
 
