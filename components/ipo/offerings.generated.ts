@@ -1,7 +1,7 @@
 // AUTO-GENERATED — 편집 금지. 재생성: npx tsx scripts/ipo-schedule-build.ts
 import type { UpcomingOffering } from './board-data'
 
-export const GENERATED_AT = '2026-06-30'
+export const GENERATED_AT = '2026-07-01'
 export const SOURCE = '38커뮤니케이션 (38.co.kr) 청약·상장·종목상세'
 
 /** 38.co.kr에서 추출한 공모주·스팩 일정 + 종목 기본정보(공모가·경쟁률·확약 등). */
