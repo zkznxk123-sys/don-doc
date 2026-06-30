@@ -116,7 +116,7 @@ export function AllocationSim({ accounts }: { accounts: Account[] }) {
                 <span className="flex items-center gap-1.5">
                   {ok ? <CheckCircle2 className="size-4 text-emerald-500" /> : <XCircle className="size-4 text-rose-500" />}
                   <span className="font-medium">{a.person}</span>
-                  <span className="text-muted-foreground text-xs">{a.broker} · {a.type}</span>
+                  <span className="text-muted-foreground text-xs">{a.broker}</span>
                 </span>
                 <span className="text-xs tabular-nums text-muted-foreground">
                   가용 <span className="text-foreground">{formatLargeNumber(a.cash)}</span> / 필요 {formatLargeNumber(per)}
@@ -138,7 +138,7 @@ export function AllocationSim({ accounts }: { accounts: Account[] }) {
             <div key={a.id} className="flex items-center justify-between rounded-md bg-amber-50 dark:bg-amber-500/10 px-3 py-2 text-sm">
               <span className="flex items-center gap-1.5">
                 <span className="font-medium">{a.person}</span>
-                <span className="text-muted-foreground text-xs">{a.broker} · {a.type}</span>
+                <span className="text-muted-foreground text-xs">{a.broker}</span>
               </span>
               <span className="text-xs font-medium text-amber-700 dark:text-amber-300">{firstIssue(a)} → 먼저 해결</span>
             </div>

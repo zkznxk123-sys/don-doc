@@ -9,8 +9,8 @@ import { Plus, X, Database, RotateCcw, Pencil } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import {
-  OFFERINGS, READINESS_LABELS, ACCOUNT_STATUSES,
-  type ReadinessState, type SubStatus, type Account, type AccountStatus, type LedgerRow, type Spac,
+  OFFERINGS, READINESS_LABELS,
+  type ReadinessState, type SubStatus, type Account, type LedgerRow, type Spac,
 } from '@/components/ipo/board-data'
 import type { IpoData } from '@/lib/ipo/store'
 
@@ -79,8 +79,6 @@ export function AccountForm({ data, onDone, initial }: { data: IpoData; onDone: 
   const [person, setPerson] = useState(initial?.person ?? '본인')
   const [broker, setBroker] = useState(initial?.broker ?? '')
   const [accountNo, setAccountNo] = useState(initial?.accountNo ?? '')
-  const [type, setType] = useState<Account['type']>(initial?.type ?? '종합')
-  const [status, setStatus] = useState<AccountStatus>(initial?.status ?? '정상')
   const [bankLinked, setBankLinked] = useState(initial?.bankLinked ?? false)
   const [cash, setCash] = useState(initial ? String(initial.cash / 10_000) : '')
   const [readiness, setReadiness] = useState<Account['readiness']>(initial?.readiness ?? { cdd: 'OK', otp: 'OK', cert: 'OK', limit: 'OK', mail: 'OK' })
@@ -90,7 +88,7 @@ export function AccountForm({ data, onDone, initial }: { data: IpoData; onDone: 
 
   const submit = () => {
     if (!broker.trim()) return
-    const values = { person: person.trim() || '본인', broker: broker.trim(), accountNo: accountNo.trim() || undefined, type, status, bankLinked, cash: won(cash), readiness }
+    const values = { person: person.trim() || '본인', broker: broker.trim(), accountNo: accountNo.trim() || undefined, bankLinked, cash: won(cash), readiness }
     if (initial) data.updateAccount(initial.id, values)
     else data.addAccount(values)
     onDone()
@@ -107,16 +105,6 @@ export function AccountForm({ data, onDone, initial }: { data: IpoData; onDone: 
         </Field>
         <Field label="계좌번호">
           <input className={inputCls} value={accountNo} onChange={e => setAccountNo(e.target.value)} placeholder="123-45-678901" />
-        </Field>
-        <Field label="유형">
-          <select className={inputCls} value={type} onChange={e => setType(e.target.value as Account['type'])}>
-            <option value="종합">종합</option><option value="CMA">CMA</option>
-          </select>
-        </Field>
-        <Field label="계좌상태">
-          <select className={inputCls} value={status} onChange={e => setStatus(e.target.value as AccountStatus)}>
-            {ACCOUNT_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
         </Field>
         <Field label="가용현금(만원)">
           <input type="number" className={inputCls} value={cash} onChange={e => setCash(e.target.value)} placeholder="0" />
