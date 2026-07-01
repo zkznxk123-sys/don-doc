@@ -225,7 +225,7 @@ if (isLite()) { /* lite 분기 */ }
 
 ## 공모주·스팩 청약 원장 (IPO, BETA · 2026-06-30 도입)
 
-⚠️ **상태: localStorage PoC — DB 미연동.** 입력은 `entry-forms.tsx`가 localStorage에 저장(가족 동기화·서버 영속 아직 없음). 정식화 시 Prisma 모델 + 서버 액션 연동 필요. 기획: vault `03_personal/projects/공모주-청약{-서비스-구상,원장-데이터모델-스펙}.md`.
+**상태: DB 영속화(2026-07-01) — 멀티기기 동기화.** 워크스페이스(계좌·원장·스팩·메모·오버라이드)는 Prisma `IpoWorkspace`(userId PK + `data` Json)에 사용자 단위로 저장. localStorage는 오프라인/초기 캐시 역할. 기획: vault `03_personal/projects/공모주-청약{-서비스-구상,원장-데이터모델-스펙}.md`.
 
 - **페이지**: `app/dashboard/ipo/page.tsx` ("공모주·스팩주").
 - **`components/ipo/`** (~2,600줄):
