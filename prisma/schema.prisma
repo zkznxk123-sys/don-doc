@@ -628,3 +628,14 @@ model ExchangeRate {
   rate      Float
   updatedAt DateTime @updatedAt
 }
+
+// ── 공모주·스팩 워크스페이스 ────────────────────────────────────────────────
+// /dashboard/ipo 의 계좌·청약원장·스팩·메모·오버라이드를 userId당 JSON 문서 1개로
+// 영속화(멀티기기 동기화). 접근 패턴이 load-all/save-all이라 문서 모델이 적합.
+// 필요 시 나중에 관계형(IpoAccount/IpoSubscription/IpoSpac)으로 정규화 가능.
+model IpoWorkspace {
+  userId    String   @id // Clerk 기반 앱 User.id (워크스페이스 소유자)
+  data      Json // { accounts, ledger, spacs, memos, overrides }
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}

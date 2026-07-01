@@ -1,12 +1,12 @@
 'use client'
 
 /**
- * 공모주 원장 로컬 스토어 — 브라우저 localStorage 영속(기기 로컬).
- * 데모와 분리: 사용자가 직접 추가하면 '내 작업본'(initialized=true)으로 전환되고
- * 데모는 화면에서 사라진다. reset()으로 데모 보기로 복귀.
- * (멀티기기 동기화는 DB 영속 단계에서 — 지금은 PoC 로컬.)
+ * 공모주 원장 스토어 — DB(멀티기기) + localStorage(오프라인 캐시) 이중 영속.
+ * 로드 우선순위: DB > localStorage > EMPTY(데모 보기). 변경 시 debounce PUT.
+ * 데모와 분리: 직접 추가하면 '내 작업본'(initialized=true)으로 전환, reset()으로 데모 복귀.
+ * 기존 로컬 작업본은 첫 로드 때 DB로 자동 마이그레이션.
  */
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   DEMO_ACCOUNTS, DEMO_LEDGER, DEMO_SPACS, OFFERING_BY_NAME,
   type Account, type LedgerRow, type Spac,
@@ -32,20 +32,23 @@ interface IpoState {
 
 const EMPTY: IpoState = { accounts: [], ledger: [], spacs: [], memos: {}, overrides: {}, initialized: false }
 
+/** 임의 저장본(로컬·DB) → 완전한 IpoState. 옛 저장본에 없던 필드 백필. */
+function normalize(s: Partial<IpoState> | null | undefined): IpoState {
+  return {
+    accounts: s?.accounts ?? [],
+    ledger: s?.ledger ?? [],
+    spacs: s?.spacs ?? [],
+    memos: s?.memos ?? {},
+    overrides: s?.overrides ?? {},
+    initialized: !!s?.initialized,
+  }
+}
+
 function load(): IpoState | null {
   try {
     const raw = localStorage.getItem(KEY)
     if (!raw) return null
-    const s = JSON.parse(raw) as Partial<IpoState>
-    // 스키마 진화 방어: 옛 저장본에 없던 필드 백필
-    return {
-      accounts: s.accounts ?? [],
-      ledger: s.ledger ?? [],
-      spacs: s.spacs ?? [],
-      memos: s.memos ?? {},
-      overrides: s.overrides ?? {},
-      initialized: !!s.initialized,
-    }
+    return normalize(JSON.parse(raw) as Partial<IpoState>)
   } catch { return null }
 }
 
@@ -93,15 +96,52 @@ function buildRow(r: Omit<LedgerRow, 'kind' | 'subStart' | 'refundDate' | 'listi
 export function useIpoData(): IpoData {
   const [state, setState] = useState<IpoState>(EMPTY)
   const [hydrated, setHydrated] = useState(false)
+  const dbRef = useRef(false)        // DB 사용 가능(인증됨)
+  const skipSaveRef = useRef(true)   // 첫 로드 직후 1회 저장 스킵
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  // 로드: DB > localStorage > EMPTY. DB 비었고 로컬 작업본 있으면 마이그레이션.
   useEffect(() => {
-    const s = load()
-    if (s) setState(s)
-    setHydrated(true)
+    let cancelled = false
+    ;(async () => {
+      const local = load()
+      try {
+        const res = await fetch('/api/ipo/workspace')
+        if (res.ok) {
+          dbRef.current = true
+          const j = await res.json()
+          if (j.data) {
+            if (!cancelled) setState(normalize(j.data))       // DB 작업본
+          } else if (local?.initialized) {
+            if (!cancelled) { setState(local); skipSaveRef.current = false }  // 로컬 → DB 마이그레이션
+          } else if (local) {
+            if (!cancelled) setState(local)
+          }
+        } else if (local) {
+          if (!cancelled) setState(local)                     // 비인증/에러 → 로컬 폴백
+        }
+      } catch {
+        if (local && !cancelled) setState(local)              // 오프라인 → 로컬 폴백
+      } finally {
+        if (!cancelled) setHydrated(true)
+      }
+    })()
+    return () => { cancelled = true }
   }, [])
 
+  // 저장: localStorage(항상 캐시) + DB(debounced, 인증 시). 첫 로드 반영은 1회 스킵.
   useEffect(() => {
-    if (hydrated) { try { localStorage.setItem(KEY, JSON.stringify(state)) } catch {} }
+    if (!hydrated) return
+    try { localStorage.setItem(KEY, JSON.stringify(state)) } catch {}
+    if (skipSaveRef.current) { skipSaveRef.current = false; return }
+    if (!dbRef.current) return
+    if (timerRef.current) clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => {
+      fetch('/api/ipo/workspace', {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: state }),
+      }).catch(() => {})
+    }, 800)
   }, [state, hydrated])
 
   const showDemo = !state.initialized
