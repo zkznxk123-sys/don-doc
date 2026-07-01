@@ -16,6 +16,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { AccountBoard, MoneyMap } from '@/components/ipo/account-board'
 import { AllocationSim } from '@/components/ipo/allocation-sim'
 import { SpacPanel } from '@/components/ipo/spac-panel'
+import { SpacHoldings } from '@/components/ipo/spac-holdings'
 import { ScheduleView } from '@/components/ipo/schedule-view'
 import { UpcomingStrip } from '@/components/ipo/upcoming-strip'
 import { IpoEntryBar, IpoDatalists, DeleteBtn, EditBtn, SubForm } from '@/components/ipo/entry-forms'
@@ -123,8 +124,9 @@ export default function IpoLedgerPage() {
           </Tabs>
         </TabsContent>
 
-        {/* C. 결과·기록 — 종목별 원장(손익·배정·상태) */}
-        <TabsContent value="result">
+        {/* C. 결과·기록 — 스팩 보유현황 + 종목별 공모주 원장(손익·배정·상태) */}
+        <TabsContent value="result" className="space-y-3">
+      <SpacHoldings spacs={data.spacs} />
       <section className="space-y-3">
         {groups.length === 0 && (
           <p className="text-sm text-muted-foreground py-8 text-center">아직 청약 내역이 없습니다. 위 “청약 추가”로 등록하세요.</p>

@@ -236,6 +236,8 @@ export function SpacForm({ data, onDone, initial }: { data: IpoData; onDone: () 
   const [cap, setCap] = useState(initial ? String(initial.marketCapEok) : '')
   const [price, setPrice] = useState(initial ? String(initial.price) : '2000')
   const [maturity, setMaturity] = useState(initial?.maturityDate ?? '')
+  const [shares, setShares] = useState(initial?.shares ? String(initial.shares) : '')
+  const [avgCost, setAvgCost] = useState(initial?.avgCost ? String(initial.avgCost) : '')
 
   const submit = () => {
     if (!name.trim()) return
@@ -244,6 +246,8 @@ export function SpacForm({ data, onDone, initial }: { data: IpoData; onDone: () 
       marketCapEok: parseFloat(cap) || 0,
       price: parseInt(price) || 0,
       maturityDate: maturity.trim() || undefined,
+      shares: parseInt(shares) || undefined,
+      avgCost: parseInt(avgCost) || undefined,
     }
     if (initial) data.updateSpac(initial.id, values)
     else data.addSpac(values)
@@ -257,6 +261,10 @@ export function SpacForm({ data, onDone, initial }: { data: IpoData; onDone: () 
         <Field label="시가총액(억)"><input type="number" className={inputCls} value={cap} onChange={e => setCap(e.target.value)} placeholder="100" /></Field>
         <Field label="현재가(원)"><input type="number" className={inputCls} value={price} onChange={e => setPrice(e.target.value)} placeholder="2000" /></Field>
         <Field label="만기(YYYY-MM-DD)"><input className={inputCls} value={maturity} onChange={e => setMaturity(e.target.value)} placeholder="2029-06-25" /></Field>
+      </div>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+        <Field label="보유수(주)"><input type="number" className={inputCls} value={shares} onChange={e => setShares(e.target.value)} placeholder="미보유 시 비움" /></Field>
+        <Field label="매수단가(원)"><input type="number" className={inputCls} value={avgCost} onChange={e => setAvgCost(e.target.value)} placeholder="2000" /></Field>
       </div>
       <FormActions onCancel={onDone} onSubmit={submit} disabled={!name.trim()} edit={!!initial} />
     </div>

@@ -219,6 +219,9 @@ export interface Spac {
   code?: string           // 종목코드(네이버 실시간 시세용). 없으면 종목명으로 자동 해석
   live?: boolean          // 마지막 갱신이 실시간 시세였나
   quotedAt?: string       // 마지막 시세 갱신 시각(ISO)
+  // ── 보유현황(선택) — 관심 종목을 실제 보유하면 채움 ──
+  shares?: number         // 보유 주식수
+  avgCost?: number        // 매수 평균단가(원)
 }
 
 export const SPAC_BUCKETS: { key: string; label: string; max: number }[] = [
@@ -244,8 +247,8 @@ export function groupSpacsByCap(spacs: Spac[]): { bucket: typeof SPAC_BUCKETS[nu
 // 시총·가격은 2026-06 네이버 실측 baseline(데모). 새로고침 시 실시간으로 덮어씀.
 export const DEMO_SPACS: Spac[] = [
   { id: 'spac-hk16', name: '한국제16호스팩',     marketCapEok: 80,  price: 1_995, maturityDate: '2029-06-25' },
-  { id: 'spac-sh17', name: '신한제17호스팩',     marketCapEok: 106, price: 1_993, maturityDate: '2029-04-01', code: '0130D0' },
-  { id: 'spac-mr2',  name: '메리츠제2호스팩',    marketCapEok: 141, price: 1_947, maturityDate: '2029-06-19', code: '0165X0' },
+  { id: 'spac-sh17', name: '신한제17호스팩',     marketCapEok: 106, price: 1_993, maturityDate: '2029-04-01', code: '0130D0', shares: 500, avgCost: 2_010 },
+  { id: 'spac-mr2',  name: '메리츠제2호스팩',    marketCapEok: 141, price: 1_947, maturityDate: '2029-06-19', code: '0165X0', shares: 300, avgCost: 1_930 },
   { id: 'spac-ds20', name: '대신밸런스제20호스팩', marketCapEok: 134, price: 1_982, maturityDate: '2029-06-05', code: '0134X0' },
   { id: 'spac-sh18', name: '신한제18호스팩',     marketCapEok: 111, price: 1_967, maturityDate: '2029-04-30', code: '0129K0' },
   { id: 'spac-nh33', name: '엔에이치스팩33호',    marketCapEok: 155, price: 2_010, maturityDate: '2029-03-27', code: '0130H0' },
