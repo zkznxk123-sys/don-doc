@@ -104,8 +104,6 @@ export async function GET(req: NextRequest) {
     }))
   }
 
-  console.log(`[molit price] 최종 rawCount: ${results.length}, complex: ${complexName}`)
-
   // 월별 중앙값 집계
   const byMonth: Record<string, number[]> = {}
   for (const r of results) {

@@ -50,7 +50,6 @@ export async function GET(req: NextRequest) {
   }))
 
   const complexes = Array.from(nameSet).sort().map(name => ({ name, code: '' }))
-  console.log(`[complexes] bjdCode:${bjdCode} 수집 단지수:${complexes.length}`)
 
   return NextResponse.json({ complexes })
 }
