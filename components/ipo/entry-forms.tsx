@@ -80,6 +80,9 @@ export function AccountForm({ data, onDone, initial }: { data: IpoData; onDone: 
   const [broker, setBroker] = useState(initial?.broker ?? '')
   const [accountNo, setAccountNo] = useState(initial?.accountNo ?? '')
   const [bankLinked, setBankLinked] = useState(initial?.bankLinked ?? false)
+  const [loginId, setLoginId] = useState(initial?.loginId ?? '')
+  const [certExpiry, setCertExpiry] = useState(initial?.certExpiry ?? '')
+  const [secretHint, setSecretHint] = useState(initial?.secretHint ?? '')
   const [cash, setCash] = useState(initial ? String(initial.cash / 10_000) : '')
   const [readiness, setReadiness] = useState<Account['readiness']>(initial?.readiness ?? { cdd: 'OK', otp: 'OK', cert: 'OK', limit: 'OK', mail: 'OK' })
 
@@ -88,7 +91,7 @@ export function AccountForm({ data, onDone, initial }: { data: IpoData; onDone: 
 
   const submit = () => {
     if (!broker.trim()) return
-    const values = { person: person.trim() || '본인', broker: broker.trim(), accountNo: accountNo.trim() || undefined, bankLinked, cash: won(cash), readiness }
+    const values = { person: person.trim() || '본인', broker: broker.trim(), accountNo: accountNo.trim() || undefined, bankLinked, loginId: loginId.trim() || undefined, certExpiry: certExpiry.trim() || undefined, secretHint: secretHint.trim() || undefined, cash: won(cash), readiness }
     if (initial) data.updateAccount(initial.id, values)
     else data.addAccount(values)
     onDone()
@@ -114,6 +117,18 @@ export function AccountForm({ data, onDone, initial }: { data: IpoData; onDone: 
         <input type="checkbox" checked={bankLinked} onChange={e => setBankLinked(e.target.checked)} />
         은행제휴 계좌 <span className="text-[11px] text-muted-foreground">(20영업일 제한 없이 여러 개 — 비대면 일반은 20일 1개)</span>
       </label>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+        <Field label="계정 아이디">
+          <input className={inputCls} value={loginId} onChange={e => setLoginId(e.target.value)} placeholder="로그인 ID" autoComplete="off" />
+        </Field>
+        <Field label="인증서 만료일">
+          <input type="date" className={inputCls} value={certExpiry} onChange={e => setCertExpiry(e.target.value)} />
+        </Field>
+        <Field label="비번 보관 위치">
+          <input className={inputCls} value={secretHint} onChange={e => setSecretHint(e.target.value)} placeholder="예: 1Password › KB" autoComplete="off" />
+        </Field>
+      </div>
+      <p className="text-[11px] text-muted-foreground -mt-1">🔒 비밀번호는 저장하지 않습니다 — 보관 위치(1Password 등)만 메모.</p>
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="text-[11px] text-muted-foreground mr-1">준비상태(클릭해 전환):</span>
         {READINESS_LABELS.map(({ key, label }) => (

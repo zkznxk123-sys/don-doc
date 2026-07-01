@@ -118,6 +118,10 @@ export interface Account {
   broker: string
   accountNo?: string         // 계좌번호
   bankLinked?: boolean       // 은행제휴 계좌(연계). true=은행제휴(20일 제한 없음), false/undefined=비대면 일반(20일 1개)
+  // ── 자격증명 참조(§6 모델) — 비밀번호 자체는 저장하지 않음 ──
+  loginId?: string           // 계정 아이디(로그인 ID)
+  certExpiry?: string        // 공동인증서 만료일 "YYYY-MM-DD"
+  secretHint?: string        // 비밀번호 보관 위치 힌트 (예: "1Password › KB") — 실 비번은 전용 도구에
   cash: number   // 가용현금 잔액(원)
   readiness: {
     cdd: ReadinessState     // 고객확인(CDD/EDD)
@@ -144,8 +148,8 @@ export const READINESS_TONE: Record<ReadinessState, string> = {
 
 /** 계좌 데모 — 명의×증권사. 일부러 준비 미비(만료·대기)를 섞어 통증을 드러냄. */
 export const DEMO_ACCOUNTS: Account[] = [
-  { id: 'me-kb',   person: '본인',  broker: 'KB',  accountNo: '123-45-678901', bankLinked: true,  cash: 8_000_000, readiness: { cdd: 'OK', otp: 'OK', cert: 'OK', limit: 'OK', mail: 'OK' } },
-  { id: 'me-mr',   person: '본인',  broker: '미래', accountNo: '987-65-432100', bankLinked: false, cash: 1_500_000, readiness: { cdd: 'OK', otp: 'OK', cert: 'OK', limit: 'OK', mail: 'OK' } },
+  { id: 'me-kb',   person: '본인',  broker: 'KB',  accountNo: '123-45-678901', bankLinked: true,  loginId: 'sangbin.han', certExpiry: '2026-11-20', secretHint: '1Password › KB증권', cash: 8_000_000, readiness: { cdd: 'OK', otp: 'OK', cert: 'OK', limit: 'OK', mail: 'OK' } },
+  { id: 'me-mr',   person: '본인',  broker: '미래', accountNo: '987-65-432100', bankLinked: false, loginId: 'sbhan82', certExpiry: '2026-07-15', secretHint: '1Password › 미래에셋', cash: 1_500_000, readiness: { cdd: 'OK', otp: 'OK', cert: 'OK', limit: 'OK', mail: 'OK' } },
   { id: 'sp-kb',   person: '배우자', broker: 'KB',  accountNo: '111-22-333444', bankLinked: true,  cash: 2_000_000, readiness: { cdd: 'PENDING', otp: 'OK', cert: 'OK', limit: 'OK', mail: 'OK' } },
   { id: 'sp-ss',   person: '배우자', broker: '삼성', accountNo: '555-66-777888', bankLinked: false, cash: 3_000_000, readiness: { cdd: 'OK', otp: 'EXPIRED', cert: 'OK', limit: 'OK', mail: 'OK' } },
   { id: 'ch-mr',   person: '자녀',  broker: '미래', accountNo: '222-33-444555', bankLinked: true,  cash: 1_000_000, readiness: { cdd: 'OK', otp: 'OK', cert: 'PENDING', limit: 'PENDING', mail: 'OK' } },

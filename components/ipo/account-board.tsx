@@ -6,7 +6,7 @@
  * ② 계좌 보드: 명의×증권사별 준비상태(CDD·OTP·인증서·한도·우편물) + 머무는 돈
  */
 import { useMemo, useState } from 'react'
-import { AlertTriangle, CheckCircle2, Wallet } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Wallet, KeyRound } from 'lucide-react'
 import { cn, formatLargeNumber } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { DeleteBtn, EditBtn, AccountForm } from '@/components/ipo/entry-forms'
@@ -123,6 +123,16 @@ export function AccountBoard({ accounts, ledger, showDemo, data }: AccountBoardP
   )
 }
 
+/** 공동인증서 만료 표기 — 지남=적색, 30일 이내=황색. */
+function CertExpiry({ date }: { date: string }) {
+  const days = Math.ceil((new Date(date + 'T00:00:00').getTime() - Date.now()) / 86_400_000)
+  const tone = days < 0 ? 'text-rose-600 dark:text-rose-400'
+    : days <= 30 ? 'text-amber-600 dark:text-amber-400'
+    : 'text-foreground'
+  const label = days < 0 ? '만료됨' : `D-${days}`
+  return <span>인증서 <span className={tone}>{date.slice(2)} · {label}</span></span>
+}
+
 function Legend({ seg, amount }: { seg: keyof typeof SEG; amount: number }) {
   return (
     <span className="flex items-center gap-1.5 text-muted-foreground">
@@ -171,6 +181,15 @@ function AccountCard({ account, ledger, showDemo, onRemove, onEdit }: {
             )
           })}
         </div>
+
+        {/* 자격증명 참조 (비번 자체는 저장 안 함) */}
+        {(account.loginId || account.certExpiry || account.secretHint) && (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
+            {account.loginId && <span>ID <span className="text-foreground">{account.loginId}</span></span>}
+            {account.certExpiry && <CertExpiry date={account.certExpiry} />}
+            {account.secretHint && <span className="flex items-center gap-0.5"><KeyRound className="size-3" />{account.secretHint}</span>}
+          </div>
+        )}
 
         {/* 자금 위치 */}
         <MoneyBar cash={m.cash} locked={m.locked} refund={m.refundPending} />
