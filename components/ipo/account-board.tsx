@@ -35,6 +35,39 @@ function MoneyBar({ cash, locked, refund }: { cash: number; locked: number; refu
   )
 }
 
+/**
+ * 자금 위치 맵 — A(잔액)·B(묶임)·C(환불대기)를 가로지르는 상시 오버레이(계층 밖).
+ * 페이지 상단에 항상 노출된다.
+ */
+export function MoneyMap({ accounts, ledger }: { accounts: Account[]; ledger: LedgerRow[] }) {
+  const totals = useMemo(() => {
+    let cash = 0, locked = 0, refund = 0, held = 0
+    for (const a of accounts) {
+      const m = accountMoney(a, ledger)
+      cash += m.cash; locked += m.locked; refund += m.refundPending; held += m.heldShares
+    }
+    return { cash, locked, refund, held, total: cash + locked + refund }
+  }, [accounts, ledger])
+
+  return (
+    <Card>
+      <CardContent className="pt-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium flex items-center gap-1.5"><Wallet className="size-4" /> 자금 위치 맵</h3>
+          <span className="text-sm font-semibold tabular-nums">{formatLargeNumber(totals.total)}원</span>
+        </div>
+        <MoneyBar cash={totals.cash} locked={totals.locked} refund={totals.refund} />
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+          <Legend seg="cash" amount={totals.cash} />
+          <Legend seg="locked" amount={totals.locked} />
+          <Legend seg="refund" amount={totals.refund} />
+          {totals.held > 0 && <span className="text-muted-foreground">· 미매도 보유 {totals.held}주</span>}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 interface AccountBoardProps {
   accounts: Account[]
   ledger: LedgerRow[]
@@ -44,15 +77,6 @@ interface AccountBoardProps {
 
 export function AccountBoard({ accounts, ledger, showDemo, data }: AccountBoardProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
-  // 전체 자금 위치 집계
-  const totals = useMemo(() => {
-    let cash = 0, locked = 0, refund = 0, held = 0
-    for (const a of accounts) {
-      const m = accountMoney(a, ledger)
-      cash += m.cash; locked += m.locked; refund += m.refundPending; held += m.heldShares
-    }
-    return { cash, locked, refund, held, total: cash + locked + refund }
-  }, [accounts, ledger])
 
   // 명의별로 그룹
   const byPerson = useMemo(() => {
@@ -72,24 +96,7 @@ export function AccountBoard({ accounts, ledger, showDemo, data }: AccountBoardP
 
   return (
     <div className="space-y-5">
-      {/* ① 자금 위치 맵 */}
-      <Card>
-        <CardContent className="pt-4 space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium flex items-center gap-1.5"><Wallet className="size-4" /> 자금 위치 맵</h3>
-            <span className="text-sm font-semibold tabular-nums">{formatLargeNumber(totals.total)}원</span>
-          </div>
-          <MoneyBar cash={totals.cash} locked={totals.locked} refund={totals.refund} />
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-            <Legend seg="cash" amount={totals.cash} />
-            <Legend seg="locked" amount={totals.locked} />
-            <Legend seg="refund" amount={totals.refund} />
-            {totals.held > 0 && <span className="text-muted-foreground">· 미매도 보유 {totals.held}주</span>}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* ② 계좌 보드 */}
+      {/* 계좌 보드 (자금 위치 맵은 페이지 상단으로 hoist) */}
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-muted-foreground">내 계좌 {accounts.length}</h3>
         {blockedCount > 0 && (

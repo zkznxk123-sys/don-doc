@@ -13,7 +13,7 @@ import {
 import { cn, formatLargeNumber } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
-import { AccountBoard } from '@/components/ipo/account-board'
+import { AccountBoard, MoneyMap } from '@/components/ipo/account-board'
 import { AllocationSim } from '@/components/ipo/allocation-sim'
 import { SpacPanel } from '@/components/ipo/spac-panel'
 import { ScheduleView } from '@/components/ipo/schedule-view'
@@ -35,7 +35,7 @@ export default function IpoLedgerPage() {
   const data = useIpoData()
   const { ledger, accounts, showDemo } = data
   const [editingSub, setEditingSub] = useState<number | null>(null)
-  const [tab, setTab] = useState('accounts')
+  const [tab, setTab] = useState('act')
 
   // KPI 집계
   const kpi = useMemo(() => {
@@ -87,33 +87,44 @@ export default function IpoLedgerPage() {
         <Kpi icon={<Coins className="size-4" />} label="할 일" value={`청약 ${kpi.planned} · 놓침 ${kpi.missed}`} hint="이번 주" tone={kpi.missed > 0 ? 'warn' : undefined} />
       </div>
 
-      {/* 계좌 축 / 종목 축 전환 */}
+      {/* 자금 위치 맵 — 계층 밖 상시 오버레이 */}
+      <MoneyMap accounts={accounts} ledger={ledger} />
+
+      {/* 3계층: 준비(계좌) → 실행(청약) → 결과(원장) */}
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="schedule">전체 일정</TabsTrigger>
-          <TabsTrigger value="accounts">계좌 운용</TabsTrigger>
-          <TabsTrigger value="allocate">자금 배분</TabsTrigger>
-          <TabsTrigger value="spac">스팩 시세</TabsTrigger>
-          <TabsTrigger value="offerings">종목별 원장</TabsTrigger>
+          <TabsTrigger value="prep">준비 · 계좌</TabsTrigger>
+          <TabsTrigger value="act">실행 · 청약</TabsTrigger>
+          <TabsTrigger value="result">결과 · 원장</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="schedule">
-          <ScheduleView data={data} />
-        </TabsContent>
-
-        <TabsContent value="accounts">
+        {/* A. 계좌 인프라 */}
+        <TabsContent value="prep">
           <AccountBoard accounts={accounts} ledger={ledger} showDemo={showDemo} data={data} />
         </TabsContent>
 
-        <TabsContent value="allocate">
-          <AllocationSim accounts={accounts} />
+        {/* B. 투자 실행 보조 — 일정·청약 / 자금 배분 / 스팩 모니터링 */}
+        <TabsContent value="act">
+          <Tabs defaultValue="schedule" className="space-y-3">
+            <TabsList>
+              <TabsTrigger value="schedule">일정 · 청약</TabsTrigger>
+              <TabsTrigger value="allocate">자금 배분</TabsTrigger>
+              <TabsTrigger value="spac">스팩 시세</TabsTrigger>
+            </TabsList>
+            <TabsContent value="schedule">
+              <ScheduleView data={data} />
+            </TabsContent>
+            <TabsContent value="allocate">
+              <AllocationSim accounts={accounts} />
+            </TabsContent>
+            <TabsContent value="spac">
+              <SpacPanel data={data} />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
-        <TabsContent value="spac">
-          <SpacPanel data={data} />
-        </TabsContent>
-
-        <TabsContent value="offerings">
+        {/* C. 결과·기록 — 종목별 원장(손익·배정·상태) */}
+        <TabsContent value="result">
       <section className="space-y-3">
         {groups.length === 0 && (
           <p className="text-sm text-muted-foreground py-8 text-center">아직 청약 내역이 없습니다. 위 “청약 추가”로 등록하세요.</p>
