@@ -33,7 +33,7 @@ interface IpoState {
 const EMPTY: IpoState = { accounts: [], ledger: [], spacs: [], memos: {}, overrides: {}, initialized: false }
 
 /** 임의 저장본(로컬·DB) → 완전한 IpoState. 옛 저장본에 없던 필드 백필. */
-function normalize(s: Partial<IpoState> | null | undefined): IpoState {
+export function normalize(s: Partial<IpoState> | null | undefined): IpoState {
   return {
     accounts: s?.accounts ?? [],
     ledger: s?.ledger ?? [],
@@ -42,6 +42,17 @@ function normalize(s: Partial<IpoState> | null | undefined): IpoState {
     overrides: s?.overrides ?? {},
     initialized: !!s?.initialized,
   }
+}
+
+/**
+ * 첫 실입력 시 기반 상태 — 데모 보기(initialized=false)에서 항목을 추가하면
+ * 데모 데이터가 아닌 빈 작업본으로 시작(내 데이터에 데모가 섞이지 않게). memos·overrides는 유지.
+ * 이미 작업본이면(prev.initialized) 그대로.
+ */
+export function workingBase(prev: IpoState): IpoState {
+  return prev.initialized
+    ? prev
+    : { accounts: [], ledger: [], spacs: [], memos: prev.memos, overrides: prev.overrides, initialized: true }
 }
 
 function load(): IpoState | null {
@@ -80,7 +91,7 @@ export interface IpoData {
 }
 
 /** 입력값 → 완성 LedgerRow (kind·일정은 generated 종목에서 보강). */
-function buildRow(r: Omit<LedgerRow, 'kind' | 'subStart' | 'refundDate' | 'listingDate'>): LedgerRow {
+export function buildRow(r: Omit<LedgerRow, 'kind' | 'subStart' | 'refundDate' | 'listingDate'>): LedgerRow {
   const off = OFFERING_BY_NAME.get(r.offering)
   const today = new Date()
   const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
@@ -151,7 +162,7 @@ export function useIpoData(): IpoData {
 
   const addAccount = useCallback((a: Omit<Account, 'id'>) => {
     setState(prev => {
-      const base = prev.initialized ? prev : { accounts: [], ledger: [], spacs: [], memos: prev.memos, overrides: prev.overrides, initialized: true }
+      const base = workingBase(prev)
       return { ...base, accounts: [...base.accounts, { ...a, id: newId() }] }
     })
   }, [])
@@ -167,7 +178,7 @@ export function useIpoData(): IpoData {
   const addSub = useCallback((r: Omit<LedgerRow, 'kind' | 'subStart' | 'refundDate' | 'listingDate'>) => {
     const row = buildRow(r)
     setState(prev => {
-      const base = prev.initialized ? prev : { accounts: [], ledger: [], spacs: [], memos: prev.memos, overrides: prev.overrides, initialized: true }
+      const base = workingBase(prev)
       return { ...base, ledger: [...base.ledger, row] }
     })
   }, [])
@@ -183,7 +194,7 @@ export function useIpoData(): IpoData {
 
   const addSpac = useCallback((s: Omit<Spac, 'id'>) => {
     setState(prev => {
-      const base = prev.initialized ? prev : { accounts: [], ledger: [], spacs: [], memos: prev.memos, overrides: prev.overrides, initialized: true }
+      const base = workingBase(prev)
       return { ...base, spacs: [...base.spacs, { ...s, id: newId() }] }
     })
   }, [])
