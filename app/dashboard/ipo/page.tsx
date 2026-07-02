@@ -129,7 +129,7 @@ export default function IpoLedgerPage() {
       <SpacHoldings spacs={data.spacs} />
       <section className="space-y-3">
         {groups.length === 0 && (
-          <p className="text-sm text-muted-foreground py-8 text-center">아직 청약 내역이 없습니다. 위 “청약 추가”로 등록하세요.</p>
+          <p className="text-sm text-muted-foreground py-8 text-center">아직 청약 내역이 없어요. 위 “청약 추가”로 등록하세요.</p>
         )}
         {groups.map(([offering, rows]) => {
           const row = rows[0].row

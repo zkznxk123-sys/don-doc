@@ -73,7 +73,18 @@ export function SpacList({ data }: { data: IpoData }) {
       {adding && <SpacForm data={data} onDone={() => setAdding(false)} />}
 
       {groups.length === 0 && (
-        <p className="text-sm text-muted-foreground py-8 text-center">스팩이 없습니다.{!showDemo && ' “스팩 추가”로 등록하세요.'}</p>
+        <p className="text-sm text-muted-foreground py-8 text-center">스팩이 없어요.{!showDemo && ' “스팩 추가”로 등록하세요.'}</p>
+      )}
+
+      {/* 컬럼 헤더 — 행 grid(12)와 동일 분할, 카드 안 px-5에 맞춤 */}
+      {groups.length > 0 && (
+        <div className="grid grid-cols-12 gap-2 px-5 text-[10px] text-muted-foreground">
+          <span className="col-span-4">종목</span>
+          <span className="col-span-2 text-right">시총</span>
+          <span className="col-span-2 text-right">현재가</span>
+          <span className="col-span-2 text-right">기준가 대비</span>
+          <span className="col-span-2 text-right">만기</span>
+        </div>
       )}
 
       {groups.map(({ bucket, items }) => (
@@ -96,7 +107,7 @@ export function SpacList({ data }: { data: IpoData }) {
       ))}
 
       <p className="text-[11px] text-muted-foreground">
-        기준가 {SPAC_BASELINE.toLocaleString()}원(만기 상환 floor) 대비 괴리 표시. 사실·정렬만 제공하며 매수 추천 아닙니다. 시세 출처: 네이버 금융.{showDemo && ' 지금은 데모 시세 — “데모를 작업본으로” 전환 후 시세 새로고침으로 실시간 조회.'}
+        기준가 {SPAC_BASELINE.toLocaleString()}원(만기 상환 floor) 대비 괴리 표시. 사실·정렬만 제공해요 — 매수 추천이 아니에요. 시세 출처: 네이버 금융.{showDemo && ' 지금은 데모 시세 — “데모를 작업본으로” 전환 후 시세 새로고침으로 실시간 조회.'}
       </p>
     </div>
   )

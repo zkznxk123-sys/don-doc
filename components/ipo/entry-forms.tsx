@@ -9,6 +9,10 @@ import { Plus, X, Database, RotateCcw, Pencil } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import {
+  AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
+  AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
+} from '@/components/ui/alert-dialog'
+import {
   OFFERINGS, READINESS_LABELS,
   type ReadinessState, type SubStatus, type Account, type LedgerRow, type Spac,
 } from '@/components/ipo/board-data'
@@ -42,6 +46,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 export function IpoEntryBar({ data }: { data: IpoData }) {
   const [open, setOpen] = useState<null | 'account' | 'sub'>(null)
+  const [resetOpen, setResetOpen] = useState(false)
 
   return (
     <Card>
@@ -58,18 +63,36 @@ export function IpoEntryBar({ data }: { data: IpoData }) {
           <div className="ml-auto flex items-center gap-2">
             {data.showDemo
               ? <button onClick={data.seedDemo} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><Database className="size-3.5" /> 데모를 작업본으로</button>
-              : <button onClick={() => { if (confirm('내가 입력한 데이터를 모두 지우고 데모 보기로 돌아갑니다.')) data.reset() }} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><RotateCcw className="size-3.5" /> 초기화</button>}
+              : <button onClick={() => setResetOpen(true)} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><RotateCcw className="size-3.5" /> 초기화</button>}
           </div>
         </div>
 
         {data.showDemo && (
           <p className="text-[11px] text-amber-600 dark:text-amber-400">
-            지금은 데모 보기(읽기 전용). 위에서 추가하면 내 작업본으로 전환됩니다.
+            지금은 데모 보기(읽기 전용). 위에서 추가하면 내 작업본으로 전환돼요.
           </p>
         )}
 
         {open === 'account' && <AccountForm data={data} onDone={() => setOpen(null)} />}
         {open === 'sub' && <SubForm data={data} onDone={() => setOpen(null)} />}
+
+        {/* 초기화 확인 — 파괴적 액션이라 네이티브 confirm 대신 AlertDialog */}
+        <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
+          <AlertDialogContent className="max-w-sm">
+            <AlertDialogHeader>
+              <AlertDialogTitle>작업본 초기화</AlertDialogTitle>
+              <AlertDialogDescription>
+                내가 입력한 계좌·청약·스팩 데이터를 모두 지우고 데모 보기로 돌아가요. 되돌릴 수 없어요.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>취소</AlertDialogCancel>
+              <AlertDialogAction onClick={() => data.reset()} className="bg-rose-600 hover:bg-rose-600/90 text-white">
+                모두 지우기
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </CardContent>
     </Card>
   )
@@ -128,7 +151,7 @@ export function AccountForm({ data, onDone, initial }: { data: IpoData; onDone: 
           <input className={inputCls} value={secretHint} onChange={e => setSecretHint(e.target.value)} placeholder="예: 1Password › KB" autoComplete="off" />
         </Field>
       </div>
-      <p className="text-[11px] text-muted-foreground -mt-1">🔒 비밀번호는 저장하지 않습니다 — 보관 위치(1Password 등)만 메모.</p>
+      <p className="text-[11px] text-muted-foreground -mt-1">🔒 비밀번호는 저장하지 않아요 — 보관 위치(1Password 등)만 메모.</p>
       <div className="flex flex-wrap items-center gap-1.5">
         <span className="text-[11px] text-muted-foreground mr-1">준비상태(클릭해 전환):</span>
         {READINESS_LABELS.map(({ key, label }) => (

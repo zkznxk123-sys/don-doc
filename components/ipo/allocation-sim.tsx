@@ -91,7 +91,7 @@ export function AllocationSim({ accounts }: { accounts: Account[] }) {
           <p className="text-[11px] text-muted-foreground">
             {ready.length > 0
               ? <>가능 계좌 {ready.length}곳에 각 {formatLargeNumber(per)} 균등 분산 → 총 {formatLargeNumber(totalNeed)} 필요, 가용 {formatLargeNumber(totalCash)}.</>
-              : <>이 종목({offering?.brokers.join('·') || '—'})으로 청약 가능한 준비된 계좌가 없습니다.</>}
+              : <>이 종목({offering?.brokers.join('·') || '—'})으로 청약 가능한 준비된 계좌가 없어요.</>}
             {shortAccounts.length > 0 && <span className="text-rose-600 dark:text-rose-400"> · 가용 부족 {shortAccounts.length}계좌</span>}
           </p>
         </CardContent>
@@ -139,7 +139,7 @@ export function AllocationSim({ accounts }: { accounts: Account[] }) {
       )}
 
       <p className="text-[11px] text-muted-foreground">
-        균등 분산 사실 계산. 비례 유불리(실시간 경쟁률)·종목 추천은 제공하지 않습니다.
+        균등 분산 사실 계산. 비례 유불리(실시간 경쟁률)·종목 추천은 제공하지 않아요.
       </p>
     </div>
   )

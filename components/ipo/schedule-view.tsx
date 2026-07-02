@@ -55,7 +55,7 @@ export function ScheduleView({ data }: { data: IpoData }) {
         </div>
       </div>
 
-      {months.length === 0 && <p className="text-sm text-muted-foreground py-8 text-center">다가올 일정이 없습니다.</p>}
+      {months.length === 0 && <p className="text-sm text-muted-foreground py-8 text-center">다가올 일정이 없어요.</p>}
 
       {months.map(({ ym, items }) => (
         <div key={ym} className="space-y-1.5">
@@ -146,7 +146,7 @@ function OfferingDetail({ o, memo, onMemo, override, onOverride }: {
         return <p className="text-[10px] text-muted-foreground">유통 {fr}% 중 공모주주 {o.publicFloatRatio}% · 기존주주 {existing}%</p>
       })()}
       <p className="text-[10px] text-muted-foreground">시총·유통은 DART 증권신고서 자동(상장일 유통표) — 직접 수정 가능.</p>
-      {!hasInfo && <p className="text-[11px] text-muted-foreground">공모 상세(공모가·경쟁률·확약)는 수요예측 후 38에서 자동 채워집니다.</p>}
+      {!hasInfo && <p className="text-[11px] text-muted-foreground">공모 상세(공모가·경쟁률·확약)는 수요예측 후 38에서 자동 채워져요.</p>}
       <AllocationCalc o={o} />
       <textarea value={memo} onChange={e => onMemo(e.target.value)} rows={2}
         placeholder="개인 메모 — 본인 판단 기록용 (추천 아님)"
@@ -229,7 +229,7 @@ function AllocationCalc({ o }: { o: UpcomingOffering }) {
         </div>
       )}
       <p className="text-[10px] text-muted-foreground">
-        총배정 = 균등{g ? ` ${g}주` : ''} + 비례. 필요 청약주수 = (목표−균등)×경쟁률(5사6입). 증거금 {Math.round(dr * 100)}%{limit != null && ` · 청약한도 ${limit.toLocaleString()}주(⚠초과)`}.
+        총배정 = 균등{g ? ` ${g}주` : ''} + 비례. 필요 청약주수 = (목표−균등)×경쟁률(5사6입). 증거금 {Math.round(dr * 100)}%{limit != null && ` · 청약한도 ${limit.toLocaleString()}주를 넘는 행은 ⚠ 표시`}.
       </p>
     </div>
   )

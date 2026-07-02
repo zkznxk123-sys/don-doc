@@ -180,6 +180,22 @@ export function readinessIssues(acct: Account): number {
   return Object.values(acct.readiness).filter(s => s !== 'OK').length
 }
 
+/**
+ * 계좌번호 마스킹 — 앞 3자리·뒤 4자리만 노출, 구분자(-) 보존.
+ * 카드에 평문 전체가 찍히면 스크린샷·화면 공유 때 유출되므로 표시용으로만 가림.
+ * (원본은 수정 폼에서 그대로 확인)
+ */
+export function maskAccountNo(no: string): string {
+  const total = no.replace(/\D/g, '').length
+  if (total <= 7) return no                  // 너무 짧으면 마스킹 의미 없음
+  let idx = 0
+  return no.replace(/\d/g, d => {
+    const keep = idx < 3 || idx >= total - 4
+    idx++
+    return keep ? d : '*'
+  })
+}
+
 export interface AllocationResult {
   ready: Account[]          // 청약 가능(broker 일치 + 준비 완료)
   blocked: Account[]        // broker 일치하나 준비 미비

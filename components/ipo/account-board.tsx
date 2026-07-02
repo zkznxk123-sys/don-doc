@@ -13,7 +13,7 @@ import { DeleteBtn, EditBtn, AccountForm } from '@/components/ipo/entry-forms'
 import type { IpoData } from '@/lib/ipo/store'
 import {
   READINESS_LABELS, READINESS_TONE,
-  accountMoney, readinessIssues, type Account, type LedgerRow,
+  accountMoney, readinessIssues, maskAccountNo, type Account, type LedgerRow,
 } from '@/components/ipo/board-data'
 
 const SEG = {
@@ -91,7 +91,7 @@ export function AccountBoard({ accounts, ledger, showDemo, data }: AccountBoardP
   const blockedCount = accounts.filter(a => readinessIssues(a) > 0).length
 
   if (accounts.length === 0) {
-    return <p className="text-sm text-muted-foreground py-8 text-center">아직 계좌가 없습니다. 위 “계좌 추가”로 등록하세요.</p>
+    return <p className="text-sm text-muted-foreground py-8 text-center">아직 계좌가 없어요. 위 “계좌 추가”로 등록하세요.</p>
   }
 
   return (
@@ -159,7 +159,7 @@ function AccountCard({ account, ledger, showDemo, onRemove, onEdit }: {
                 : 'bg-muted text-muted-foreground')}>
               {account.bankLinked ? '은행제휴' : '비대면'}
             </span>
-            {account.accountNo && <span className="text-[11px] text-muted-foreground tabular-nums truncate">· {account.accountNo}</span>}
+            {account.accountNo && <span className="text-[11px] text-muted-foreground tabular-nums truncate" title="수정에서 전체 확인">· {maskAccountNo(account.accountNo)}</span>}
           </div>
           <div className="flex items-center gap-2">
             {issues === 0
