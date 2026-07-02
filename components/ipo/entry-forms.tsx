@@ -5,9 +5,8 @@
  * 금액은 만원 단위 입력 → 원으로 저장. 데이터는 useIpoData(localStorage).
  */
 import { useState } from 'react'
-import { Plus, X, Database, RotateCcw, Pencil } from 'lucide-react'
+import { X, Database, RotateCcw, Pencil } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Card, CardContent } from '@/components/ui/card'
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
   AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
@@ -44,57 +43,37 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   )
 }
 
-export function IpoEntryBar({ data }: { data: IpoData }) {
-  const [open, setOpen] = useState<null | 'account' | 'sub'>(null)
+/** 데모/작업본 전환 툴바 — 얇게 한 줄. 계좌·청약 추가는 각 계층 탭 안으로 이동. */
+export function DemoToolbar({ data }: { data: IpoData }) {
   const [resetOpen, setResetOpen] = useState(false)
 
   return (
-    <Card>
-      <CardContent className="pt-3.5 space-y-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <button onClick={() => setOpen(open === 'account' ? null : 'account')}
-            className={cn('inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-medium', open === 'account' ? 'bg-foreground text-background' : 'bg-muted text-foreground hover:bg-muted/70')}>
-            <Plus className="size-3.5" /> 계좌 추가
-          </button>
-          <button onClick={() => setOpen(open === 'sub' ? null : 'sub')}
-            className={cn('inline-flex items-center gap-1 rounded-md px-2.5 py-1.5 text-sm font-medium', open === 'sub' ? 'bg-foreground text-background' : 'bg-muted text-foreground hover:bg-muted/70')}>
-            <Plus className="size-3.5" /> 청약 추가
-          </button>
-          <div className="ml-auto flex items-center gap-2">
-            {data.showDemo
-              ? <button onClick={data.seedDemo} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><Database className="size-3.5" /> 데모를 작업본으로</button>
-              : <button onClick={() => setResetOpen(true)} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><RotateCcw className="size-3.5" /> 초기화</button>}
-          </div>
-        </div>
+    <div className="flex items-center justify-between gap-2">
+      {data.showDemo
+        ? <p className="text-[11px] text-amber-600 dark:text-amber-400">지금은 데모 보기 — 각 탭에서 추가하면 내 작업본으로 전환돼요.</p>
+        : <span />}
+      {data.showDemo
+        ? <button onClick={data.seedDemo} className="shrink-0 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><Database className="size-3.5" /> 데모를 작업본으로</button>
+        : <button onClick={() => setResetOpen(true)} className="shrink-0 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><RotateCcw className="size-3.5" /> 초기화</button>}
 
-        {data.showDemo && (
-          <p className="text-[11px] text-amber-600 dark:text-amber-400">
-            지금은 데모 보기(읽기 전용). 위에서 추가하면 내 작업본으로 전환돼요.
-          </p>
-        )}
-
-        {open === 'account' && <AccountForm data={data} onDone={() => setOpen(null)} />}
-        {open === 'sub' && <SubForm data={data} onDone={() => setOpen(null)} />}
-
-        {/* 초기화 확인 — 파괴적 액션이라 네이티브 confirm 대신 AlertDialog */}
-        <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
-          <AlertDialogContent className="max-w-sm">
-            <AlertDialogHeader>
-              <AlertDialogTitle>작업본 초기화</AlertDialogTitle>
-              <AlertDialogDescription>
-                내가 입력한 계좌·청약·스팩 데이터를 모두 지우고 데모 보기로 돌아가요. 되돌릴 수 없어요.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>취소</AlertDialogCancel>
-              <AlertDialogAction onClick={() => data.reset()} className="bg-rose-600 hover:bg-rose-600/90 text-white">
-                모두 지우기
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </CardContent>
-    </Card>
+      {/* 초기화 확인 — 파괴적 액션이라 네이티브 confirm 대신 AlertDialog */}
+      <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>작업본 초기화</AlertDialogTitle>
+            <AlertDialogDescription>
+              내가 입력한 계좌·청약·스팩 데이터를 모두 지우고 데모 보기로 돌아가요. 되돌릴 수 없어요.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={() => data.reset()} className="bg-rose-600 hover:bg-rose-600/90 text-white">
+              모두 지우기
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
   )
 }
 

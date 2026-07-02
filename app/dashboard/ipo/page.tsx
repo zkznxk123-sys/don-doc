@@ -8,7 +8,7 @@
  */
 import { useMemo, useState } from 'react'
 import {
-  TrendingUp, Coins, AlertCircle, CheckCircle2, Wallet, ArrowRightLeft,
+  TrendingUp, Coins, AlertCircle, CheckCircle2, Wallet, ArrowRightLeft, Plus,
 } from 'lucide-react'
 import { cn, formatLargeNumber } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
@@ -19,7 +19,7 @@ import { SpacPanel } from '@/components/ipo/spac-panel'
 import { SpacHoldings } from '@/components/ipo/spac-holdings'
 import { ScheduleView } from '@/components/ipo/schedule-view'
 import { UpcomingStrip } from '@/components/ipo/upcoming-strip'
-import { IpoEntryBar, IpoDatalists, DeleteBtn, EditBtn, SubForm } from '@/components/ipo/entry-forms'
+import { DemoToolbar, IpoDatalists, DeleteBtn, EditBtn, SubForm } from '@/components/ipo/entry-forms'
 import { useIpoData } from '@/lib/ipo/store'
 import {
   OFFERING_BY_NAME,
@@ -36,6 +36,7 @@ export default function IpoLedgerPage() {
   const data = useIpoData()
   const { ledger, accounts, showDemo } = data
   const [editingSub, setEditingSub] = useState<number | null>(null)
+  const [addingSub, setAddingSub] = useState(false)
   const [tab, setTab] = useState('act')
 
   // KPI 집계
@@ -78,7 +79,6 @@ export default function IpoLedgerPage() {
       <UpcomingStrip />
 
       <IpoDatalists accounts={accounts} />
-      <IpoEntryBar data={data} />
 
       {/* KPI */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -90,6 +90,9 @@ export default function IpoLedgerPage() {
 
       {/* 자금 위치 맵 — 계층 밖 상시 오버레이 */}
       <MoneyMap accounts={accounts} ledger={ledger} />
+
+      {/* 데모/작업본 전환 — 얇게 한 줄 */}
+      <DemoToolbar data={data} />
 
       {/* 일정(실행) 중심 + 결과 / 계좌는 별도 관리 영역 */}
       <Tabs value={tab} onValueChange={setTab}>
@@ -123,8 +126,16 @@ export default function IpoLedgerPage() {
         <TabsContent value="result" className="space-y-3">
       <SpacHoldings spacs={data.spacs} />
       <section className="space-y-3">
-        {groups.length === 0 && (
-          <p className="text-sm text-muted-foreground py-8 text-center">아직 청약 내역이 없어요. 위 “청약 추가”로 등록하세요.</p>
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-medium text-muted-foreground">종목별 원장 {groups.length > 0 && `· ${groups.length}종목`}</h3>
+          <button onClick={() => setAddingSub(v => !v)}
+            className="inline-flex items-center gap-1 rounded-md bg-foreground text-background px-2 py-1 text-xs font-medium hover:opacity-90">
+            <Plus className="size-3.5" /> 청약 추가
+          </button>
+        </div>
+        {addingSub && <SubForm data={data} onDone={() => setAddingSub(false)} />}
+        {groups.length === 0 && !addingSub && (
+          <p className="text-sm text-muted-foreground py-8 text-center">아직 청약 내역이 없어요. “청약 추가”로 등록하세요.</p>
         )}
         {groups.map(([offering, rows]) => {
           const row = rows[0].row

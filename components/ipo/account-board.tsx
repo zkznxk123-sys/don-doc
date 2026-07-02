@@ -6,7 +6,7 @@
  * ② 계좌 보드: 명의×증권사별 준비상태(CDD·OTP·인증서·한도·우편물) + 머무는 돈
  */
 import { useMemo, useState } from 'react'
-import { AlertTriangle, CheckCircle2, Wallet, ChevronDown } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Wallet, ChevronDown, Plus } from 'lucide-react'
 import { cn, formatLargeNumber } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { DeleteBtn, EditBtn, AccountForm } from '@/components/ipo/entry-forms'
@@ -77,6 +77,7 @@ interface AccountBoardProps {
 
 export function AccountBoard({ accounts, ledger, showDemo, data }: AccountBoardProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [adding, setAdding] = useState(false)
   const [closed, setClosed] = useState<Set<string>>(new Set())
 
   // 명의별로 그룹
@@ -93,20 +94,27 @@ export function AccountBoard({ accounts, ledger, showDemo, data }: AccountBoardP
   const togglePerson = (p: string) =>
     setClosed(prev => { const next = new Set(prev); if (next.has(p)) next.delete(p); else next.add(p); return next })
 
-  if (accounts.length === 0) {
-    return <p className="text-sm text-muted-foreground py-8 text-center">아직 계좌가 없어요. 위 “계좌 추가”로 등록하세요.</p>
-  }
-
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-muted-foreground">내 계좌 {accounts.length}</h3>
-        {blockedCount > 0 && (
-          <span className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
-            <AlertTriangle className="size-3.5" /> 준비 필요 {blockedCount}
-          </span>
-        )}
+        <div className="flex items-center gap-2.5">
+          {blockedCount > 0 && (
+            <span className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
+              <AlertTriangle className="size-3.5" /> 준비 필요 {blockedCount}
+            </span>
+          )}
+          <button onClick={() => setAdding(v => !v)}
+            className="inline-flex items-center gap-1 rounded-md bg-foreground text-background px-2 py-1 text-xs font-medium hover:opacity-90">
+            <Plus className="size-3.5" /> 계좌 추가
+          </button>
+        </div>
       </div>
+
+      {adding && <AccountForm data={data} onDone={() => setAdding(false)} />}
+      {accounts.length === 0 && !adding && (
+        <p className="text-sm text-muted-foreground py-8 text-center">아직 계좌가 없어요. “계좌 추가”로 등록하세요.</p>
+      )}
 
       {/* 명의별 밀집 테이블 — 사람당 10~20계좌 전제. 준비상태는 예외(대기·만료)만 표시 */}
       {byPerson.map(([person, accts]) => {
