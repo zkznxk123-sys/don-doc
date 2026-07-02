@@ -85,24 +85,18 @@ export const OFFERING_BY_NAME: Map<string, UpcomingOffering> =
 
 export type ReadinessState = 'OK' | 'PENDING' | 'EXPIRED'
 
-/** 계좌 = 명의 × 증권사. 준비상태(통증 1위) + 가용현금 보유. */
+/** 계좌 = 명의 × 증권사. 준비상태(통증 1위)가 핵심. */
 export interface Account {
   id: string
   person: string
   broker: string
   accountNo?: string         // 계좌번호
   bankLinked?: boolean       // 은행제휴 계좌(연계). true=은행제휴(20일 제한 없음), false/undefined=비대면 일반(20일 1개)
-  // ── 자격증명 참조(§6 모델) — 비밀번호 자체는 저장하지 않음 ──
-  loginId?: string           // 계정 아이디(로그인 ID)
-  certExpiry?: string        // 공동인증서 만료일 "YYYY-MM-DD"
-  secretHint?: string        // 비밀번호 보관 위치 힌트 (예: "1Password › KB") — 실 비번은 전용 도구에
-  cash: number   // 가용현금 잔액(원)
   readiness: {
     cdd: ReadinessState     // 고객확인(CDD/EDD)
     otp: ReadinessState     // OTP 등록
     cert: ReadinessState    // 공동인증서
     limit: ReadinessState   // 한도제한 해제
-    mail: ReadinessState    // 우편물 거부
   }
 }
 
@@ -111,7 +105,6 @@ export const READINESS_LABELS: { key: keyof Account['readiness']; label: string 
   { key: 'otp', label: 'OTP' },
   { key: 'cert', label: '인증서' },
   { key: 'limit', label: '한도' },
-  { key: 'mail', label: '우편물' },
 ]
 
 export const READINESS_TONE: Record<ReadinessState, string> = {
@@ -120,13 +113,12 @@ export const READINESS_TONE: Record<ReadinessState, string> = {
   EXPIRED: 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300',
 }
 
-/** 한 계좌에 지금 머무는 돈 — 청약 내역에서 도출(가용/묶임/환불대기/보유주). */
+/** 한 계좌에 지금 머무는 돈 — 청약 내역에서 도출(묶임/환불대기/보유주). */
 export interface AccountMoney {
-  cash: number          // 가용현금
   locked: number        // 묶인 증거금(청약완료·환불 전)
   refundPending: number // 환불·원금 회수 대기(배정 후 미회수)
   heldShares: number    // 미매도 배정주
-  total: number         // cash+locked+refundPending
+  total: number         // locked+refundPending
 }
 
 export function accountMoney(acct: Account, ledger: LedgerRow[]): AccountMoney {
@@ -136,7 +128,7 @@ export function accountMoney(acct: Account, ledger: LedgerRow[]): AccountMoney {
     if (r.status === 'SUBMITTED') locked += r.deposit
     if (r.status === 'ALLOCATED') { heldShares += r.allocatedShares; if (!r.refunded) refundPending += r.refundAmount }
   }
-  return { cash: acct.cash, locked, refundPending, heldShares, total: acct.cash + locked + refundPending }
+  return { locked, refundPending, heldShares, total: locked + refundPending }
 }
 
 /** 계좌의 준비 미비 항목 수. 0이면 청약 가능. */
@@ -158,29 +150,6 @@ export function maskAccountNo(no: string): string {
     idx++
     return keep ? d : '*'
   })
-}
-
-export interface AllocationResult {
-  ready: Account[]          // 청약 가능(broker 일치 + 준비 완료)
-  blocked: Account[]        // broker 일치하나 준비 미비
-  totalNeed: number         // 가능 계좌 수 × 계좌당 증거금
-  totalCash: number         // 가능 계좌 가용현금 합
-  surplus: number           // totalCash - totalNeed (음수 = 부족)
-  shortAccounts: Account[]  // 가용현금 < 계좌당 증거금
-}
-
-/**
- * 균등 분산 증거금 계산 — 사실 산술만(종목 추천·비례 유불리 예측 없음).
- * per = 계좌당 청약 증거금(원). brokers = 종목의 청약 가능 증권사.
- * allocation-sim 컴포넌트의 표시 계산을 순수 함수로 분리(돈 숫자 직결 → 테스트 대상).
- */
-export function computeAllocation(accounts: Account[], brokers: string[], per: number): AllocationResult {
-  const eligible = accounts.filter(a => brokers.includes(a.broker))
-  const ready = eligible.filter(a => readinessIssues(a) === 0)
-  const blocked = eligible.filter(a => readinessIssues(a) > 0)
-  const totalNeed = ready.length * per
-  const totalCash = ready.reduce((s, a) => s + a.cash, 0)
-  return { ready, blocked, totalNeed, totalCash, surplus: totalCash - totalNeed, shortAccounts: ready.filter(a => a.cash < per) }
 }
 
 // ─────────────────────────────────────────────────────────────

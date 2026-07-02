@@ -3,7 +3,7 @@
 /**
  * 계좌 축 뷰 — 공모주의 핵심은 멀티계좌 운용.
  * ① 자금 위치 맵: 내 돈이 지금 어느 계좌에 가용/묶임/환불대기로 있는지 시각화
- * ② 계좌 보드: 명의×증권사별 준비상태(CDD·OTP·인증서·한도·우편물) + 머무는 돈
+ * ② 계좌 보드: 명의×증권사별 준비상태(CDD·OTP·인증서·한도) + 머무는 돈
  */
 import { useMemo, useState } from 'react'
 import { AlertTriangle, CheckCircle2, Wallet, ChevronDown, Plus } from 'lucide-react'
@@ -17,18 +17,16 @@ import {
 } from '@/components/ipo/board-data'
 
 const SEG = {
-  cash:   { label: '가용현금', cls: 'bg-emerald-400 dark:bg-emerald-500', dot: 'bg-emerald-400 dark:bg-emerald-500' },
   locked: { label: '묶인 증거금', cls: 'bg-amber-400 dark:bg-amber-500', dot: 'bg-amber-400 dark:bg-amber-500' },
   refund: { label: '환불 대기', cls: 'bg-sky-400 dark:bg-sky-500', dot: 'bg-sky-400 dark:bg-sky-500' },
 } as const
 
-function MoneyBar({ cash, locked, refund }: { cash: number; locked: number; refund: number }) {
-  const total = cash + locked + refund
+function MoneyBar({ locked, refund }: { locked: number; refund: number }) {
+  const total = locked + refund
   if (total === 0) return <div className="h-2 rounded-full bg-muted" />
   const pct = (v: number) => `${(v / total) * 100}%`
   return (
     <div className="flex h-2 overflow-hidden rounded-full bg-muted">
-      {cash > 0 && <div className={SEG.cash.cls} style={{ width: pct(cash) }} />}
       {locked > 0 && <div className={SEG.locked.cls} style={{ width: pct(locked) }} />}
       {refund > 0 && <div className={SEG.refund.cls} style={{ width: pct(refund) }} />}
     </div>
@@ -41,12 +39,12 @@ function MoneyBar({ cash, locked, refund }: { cash: number; locked: number; refu
  */
 export function MoneyMap({ accounts, ledger }: { accounts: Account[]; ledger: LedgerRow[] }) {
   const totals = useMemo(() => {
-    let cash = 0, locked = 0, refund = 0, held = 0
+    let locked = 0, refund = 0, held = 0
     for (const a of accounts) {
       const m = accountMoney(a, ledger)
-      cash += m.cash; locked += m.locked; refund += m.refundPending; held += m.heldShares
+      locked += m.locked; refund += m.refundPending; held += m.heldShares
     }
-    return { cash, locked, refund, held, total: cash + locked + refund }
+    return { locked, refund, held, total: locked + refund }
   }, [accounts, ledger])
 
   return (
@@ -56,9 +54,8 @@ export function MoneyMap({ accounts, ledger }: { accounts: Account[]; ledger: Le
           <h3 className="text-sm font-medium flex items-center gap-1.5"><Wallet className="size-4" /> 자금 위치 맵</h3>
           <span className="text-sm font-semibold tabular-nums">{formatLargeNumber(totals.total)}원</span>
         </div>
-        <MoneyBar cash={totals.cash} locked={totals.locked} refund={totals.refund} />
+        <MoneyBar locked={totals.locked} refund={totals.refund} />
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-          <Legend seg="cash" amount={totals.cash} />
           <Legend seg="locked" amount={totals.locked} />
           <Legend seg="refund" amount={totals.refund} />
           {totals.held > 0 && <span className="text-muted-foreground">· 미매도 보유 {totals.held}주</span>}
@@ -119,7 +116,6 @@ export function AccountBoard({ accounts, ledger, data }: AccountBoardProps) {
       {/* 명의별 밀집 테이블 — 사람당 10~20계좌 전제. 준비상태는 예외(대기·만료)만 표시 */}
       {byPerson.map(([person, accts]) => {
         const open = !closed.has(person)
-        const cash = accts.reduce((s, a) => s + a.cash, 0)
         const issues = accts.filter(a => readinessIssues(a) > 0).length
         return (
           <Card key={person}>
@@ -127,7 +123,7 @@ export function AccountBoard({ accounts, ledger, data }: AccountBoardProps) {
               <button onClick={() => togglePerson(person)} className="w-full flex items-center gap-2 pb-1.5 text-left">
                 <ChevronDown className={cn('size-3.5 shrink-0 text-muted-foreground transition-transform', !open && '-rotate-90')} />
                 <span className="text-sm font-medium">{person}</span>
-                <span className="text-xs text-muted-foreground">{accts.length}계좌 · 가용 {formatLargeNumber(cash)}</span>
+                <span className="text-xs text-muted-foreground">{accts.length}계좌</span>
                 {issues > 0 && (
                   <span className="ml-auto text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
                     <AlertTriangle className="size-3" /> 준비 {issues}
@@ -139,9 +135,8 @@ export function AccountBoard({ accounts, ledger, data }: AccountBoardProps) {
                 <>
                   <div className="grid grid-cols-12 gap-2 py-1 text-[10px] text-muted-foreground border-b border-border/60">
                     <span className="col-span-3">증권사</span>
-                    <span className="col-span-2">계좌번호</span>
-                    <span className="col-span-3">준비 — 예외만</span>
-                    <span className="col-span-2 text-right">가용</span>
+                    <span className="col-span-3">계좌번호</span>
+                    <span className="col-span-4">준비 — 예외만</span>
                     <span className="col-span-2 text-right">묶임·환불</span>
                   </div>
                   <div className="divide-y divide-border/40">
@@ -158,21 +153,6 @@ export function AccountBoard({ accounts, ledger, data }: AccountBoardProps) {
       })}
     </div>
   )
-}
-
-/** 인증서 만료까지 남은 일수. */
-function certDays(date: string): number {
-  return Math.ceil((new Date(date + 'T00:00:00').getTime() - Date.now()) / 86_400_000)
-}
-
-/** 공동인증서 만료 표기 — 지남=적색, 30일 이내=황색. */
-function CertExpiry({ date }: { date: string }) {
-  const days = certDays(date)
-  const tone = days < 0 ? 'text-rose-600 dark:text-rose-400'
-    : days <= 30 ? 'text-amber-600 dark:text-amber-400'
-    : 'text-foreground'
-  const label = days < 0 ? '만료됨' : `D-${days}`
-  return <span className="text-[10px]">인증서 <span className={tone}>{label}</span></span>
 }
 
 function Legend({ seg, amount }: { seg: keyof typeof SEG; amount: number }) {
@@ -193,7 +173,6 @@ function AccountRow({ account, ledger, onRemove, onEdit }: {
 }) {
   const m = accountMoney(account, ledger)
   const exceptions = READINESS_LABELS.filter(({ key }) => account.readiness[key] !== 'OK')
-  const certWarn = account.certExpiry != null && certDays(account.certExpiry) <= 30
   return (
     <div className="grid grid-cols-12 items-center gap-2 py-1.5 text-sm">
       <span className="col-span-3 flex items-center gap-1 min-w-0">
@@ -202,19 +181,17 @@ function AccountRow({ account, ledger, onRemove, onEdit }: {
           <span className="shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">제휴</span>
         )}
       </span>
-      <span className="col-span-2 text-[11px] text-muted-foreground tabular-nums truncate" title="수정에서 전체 확인">
+      <span className="col-span-3 text-[11px] text-muted-foreground tabular-nums truncate" title="수정에서 전체 확인">
         {account.accountNo ? maskAccountNo(account.accountNo) : '—'}
       </span>
-      <span className="col-span-3 flex flex-wrap items-center gap-1 min-w-0">
-        {exceptions.length === 0 && !certWarn && <CheckCircle2 className="size-3.5 text-emerald-500" />}
+      <span className="col-span-4 flex flex-wrap items-center gap-1 min-w-0">
+        {exceptions.length === 0 && <CheckCircle2 className="size-3.5 text-emerald-500" />}
         {exceptions.map(({ key, label }) => (
           <span key={key} className={cn('rounded px-1 py-0.5 text-[9px] font-medium', READINESS_TONE[account.readiness[key]])}>
             {label} {account.readiness[key] === 'EXPIRED' ? '만료' : '대기'}
           </span>
         ))}
-        {certWarn && account.certExpiry && <CertExpiry date={account.certExpiry} />}
       </span>
-      <span className="col-span-2 text-right text-xs tabular-nums">{formatLargeNumber(m.cash)}</span>
       <span className="col-span-2 flex justify-end items-center gap-1.5 text-[11px] tabular-nums">
         {m.locked > 0 && <span className="text-amber-600 dark:text-amber-400">{formatLargeNumber(m.locked)}</span>}
         {m.refundPending > 0 && <span className="text-sky-600 dark:text-sky-400">{formatLargeNumber(m.refundPending)}</span>}

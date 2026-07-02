@@ -296,9 +296,9 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
     const perShareDep = price * dr
     const minDep = minShares * perShareDep
     const cap = limit ?? Infinity
-    // 명의당 1계좌: 주관사 취급 증권사 계좌만. 준비상태 양호 → 가용현금 많은 순.
+    // 명의당 1계좌: 주관사 취급 증권사 계좌만, 준비상태 양호 우선.
     const byPerson = new Map<string, Account>()
-    for (const a of [...accounts].sort((x, y) => (readinessIssues(x) - readinessIssues(y)) || (y.cash - x.cash))) {
+    for (const a of [...accounts].sort((x, y) => readinessIssues(x) - readinessIssues(y))) {
       if (!o.brokers.some(b => a.broker.includes(b) || b.includes(a.broker))) continue
       if (!byPerson.has(a.person)) byPerson.set(a.person, a)
     }
@@ -418,14 +418,11 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
               {plan.rows.map(({ a, shares }) => {
                 const issues = readinessIssues(a)
                 const dep = shares * price! * dr
-                const cashShort = a.cash < dep   // 그 계좌에 실제로 돈이 있나 (구 자금배분 시뮬 흡수)
                 return (
                   <Fragment key={a.id}>
                     <span className="truncate">{a.person} <span className="text-muted-foreground">{a.broker}</span>{issues > 0 && <span className="text-amber-600 dark:text-amber-400"> ⚠준비{issues}</span>}</span>
                     <span className="text-right tabular-nums">{shares.toLocaleString()}</span>
-                    <span className={cn('text-right tabular-nums', cashShort && 'text-rose-600 dark:text-rose-400')}>
-                      {won(dep)}{cashShort && <span className="text-[10px]"> 잔액{won(a.cash)}</span>}
-                    </span>
+                    <span className="text-right tabular-nums">{won(dep)}</span>
                     <span className="text-right tabular-nums text-muted-foreground">{(g + shares / r).toFixed(2)}</span>
                   </Fragment>
                 )
