@@ -111,7 +111,16 @@ export default function IpoLedgerPage() {
       {/* 데모/작업본 전환 — 얇게 한 줄 */}
       <DemoToolbar data={data} />
 
-      {/* 일정(실행) 중심 + 결과 / 계좌는 별도 관리 영역 */}
+      {/* 스팩주 = 탭 없이 보유현황 + 시세·유니버스만 (스크리너 성격) */}
+      {kind === 'SPAC' && (
+        <div className="space-y-4">
+          <SpacHoldings spacs={data.spacs} />
+          <SpacPanel data={data} />
+        </div>
+      )}
+
+      {/* 공모주 = 일정(실행) / 결과 / 계좌 관리 */}
+      {kind === 'IPO' && (
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="act">일정 · 청약</TabsTrigger>
@@ -119,29 +128,13 @@ export default function IpoLedgerPage() {
           <TabsTrigger value="accounts">계좌 관리</TabsTrigger>
         </TabsList>
 
-        {/* A. 실행 — 공모주=일정 직행(자금배분은 종목 카드 배정 계산기에 통합) / 스팩주=시세·청약일정 */}
+        {/* A. 실행 — 일정 직행(자금배분은 종목 카드 배정 계산기에 통합) */}
         <TabsContent value="act">
-          {kind === 'IPO' ? (
-            <ScheduleView data={data} kind={kind} />
-          ) : (
-            <Tabs defaultValue="spac" className="space-y-3">
-              <TabsList>
-                <TabsTrigger value="spac">시세 · 유니버스</TabsTrigger>
-                <TabsTrigger value="schedule">청약 일정</TabsTrigger>
-              </TabsList>
-              <TabsContent value="spac">
-                <SpacPanel data={data} />
-              </TabsContent>
-              <TabsContent value="schedule">
-                <ScheduleView data={data} kind={kind} />
-              </TabsContent>
-            </Tabs>
-          )}
+          <ScheduleView data={data} kind={kind} />
         </TabsContent>
 
-        {/* C. 결과·기록 — 공모주=원장 / 스팩주=보유현황+원장 */}
+        {/* C. 결과·기록 — 종목별 원장(손익·배정·상태) */}
         <TabsContent value="result" className="space-y-3">
-      {kind === 'SPAC' && <SpacHoldings spacs={data.spacs} />}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-muted-foreground">종목별 원장 {groups.length > 0 && `· ${groups.length}종목`}</h3>
@@ -221,6 +214,7 @@ export default function IpoLedgerPage() {
           <AccountBoard accounts={accounts} ledger={ledger} showDemo={showDemo} data={data} />
         </TabsContent>
       </Tabs>
+      )}
     </div>
   )
 }
