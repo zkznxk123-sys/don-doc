@@ -6,10 +6,10 @@ import { Calendar } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { OFFERINGS, ddays, ddayLabel } from '@/components/ipo/board-data'
 
-export function UpcomingStrip() {
+export function UpcomingStrip({ kind }: { kind?: 'IPO' | 'SPAC' }) {
   const today = useMemo(() => new Date(), [])
   const items = useMemo(() =>
-    OFFERINGS.flatMap(o => {
+    OFFERINGS.filter(o => !kind || o.kind === kind).flatMap(o => {
       const its: { name: string; type: string; date: string }[] = []
       if (o.subStart) its.push({ name: o.name, type: '청약', date: o.subStart })
       if (o.refundDate) its.push({ name: o.name, type: '환불', date: o.refundDate })
@@ -19,7 +19,7 @@ export function UpcomingStrip() {
       .map(it => ({ ...it, d: ddays(it.date, today) }))
       .filter(it => it.d >= 0)
       .sort((a, b) => a.d - b.d),
-    [today])
+    [today, kind])
 
   if (items.length === 0) return null
 

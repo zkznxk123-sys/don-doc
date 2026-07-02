@@ -20,7 +20,7 @@ function primaryDate(o: UpcomingOffering): string {
   return o.subStart ?? o.listingDate ?? o.refundDate ?? ''
 }
 
-export function ScheduleView({ data }: { data: IpoData }) {
+export function ScheduleView({ data, kind }: { data: IpoData; kind?: 'IPO' | 'SPAC' }) {
   const today = useMemo(() => new Date(), [])
   const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
   const [scope, setScope] = useState<'upcoming' | 'all'>('upcoming')
@@ -28,6 +28,7 @@ export function ScheduleView({ data }: { data: IpoData }) {
 
   const months = useMemo(() => {
     const inScope = OFFERINGS.filter(o => {
+      if (kind && o.kind !== kind) return false
       if (scope === 'all') return true
       const dates = [o.subStart, o.refundDate, o.listingDate, o.transferDate].filter(Boolean) as string[]
       return dates.some(d => d >= todayISO)
@@ -41,9 +42,9 @@ export function ScheduleView({ data }: { data: IpoData }) {
     return [...map.entries()]
       .sort((a, b) => (a[0] < b[0] ? -1 : 1))
       .map(([ym, items]) => ({ ym, items: items.sort((x, y) => (primaryDate(x) < primaryDate(y) ? -1 : 1)) }))
-  }, [scope, todayISO])
+  }, [scope, todayISO, kind])
 
-  const total = scope === 'all' ? OFFERINGS.length : months.reduce((n, m) => n + m.items.length, 0)
+  const total = months.reduce((n, m) => n + m.items.length, 0)
 
   return (
     <div className="space-y-4">

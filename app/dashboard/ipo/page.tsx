@@ -38,11 +38,14 @@ export default function IpoLedgerPage() {
   const [editingSub, setEditingSub] = useState<number | null>(null)
   const [addingSub, setAddingSub] = useState(false)
   const [tab, setTab] = useState('act')
+  // 공모주/스팩주 상단 분기 — 일정·KPI·원장이 이 축으로 필터. 계좌·자금맵은 공용.
+  const [kind, setKind] = useState<'IPO' | 'SPAC'>('IPO')
 
-  // KPI 집계
+  // KPI 집계 — 선택된 축(kind)만
   const kpi = useMemo(() => {
     let locked = 0, unrecovered = 0, unsoldShares = 0, realized = 0, planned = 0, missed = 0
     for (const r of ledger) {
+      if (r.kind !== kind) continue
       if (r.status === 'SUBMITTED') locked += r.deposit
       if (r.status === 'ALLOCATED') { unsoldShares += r.allocatedShares; if (!r.refunded) unrecovered += r.refundAmount }
       if (r.status === 'SOLD') realized += r.realizedPnl ?? 0
@@ -50,33 +53,44 @@ export default function IpoLedgerPage() {
       if (r.status === 'MISSED') missed++
     }
     return { locked, unrecovered, unsoldShares, realized, planned, missed }
-  }, [ledger])
+  }, [ledger, kind])
 
-  // 종목 단위 그룹화 (보드 행). index 보존(삭제용).
+  // 종목 단위 그룹화 (보드 행). index 보존(삭제용). 선택된 축만.
   const groups = useMemo(() => {
     const map = new Map<string, { row: LedgerRow; index: number }[]>()
     ledger.forEach((row, index) => {
+      if (row.kind !== kind) return
       const arr = map.get(row.offering) ?? []
       arr.push({ row, index })
       map.set(row.offering, arr)
     })
     return [...map.entries()].sort((a, b) => (a[1][0].row.subStart < b[1][0].row.subStart ? -1 : 1))
-  }, [ledger])
+  }, [ledger, kind])
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 space-y-6">
-      {/* 헤더 */}
-      <div>
-        <h1 className="text-lg font-semibold flex items-center gap-2">
-          <TrendingUp className="size-5" /> 공모주 · 스팩주
-        </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          청약·계좌·시세를 한 화면에 — 명의 흩어짐 없이 청약~회수까지
-        </p>
+      {/* 헤더 + 공모주/스팩주 분기 */}
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-lg font-semibold flex items-center gap-2">
+            <TrendingUp className="size-5" /> 공모주 · 스팩주
+          </h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            청약·계좌·시세를 한 화면에 — 명의 흩어짐 없이 청약~회수까지
+          </p>
+        </div>
+        <div className="inline-flex rounded-lg bg-card border border-border p-0.5 text-sm shrink-0">
+          {(['IPO', 'SPAC'] as const).map(k => (
+            <button key={k} onClick={() => setKind(k)}
+              className={cn('rounded-md px-3 py-1.5 font-medium', kind === k ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}>
+              {k === 'IPO' ? '공모주' : '스팩주'}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* 다가올 일정 — 맨 위 고정 */}
-      <UpcomingStrip />
+      {/* 다가올 일정 — 맨 위 고정, 선택 축만 */}
+      <UpcomingStrip kind={kind} />
 
       <IpoDatalists accounts={accounts} />
 
@@ -102,29 +116,33 @@ export default function IpoLedgerPage() {
           <TabsTrigger value="accounts">계좌 관리</TabsTrigger>
         </TabsList>
 
-        {/* A. 실행 — 일정에서 바로 청약·매도 기록 / 자금 배분 / 스팩 모니터링 */}
+        {/* A. 실행 — 일정에서 바로 청약·매도 기록. 공모주=자금배분 / 스팩주=시세 */}
         <TabsContent value="act">
-          <Tabs defaultValue="schedule" className="space-y-3">
+          <Tabs key={kind} defaultValue="schedule" className="space-y-3">
             <TabsList>
-              <TabsTrigger value="schedule">일정</TabsTrigger>
-              <TabsTrigger value="allocate">자금 배분</TabsTrigger>
-              <TabsTrigger value="spac">스팩 시세</TabsTrigger>
+              <TabsTrigger value="schedule">{kind === 'SPAC' ? '청약 일정' : '일정'}</TabsTrigger>
+              {kind === 'IPO' && <TabsTrigger value="allocate">자금 배분</TabsTrigger>}
+              {kind === 'SPAC' && <TabsTrigger value="spac">시세 · 유니버스</TabsTrigger>}
             </TabsList>
             <TabsContent value="schedule">
-              <ScheduleView data={data} />
+              <ScheduleView data={data} kind={kind} />
             </TabsContent>
-            <TabsContent value="allocate">
-              <AllocationSim accounts={accounts} />
-            </TabsContent>
-            <TabsContent value="spac">
-              <SpacPanel data={data} />
-            </TabsContent>
+            {kind === 'IPO' && (
+              <TabsContent value="allocate">
+                <AllocationSim accounts={accounts} />
+              </TabsContent>
+            )}
+            {kind === 'SPAC' && (
+              <TabsContent value="spac">
+                <SpacPanel data={data} />
+              </TabsContent>
+            )}
           </Tabs>
         </TabsContent>
 
-        {/* C. 결과·기록 — 스팩 보유현황 + 종목별 공모주 원장(손익·배정·상태) */}
+        {/* C. 결과·기록 — 공모주=원장 / 스팩주=보유현황+원장 */}
         <TabsContent value="result" className="space-y-3">
-      <SpacHoldings spacs={data.spacs} />
+      {kind === 'SPAC' && <SpacHoldings spacs={data.spacs} />}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium text-muted-foreground">종목별 원장 {groups.length > 0 && `· ${groups.length}종목`}</h3>
