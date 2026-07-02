@@ -115,6 +115,44 @@ function OfferingPicker({ value, onChange, onPick }: {
   )
 }
 
+/**
+ * 증권사 검색 선택 — 포커스하면 전체 증권사 칩이 뜨고, 타이핑으로 필터.
+ * 목록에 없는 증권사는 자유 입력 그대로 사용.
+ */
+function BrokerPicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false)
+  const q = value.trim().toLowerCase()
+  const list = BROKERS.filter(b => !q || b.toLowerCase().includes(q))
+
+  const pick = (b: string) => { onChange(b); setOpen(false) }
+
+  return (
+    <div className="relative">
+      <div className="relative">
+        <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+        <input className={cn(inputCls, 'w-full pl-7')} value={value}
+          onChange={e => { onChange(e.target.value); setOpen(true) }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setOpen(false)}
+          onKeyDown={e => { if (e.key === 'Escape') setOpen(false); if (e.key === 'Enter' && list.length > 0) { e.preventDefault(); pick(list[0]) } }}
+          placeholder="증권사 검색" />
+      </div>
+      {open && list.length > 0 && (
+        <div className="absolute z-20 mt-1 w-max max-w-72 rounded-md border border-border bg-card shadow-lg p-1.5 flex flex-wrap gap-1">
+          {list.map(b => (
+            <button key={b} type="button"
+              onMouseDown={e => e.preventDefault()}  /* blur보다 먼저 실행돼 닫힘 방지 */
+              onClick={() => pick(b)}
+              className="rounded-md bg-muted px-2 py-1 text-xs font-medium hover:bg-muted/70">
+              {b}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 /** 초기화 바 — 데이터가 있을 때만 우측에 얇게. 파괴적 액션이라 AlertDialog로 확인. */
 export function ResetBar({ data }: { data: IpoData }) {
   const [resetOpen, setResetOpen] = useState(false)
@@ -170,7 +208,7 @@ export function AccountForm({ data, onDone, initial }: { data: IpoData; onDone: 
           <input list="ipo-persons" className={inputCls} value={person} onChange={e => setPerson(e.target.value)} placeholder="본인" />
         </Field>
         <Field label="증권사">
-          <input list="ipo-brokers" className={inputCls} value={broker} onChange={e => setBroker(e.target.value)} placeholder="KB" />
+          <BrokerPicker value={broker} onChange={setBroker} />
         </Field>
         <Field label="계좌번호">
           <input className={inputCls} value={accountNo} onChange={e => setAccountNo(e.target.value)} placeholder="123-45-678901" />
@@ -246,7 +284,7 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
           <input list="ipo-persons" className={inputCls} value={person} onChange={e => setPerson(e.target.value)} placeholder="본인" />
         </Field>
         <Field label="증권사">
-          <input list="ipo-brokers" className={inputCls} value={broker} onChange={e => setBroker(e.target.value)} placeholder="KB" />
+          <BrokerPicker value={broker} onChange={setBroker} />
         </Field>
         <Field label="청약유형">
           <select className={inputCls} value={subType} onChange={e => setSubType(e.target.value as LedgerRow['subType'])}>
