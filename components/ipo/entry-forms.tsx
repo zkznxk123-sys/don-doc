@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import {
   OFFERINGS, READINESS_LABELS, ddays, ddayLabel,
-  type ReadinessState, type SubStatus, type Account, type LedgerRow, type Spac,
+  type ReadinessState, type SubStatus, type Account, type LedgerRow, type Spac, type UpcomingOffering,
 } from '@/components/ipo/board-data'
 import type { IpoData } from '@/lib/ipo/store'
 
@@ -47,8 +47,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
  * 종목 검색 선택 — 포커스하면 다가올 종목이 날짜순으로 바로 뜨고, 타이핑으로 필터.
  * 선택 시 주관사가 1곳이면 증권사도 자동 채움. 목록에 없는 종목은 자유 입력 그대로 사용.
  */
-function OfferingPicker({ value, onChange, onPickBroker }: {
-  value: string; onChange: (v: string) => void; onPickBroker?: (broker: string) => void
+function OfferingPicker({ value, onChange, onPick }: {
+  value: string; onChange: (v: string) => void; onPick?: (o: UpcomingOffering) => void
 }) {
   const [open, setOpen] = useState(false)
   const today = useMemo(() => new Date(), [])
@@ -67,9 +67,9 @@ function OfferingPicker({ value, onChange, onPickBroker }: {
     return scored.slice(0, 8)
   }, [value, todayISO])
 
-  const pick = (name: string, brokers: string[]) => {
-    onChange(name)
-    if (brokers.length === 1 && onPickBroker) onPickBroker(brokers[0])
+  const pick = (o: UpcomingOffering) => {
+    onChange(o.name)
+    onPick?.(o)
     setOpen(false)
   }
 
@@ -81,7 +81,7 @@ function OfferingPicker({ value, onChange, onPickBroker }: {
           onChange={e => { onChange(e.target.value); setOpen(true) }}
           onFocus={() => setOpen(true)}
           onBlur={() => setOpen(false)}
-          onKeyDown={e => { if (e.key === 'Escape') setOpen(false); if (e.key === 'Enter' && list.length > 0) { e.preventDefault(); pick(list[0].o.name, list[0].o.brokers) } }}
+          onKeyDown={e => { if (e.key === 'Escape') setOpen(false); if (e.key === 'Enter' && list.length > 0) { e.preventDefault(); pick(list[0].o) } }}
           placeholder="종목명 검색" />
       </div>
       {open && list.length > 0 && (
@@ -91,7 +91,7 @@ function OfferingPicker({ value, onChange, onPickBroker }: {
             return (
               <button key={o.name} type="button"
                 onMouseDown={e => e.preventDefault()}  /* blur보다 먼저 실행돼 닫힘 방지 */
-                onClick={() => pick(o.name, o.brokers)}
+                onClick={() => pick(o)}
                 className="w-full flex items-center gap-2 px-2.5 py-1.5 text-left text-sm hover:bg-muted/60">
                 <span className="font-medium truncate">{o.name}</span>
                 <span className={cn('shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold',
@@ -233,7 +233,14 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
     <div className="rounded-md border border-border p-3 space-y-3">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <Field label="종목">
-          <OfferingPicker value={offering} onChange={setOffering} onPickBroker={b => { if (!broker.trim()) setBroker(b) }} />
+          <OfferingPicker value={offering} onChange={setOffering} onPick={o => {
+            if (!broker.trim() && o.brokers.length === 1) setBroker(o.brokers[0])
+            // 기본 증거금 = 균등 최소청약(최소주수 × 공모가 × 증거금률). 비어 있을 때만.
+            if (!deposit.trim() && o.ipoPrice) {
+              const minDep = (o.minSubShares ?? 10) * o.ipoPrice * ((o.depositRate ?? 50) / 100)
+              setDeposit(String(minDep / 10_000))
+            }
+          }} />
         </Field>
         <Field label="명의">
           <input list="ipo-persons" className={inputCls} value={person} onChange={e => setPerson(e.target.value)} placeholder="본인" />
