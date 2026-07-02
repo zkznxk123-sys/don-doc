@@ -17,7 +17,6 @@ import { AccountBoard, MoneyMap } from '@/components/ipo/account-board'
 import { SpacPanel } from '@/components/ipo/spac-panel'
 import { SpacHoldings } from '@/components/ipo/spac-holdings'
 import { ScheduleView } from '@/components/ipo/schedule-view'
-import { UpcomingStrip } from '@/components/ipo/upcoming-strip'
 import { DemoToolbar, IpoDatalists, DeleteBtn, EditBtn, SubForm } from '@/components/ipo/entry-forms'
 import { useIpoData } from '@/lib/ipo/store'
 import {
@@ -87,9 +86,6 @@ export default function IpoLedgerPage() {
           ))}
         </div>
       </div>
-
-      {/* 다가올 일정 — 맨 위 고정, 선택 축만 */}
-      <UpcomingStrip kind={kind} />
 
       <IpoDatalists accounts={accounts} />
 
