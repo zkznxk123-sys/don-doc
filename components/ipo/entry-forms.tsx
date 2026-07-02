@@ -166,9 +166,13 @@ export function AccountForm({ data, onDone, initial }: { data: IpoData; onDone: 
   )
 }
 
-export function SubForm({ data, onDone, initial }: { data: IpoData; onDone: () => void; initial?: { row: LedgerRow; index: number } }) {
+export function SubForm({ data, onDone, initial, presetOffering }: {
+  data: IpoData; onDone: () => void; initial?: { row: LedgerRow; index: number }
+  /** 일정 카드에서 열 때 종목 미리 채움 */
+  presetOffering?: string
+}) {
   const r0 = initial?.row
-  const [offering, setOffering] = useState(r0?.offering ?? '')
+  const [offering, setOffering] = useState(r0?.offering ?? presetOffering ?? '')
   const [person, setPerson] = useState(r0?.person ?? '본인')
   const [broker, setBroker] = useState(r0?.broker ?? '')
   const [subType, setSubType] = useState<LedgerRow['subType']>(r0?.subType ?? '균등')

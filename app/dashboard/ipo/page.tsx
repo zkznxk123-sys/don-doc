@@ -91,24 +91,19 @@ export default function IpoLedgerPage() {
       {/* 자금 위치 맵 — 계층 밖 상시 오버레이 */}
       <MoneyMap accounts={accounts} ledger={ledger} />
 
-      {/* 3계층: 준비(계좌) → 실행(청약) → 결과(원장) */}
+      {/* 일정(실행) 중심 + 결과 / 계좌는 별도 관리 영역 */}
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="prep">준비 · 계좌</TabsTrigger>
-          <TabsTrigger value="act">실행 · 청약</TabsTrigger>
+          <TabsTrigger value="act">일정 · 청약</TabsTrigger>
           <TabsTrigger value="result">결과 · 원장</TabsTrigger>
+          <TabsTrigger value="accounts">계좌 관리</TabsTrigger>
         </TabsList>
 
-        {/* A. 계좌 인프라 */}
-        <TabsContent value="prep">
-          <AccountBoard accounts={accounts} ledger={ledger} showDemo={showDemo} data={data} />
-        </TabsContent>
-
-        {/* B. 투자 실행 보조 — 일정·청약 / 자금 배분 / 스팩 모니터링 */}
+        {/* A. 실행 — 일정에서 바로 청약·매도 기록 / 자금 배분 / 스팩 모니터링 */}
         <TabsContent value="act">
           <Tabs defaultValue="schedule" className="space-y-3">
             <TabsList>
-              <TabsTrigger value="schedule">일정 · 청약</TabsTrigger>
+              <TabsTrigger value="schedule">일정</TabsTrigger>
               <TabsTrigger value="allocate">자금 배분</TabsTrigger>
               <TabsTrigger value="spac">스팩 시세</TabsTrigger>
             </TabsList>
@@ -191,6 +186,11 @@ export default function IpoLedgerPage() {
           )
         })}
       </section>
+        </TabsContent>
+
+        {/* C. 계좌 인프라 — 별도 관리 영역 (사람×증권사, 10+계좌 밀집 테이블) */}
+        <TabsContent value="accounts">
+          <AccountBoard accounts={accounts} ledger={ledger} showDemo={showDemo} data={data} />
         </TabsContent>
       </Tabs>
     </div>

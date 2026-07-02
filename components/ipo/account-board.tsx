@@ -6,7 +6,7 @@
  * ② 계좌 보드: 명의×증권사별 준비상태(CDD·OTP·인증서·한도·우편물) + 머무는 돈
  */
 import { useMemo, useState } from 'react'
-import { AlertTriangle, CheckCircle2, Wallet, KeyRound } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Wallet, ChevronDown } from 'lucide-react'
 import { cn, formatLargeNumber } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { DeleteBtn, EditBtn, AccountForm } from '@/components/ipo/entry-forms'
@@ -77,6 +77,7 @@ interface AccountBoardProps {
 
 export function AccountBoard({ accounts, ledger, showDemo, data }: AccountBoardProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [closed, setClosed] = useState<Set<string>>(new Set())
 
   // 명의별로 그룹
   const byPerson = useMemo(() => {
@@ -89,14 +90,15 @@ export function AccountBoard({ accounts, ledger, showDemo, data }: AccountBoardP
   }, [accounts])
 
   const blockedCount = accounts.filter(a => readinessIssues(a) > 0).length
+  const togglePerson = (p: string) =>
+    setClosed(prev => { const next = new Set(prev); if (next.has(p)) next.delete(p); else next.add(p); return next })
 
   if (accounts.length === 0) {
     return <p className="text-sm text-muted-foreground py-8 text-center">아직 계좌가 없어요. 위 “계좌 추가”로 등록하세요.</p>
   }
 
   return (
-    <div className="space-y-5">
-      {/* 계좌 보드 (자금 위치 맵은 페이지 상단으로 hoist) */}
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-muted-foreground">내 계좌 {accounts.length}</h3>
         {blockedCount > 0 && (
@@ -106,31 +108,63 @@ export function AccountBoard({ accounts, ledger, showDemo, data }: AccountBoardP
         )}
       </div>
 
-      <div className="space-y-4">
-        {byPerson.map(([person, accts]) => (
-          <div key={person} className="space-y-2">
-            <div className="text-xs font-medium text-muted-foreground pl-0.5">{person}</div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {accts.map(a => editingId === a.id
-                ? <div key={a.id} className="sm:col-span-2"><AccountForm data={data} initial={a} onDone={() => setEditingId(null)} /></div>
-                : <AccountCard key={a.id} account={a} ledger={ledger} showDemo={showDemo}
-                    onRemove={data.removeAccount} onEdit={() => setEditingId(a.id)} />)}
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* 명의별 밀집 테이블 — 사람당 10~20계좌 전제. 준비상태는 예외(대기·만료)만 표시 */}
+      {byPerson.map(([person, accts]) => {
+        const open = !closed.has(person)
+        const cash = accts.reduce((s, a) => s + a.cash, 0)
+        const issues = accts.filter(a => readinessIssues(a) > 0).length
+        return (
+          <Card key={person}>
+            <CardContent className="pt-3 pb-2">
+              <button onClick={() => togglePerson(person)} className="w-full flex items-center gap-2 pb-1.5 text-left">
+                <ChevronDown className={cn('size-3.5 shrink-0 text-muted-foreground transition-transform', !open && '-rotate-90')} />
+                <span className="text-sm font-medium">{person}</span>
+                <span className="text-xs text-muted-foreground">{accts.length}계좌 · 가용 {formatLargeNumber(cash)}</span>
+                {issues > 0 && (
+                  <span className="ml-auto text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
+                    <AlertTriangle className="size-3" /> 준비 {issues}
+                  </span>
+                )}
+              </button>
+
+              {open && (
+                <>
+                  <div className="grid grid-cols-12 gap-2 py-1 text-[10px] text-muted-foreground border-b border-border/60">
+                    <span className="col-span-3">증권사</span>
+                    <span className="col-span-2">계좌번호</span>
+                    <span className="col-span-3">준비 — 예외만</span>
+                    <span className="col-span-2 text-right">가용</span>
+                    <span className="col-span-2 text-right">묶임·환불</span>
+                  </div>
+                  <div className="divide-y divide-border/40">
+                    {accts.map(a => editingId === a.id
+                      ? <div key={a.id} className="py-2"><AccountForm data={data} initial={a} onDone={() => setEditingId(null)} /></div>
+                      : <AccountRow key={a.id} account={a} ledger={ledger} showDemo={showDemo}
+                          onRemove={() => data.removeAccount(a.id)} onEdit={() => setEditingId(a.id)} />)}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )
+      })}
     </div>
   )
 }
 
+/** 인증서 만료까지 남은 일수. */
+function certDays(date: string): number {
+  return Math.ceil((new Date(date + 'T00:00:00').getTime() - Date.now()) / 86_400_000)
+}
+
 /** 공동인증서 만료 표기 — 지남=적색, 30일 이내=황색. */
 function CertExpiry({ date }: { date: string }) {
-  const days = Math.ceil((new Date(date + 'T00:00:00').getTime() - Date.now()) / 86_400_000)
+  const days = certDays(date)
   const tone = days < 0 ? 'text-rose-600 dark:text-rose-400'
     : days <= 30 ? 'text-amber-600 dark:text-amber-400'
     : 'text-foreground'
   const label = days < 0 ? '만료됨' : `D-${days}`
-  return <span>인증서 <span className={tone}>{date.slice(2)} · {label}</span></span>
+  return <span className="text-[10px]">인증서 <span className={tone}>{label}</span></span>
 }
 
 function Legend({ seg, amount }: { seg: keyof typeof SEG; amount: number }) {
@@ -142,66 +176,44 @@ function Legend({ seg, amount }: { seg: keyof typeof SEG; amount: number }) {
   )
 }
 
-function AccountCard({ account, ledger, showDemo, onRemove, onEdit }: {
-  account: Account; ledger: LedgerRow[]; showDemo: boolean; onRemove: (id: string) => void; onEdit: () => void
+/**
+ * 계좌 1행 — 밀집 테이블용. 준비상태는 예외(대기·만료)만 칩으로, 전부 OK면 ✓ 하나.
+ * (실사용: 사람당 10~20계좌 — 카드 대신 행, 정상은 조용히·문제만 시끄럽게)
+ */
+function AccountRow({ account, ledger, showDemo, onRemove, onEdit }: {
+  account: Account; ledger: LedgerRow[]; showDemo: boolean; onRemove: () => void; onEdit: () => void
 }) {
   const m = accountMoney(account, ledger)
-  const issues = readinessIssues(account)
+  const exceptions = READINESS_LABELS.filter(({ key }) => account.readiness[key] !== 'OK')
+  const certWarn = account.certExpiry != null && certDays(account.certExpiry) <= 30
   return (
-    <Card>
-      <CardContent className="pt-3.5 space-y-2.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 min-w-0">
-            <span className="font-medium text-sm shrink-0">{account.broker}</span>
-            <span className={cn('shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold',
-              account.bankLinked
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300'
-                : 'bg-muted text-muted-foreground')}>
-              {account.bankLinked ? '은행제휴' : '비대면'}
-            </span>
-            {account.accountNo && <span className="text-[11px] text-muted-foreground tabular-nums truncate" title="수정에서 전체 확인">· {maskAccountNo(account.accountNo)}</span>}
-          </div>
-          <div className="flex items-center gap-2">
-            {issues === 0
-              ? <CheckCircle2 className="size-4 text-emerald-500" />
-              : <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-0.5"><AlertTriangle className="size-3" />준비 {issues}</span>}
-            {!showDemo && <EditBtn onClick={onEdit} />}
-            {!showDemo && <DeleteBtn onClick={() => onRemove(account.id)} label="계좌 삭제" />}
-          </div>
-        </div>
-
-        {/* 준비상태 5종 */}
-        <div className="flex flex-wrap gap-1">
-          {READINESS_LABELS.map(({ key, label }) => {
-            const st = account.readiness[key]
-            return (
-              <span key={key} className={cn('rounded px-1.5 py-0.5 text-[10px] font-medium', READINESS_TONE[st])}>
-                {label}{st === 'EXPIRED' ? ' 만료' : st === 'PENDING' ? ' 대기' : ''}
-              </span>
-            )
-          })}
-        </div>
-
-        {/* 자격증명 참조 (비번 자체는 저장 안 함) */}
-        {(account.loginId || account.certExpiry || account.secretHint) && (
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
-            {account.loginId && <span>ID <span className="text-foreground">{account.loginId}</span></span>}
-            {account.certExpiry && <CertExpiry date={account.certExpiry} />}
-            {account.secretHint && <span className="flex items-center gap-0.5"><KeyRound className="size-3" />{account.secretHint}</span>}
-          </div>
+    <div className="grid grid-cols-12 items-center gap-2 py-1.5 text-sm">
+      <span className="col-span-3 flex items-center gap-1 min-w-0">
+        <span className="font-medium truncate">{account.broker}</span>
+        {account.bankLinked && (
+          <span className="shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">제휴</span>
         )}
-
-        {/* 자금 위치 */}
-        <MoneyBar cash={m.cash} locked={m.locked} refund={m.refundPending} />
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-muted-foreground">
-            가용 <span className="tabular-nums text-foreground">{formatLargeNumber(m.cash)}</span>
-            {m.locked > 0 && <> · 묶임 <span className="tabular-nums text-amber-600 dark:text-amber-400">{formatLargeNumber(m.locked)}</span></>}
-            {m.refundPending > 0 && <> · 환불대기 <span className="tabular-nums text-sky-600 dark:text-sky-400">{formatLargeNumber(m.refundPending)}</span></>}
+      </span>
+      <span className="col-span-2 text-[11px] text-muted-foreground tabular-nums truncate" title="수정에서 전체 확인">
+        {account.accountNo ? maskAccountNo(account.accountNo) : '—'}
+      </span>
+      <span className="col-span-3 flex flex-wrap items-center gap-1 min-w-0">
+        {exceptions.length === 0 && !certWarn && <CheckCircle2 className="size-3.5 text-emerald-500" />}
+        {exceptions.map(({ key, label }) => (
+          <span key={key} className={cn('rounded px-1 py-0.5 text-[9px] font-medium', READINESS_TONE[account.readiness[key]])}>
+            {label} {account.readiness[key] === 'EXPIRED' ? '만료' : '대기'}
           </span>
-          {m.heldShares > 0 && <span className="text-muted-foreground">{m.heldShares}주</span>}
-        </div>
-      </CardContent>
-    </Card>
+        ))}
+        {certWarn && account.certExpiry && <CertExpiry date={account.certExpiry} />}
+      </span>
+      <span className="col-span-2 text-right text-xs tabular-nums">{formatLargeNumber(m.cash)}</span>
+      <span className="col-span-2 flex justify-end items-center gap-1.5 text-[11px] tabular-nums">
+        {m.locked > 0 && <span className="text-amber-600 dark:text-amber-400">{formatLargeNumber(m.locked)}</span>}
+        {m.refundPending > 0 && <span className="text-sky-600 dark:text-sky-400">{formatLargeNumber(m.refundPending)}</span>}
+        {m.locked === 0 && m.refundPending === 0 && <span className="text-muted-foreground">—</span>}
+        {!showDemo && <EditBtn onClick={onEdit} />}
+        {!showDemo && <DeleteBtn onClick={onRemove} label="계좌 삭제" />}
+      </span>
+    </div>
   )
 }

@@ -5,11 +5,15 @@
  * 월별로 묶어 청약·환불·상장일을 한눈에. 다가올/전체 토글.
  */
 import { Fragment, useMemo, useState } from 'react'
-import { Calendar, ChevronDown, Calculator } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Calendar, ChevronDown, Calculator, ClipboardList } from 'lucide-react'
+import { cn, formatLargeNumber } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
-import { OFFERINGS, ddays, ddayLabel, type UpcomingOffering } from '@/components/ipo/board-data'
-import type { IpoData, OfferingOverride } from '@/lib/ipo/store'
+import { SubForm, EditBtn } from '@/components/ipo/entry-forms'
+import {
+  OFFERINGS, STATUS_META, ddays, ddayLabel,
+  type UpcomingOffering, type SubStatus,
+} from '@/components/ipo/board-data'
+import type { IpoData } from '@/lib/ipo/store'
 
 /** 종목의 대표일(정렬·월그룹 기준): 청약 시작 → 상장 → 환불 순 우선. */
 function primaryDate(o: UpcomingOffering): string {
@@ -67,10 +71,7 @@ export function ScheduleView({ data }: { data: IpoData }) {
                   <div key={o.name}>
                     <OfferingRow o={o} todayISO={todayISO} today={today}
                       open={expanded === o.name} onToggle={() => setExpanded(expanded === o.name ? null : o.name)} />
-                    {expanded === o.name && (
-                      <OfferingDetail o={o} memo={data.memos[o.name] ?? ''} onMemo={t => data.setMemo(o.name, t)}
-                        override={data.overrides[o.name] ?? {}} onOverride={p => data.setOverride(o.name, p)} />
-                    )}
+                    {expanded === o.name && <OfferingDetail o={o} data={data} today={today} />}
                   </div>
                 ))}
               </div>
@@ -111,24 +112,41 @@ function OfferingRow({ o, todayISO, today, open, onToggle }: { o: UpcomingOfferi
   )
 }
 
-function OfferingDetail({ o, memo, onMemo, override, onOverride }: {
-  o: UpcomingOffering; memo: string; onMemo: (t: string) => void
-  override: OfferingOverride; onOverride: (p: OfferingOverride) => void
-}) {
+function OfferingDetail({ o, data, today }: { o: UpcomingOffering; data: IpoData; today: Date }) {
+  const memo = data.memos[o.name] ?? ''
+  const override = data.overrides[o.name] ?? {}
+  const onOverride = (p: Parameters<typeof data.setOverride>[1]) => data.setOverride(o.name, p)
   const hasInfo = !!(o.ipoPrice || o.offerAmountEok || o.shares || o.instCompetition || o.lockupRatio != null)
+  const dSub = o.subStart ? ddays(o.subStart, today) : null
   return (
     <div className="pb-3 pt-1 space-y-2">
-      {/* 38 자동 */}
+      {/* ── 핵심 4지표 — 청약 판단에 가장 중요한 것 먼저, 크게 ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {o.ipoPrice != null && <Info label="공모가" value={`${o.ipoPrice.toLocaleString()}원`} sub={o.priceBand ? `희망 ${o.priceBand}` : undefined} />}
+        <Hero label="공모가"
+          value={o.ipoPrice != null ? `${o.ipoPrice.toLocaleString()}원` : o.priceBand ? o.priceBand : '미정'}
+          sub={o.ipoPrice != null ? (o.priceBand ? `희망 ${o.priceBand}` : undefined) : o.priceBand ? '희망밴드(미확정)' : '수요예측 전'} />
+        <Hero label="청약일"
+          value={o.subStart ? `${o.subStart.slice(5)}${o.subEnd ? `~${o.subEnd.slice(5)}` : ''}` : '미정'}
+          sub={dSub != null && dSub >= 0 ? ddayLabel(dSub) : dSub != null ? '마감' : undefined}
+          accent={dSub != null && dSub >= 0 && dSub <= 1} />
+        <Hero label="기관경쟁률"
+          value={o.instCompetition != null ? `${Math.round(o.instCompetition).toLocaleString()}:1` : '—'}
+          sub={o.instCount ? `참여 ${o.instCount.toLocaleString()}건` : undefined} />
+        <Hero label="의무보유확약"
+          value={o.lockupRatio != null ? `${o.lockupRatio}%` : '—'}
+          sub={o.lockupBreakdown ? `15일 ${o.lockupBreakdown.d15 ?? '—'} · 1·3·6M ${o.lockupBreakdown.m1 ?? '—'}·${o.lockupBreakdown.m3 ?? '—'}·${o.lockupBreakdown.m6 ?? '—'}` : undefined} />
+      </div>
+
+      {/* ── 내 청약 — 일정에서 바로 기록 ── */}
+      <MySubs o={o} data={data} />
+
+      {/* 세부 정보 (보조) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         {o.offerAmountEok != null && <Info label="공모금액" value={`${o.offerAmountEok.toLocaleString()}억`} />}
         {o.shares != null && <Info label="총공모주식수" value={`${o.shares.toLocaleString()}주`} sub={o.shareType} />}
-        {o.instCompetition != null && <Info label="기관경쟁률" value={`${Math.round(o.instCompetition).toLocaleString()}:1`} sub={o.instCount ? `참여 ${o.instCount.toLocaleString()}건` : undefined} />}
-        {o.lockupRatio != null && <Info label="의무보유확약" value={`${o.lockupRatio}%`} sub={o.lockupBreakdown ? `15일 ${o.lockupBreakdown.d15 ?? '—'} · 1·3·6M ${o.lockupBreakdown.m1 ?? '—'}·${o.lockupBreakdown.m3 ?? '—'}·${o.lockupBreakdown.m6 ?? '—'}` : undefined} />}
-        {o.redemptionRight != null && <Info label="환매청구권" value={o.redemptionRight ? 'O' : 'X'} />}
         {o.allotShares != null && <Info label="일반배정" value={`${o.allotShares.toLocaleString()}주`} sub={`균등물량 ${Math.round(o.allotShares / 2).toLocaleString()}`} />}
         {o.subLimit && <Info label="청약한도" value={`${o.subLimit}주`} sub={o.minSubShares ? `최소 ${o.minSubShares}주·증거금${o.depositRate ?? 50}%` : undefined} />}
-        <Info label="청약" value={o.subStart ? `${o.subStart.slice(5)}${o.subEnd ? `~${o.subEnd.slice(5)}` : ''}` : '—'} />
+        {o.redemptionRight != null && <Info label="환매청구권" value={o.redemptionRight ? 'O' : 'X'} />}
         <Info label="환불일" value={o.refundDate ? o.refundDate.slice(5) : '—'} />
         <Info label="상장일" value={o.listingDate ? o.listingDate.slice(5) : '—'} />
         <Info label="주관사" value={o.brokers.join(', ') || '—'} />
@@ -148,9 +166,88 @@ function OfferingDetail({ o, memo, onMemo, override, onOverride }: {
       <p className="text-[10px] text-muted-foreground">시총·유통은 DART 증권신고서 자동(상장일 유통표) — 직접 수정 가능.</p>
       {!hasInfo && <p className="text-[11px] text-muted-foreground">공모 상세(공모가·경쟁률·확약)는 수요예측 후 38에서 자동 채워져요.</p>}
       <AllocationCalc o={o} />
-      <textarea value={memo} onChange={e => onMemo(e.target.value)} rows={2}
+      <textarea value={memo} onChange={e => data.setMemo(o.name, e.target.value)} rows={2}
         placeholder="개인 메모 — 본인 판단 기록용 (추천 아님)"
         className="w-full rounded-md border border-border bg-card px-2.5 py-1.5 text-sm outline-none focus:border-foreground/30 resize-none" />
+    </div>
+  )
+}
+
+/** 다음 단계 진행 버튼 — 현재 상태에서 자연스러운 한 걸음(폼이 해당 상태로 열림). */
+const NEXT_STEP: Partial<Record<SubStatus, { label: string; to: SubStatus }>> = {
+  PLANNED:   { label: '청약했어요', to: 'SUBMITTED' },
+  SUBMITTED: { label: '배정 입력', to: 'ALLOCATED' },
+  ALLOCATED: { label: '매도 기록', to: 'SOLD' },
+}
+
+/** 내 청약 — 이 종목의 원장 행을 일정 카드 안에서 바로 기록·진행. */
+function MySubs({ o, data }: { o: UpcomingOffering; data: IpoData }) {
+  const { ledger, showDemo } = data
+  const [editing, setEditing] = useState<{ index: number; to?: SubStatus } | null>(null)
+  const [adding, setAdding] = useState(false)
+  const mine = ledger.map((row, index) => ({ row, index })).filter(x => x.row.offering === o.name)
+
+  return (
+    <div className="rounded-md border border-border p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium flex items-center gap-1.5">
+          <ClipboardList className="size-3.5" /> 내 청약{mine.length > 0 && ` · ${mine.length}`}
+        </span>
+        {!adding && (
+          <button onClick={() => setAdding(true)}
+            className="text-[11px] rounded bg-foreground text-background px-2 py-0.5 font-medium hover:opacity-90">
+            + 청약 기록
+          </button>
+        )}
+      </div>
+
+      {mine.length === 0 && !adding && (
+        <p className="text-[11px] text-muted-foreground">아직 기록이 없어요. 청약하면 여기서 바로 남겨요.</p>
+      )}
+
+      <div className="divide-y divide-border/40">
+        {mine.map(({ row: r, index }) => editing?.index === index ? (
+          <div key={index} className="py-2">
+            <SubForm data={data}
+              initial={{ row: editing.to ? { ...r, status: editing.to } : r, index }}
+              onDone={() => setEditing(null)} />
+          </div>
+        ) : (
+          <div key={index} className="flex items-center gap-2 py-1.5 text-sm">
+            <span className="font-medium">{r.person}</span>
+            <span className="text-xs text-muted-foreground">{r.broker} · {r.subType}</span>
+            {r.deposit > 0 && <span className="text-xs tabular-nums text-muted-foreground">{formatLargeNumber(r.deposit)}</span>}
+            {r.allocatedShares > 0 && <span className="text-xs tabular-nums">{r.allocatedShares}주</span>}
+            <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-semibold', STATUS_META[r.status].tone)}>
+              {STATUS_META[r.status].label}
+            </span>
+            {!showDemo && (
+              <span className="ml-auto flex items-center gap-1.5">
+                {NEXT_STEP[r.status] && (
+                  <button onClick={() => setEditing({ index, to: NEXT_STEP[r.status]!.to })}
+                    className="text-[11px] rounded bg-muted px-2 py-0.5 font-medium hover:bg-muted/70">
+                    {NEXT_STEP[r.status]!.label}
+                  </button>
+                )}
+                <EditBtn onClick={() => setEditing({ index })} />
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {adding && <SubForm data={data} presetOffering={o.name} onDone={() => setAdding(false)} />}
+    </div>
+  )
+}
+
+/** 핵심 지표 — Info보다 큰 위계. accent=마감 임박 강조. */
+function Hero({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
+  return (
+    <div className={cn('rounded-md border px-3 py-2', accent ? 'border-rose-300 dark:border-rose-500/40 bg-rose-50/50 dark:bg-rose-500/5' : 'border-border bg-card')}>
+      <div className="text-[10px] text-muted-foreground">{label}</div>
+      <div className="text-base sm:text-lg font-semibold tabular-nums truncate leading-snug">{value}</div>
+      {sub && <div className={cn('text-[10px] truncate', accent ? 'text-rose-600 dark:text-rose-400 font-medium' : 'text-muted-foreground')}>{sub}</div>}
     </div>
   )
 }
