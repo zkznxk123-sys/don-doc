@@ -55,11 +55,16 @@ export function workingBase(prev: IpoState): IpoState {
     : { accounts: [], ledger: [], spacs: [], memos: prev.memos, overrides: prev.overrides, initialized: true }
 }
 
-function load(): IpoState | null {
+const SAVED_AT_KEY = `${KEY}.savedAt`
+
+function load(): { state: IpoState; savedAt: string | null } | null {
   try {
     const raw = localStorage.getItem(KEY)
     if (!raw) return null
-    return normalize(JSON.parse(raw) as Partial<IpoState>)
+    return {
+      state: normalize(JSON.parse(raw) as Partial<IpoState>),
+      savedAt: localStorage.getItem(SAVED_AT_KEY),
+    }
   } catch { return null }
 }
 
@@ -111,7 +116,8 @@ export function useIpoData(): IpoData {
   const skipSaveRef = useRef(true)   // 첫 로드 직후 1회 저장 스킵
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // 로드: DB > localStorage > EMPTY. DB 비었고 로컬 작업본 있으면 마이그레이션.
+  // 로드: DB > localStorage > EMPTY. 단, 로컬이 DB보다 확실히 최신(오프라인 편집)이면
+  // 로컬 승격 후 DB로 저장 — "DB 우선"이 최신 로컬 편집을 조용히 덮던 유실 경로 차단(dev 7/2).
   useEffect(() => {
     let cancelled = false
     ;(async () => {
@@ -121,18 +127,22 @@ export function useIpoData(): IpoData {
         if (res.ok) {
           dbRef.current = true
           const j = await res.json()
-          if (j.data) {
+          // 클라이언트 savedAt vs 서버 updatedAt — 시계 오차 감안 5초 여유
+          const localNewer = !!(local?.state.initialized && local.savedAt && j.updatedAt
+            && new Date(local.savedAt).getTime() > new Date(j.updatedAt).getTime() + 5_000)
+          if (j.data && !localNewer) {
             if (!cancelled) setState(normalize(j.data))       // DB 작업본
-          } else if (local?.initialized) {
-            if (!cancelled) { setState(local); skipSaveRef.current = false }  // 로컬 → DB 마이그레이션
+          } else if (local?.state.initialized) {
+            // 로컬이 더 최신 or DB 빈 경우 → 로컬 승격, DB로 저장(마이그레이션)
+            if (!cancelled) { setState(local.state); skipSaveRef.current = false }
           } else if (local) {
-            if (!cancelled) setState(local)
+            if (!cancelled) setState(local.state)
           }
         } else if (local) {
-          if (!cancelled) setState(local)                     // 비인증/에러 → 로컬 폴백
+          if (!cancelled) setState(local.state)               // 비인증/에러 → 로컬 폴백
         }
       } catch {
-        if (local && !cancelled) setState(local)              // 오프라인 → 로컬 폴백
+        if (local && !cancelled) setState(local.state)        // 오프라인 → 로컬 폴백
       } finally {
         if (!cancelled) setHydrated(true)
       }
@@ -140,20 +150,52 @@ export function useIpoData(): IpoData {
     return () => { cancelled = true }
   }, [])
 
-  // 저장: localStorage(항상 캐시) + DB(debounced, 인증 시). 첫 로드 반영은 1회 스킵.
+  // 저장: localStorage(항상 캐시, savedAt 동반) + DB(debounced, 인증 시). 첫 로드 반영은 1회 스킵.
+  const stateRef = useRef(state)
+  const dirtyRef = useRef(false)   // debounce 대기 중(미전송) 여부 — 언로드 flush 판단
   useEffect(() => {
     if (!hydrated) return
-    try { localStorage.setItem(KEY, JSON.stringify(state)) } catch {}
+    stateRef.current = state
+    try {
+      localStorage.setItem(KEY, JSON.stringify(state))
+      localStorage.setItem(SAVED_AT_KEY, new Date().toISOString())
+    } catch {}
     if (skipSaveRef.current) { skipSaveRef.current = false; return }
     if (!dbRef.current) return
+    dirtyRef.current = true
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => {
+      dirtyRef.current = false
       fetch('/api/ipo/workspace', {
         method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: state }),
-      }).catch(() => {})
+        body: JSON.stringify({ data: stateRef.current }),
+      }).catch(() => { dirtyRef.current = true })   // 실패 시 언로드 flush가 한 번 더 시도
     }, 800)
   }, [state, hydrated])
+
+  // 탭 닫기·백그라운드 전환 시 debounce 대기분 즉시 flush — 800ms 안에 떠나면
+  // 마지막 편집이 DB에 못 가던 조용한 유실 차단(dev 7/2). keepalive로 언로드 중에도 전송 유지.
+  useEffect(() => {
+    const flush = () => {
+      if (!dirtyRef.current || !dbRef.current) return
+      dirtyRef.current = false
+      if (timerRef.current) clearTimeout(timerRef.current)
+      try {
+        fetch('/api/ipo/workspace', {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: stateRef.current }),
+          keepalive: true,
+        }).catch(() => {})
+      } catch { /* 무시 */ }
+    }
+    const onVis = () => { if (document.visibilityState === 'hidden') flush() }
+    window.addEventListener('pagehide', flush)
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      window.removeEventListener('pagehide', flush)
+      document.removeEventListener('visibilitychange', onVis)
+    }
+  }, [])
 
   const showDemo = !state.initialized
   const accounts = showDemo ? DEMO_ACCOUNTS : state.accounts
