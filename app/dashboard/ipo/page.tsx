@@ -94,16 +94,20 @@ export default function IpoLedgerPage() {
 
       <IpoDatalists accounts={accounts} />
 
-      {/* KPI */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Kpi icon={<Wallet className="size-4" />} label="묶인 증거금" value={`${formatLargeNumber(kpi.locked)}원`} hint="청약완료·환불 전" />
-        <Kpi icon={<AlertCircle className="size-4" />} label="미회수" value={`${formatLargeNumber(kpi.unrecovered)}원`} hint={`미매도 ${kpi.unsoldShares}주`} tone={kpi.unrecovered > 0 ? 'warn' : undefined} />
-        <Kpi icon={<CheckCircle2 className="size-4" />} label="실현손익" value={`${kpi.realized >= 0 ? '+' : ''}${formatLargeNumber(kpi.realized)}원`} hint="매도 정산(세후)" tone={kpi.realized >= 0 ? 'pos' : 'neg'} />
-        <Kpi icon={<Coins className="size-4" />} label="할 일" value={`청약 ${kpi.planned} · 놓침 ${kpi.missed}`} hint="이번 주" tone={kpi.missed > 0 ? 'warn' : undefined} />
-      </div>
+      {/* KPI + 자금 위치 맵 — 청약 라이프사이클(증거금·환불) 개념이라 공모주 전용. 스팩주에선 보유현황이 그 역할 */}
+      {kind === 'IPO' && (
+        <>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <Kpi icon={<Wallet className="size-4" />} label="묶인 증거금" value={`${formatLargeNumber(kpi.locked)}원`} hint="청약완료·환불 전" />
+            <Kpi icon={<AlertCircle className="size-4" />} label="미회수" value={`${formatLargeNumber(kpi.unrecovered)}원`} hint={`미매도 ${kpi.unsoldShares}주`} tone={kpi.unrecovered > 0 ? 'warn' : undefined} />
+            <Kpi icon={<CheckCircle2 className="size-4" />} label="실현손익" value={`${kpi.realized >= 0 ? '+' : ''}${formatLargeNumber(kpi.realized)}원`} hint="매도 정산(세후)" tone={kpi.realized >= 0 ? 'pos' : 'neg'} />
+            <Kpi icon={<Coins className="size-4" />} label="할 일" value={`청약 ${kpi.planned} · 놓침 ${kpi.missed}`} hint="이번 주" tone={kpi.missed > 0 ? 'warn' : undefined} />
+          </div>
 
-      {/* 자금 위치 맵 — 계층 밖 상시 오버레이 */}
-      <MoneyMap accounts={accounts} ledger={ledger} />
+          {/* 자금 위치 맵 — 계층 밖 상시 오버레이 */}
+          <MoneyMap accounts={accounts} ledger={ledger} />
+        </>
+      )}
 
       {/* 데모/작업본 전환 — 얇게 한 줄 */}
       <DemoToolbar data={data} />
@@ -118,7 +122,8 @@ export default function IpoLedgerPage() {
 
         {/* A. 실행 — 일정에서 바로 청약·매도 기록. 공모주=자금배분 / 스팩주=시세 */}
         <TabsContent value="act">
-          <Tabs key={kind} defaultValue="schedule" className="space-y-3">
+          {/* 스팩주는 시세가 주 업무라 기본 하위탭 = 시세·유니버스 */}
+          <Tabs key={kind} defaultValue={kind === 'SPAC' ? 'spac' : 'schedule'} className="space-y-3">
             <TabsList>
               <TabsTrigger value="schedule">{kind === 'SPAC' ? '청약 일정' : '일정'}</TabsTrigger>
               {kind === 'IPO' && <TabsTrigger value="allocate">자금 배분</TabsTrigger>}
