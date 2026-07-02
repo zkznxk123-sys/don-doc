@@ -10,8 +10,8 @@ import { cn, formatLargeNumber } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { SubForm, EditBtn } from '@/components/ipo/entry-forms'
 import {
-  OFFERINGS, STATUS_META, ddays, ddayLabel,
-  type UpcomingOffering, type SubStatus,
+  OFFERINGS, STATUS_META, ddays, ddayLabel, readinessIssues,
+  type UpcomingOffering, type SubStatus, type Account,
 } from '@/components/ipo/board-data'
 import type { IpoData } from '@/lib/ipo/store'
 
@@ -165,7 +165,7 @@ function OfferingDetail({ o, data, today }: { o: UpcomingOffering; data: IpoData
       })()}
       <p className="text-[10px] text-muted-foreground">시총·유통은 DART 증권신고서 자동(상장일 유통표) — 직접 수정 가능.</p>
       {!hasInfo && <p className="text-[11px] text-muted-foreground">공모 상세(공모가·경쟁률·확약)는 수요예측 후 38에서 자동 채워져요.</p>}
-      <AllocationCalc o={o} />
+      <AllocationCalc o={o} accounts={data.accounts} />
       <textarea value={memo} onChange={e => data.setMemo(o.name, e.target.value)} rows={2}
         placeholder="개인 메모 — 본인 판단 기록용 (추천 아님)"
         className="w-full rounded-md border border-border bg-card px-2.5 py-1.5 text-sm outline-none focus:border-foreground/30 resize-none" />
@@ -253,9 +253,10 @@ function Hero({ label, value, sub, accent }: { label: string; value: string; sub
 }
 
 /** 청약 배정 계산기 — 현재 경쟁률+균등 입력 → 목표 총배정별 필요 청약주수·증거금. */
-function AllocationCalc({ o }: { o: UpcomingOffering }) {
+function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Account[] }) {
   const [rate, setRate] = useState(o.subCompetition ? String(o.subCompetition) : '')
   const [gyun, setGyun] = useState('')
+  const [budget, setBudget] = useState('')   // 예산(만원)
   const [fetching, setFetching] = useState(false)
   const [fetchedAt, setFetchedAt] = useState<string | null>(null)
   const r = parseFloat(rate) || 0
@@ -286,6 +287,43 @@ function AllocationCalc({ o }: { o: UpcomingOffering }) {
     { key: '안정', mult: 1.3, tone: 'text-emerald-600 dark:text-emerald-400' },
   ]
 
+  // ── 예산 최적 배분 ──────────────────────────────────────────────
+  // 중복청약 금지 → 명의당 주관사 계좌 1개. 균등(계좌당 최소청약으로 g주)이
+  // 비례(10주≈g의 1/100)보다 압도적 효율 → "명의 전부 최소청약 + 잔액 비례 집중"이 항상 최적.
+  const B = (parseFloat(budget) || 0) * 10_000
+  const plan = useMemo(() => {
+    if (!price || r <= 0 || B <= 0) return null
+    const minShares = o.minSubShares ?? 10
+    const perShareDep = price * dr
+    const minDep = minShares * perShareDep
+    const cap = limit ?? Infinity
+    // 명의당 1계좌: 주관사 취급 증권사 계좌만, 준비상태 양호한 것 우선
+    const byPerson = new Map<string, Account>()
+    for (const a of [...accounts].sort((x, y) => readinessIssues(x) - readinessIssues(y))) {
+      if (!o.brokers.some(b => a.broker.includes(b) || b.includes(a.broker))) continue
+      if (!byPerson.has(a.person)) byPerson.set(a.person, a)
+    }
+    const eligible = [...byPerson.values()]
+    const n = Math.min(eligible.length, Math.floor(B / minDep))
+    if (n === 0) return { rows: [], n: 0, eligibleCount: eligible.length, minDep, gyunTotal: 0, propTotal: 0, totalDep: 0 }
+    const rows = eligible.slice(0, n).map(a => ({ a, shares: minShares }))
+    // 잔액 → 비례 집중(한도까지 순서대로). 비례는 금액 비례라 어디 두든 합계 동일(5사6입 미세차만).
+    let left = B - n * minDep
+    for (const row of rows) {
+      const add = Math.min(Math.floor(left / perShareDep), cap - row.shares)
+      if (add <= 0) continue
+      row.shares += add
+      left -= add * perShareDep
+    }
+    const totalShares = rows.reduce((s, x) => s + x.shares, 0)
+    return {
+      rows, n, eligibleCount: eligible.length, minDep,
+      totalDep: totalShares * perShareDep,
+      gyunTotal: g * n,
+      propTotal: totalShares / r,
+    }
+  }, [accounts, B, price, r, g, dr, limit, o])
+
   return (
     <div className="rounded-md border border-border p-3 space-y-2">
       <div className="flex items-center justify-between">
@@ -297,7 +335,7 @@ function AllocationCalc({ o }: { o: UpcomingOffering }) {
           </button>
         )}
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <label className="flex flex-col gap-0.5">
           <span className="text-[10px] text-muted-foreground">현재 비례경쟁률</span>
           <input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="예: 2910"
@@ -306,6 +344,11 @@ function AllocationCalc({ o }: { o: UpcomingOffering }) {
         <label className="flex flex-col gap-0.5">
           <span className="text-[10px] text-muted-foreground">균등 예상수량(주)</span>
           <input type="number" value={gyun} onChange={e => setGyun(e.target.value)} placeholder="예: 0.8"
+            className="rounded-md border border-border bg-card px-2 py-1 text-sm outline-none focus:border-foreground/30" />
+        </label>
+        <label className="flex flex-col gap-0.5">
+          <span className="text-[10px] text-muted-foreground">투자 예산(만원)</span>
+          <input type="number" value={budget} onChange={e => setBudget(e.target.value)} placeholder="예: 5000"
             className="rounded-md border border-border bg-card px-2 py-1 text-sm outline-none focus:border-foreground/30" />
         </label>
       </div>
@@ -348,6 +391,49 @@ function AllocationCalc({ o }: { o: UpcomingOffering }) {
       <p className="text-[10px] text-muted-foreground">
         총배정 = 균등{g ? ` ${g}주` : ''} + 비례. 청약주수 = (목표−균등)×경쟁률×버퍼. <b>도전 +0 / 기본 +15 / 안정 +30%</b> = 경쟁률이 그만큼 올라도 목표 유지. 예상배정=총(비=비례). 증거금 {Math.round(dr * 100)}%{limit != null && ` · 청약한도 ${limit.toLocaleString()}주 초과 ⚠`}.
       </p>
+
+      {/* ── 예산 최적 배분 — 내 계좌로 명의별 얼마씩 ── */}
+      {plan && (
+        <div className="rounded-md border border-border/60 bg-muted/20 p-2.5 space-y-1.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-medium">예산 {won(B)}원 최적 배분 — 명의 {plan.n}개</span>
+            {plan.n > 0 && (
+              <span className="text-[11px] tabular-nums">
+                예상 <b>{(plan.gyunTotal + plan.propTotal).toFixed(2)}주</b>
+                <span className="text-muted-foreground"> (균등 {plan.gyunTotal.toFixed(2)} + 비례 {plan.propTotal.toFixed(2)})</span>
+              </span>
+            )}
+          </div>
+          {plan.n === 0 ? (
+            <p className="text-[11px] text-muted-foreground">
+              {plan.eligibleCount === 0
+                ? `주관사(${o.brokers.join('·')}) 계좌 명의가 없어요 — 준비 탭에서 계좌를 추가하세요.`
+                : `예산이 최소청약 증거금(${won(plan.minDep)}원)보다 작아요.`}
+            </p>
+          ) : (
+            <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-3 gap-y-0.5 text-xs">
+              <span className="text-[10px] text-muted-foreground">명의 · 계좌</span>
+              <span className="text-[10px] text-muted-foreground text-right">청약주수</span>
+              <span className="text-[10px] text-muted-foreground text-right">증거금</span>
+              <span className="text-[10px] text-muted-foreground text-right">예상배정</span>
+              {plan.rows.map(({ a, shares }) => {
+                const issues = readinessIssues(a)
+                return (
+                  <Fragment key={a.id}>
+                    <span className="truncate">{a.person} <span className="text-muted-foreground">{a.broker}</span>{issues > 0 && <span className="text-amber-600 dark:text-amber-400"> ⚠준비{issues}</span>}</span>
+                    <span className="text-right tabular-nums">{shares.toLocaleString()}</span>
+                    <span className="text-right tabular-nums">{won(shares * price! * dr)}</span>
+                    <span className="text-right tabular-nums text-muted-foreground">{(g + shares / r).toFixed(2)}</span>
+                  </Fragment>
+                )
+              })}
+            </div>
+          )}
+          <p className="text-[10px] text-muted-foreground">
+            중복청약 금지 → 명의당 주관사 계좌 1개. 균등이 비례보다 훨씬 효율적이라(최소청약 {won(plan.minDep)}원당 {g || '?'}주 vs 비례 {(10 / r).toFixed(3)}주) <b>모든 명의 최소청약 + 잔액 비례 집중</b>이 최적. 사실 계산이며 청약 권유 아님.
+          </p>
+        </div>
+      )}
     </div>
   )
 }
