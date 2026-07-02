@@ -4,15 +4,15 @@
  * 공모주 직접 입력 — 계좌 추가 / 청약 추가 인라인 폼 + 초기화 바.
  * 금액은 만원 단위 입력 → 원으로 저장. 데이터는 useIpoData(localStorage).
  */
-import { useState } from 'react'
-import { X, RotateCcw, Pencil } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { X, RotateCcw, Pencil, Search } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
   AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
 } from '@/components/ui/alert-dialog'
 import {
-  OFFERINGS, READINESS_LABELS,
+  OFFERINGS, READINESS_LABELS, ddays, ddayLabel,
   type ReadinessState, type SubStatus, type Account, type LedgerRow, type Spac,
 } from '@/components/ipo/board-data'
 import type { IpoData } from '@/lib/ipo/store'
@@ -40,6 +40,78 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="text-[11px] text-muted-foreground">{label}</span>
       {children}
     </label>
+  )
+}
+
+/**
+ * 종목 검색 선택 — 포커스하면 다가올 종목이 날짜순으로 바로 뜨고, 타이핑으로 필터.
+ * 선택 시 주관사가 1곳이면 증권사도 자동 채움. 목록에 없는 종목은 자유 입력 그대로 사용.
+ */
+function OfferingPicker({ value, onChange, onPickBroker }: {
+  value: string; onChange: (v: string) => void; onPickBroker?: (broker: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const today = useMemo(() => new Date(), [])
+  const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
+
+  const list = useMemo(() => {
+    const q = value.trim().toLowerCase()
+    const scored = OFFERINGS
+      .filter(o => !q || o.name.toLowerCase().includes(q))
+      .map(o => {
+        const d = o.subStart ?? o.listingDate ?? ''
+        const upcoming = (o.subEnd ?? d) >= todayISO
+        return { o, d, upcoming }
+      })
+      .sort((a, b) => (a.upcoming !== b.upcoming ? (a.upcoming ? -1 : 1) : a.upcoming ? (a.d < b.d ? -1 : 1) : (a.d > b.d ? -1 : 1)))
+    return scored.slice(0, 8)
+  }, [value, todayISO])
+
+  const pick = (name: string, brokers: string[]) => {
+    onChange(name)
+    if (brokers.length === 1 && onPickBroker) onPickBroker(brokers[0])
+    setOpen(false)
+  }
+
+  return (
+    <div className="relative">
+      <div className="relative">
+        <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+        <input className={cn(inputCls, 'w-full pl-7')} value={value}
+          onChange={e => { onChange(e.target.value); setOpen(true) }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setOpen(false)}
+          onKeyDown={e => { if (e.key === 'Escape') setOpen(false); if (e.key === 'Enter' && list.length > 0) { e.preventDefault(); pick(list[0].o.name, list[0].o.brokers) } }}
+          placeholder="종목명 검색" />
+      </div>
+      {open && list.length > 0 && (
+        <div className="absolute z-20 mt-1 w-full min-w-64 rounded-md border border-border bg-card shadow-lg max-h-64 overflow-y-auto">
+          {list.map(({ o, upcoming }) => {
+            const dd = o.subStart ? ddays(o.subStart, today) : null
+            return (
+              <button key={o.name} type="button"
+                onMouseDown={e => e.preventDefault()}  /* blur보다 먼저 실행돼 닫힘 방지 */
+                onClick={() => pick(o.name, o.brokers)}
+                className="w-full flex items-center gap-2 px-2.5 py-1.5 text-left text-sm hover:bg-muted/60">
+                <span className="font-medium truncate">{o.name}</span>
+                <span className={cn('shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold',
+                  o.kind === 'SPAC' ? 'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300' : 'bg-muted text-muted-foreground')}>{o.kind}</span>
+                <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">
+                  {o.subStart ? `청약 ${o.subStart.slice(5)}${o.subEnd ? `~${o.subEnd.slice(5)}` : ''}` : o.listingDate ? `상장 ${o.listingDate.slice(5)}` : ''}
+                  {o.brokers.length > 0 && ` · ${o.brokers.join(',')}`}
+                </span>
+                {upcoming && dd != null && dd >= 0 && (
+                  <span className={cn('shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold',
+                    dd <= 1 ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300' : 'bg-muted text-muted-foreground')}>
+                    {ddayLabel(dd)}
+                  </span>
+                )}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -161,7 +233,7 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
     <div className="rounded-md border border-border p-3 space-y-3">
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <Field label="종목">
-          <input list="ipo-offerings" className={inputCls} value={offering} onChange={e => setOffering(e.target.value)} placeholder="레몬헬스케어" />
+          <OfferingPicker value={offering} onChange={setOffering} onPickBroker={b => { if (!broker.trim()) setBroker(b) }} />
         </Field>
         <Field label="명의">
           <input list="ipo-persons" className={inputCls} value={person} onChange={e => setPerson(e.target.value)} placeholder="본인" />
