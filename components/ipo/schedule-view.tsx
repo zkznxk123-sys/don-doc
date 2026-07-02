@@ -164,7 +164,6 @@ function OfferingDetail({ o, data, today }: { o: UpcomingOffering; data: IpoData
         const existing = Math.round((fr - o.publicFloatRatio) * 100) / 100
         return <p className="text-[10px] text-muted-foreground">유통 {fr}% 중 공모주주 {o.publicFloatRatio}% · 기존주주 {existing}%</p>
       })()}
-      <p className="text-[10px] text-muted-foreground">시총·유통은 DART 증권신고서 자동(상장일 유통표) — 직접 수정 가능.</p>
       {!hasInfo && <p className="text-[11px] text-muted-foreground">공모 상세(공모가·경쟁률·확약)는 수요예측 후 38에서 자동 채워져요.</p>}
       <AllocationCalc o={o} accounts={data.accounts} />
       <textarea value={memo} onChange={e => data.setMemo(o.name, e.target.value)} rows={2}
@@ -256,23 +255,7 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
   const [rate, setRate] = useState(o.subCompetition ? String(o.subCompetition) : '')
   const [gyun, setGyun] = useState('')
   const [budget, setBudget] = useState('')   // 예산(만원)
-  const [fetching, setFetching] = useState(false)
-  const [fetchedAt, setFetchedAt] = useState<string | null>(null)
   const r = parseFloat(rate) || 0
-
-  const fetchLive = async () => {
-    if (!o.no38 || fetching) return
-    setFetching(true)
-    try {
-      const res = await fetch(`/api/ipo/competition?no=${o.no38}`)
-      const d = await res.json()
-      if (d.subCompetition != null) {
-        setRate(String(d.subCompetition))
-        setFetchedAt(new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }))
-      }
-    } catch { /* 무시 */ }
-    setFetching(false)
-  }
   const g = parseFloat(gyun) || 0
   const price = o.ipoPrice
   const dr = (o.depositRate ?? 50) / 100
@@ -325,15 +308,7 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
 
   return (
     <div className="rounded-md border border-border p-3 space-y-2">
-      <div className="flex items-center justify-between">
-        <div className="text-xs font-medium flex items-center gap-1.5"><Calculator className="size-3.5" /> 청약 배정 계산기</div>
-        {o.no38 && (
-          <button onClick={fetchLive} disabled={fetching}
-            className="text-[11px] rounded bg-muted px-1.5 py-0.5 hover:bg-muted/70 disabled:opacity-50">
-            {fetching ? '조회 중…' : '38 경쟁률 가져오기'}{fetchedAt ? ` · ${fetchedAt}` : ''}
-          </button>
-        )}
-      </div>
+      <div className="text-xs font-medium flex items-center gap-1.5"><Calculator className="size-3.5" /> 청약 배정 계산기</div>
       <div className="grid grid-cols-3 gap-2">
         <label className="flex flex-col gap-0.5">
           <span className="text-[10px] text-muted-foreground">현재 비례경쟁률</span>
