@@ -278,7 +278,13 @@ function AllocationCalc({ o }: { o: UpcomingOffering }) {
   const dr = (o.depositRate ?? 50) / 100
   const limit = o.subLimit ? parseInt(o.subLimit.split('~')[0].replace(/[^\d]/g, ''), 10) : undefined
   const won = (n: number) => (n >= 1e8 ? `${(n / 1e8).toFixed(2)}억` : `${Math.round(n / 1e4).toLocaleString()}만`)
-  const targets = [1, 2, 3, 5]
+  const targets = [1, 2, 3]
+  // 도전/기본/안정 = 경쟁률 상승 버퍼. 예상경쟁률이 그만큼 올라도 목표 총배정 유지.
+  const levels = [
+    { key: '도전', mult: 1.0, tone: 'text-rose-600 dark:text-rose-400' },
+    { key: '기본', mult: 1.15, tone: '' },
+    { key: '안정', mult: 1.3, tone: 'text-emerald-600 dark:text-emerald-400' },
+  ]
 
   return (
     <div className="rounded-md border border-border p-3 space-y-2">
@@ -305,28 +311,42 @@ function AllocationCalc({ o }: { o: UpcomingOffering }) {
       </div>
       {!price && <p className="text-[11px] text-muted-foreground">공모가 확정(수요예측 후) 이후 증거금 계산 가능.</p>}
       {price != null && r > 0 && (
-        <div className="grid grid-cols-4 gap-x-2 gap-y-1 text-xs">
-          <span className="text-[10px] text-muted-foreground">목표 총배정</span>
-          <span className="text-[10px] text-muted-foreground text-right">필요 비례</span>
-          <span className="text-[10px] text-muted-foreground text-right">필요 청약주수</span>
+        <div className="grid grid-cols-[auto_1fr_1fr_1fr] gap-x-2 gap-y-1 text-xs">
+          <span className="text-[10px] text-muted-foreground">목표·단계</span>
+          <span className="text-[10px] text-muted-foreground text-right">청약주수</span>
           <span className="text-[10px] text-muted-foreground text-right">증거금</span>
+          <span className="text-[10px] text-muted-foreground text-right">예상배정</span>
           {targets.map(T => {
-            const need = Math.max(0, T - g)
-            const shares = Math.round(need * r)
-            const over = limit != null && shares > limit
-            return (
-              <Fragment key={T}>
-                <span className="font-medium">{T}주</span>
-                <span className="text-right tabular-nums text-muted-foreground">{need.toFixed(1)}</span>
-                <span className={cn('text-right tabular-nums', over && 'text-rose-600 dark:text-rose-400')}>{shares.toLocaleString()}{over ? '⚠' : ''}</span>
-                <span className="text-right tabular-nums">{won(shares * price * dr)}</span>
-              </Fragment>
-            )
+            const need = Math.max(0, T - g)   // 목표 총배정 T → 필요 비례
+            if (need <= 0) {
+              return (
+                <Fragment key={T}>
+                  <span className="font-medium">{T}주</span>
+                  <span className="col-span-3 text-right text-muted-foreground">균등({g}주)만으로 달성</span>
+                </Fragment>
+              )
+            }
+            return levels.map((lv, i) => {
+              const shares = Math.round(need * r * lv.mult)
+              const over = limit != null && shares > limit
+              const expProp = shares / r          // 예상 비례(예상경쟁률 기준)
+              const expTotal = g + expProp        // 예상 총배정
+              return (
+                <Fragment key={`${T}-${lv.key}`}>
+                  <span className={cn('tabular-nums', i === 0 ? 'font-medium' : 'text-muted-foreground pl-2')}>
+                    {i === 0 ? `${T}주` : ''} <span className={cn('text-[10px]', lv.tone)}>{lv.key}</span>
+                  </span>
+                  <span className={cn('text-right tabular-nums', over && 'text-rose-600 dark:text-rose-400')}>{shares.toLocaleString()}{over ? '⚠' : ''}</span>
+                  <span className="text-right tabular-nums">{won(shares * price * dr)}</span>
+                  <span className="text-right tabular-nums text-muted-foreground">{expTotal.toFixed(2)}<span className="text-[10px]">(비{expProp.toFixed(2)})</span></span>
+                </Fragment>
+              )
+            })
           })}
         </div>
       )}
       <p className="text-[10px] text-muted-foreground">
-        총배정 = 균등{g ? ` ${g}주` : ''} + 비례. 필요 청약주수 = (목표−균등)×경쟁률(5사6입). 증거금 {Math.round(dr * 100)}%{limit != null && ` · 청약한도 ${limit.toLocaleString()}주를 넘는 행은 ⚠ 표시`}.
+        총배정 = 균등{g ? ` ${g}주` : ''} + 비례. 청약주수 = (목표−균등)×경쟁률×버퍼. <b>도전 +0 / 기본 +15 / 안정 +30%</b> = 경쟁률이 그만큼 올라도 목표 유지. 예상배정=총(비=비례). 증거금 {Math.round(dr * 100)}%{limit != null && ` · 청약한도 ${limit.toLocaleString()}주 초과 ⚠`}.
       </p>
     </div>
   )
