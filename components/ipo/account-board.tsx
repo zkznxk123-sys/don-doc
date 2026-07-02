@@ -6,7 +6,7 @@
  * ② 계좌 보드: 명의×증권사별 준비상태(CDD·OTP·인증서·한도) + 머무는 돈
  */
 import { useMemo, useState } from 'react'
-import { AlertTriangle, CheckCircle2, Wallet, ChevronDown, Plus } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Wallet, ChevronDown, Plus, Eye, EyeOff } from 'lucide-react'
 import { cn, formatLargeNumber } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { DeleteBtn, EditBtn, AccountForm } from '@/components/ipo/entry-forms'
@@ -76,6 +76,7 @@ export function AccountBoard({ accounts, ledger, data }: AccountBoardProps) {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [closed, setClosed] = useState<Set<string>>(new Set())
+  const [reveal, setReveal] = useState(false)   // 계좌번호 전체 보기(기본 마스킹)
 
   // 명의별로 그룹
   const byPerson = useMemo(() => {
@@ -100,6 +101,12 @@ export function AccountBoard({ accounts, ledger, data }: AccountBoardProps) {
             <span className="text-xs text-amber-600 dark:text-amber-400 flex items-center gap-1">
               <AlertTriangle className="size-3.5" /> 준비 필요 {blockedCount}
             </span>
+          )}
+          {accounts.some(a => a.accountNo) && (
+            <button onClick={() => setReveal(v => !v)}
+              className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+              {reveal ? <><EyeOff className="size-3.5" /> 계좌번호 가리기</> : <><Eye className="size-3.5" /> 계좌번호 보기</>}
+            </button>
           )}
           <button onClick={() => setAdding(v => !v)}
             className="inline-flex items-center gap-1 rounded-md bg-foreground text-background px-2 py-1 text-xs font-medium hover:opacity-90">
@@ -142,7 +149,7 @@ export function AccountBoard({ accounts, ledger, data }: AccountBoardProps) {
                   <div className="divide-y divide-border/40">
                     {accts.map(a => editingId === a.id
                       ? <div key={a.id} className="py-2"><AccountForm data={data} initial={a} onDone={() => setEditingId(null)} /></div>
-                      : <AccountRow key={a.id} account={a} ledger={ledger}
+                      : <AccountRow key={a.id} account={a} ledger={ledger} reveal={reveal}
                           onRemove={() => data.removeAccount(a.id)} onEdit={() => setEditingId(a.id)} />)}
                   </div>
                 </>
@@ -168,8 +175,8 @@ function Legend({ seg, amount }: { seg: keyof typeof SEG; amount: number }) {
  * 계좌 1행 — 밀집 테이블용. 준비상태는 예외(대기·만료)만 칩으로, 전부 OK면 ✓ 하나.
  * (실사용: 사람당 10~20계좌 — 카드 대신 행, 정상은 조용히·문제만 시끄럽게)
  */
-function AccountRow({ account, ledger, onRemove, onEdit }: {
-  account: Account; ledger: LedgerRow[]; onRemove: () => void; onEdit: () => void
+function AccountRow({ account, ledger, reveal, onRemove, onEdit }: {
+  account: Account; ledger: LedgerRow[]; reveal: boolean; onRemove: () => void; onEdit: () => void
 }) {
   const m = accountMoney(account, ledger)
   const exceptions = READINESS_LABELS.filter(({ key }) => account.readiness[key] !== 'OK')
@@ -181,8 +188,8 @@ function AccountRow({ account, ledger, onRemove, onEdit }: {
           <span className="shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">제휴</span>
         )}
       </span>
-      <span className="col-span-3 text-[11px] text-muted-foreground tabular-nums truncate" title="수정에서 전체 확인">
-        {account.accountNo ? maskAccountNo(account.accountNo) : '—'}
+      <span className="col-span-3 text-[11px] text-muted-foreground tabular-nums truncate" title={reveal ? undefined : '상단 “계좌번호 보기”로 전체 확인'}>
+        {account.accountNo ? (reveal ? account.accountNo : maskAccountNo(account.accountNo)) : '—'}
       </span>
       <span className="col-span-4 flex flex-wrap items-center gap-1 min-w-0">
         {exceptions.length === 0 && <CheckCircle2 className="size-3.5 text-emerald-500" />}
