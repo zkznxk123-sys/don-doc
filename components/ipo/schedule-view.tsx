@@ -183,7 +183,7 @@ const NEXT_STEP: Partial<Record<SubStatus, { label: string; to: SubStatus }>> = 
 
 /** 내 청약 — 이 종목의 청약 행을 일정 카드 안에서 바로 기록·진행. */
 function MySubs({ o, data }: { o: UpcomingOffering; data: IpoData }) {
-  const { ledger, showDemo } = data
+  const { ledger } = data
   const [editing, setEditing] = useState<{ index: number; to?: SubStatus } | null>(null)
   const [adding, setAdding] = useState(false)
   const mine = ledger.map((row, index) => ({ row, index })).filter(x => x.row.offering === o.name)
@@ -222,17 +222,15 @@ function MySubs({ o, data }: { o: UpcomingOffering; data: IpoData }) {
             <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-semibold', STATUS_META[r.status].tone)}>
               {STATUS_META[r.status].label}
             </span>
-            {!showDemo && (
-              <span className="ml-auto flex items-center gap-1.5">
-                {NEXT_STEP[r.status] && (
-                  <button onClick={() => setEditing({ index, to: NEXT_STEP[r.status]!.to })}
-                    className="text-[11px] rounded bg-muted px-2 py-0.5 font-medium hover:bg-muted/70">
-                    {NEXT_STEP[r.status]!.label}
-                  </button>
-                )}
-                <EditBtn onClick={() => setEditing({ index })} />
-              </span>
-            )}
+            <span className="ml-auto flex items-center gap-1.5">
+              {NEXT_STEP[r.status] && (
+                <button onClick={() => setEditing({ index, to: NEXT_STEP[r.status]!.to })}
+                  className="text-[11px] rounded bg-muted px-2 py-0.5 font-medium hover:bg-muted/70">
+                  {NEXT_STEP[r.status]!.label}
+                </button>
+              )}
+              <EditBtn onClick={() => setEditing({ index })} />
+            </span>
           </div>
         ))}
       </div>

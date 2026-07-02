@@ -1,10 +1,10 @@
 /**
  * IPO 스토어 순수 로직 테스트 — 워크스페이스 상태 리듀서(DB 영속화 직결).
- * normalize(백필)·workingBase(데모↔내작업본 전환 불변식)·buildRow(kind·일정 보강).
+ * normalize(백필)·buildRow(kind·일정 보강).
  * (dev 7/1: localStorage/DB 리듀서 무테스트 지적 → 회귀 가드)
  */
 import { describe, it, expect } from 'vitest'
-import { normalize, workingBase, buildRow } from './store'
+import { normalize, buildRow } from './store'
 
 describe('normalize — 저장본 백필', () => {
   it('null/undefined → 완전한 빈 상태', () => {
@@ -33,33 +33,6 @@ describe('normalize — 저장본 백필', () => {
   })
 })
 
-describe('workingBase — 데모↔내작업본 전환 불변식', () => {
-  it('데모 상태(initialized=false)에서 시작 시 빈 작업본 — 데모/잔여 데이터 안 섞임', () => {
-    const demoView = normalize({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      accounts: [{ id: 'stale' }] as any, initialized: false,
-      memos: { '레메디': '메모유지' }, overrides: { '레메디': { marketCapEok: 100 } },
-    })
-    const base = workingBase(demoView)
-    expect(base.initialized).toBe(true)
-    expect(base.accounts).toEqual([])   // 잔여 accounts 버리고 깨끗이 시작
-    expect(base.ledger).toEqual([])
-    expect(base.spacs).toEqual([])
-    // memos·overrides는 유지(사용자 기록은 보존)
-    expect(base.memos).toEqual({ '레메디': '메모유지' })
-    expect(base.overrides).toEqual({ '레메디': { marketCapEok: 100 } })
-  })
-
-  it('이미 작업본(initialized=true)이면 그대로 반환(데이터 보존)', () => {
-    const working = normalize({
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      accounts: [{ id: 'a1' }, { id: 'a2' }] as any, initialized: true,
-    })
-    const base = workingBase(working)
-    expect(base).toBe(working)          // 동일 참조 — 손대지 않음
-    expect(base.accounts).toHaveLength(2)
-  })
-})
 
 describe('buildRow — kind·일정 보강', () => {
   const input = { offering: '레메디', person: '본인', broker: 'KB', subType: '균등' as const,

@@ -2,13 +2,13 @@
 
 /**
  * 공모주 스토어 — DB(멀티기기) + localStorage(오프라인 캐시) 이중 영속.
- * 로드 우선순위: DB > localStorage > EMPTY(데모 보기). 변경 시 debounce PUT.
- * 데모와 분리: 직접 추가하면 '내 작업본'(initialized=true)으로 전환, reset()으로 데모 복귀.
+ * 로드 우선순위: DB > localStorage > EMPTY. 변경 시 debounce PUT.
+ * 빈 상태에서 시작해 직접 입력(계좌·청약·스팩). reset()으로 전체 삭제.
  * 기존 로컬 작업본은 첫 로드 때 DB로 자동 마이그레이션.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  DEMO_ACCOUNTS, DEMO_LEDGER, DEMO_SPACS, OFFERING_BY_NAME,
+  OFFERING_BY_NAME,
   type Account, type LedgerRow, type Spac,
 } from '@/components/ipo/board-data'
 
@@ -44,17 +44,6 @@ export function normalize(s: Partial<IpoState> | null | undefined): IpoState {
   }
 }
 
-/**
- * 첫 실입력 시 기반 상태 — 데모 보기(initialized=false)에서 항목을 추가하면
- * 데모 데이터가 아닌 빈 작업본으로 시작(내 데이터에 데모가 섞이지 않게). memos·overrides는 유지.
- * 이미 작업본이면(prev.initialized) 그대로.
- */
-export function workingBase(prev: IpoState): IpoState {
-  return prev.initialized
-    ? prev
-    : { accounts: [], ledger: [], spacs: [], memos: prev.memos, overrides: prev.overrides, initialized: true }
-}
-
 const SAVED_AT_KEY = `${KEY}.savedAt`
 
 function load(): { state: IpoState; savedAt: string | null } | null {
@@ -74,7 +63,6 @@ function newId(): string {
 
 export interface IpoData {
   hydrated: boolean
-  showDemo: boolean              // 데모 보기(읽기전용) 여부
   accounts: Account[]
   ledger: LedgerRow[]
   spacs: Spac[]
@@ -91,8 +79,7 @@ export interface IpoData {
   setMemo: (offering: string, text: string) => void
   overrides: Record<string, OfferingOverride>
   setOverride: (offering: string, patch: OfferingOverride) => void
-  seedDemo: () => void           // 데모를 내 작업본으로 복사
-  reset: () => void              // 데모 보기로 복귀(내 데이터 삭제)
+  reset: () => void              // 내 데이터 전체 삭제(빈 상태로)
 }
 
 /** 입력값 → 완성 LedgerRow (kind·일정은 generated 종목에서 보강). */
@@ -197,16 +184,10 @@ export function useIpoData(): IpoData {
     }
   }, [])
 
-  const showDemo = !state.initialized
-  const accounts = showDemo ? DEMO_ACCOUNTS : state.accounts
-  const ledger = showDemo ? DEMO_LEDGER : state.ledger
-  const spacs = showDemo ? DEMO_SPACS : state.spacs
+  const { accounts, ledger, spacs } = state
 
   const addAccount = useCallback((a: Omit<Account, 'id'>) => {
-    setState(prev => {
-      const base = workingBase(prev)
-      return { ...base, accounts: [...base.accounts, { ...a, id: newId() }] }
-    })
+    setState(prev => ({ ...prev, initialized: true, accounts: [...prev.accounts, { ...a, id: newId() }] }))
   }, [])
 
   const updateAccount = useCallback((id: string, patch: Omit<Account, 'id'>) => {
@@ -219,10 +200,7 @@ export function useIpoData(): IpoData {
 
   const addSub = useCallback((r: Omit<LedgerRow, 'kind' | 'subStart' | 'refundDate' | 'listingDate'>) => {
     const row = buildRow(r)
-    setState(prev => {
-      const base = workingBase(prev)
-      return { ...base, ledger: [...base.ledger, row] }
-    })
+    setState(prev => ({ ...prev, initialized: true, ledger: [...prev.ledger, row] }))
   }, [])
 
   const updateSub = useCallback((index: number, patch: Omit<LedgerRow, 'kind' | 'subStart' | 'refundDate' | 'listingDate'>) => {
@@ -235,10 +213,7 @@ export function useIpoData(): IpoData {
   }, [])
 
   const addSpac = useCallback((s: Omit<Spac, 'id'>) => {
-    setState(prev => {
-      const base = workingBase(prev)
-      return { ...base, spacs: [...base.spacs, { ...s, id: newId() }] }
-    })
+    setState(prev => ({ ...prev, initialized: true, spacs: [...prev.spacs, { ...s, id: newId() }] }))
   }, [])
 
   const updateSpac = useCallback((id: string, patch: Omit<Spac, 'id'>) => {
@@ -257,11 +232,7 @@ export function useIpoData(): IpoData {
     setState(prev => ({ ...prev, overrides: { ...prev.overrides, [offering]: { ...prev.overrides[offering], ...patch } } }))
   }, [])
 
-  const seedDemo = useCallback(() => {
-    setState(prev => ({ accounts: [...DEMO_ACCOUNTS], ledger: [...DEMO_LEDGER], spacs: [...DEMO_SPACS], memos: prev.memos, overrides: prev.overrides, initialized: true }))
-  }, [])
-
   const reset = useCallback(() => setState(EMPTY), [])
 
-  return { hydrated, showDemo, accounts, ledger, spacs, addAccount, updateAccount, removeAccount, addSub, updateSub, removeSub, addSpac, updateSpac, removeSpac, memos: state.memos, setMemo, overrides: state.overrides, setOverride, seedDemo, reset }
+  return { hydrated, accounts, ledger, spacs, addAccount, updateAccount, removeAccount, addSub, updateSub, removeSub, addSpac, updateSpac, removeSpac, memos: state.memos, setMemo, overrides: state.overrides, setOverride, reset }
 }

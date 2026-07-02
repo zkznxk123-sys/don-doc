@@ -3,7 +3,7 @@
 /**
  * 공모주 청약 보드.
  * - 다가올 일정(청약·환불·상장 D-day) — 실 카톡 파싱값
- * - 명의×증권사×종목 청약 내역 (증거금·배정·환불·매도) — 데모
+ * - 명의×증권사×종목 청약 내역 (증거금·배정·환불·매도)
  * - 요약 KPI: 묶인 증거금 / 미회수 / 미매도 / 실현손익
  */
 import { useMemo, useState } from 'react'
@@ -17,7 +17,7 @@ import { AccountBoard, MoneyMap } from '@/components/ipo/account-board'
 import { SpacPanel } from '@/components/ipo/spac-panel'
 import { SpacHoldings } from '@/components/ipo/spac-holdings'
 import { ScheduleView } from '@/components/ipo/schedule-view'
-import { DemoToolbar, IpoDatalists, DeleteBtn, EditBtn, SubForm } from '@/components/ipo/entry-forms'
+import { ResetBar, IpoDatalists, DeleteBtn, EditBtn, SubForm } from '@/components/ipo/entry-forms'
 import { useIpoData } from '@/lib/ipo/store'
 import {
   OFFERING_BY_NAME,
@@ -32,7 +32,7 @@ const KIND_TONE = {
 
 export default function IpoLedgerPage() {
   const data = useIpoData()
-  const { ledger, accounts, showDemo } = data
+  const { ledger, accounts } = data
   const [editingSub, setEditingSub] = useState<number | null>(null)
   const [addingSub, setAddingSub] = useState(false)
   const [tab, setTab] = useState('act')
@@ -104,8 +104,8 @@ export default function IpoLedgerPage() {
         </>
       )}
 
-      {/* 데모/작업본 전환 — 얇게 한 줄 */}
-      <DemoToolbar data={data} />
+      {/* 초기화 — 데이터 있을 때만 */}
+      <ResetBar data={data} />
 
       {/* 스팩주 = 탭 없이 보유현황 + 시세·유니버스만 (스크리너 성격) */}
       {kind === 'SPAC' && (
@@ -192,8 +192,8 @@ export default function IpoLedgerPage() {
                         <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-semibold', STATUS_META[r.status].tone)}>
                           {STATUS_META[r.status].label}
                         </span>
-                        {!showDemo && <EditBtn onClick={() => setEditingSub(index)} />}
-                        {!showDemo && <DeleteBtn onClick={() => data.removeSub(index)} label="청약 삭제" />}
+                        <EditBtn onClick={() => setEditingSub(index)} />
+                        <DeleteBtn onClick={() => data.removeSub(index)} label="청약 삭제" />
                       </span>
                     </div>
                   ))}
@@ -207,7 +207,7 @@ export default function IpoLedgerPage() {
 
         {/* C. 계좌 인프라 — 별도 관리 영역 (사람×증권사, 10+계좌 밀집 테이블) */}
         <TabsContent value="accounts">
-          <AccountBoard accounts={accounts} ledger={ledger} showDemo={showDemo} data={data} />
+          <AccountBoard accounts={accounts} ledger={ledger} data={data} />
         </TabsContent>
       </Tabs>
       )}

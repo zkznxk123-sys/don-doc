@@ -1,11 +1,11 @@
 'use client'
 
 /**
- * 공모주 직접 입력 — 계좌 추가 / 청약 추가 인라인 폼 + 데모·초기화 툴바.
+ * 공모주 직접 입력 — 계좌 추가 / 청약 추가 인라인 폼 + 초기화 바.
  * 금액은 만원 단위 입력 → 원으로 저장. 데이터는 useIpoData(localStorage).
  */
 import { useState } from 'react'
-import { X, Database, RotateCcw, Pencil } from 'lucide-react'
+import { X, RotateCcw, Pencil } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
@@ -43,26 +43,22 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   )
 }
 
-/** 데모/작업본 전환 툴바 — 얇게 한 줄. 계좌·청약 추가는 각 계층 탭 안으로 이동. */
-export function DemoToolbar({ data }: { data: IpoData }) {
+/** 초기화 바 — 데이터가 있을 때만 우측에 얇게. 파괴적 액션이라 AlertDialog로 확인. */
+export function ResetBar({ data }: { data: IpoData }) {
   const [resetOpen, setResetOpen] = useState(false)
+  const hasData = data.accounts.length > 0 || data.ledger.length > 0 || data.spacs.length > 0
+  if (!hasData) return null
 
   return (
-    <div className="flex items-center justify-between gap-2">
-      {data.showDemo
-        ? <p className="text-[11px] text-amber-600 dark:text-amber-400">지금은 데모 보기 — 각 탭에서 추가하면 내 작업본으로 전환돼요.</p>
-        : <span />}
-      {data.showDemo
-        ? <button onClick={data.seedDemo} className="shrink-0 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><Database className="size-3.5" /> 데모를 작업본으로</button>
-        : <button onClick={() => setResetOpen(true)} className="shrink-0 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><RotateCcw className="size-3.5" /> 초기화</button>}
+    <div className="flex items-center justify-end">
+      <button onClick={() => setResetOpen(true)} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><RotateCcw className="size-3.5" /> 초기화</button>
 
-      {/* 초기화 확인 — 파괴적 액션이라 네이티브 confirm 대신 AlertDialog */}
       <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>
-            <AlertDialogTitle>작업본 초기화</AlertDialogTitle>
+            <AlertDialogTitle>전체 초기화</AlertDialogTitle>
             <AlertDialogDescription>
-              내가 입력한 계좌·청약·스팩 데이터를 모두 지우고 데모 보기로 돌아가요. 되돌릴 수 없어요.
+              입력한 계좌·청약·스팩 데이터를 모두 지워요. 되돌릴 수 없어요.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

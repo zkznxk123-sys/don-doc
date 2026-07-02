@@ -16,7 +16,7 @@ import type { IpoData } from '@/lib/ipo/store'
 import { SPAC_BASELINE, groupSpacsByCap, ddays, ddayLabel, type Spac } from '@/components/ipo/board-data'
 
 export function SpacList({ data }: { data: IpoData }) {
-  const { spacs, showDemo } = data
+  const { spacs } = data
   const today = useMemo(() => new Date(), [])
   const [editingId, setEditingId] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
@@ -55,25 +55,21 @@ export function SpacList({ data }: { data: IpoData }) {
         <div className="flex items-center gap-3">
           {belowBaseline > 0 && <span className="text-xs text-emerald-600 dark:text-emerald-400">기준가 미만 {belowBaseline}</span>}
           {asOf && <span className="text-[11px] text-muted-foreground">{asOf} 기준</span>}
-          {!showDemo && (
-            <button onClick={refresh} disabled={refreshing}
-              className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs font-medium hover:bg-muted/70 disabled:opacity-50">
-              <RefreshCw className={cn('size-3.5', refreshing && 'animate-spin')} /> 시세 새로고침
-            </button>
-          )}
-          {!showDemo && (
-            <button onClick={() => setAdding(v => !v)}
-              className={cn('rounded-md px-2 py-1 text-xs font-medium', adding ? 'bg-foreground text-background' : 'bg-muted hover:bg-muted/70')}>
-              + 스팩 추가
-            </button>
-          )}
+          <button onClick={refresh} disabled={refreshing}
+            className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs font-medium hover:bg-muted/70 disabled:opacity-50">
+            <RefreshCw className={cn('size-3.5', refreshing && 'animate-spin')} /> 시세 새로고침
+          </button>
+          <button onClick={() => setAdding(v => !v)}
+            className={cn('rounded-md px-2 py-1 text-xs font-medium', adding ? 'bg-foreground text-background' : 'bg-muted hover:bg-muted/70')}>
+            + 스팩 추가
+          </button>
         </div>
       </div>
 
       {adding && <SpacForm data={data} onDone={() => setAdding(false)} />}
 
       {groups.length === 0 && (
-        <p className="text-sm text-muted-foreground py-8 text-center">스팩이 없어요.{!showDemo && ' “스팩 추가”로 등록하세요.'}</p>
+        <p className="text-sm text-muted-foreground py-8 text-center">스팩이 없어요. “스팩 추가”로 등록하세요.</p>
       )}
 
       {/* 컬럼 헤더 — 행 grid(12)와 동일 분할, 카드 안 px-5에 맞춤 */}
@@ -98,7 +94,7 @@ export function SpacList({ data }: { data: IpoData }) {
               <div className="divide-y divide-border/60">
                 {items.map(s => editingId === s.id
                   ? <div key={s.id} className="py-2"><SpacForm data={data} initial={s} onDone={() => setEditingId(null)} /></div>
-                  : <SpacRow key={s.id} spac={s} today={today} showDemo={showDemo}
+                  : <SpacRow key={s.id} spac={s} today={today} 
                       onEdit={() => setEditingId(s.id)} onRemove={() => data.removeSpac(s.id)} />)}
               </div>
             </CardContent>
@@ -107,14 +103,14 @@ export function SpacList({ data }: { data: IpoData }) {
       ))}
 
       <p className="text-[11px] text-muted-foreground">
-        기준가 {SPAC_BASELINE.toLocaleString()}원(만기 상환 floor) 대비 괴리 표시. 사실·정렬만 제공해요 — 매수 추천이 아니에요. 시세 출처: 네이버 금융.{showDemo && ' 지금은 데모 시세 — “데모를 작업본으로” 전환 후 시세 새로고침으로 실시간 조회.'}
+        기준가 {SPAC_BASELINE.toLocaleString()}원(만기 상환 floor) 대비 괴리 표시. 사실·정렬만 제공해요 — 매수 추천이 아니에요. 시세 출처: 네이버 금융.
       </p>
     </div>
   )
 }
 
-function SpacRow({ spac, today, showDemo, onEdit, onRemove }: {
-  spac: Spac; today: Date; showDemo: boolean; onEdit: () => void; onRemove: () => void
+function SpacRow({ spac, today, onEdit, onRemove }: {
+  spac: Spac; today: Date; onEdit: () => void; onRemove: () => void
 }) {
   const gap = spac.price - SPAC_BASELINE       // 음수 = 기준가 할인
   const below = gap < 0
@@ -133,8 +129,8 @@ function SpacRow({ spac, today, showDemo, onEdit, onRemove }: {
       <span className="col-span-2 flex justify-end items-center gap-1.5">
         {below && <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">기준미만</span>}
         {d != null && <span className="text-[10px] text-muted-foreground">만기 {ddayLabel(d)}</span>}
-        {!showDemo && <button onClick={onEdit} title="수정" className="text-muted-foreground/50 hover:text-foreground"><Pencil className="size-3.5" /></button>}
-        {!showDemo && <button onClick={onRemove} title="삭제" className="text-muted-foreground/50 hover:text-rose-500"><X className="size-3.5" /></button>}
+        {<button onClick={onEdit} title="수정" className="text-muted-foreground/50 hover:text-foreground"><Pencil className="size-3.5" /></button>}
+        {<button onClick={onRemove} title="삭제" className="text-muted-foreground/50 hover:text-rose-500"><X className="size-3.5" /></button>}
       </span>
     </div>
   )

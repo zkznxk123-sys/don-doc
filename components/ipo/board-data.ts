@@ -1,8 +1,7 @@
 /**
- * 공모주 청약 보드 — 뷰 타입 + 데모 데이터.
+ * 공모주 청약 보드 — 뷰 타입 + 파생 계산 유틸.
  *
- * 종목·일정은 schedule-notice 어댑터가 실 카톡에서 뽑은 실제 값(2026-06 기준),
- * 명의별 청약/배정/환불 내역은 화면 시연용 데모. (실데이터 연결 전 단계)
+ * 종목·일정은 38.co.kr 어댑터가 생성(offerings.generated).
  * 전체 데이터 엔티티 설계: vault `공모주-청약원장-데이터모델-스펙.md`.
  */
 
@@ -69,9 +68,6 @@ export const STATUS_META: Record<SubStatus, { label: string; tone: string }> = {
   MISSED:    { label: '놓침', tone: 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300' },
 }
 
-/** 시연용 명의. */
-export const DEMO_PERSONS = ['본인', '배우자', '자녀'] as const
-
 /**
  * 다가올 일정 = 어댑터가 실 카톡 공지에서 생성한 데이터(offerings.generated.ts).
  * 재생성: npx tsx scripts/ipo-offerings-build.ts --csv <카톡.csv>
@@ -82,28 +78,6 @@ export { GENERATED_OFFERINGS as OFFERINGS, GENERATED_AT, SOURCE } from './offeri
 import { GENERATED_OFFERINGS } from './offerings.generated'
 export const OFFERING_BY_NAME: Map<string, UpcomingOffering> =
   new Map(GENERATED_OFFERINGS.map(o => [o.name, o]))
-
-/** 청약 내역 데모 — 명의별 내역. */
-export const DEMO_LEDGER: LedgerRow[] = [
-  // 스트라드비젼 — 상장(6/30) 임박, 본인 매도완료 / 배우자 보유
-  { offering: '스트라드비젼', kind: 'IPO', person: '본인', broker: 'KB', subType: '비례', deposit: 5_000_000, allocatedShares: 10, refundAmount: 4_100_000, refunded: true, status: 'SOLD', realizedPnl: 182_000, subStart: '2026-06-19', refundDate: '2026-06-23', listingDate: '2026-06-30' },
-  { offering: '스트라드비젼', kind: 'IPO', person: '배우자', broker: 'KB', subType: '균등', deposit: 1_250_000, allocatedShares: 1, refundAmount: 1_150_000, refunded: false, status: 'ALLOCATED', subStart: '2026-06-19', refundDate: '2026-06-23', listingDate: '2026-06-30' },
-
-  // 매드업 — 상장(7/1) 대기, 본인·자녀 배정 보유(미매도)
-  { offering: '매드업', kind: 'IPO', person: '본인', broker: '미래', subType: '균등', deposit: 1_500_000, allocatedShares: 2, refundAmount: 1_300_000, refunded: false, status: 'ALLOCATED', subStart: '2026-06-10', refundDate: '2026-06-26', listingDate: '2026-07-01' },
-  { offering: '매드업', kind: 'IPO', person: '자녀', broker: '미래', subType: '균등', deposit: 1_500_000, allocatedShares: 1, refundAmount: 1_400_000, refunded: false, status: 'ALLOCATED', subStart: '2026-06-10', refundDate: '2026-06-26', listingDate: '2026-07-01' },
-
-  // 레몬헬스케어 — 청약완료, 환불(6/29) 대기
-  { offering: '레몬헬스케어', kind: 'IPO', person: '본인', broker: 'KB', subType: '비례', deposit: 3_200_000, allocatedShares: 0, refundAmount: 0, refunded: false, status: 'SUBMITTED', subStart: '2026-06-25', refundDate: '2026-06-29', listingDate: '2026-07-03' },
-  { offering: '레몬헬스케어', kind: 'IPO', person: '배우자', broker: 'KB', subType: '균등', deposit: 1_250_000, allocatedShares: 0, refundAmount: 0, refunded: false, status: 'SUBMITTED', subStart: '2026-06-25', refundDate: '2026-06-29', listingDate: '2026-07-03' },
-
-  // 레메디 — 청약예정(7/2)
-  { offering: '레메디', kind: 'IPO', person: '본인', broker: 'KB', subType: '균등', deposit: 0, allocatedShares: 0, refundAmount: 0, refunded: false, status: 'PLANNED', subStart: '2026-07-02' },
-  { offering: '레메디', kind: 'IPO', person: '배우자', broker: 'KB', subType: '균등', deposit: 0, allocatedShares: 0, refundAmount: 0, refunded: false, status: 'PLANNED', subStart: '2026-07-02' },
-
-  // 한국제16호스팩 — 자녀 깜빡(놓침) 예시
-  { offering: '한국제16호스팩', kind: 'SPAC', person: '자녀', broker: '한국', subType: '균등', deposit: 0, allocatedShares: 0, refundAmount: 0, refunded: false, status: 'MISSED', subStart: '2026-06-23', refundDate: '2026-06-25' },
-]
 
 // ─────────────────────────────────────────────────────────────
 // 계좌 축 — 공모주 = 멀티계좌 운용 게임. 계좌가 모든 것의 축.
@@ -146,16 +120,6 @@ export const READINESS_TONE: Record<ReadinessState, string> = {
   EXPIRED: 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300',
 }
 
-/** 계좌 데모 — 명의×증권사. 일부러 준비 미비(만료·대기)를 섞어 통증을 드러냄. */
-export const DEMO_ACCOUNTS: Account[] = [
-  { id: 'me-kb',   person: '본인',  broker: 'KB',  accountNo: '123-45-678901', bankLinked: true,  loginId: 'sangbin.han', certExpiry: '2026-11-20', secretHint: '1Password › KB증권', cash: 8_000_000, readiness: { cdd: 'OK', otp: 'OK', cert: 'OK', limit: 'OK', mail: 'OK' } },
-  { id: 'me-mr',   person: '본인',  broker: '미래', accountNo: '987-65-432100', bankLinked: false, loginId: 'sbhan82', certExpiry: '2026-07-15', secretHint: '1Password › 미래에셋', cash: 1_500_000, readiness: { cdd: 'OK', otp: 'OK', cert: 'OK', limit: 'OK', mail: 'OK' } },
-  { id: 'sp-kb',   person: '배우자', broker: 'KB',  accountNo: '111-22-333444', bankLinked: true,  cash: 2_000_000, readiness: { cdd: 'PENDING', otp: 'OK', cert: 'OK', limit: 'OK', mail: 'OK' } },
-  { id: 'sp-ss',   person: '배우자', broker: '삼성', accountNo: '555-66-777888', bankLinked: false, cash: 3_000_000, readiness: { cdd: 'OK', otp: 'EXPIRED', cert: 'OK', limit: 'OK', mail: 'OK' } },
-  { id: 'ch-mr',   person: '자녀',  broker: '미래', accountNo: '222-33-444555', bankLinked: true,  cash: 1_000_000, readiness: { cdd: 'OK', otp: 'OK', cert: 'PENDING', limit: 'PENDING', mail: 'OK' } },
-  { id: 'ch-hk',   person: '자녀',  broker: '한국', accountNo: undefined,        bankLinked: false, cash: 0,    readiness: { cdd: 'OK', otp: 'OK', cert: 'OK', limit: 'PENDING', mail: 'PENDING' } },
-]
-
 /** 한 계좌에 지금 머무는 돈 — 청약 내역에서 도출(가용/묶임/환불대기/보유주). */
 export interface AccountMoney {
   cash: number          // 가용현금
@@ -165,7 +129,7 @@ export interface AccountMoney {
   total: number         // cash+locked+refundPending
 }
 
-export function accountMoney(acct: Account, ledger: LedgerRow[] = DEMO_LEDGER): AccountMoney {
+export function accountMoney(acct: Account, ledger: LedgerRow[]): AccountMoney {
   let locked = 0, refundPending = 0, heldShares = 0
   for (const r of ledger) {
     if (r.person !== acct.person || r.broker !== acct.broker) continue
@@ -259,18 +223,6 @@ export function groupSpacsByCap(spacs: Spac[]): { bucket: typeof SPAC_BUCKETS[nu
   })).filter(g => g.items.length > 0)
 }
 
-/** 데모 스팩 시세 — 실 어댑터가 뽑은 스팩명 + 데모 시총·현재가. (실시간 시세 연동은 다음) */
-// 시총·가격은 2026-06 네이버 실측 baseline(데모). 새로고침 시 실시간으로 덮어씀.
-export const DEMO_SPACS: Spac[] = [
-  { id: 'spac-hk16', name: '한국제16호스팩',     marketCapEok: 80,  price: 1_995, maturityDate: '2029-06-25' },
-  { id: 'spac-sh17', name: '신한제17호스팩',     marketCapEok: 106, price: 1_993, maturityDate: '2029-04-01', code: '0130D0', shares: 500, avgCost: 2_010 },
-  { id: 'spac-mr2',  name: '메리츠제2호스팩',    marketCapEok: 141, price: 1_947, maturityDate: '2029-06-19', code: '0165X0', shares: 300, avgCost: 1_930 },
-  { id: 'spac-ds20', name: '대신밸런스제20호스팩', marketCapEok: 134, price: 1_982, maturityDate: '2029-06-05', code: '0134X0' },
-  { id: 'spac-sh18', name: '신한제18호스팩',     marketCapEok: 111, price: 1_967, maturityDate: '2029-04-30', code: '0129K0' },
-  { id: 'spac-nh33', name: '엔에이치스팩33호',    marketCapEok: 155, price: 2_010, maturityDate: '2029-03-27', code: '0130H0' },
-  { id: 'spac-kw2',  name: '키움히어로제2호스팩', marketCapEok: 125, price: 1_976, maturityDate: '2029-04-23', code: '0131D0' },
-  { id: 'spac-gb20', name: '교보20호스팩',       marketCapEok: 119, price: 1_999, maturityDate: '2029-04-02', code: '0132G0' },
-]
 
 /** D-day 계산. 음수면 지남. */
 export function ddays(dateStr: string, today: Date): number {
