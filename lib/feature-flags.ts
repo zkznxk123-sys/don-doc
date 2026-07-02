@@ -64,6 +64,9 @@ export const features = {
 
   /** 종목 검색 스크리너 (/dashboard/screen) — Beta + Yahoo 무료 API 의존, 대중 lite 부적합 */
   get stockScreen(): boolean { return isFull() },
+
+  /** 공모주·스팩 청약 원장 (/dashboard/ipo) — BETA. 대중 lite 미노출, 별도 커뮤니티 공개 예정 (2026-07-02 결정) */
+  get ipoLedger(): boolean { return isFull() },
 } as const
 
 /**
@@ -75,6 +78,7 @@ export const LITE_BLOCKED_ROUTES: readonly string[] = [
   '/dashboard/family',
   '/dashboard/feed',
   '/dashboard/screen',
+  '/dashboard/ipo',
 ] as const
 
 export function isRouteBlockedInLite(pathname: string): boolean {

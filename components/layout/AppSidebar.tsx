@@ -59,6 +59,7 @@ export const NAV_ITEMS: NavItem[] = ALL_NAV_ITEMS.filter(item => {
   if (item.href === '/dashboard/scenario' && !features.scenarios) return false
   if (item.href === '/dashboard/feed' && !features.familyFeed) return false
   if (item.href === '/dashboard/screen' && !features.stockScreen) return false
+  if (item.href === '/dashboard/ipo' && !features.ipoLedger) return false
   return true
 })
 

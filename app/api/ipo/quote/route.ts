@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic'
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth'
+import { blockIfLite } from '@/lib/feature-flags'
 
 const NAVER_HEADERS = { Referer: 'https://finance.naver.com', 'User-Agent': 'Mozilla/5.0' }
 
@@ -44,6 +45,9 @@ async function fetchQuote(code: string): Promise<{ price: number; marketCapEok: 
 }
 
 export async function POST(req: NextRequest) {
+  // IPO는 full 전용(lite 미노출 — 2026-07-02 결정)
+  const blocked = blockIfLite()
+  if (blocked) return blocked
   // 무인증 오픈 프록시 남용 차단 — 외부(네이버) 호출 전에 인증 확인
   const user = await getAuthUser()
   if (!user?.familyId) return NextResponse.json({ error: '인증 필요' }, { status: 401 })

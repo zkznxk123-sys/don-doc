@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
+import { blockIfLite } from '@/lib/feature-flags'
 
 /** 요청 본문 상한 — 계좌 수십 개 + 원장 수백 행 + 메모여도 수십 KB 수준. 512KB면 넉넉. */
 const MAX_BODY_BYTES = 512 * 1024
@@ -29,6 +30,9 @@ const WorkspaceSchema = z.object({
 })
 
 export async function GET() {
+  // IPO는 full 전용(lite 미노출 — 2026-07-02 결정)
+  const blocked = blockIfLite()
+  if (blocked) return blocked
   const user = await getAuthUser()
   if (!user) return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 })
   const ws = await prisma.ipoWorkspace.findUnique({ where: { userId: user.id } })
@@ -36,6 +40,8 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
+  const blocked = blockIfLite()
+  if (blocked) return blocked
   const user = await getAuthUser()
   if (!user) return NextResponse.json({ error: '인증이 필요합니다.' }, { status: 401 })
 

@@ -52,6 +52,7 @@ describe('feature-flags', () => {
     expect(isRouteBlockedInLite('/dashboard/feed')).toBe(true)
     expect(isRouteBlockedInLite('/dashboard/feed/123')).toBe(true)
     expect(isRouteBlockedInLite('/dashboard/screen')).toBe(true)
+    expect(isRouteBlockedInLite('/dashboard/ipo')).toBe(true)   // 2026-07-02 미노출 결정
     expect(isRouteBlockedInLite('/dashboard/cashflow')).toBe(false)
     expect(isRouteBlockedInLite('/dashboard')).toBe(false)
   })
@@ -62,6 +63,7 @@ describe('feature-flags', () => {
     expect(isRouteBlockedInLite('/dashboard/scenario')).toBe(false)
     expect(isRouteBlockedInLite('/dashboard/family')).toBe(false)
     expect(isRouteBlockedInLite('/dashboard/feed')).toBe(false)
+    expect(isRouteBlockedInLite('/dashboard/ipo')).toBe(false)
   })
 
   it('blockIfLite — lite 빌드에서 JSON body 포함 404 Response 반환', async () => {

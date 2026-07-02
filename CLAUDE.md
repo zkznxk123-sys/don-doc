@@ -71,7 +71,7 @@ components/
     InputGuide.tsx
 
 lib/
-  feature-flags.ts  # 제품 라인 분리 (full/lite) — 단일 진입점, features 8-flag
+  feature-flags.ts  # 제품 라인 분리 (full/lite) — 단일 진입점, features 9-flag
   actions/          # 서버 액션 ('use server')
     transactions/
       bulk.ts            # createManyTransactions·syncAccountBalancesOnly (server action)
@@ -162,7 +162,7 @@ if (features.familyManagement) { /* full 전용 */ }
 if (isLite()) { /* lite 분기 */ }
 ```
 
-- **features 8-flag**: `scenarios`·`familyFeed`·`familyManagement`·`tradeAutoLink`·`pensionDetail`·`familyOAuth`·`visibilityRoles`·`stockScreen`
+- **features 9-flag**: `scenarios`·`familyFeed`·`familyManagement`·`tradeAutoLink`·`pensionDetail`·`familyOAuth`·`visibilityRoles`·`stockScreen`·`ipoLedger`
 - **lite 라인**: 위 8개 모두 false. 가입 직후 `createFamily('내 자산')` 자동 1인 가족. 초대 UI 미노출.
 - **route 차단**: `middleware.ts`의 `LITE_BLOCKED_ROUTES`(`/dashboard/scenario`, `/family`, `/feed`, `/screen`)는 lite 빌드에서 redirect.
 - **랜딩 분기**: `LandingPage.tsx`에서 `{isFull() && <ComparisonSection />}`. CoreFeatures·Closing은 양쪽 공통.
@@ -226,6 +226,8 @@ if (isLite()) { /* lite 분기 */ }
 ## 공모주·스팩 청약 원장 (IPO, BETA · 2026-06-30 도입)
 
 **상태: DB 영속화(2026-07-01) — 멀티기기 동기화.** 워크스페이스(계좌·원장·스팩·메모·오버라이드)는 Prisma `IpoWorkspace`(userId PK + `data` Json)에 사용자 단위로 저장. localStorage는 오프라인/초기 캐시 역할. 기획: vault `03_personal/projects/공모주-청약{-서비스-구상,원장-데이터모델-스펙}.md`.
+
+🔒 **lite 미노출 — full 전용** (2026-07-02 결정, 별도 커뮤니티 공개 예정). 3중 게이트: `features.ipoLedger`(nav) + `LITE_BLOCKED_ROUTES`(middleware) + `blockIfLite`(api/ipo/* 3라우트).
 
 - **페이지**: `app/dashboard/ipo/page.tsx` ("공모주·스팩주").
 - **`components/ipo/`** (~2,600줄):
