@@ -14,7 +14,6 @@ import { cn, formatLargeNumber } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { AccountBoard, MoneyMap } from '@/components/ipo/account-board'
-import { AllocationSim } from '@/components/ipo/allocation-sim'
 import { SpacPanel } from '@/components/ipo/spac-panel'
 import { SpacHoldings } from '@/components/ipo/spac-holdings'
 import { ScheduleView } from '@/components/ipo/schedule-view'
@@ -120,29 +119,24 @@ export default function IpoLedgerPage() {
           <TabsTrigger value="accounts">계좌 관리</TabsTrigger>
         </TabsList>
 
-        {/* A. 실행 — 일정에서 바로 청약·매도 기록. 공모주=자금배분 / 스팩주=시세 */}
+        {/* A. 실행 — 공모주=일정 직행(자금배분은 종목 카드 배정 계산기에 통합) / 스팩주=시세·청약일정 */}
         <TabsContent value="act">
-          {/* 스팩주는 시세가 주 업무라 기본 하위탭 = 시세·유니버스 */}
-          <Tabs key={kind} defaultValue={kind === 'SPAC' ? 'spac' : 'schedule'} className="space-y-3">
-            <TabsList>
-              <TabsTrigger value="schedule">{kind === 'SPAC' ? '청약 일정' : '일정'}</TabsTrigger>
-              {kind === 'IPO' && <TabsTrigger value="allocate">자금 배분</TabsTrigger>}
-              {kind === 'SPAC' && <TabsTrigger value="spac">시세 · 유니버스</TabsTrigger>}
-            </TabsList>
-            <TabsContent value="schedule">
-              <ScheduleView data={data} kind={kind} />
-            </TabsContent>
-            {kind === 'IPO' && (
-              <TabsContent value="allocate">
-                <AllocationSim accounts={accounts} />
-              </TabsContent>
-            )}
-            {kind === 'SPAC' && (
+          {kind === 'IPO' ? (
+            <ScheduleView data={data} kind={kind} />
+          ) : (
+            <Tabs defaultValue="spac" className="space-y-3">
+              <TabsList>
+                <TabsTrigger value="spac">시세 · 유니버스</TabsTrigger>
+                <TabsTrigger value="schedule">청약 일정</TabsTrigger>
+              </TabsList>
               <TabsContent value="spac">
                 <SpacPanel data={data} />
               </TabsContent>
-            )}
-          </Tabs>
+              <TabsContent value="schedule">
+                <ScheduleView data={data} kind={kind} />
+              </TabsContent>
+            </Tabs>
+          )}
         </TabsContent>
 
         {/* C. 결과·기록 — 공모주=원장 / 스팩주=보유현황+원장 */}
