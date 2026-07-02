@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * 공모주 원장 스토어 — DB(멀티기기) + localStorage(오프라인 캐시) 이중 영속.
+ * 공모주 스토어 — DB(멀티기기) + localStorage(오프라인 캐시) 이중 영속.
  * 로드 우선순위: DB > localStorage > EMPTY(데모 보기). 변경 시 debounce PUT.
  * 데모와 분리: 직접 추가하면 '내 작업본'(initialized=true)으로 전환, reset()으로 데모 복귀.
  * 기존 로컬 작업본은 첫 로드 때 DB로 자동 마이그레이션.

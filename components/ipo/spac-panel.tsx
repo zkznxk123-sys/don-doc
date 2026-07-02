@@ -1,6 +1,6 @@
 'use client'
 
-/** 스팩 탭 — [관심 스팩(원장) | 전체 시장(KRX 유니버스)] 토글. */
+/** 스팩 탭 — [관심 스팩(내 목록) | 전체 시장(KRX 유니버스)] 토글. */
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
 import { SpacList } from '@/components/ipo/spac-list'

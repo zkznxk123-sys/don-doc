@@ -1,9 +1,9 @@
 /**
- * 공모주 청약 원장 보드 — 뷰 타입 + 데모 데이터.
+ * 공모주 청약 보드 — 뷰 타입 + 데모 데이터.
  *
  * 종목·일정은 schedule-notice 어댑터가 실 카톡에서 뽑은 실제 값(2026-06 기준),
  * 명의별 청약/배정/환불 내역은 화면 시연용 데모. (실데이터 연결 전 단계)
- * 전체 원장 엔티티 설계: vault `공모주-청약원장-데이터모델-스펙.md`.
+ * 전체 데이터 엔티티 설계: vault `공모주-청약원장-데이터모델-스펙.md`.
  */
 
 export type SubStatus = 'PLANNED' | 'SUBMITTED' | 'ALLOCATED' | 'SOLD' | 'MISSED'
@@ -78,12 +78,12 @@ export const DEMO_PERSONS = ['본인', '배우자', '자녀'] as const
  */
 export { GENERATED_OFFERINGS as OFFERINGS, GENERATED_AT, SOURCE } from './offerings.generated'
 
-/** 종목명 → 일정. 원장 카드 헤더가 실 일정을 끌어쓰게. */
+/** 종목명 → 일정. 내역 카드 헤더가 실 일정을 끌어쓰게. */
 import { GENERATED_OFFERINGS } from './offerings.generated'
 export const OFFERING_BY_NAME: Map<string, UpcomingOffering> =
   new Map(GENERATED_OFFERINGS.map(o => [o.name, o]))
 
-/** 청약 원장 데모 — 명의별 내역. */
+/** 청약 내역 데모 — 명의별 내역. */
 export const DEMO_LEDGER: LedgerRow[] = [
   // 스트라드비젼 — 상장(6/30) 임박, 본인 매도완료 / 배우자 보유
   { offering: '스트라드비젼', kind: 'IPO', person: '본인', broker: 'KB', subType: '비례', deposit: 5_000_000, allocatedShares: 10, refundAmount: 4_100_000, refunded: true, status: 'SOLD', realizedPnl: 182_000, subStart: '2026-06-19', refundDate: '2026-06-23', listingDate: '2026-06-30' },
@@ -156,7 +156,7 @@ export const DEMO_ACCOUNTS: Account[] = [
   { id: 'ch-hk',   person: '자녀',  broker: '한국', accountNo: undefined,        bankLinked: false, cash: 0,    readiness: { cdd: 'OK', otp: 'OK', cert: 'OK', limit: 'PENDING', mail: 'PENDING' } },
 ]
 
-/** 한 계좌에 지금 머무는 돈 — 원장에서 도출(가용/묶임/환불대기/보유주). */
+/** 한 계좌에 지금 머무는 돈 — 청약 내역에서 도출(가용/묶임/환불대기/보유주). */
 export interface AccountMoney {
   cash: number          // 가용현금
   locked: number        // 묶인 증거금(청약완료·환불 전)

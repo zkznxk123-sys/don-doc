@@ -181,7 +181,7 @@ const NEXT_STEP: Partial<Record<SubStatus, { label: string; to: SubStatus }>> = 
   ALLOCATED: { label: '매도 기록', to: 'SOLD' },
 }
 
-/** 내 청약 — 이 종목의 원장 행을 일정 카드 안에서 바로 기록·진행. */
+/** 내 청약 — 이 종목의 청약 행을 일정 카드 안에서 바로 기록·진행. */
 function MySubs({ o, data }: { o: UpcomingOffering; data: IpoData }) {
   const { ledger, showDemo } = data
   const [editing, setEditing] = useState<{ index: number; to?: SubStatus } | null>(null)

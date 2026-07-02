@@ -1,7 +1,7 @@
 'use client'
 
 /**
- * 공모주 원장 직접 입력 — 계좌 추가 / 청약 추가 인라인 폼 + 데모·초기화 툴바.
+ * 공모주 직접 입력 — 계좌 추가 / 청약 추가 인라인 폼 + 데모·초기화 툴바.
  * 금액은 만원 단위 입력 → 원으로 저장. 데이터는 useIpoData(localStorage).
  */
 import { useState } from 'react'

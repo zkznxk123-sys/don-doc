@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 /**
  * 공모주·스팩 워크스페이스 영속화 — userId당 JSON 문서 1개.
  * GET  → { data } | { data: null }   (내 작업본, 없으면 null → 클라이언트는 데모/로컬 폴백)
- * PUT  { data }  → upsert             (계좌·원장·스팩·메모·오버라이드 통째 저장)
+ * PUT  { data }  → upsert             (계좌·청약·스팩·메모·오버라이드 통째 저장)
  * 인증 필수. 실 비밀번호는 저장하지 않음(자격증명은 보관위치 힌트만 — §6 모델).
  * PUT은 zod 스키마 + 페이로드 상한으로 검증 — 임의 JSON 무제한 적재 차단(dev 7/2).
  */
@@ -13,7 +13,7 @@ import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
 import { blockIfLite } from '@/lib/feature-flags'
 
-/** 요청 본문 상한 — 계좌 수십 개 + 원장 수백 행 + 메모여도 수십 KB 수준. 512KB면 넉넉. */
+/** 요청 본문 상한 — 계좌 수십 개 + 청약 수백 행 + 메모여도 수십 KB 수준. 512KB면 넉넉. */
 const MAX_BODY_BYTES = 512 * 1024
 
 /**

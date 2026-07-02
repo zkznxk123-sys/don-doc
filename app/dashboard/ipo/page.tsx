@@ -1,9 +1,9 @@
 'use client'
 
 /**
- * 공모주 청약 원장 보드.
+ * 공모주 청약 보드.
  * - 다가올 일정(청약·환불·상장 D-day) — 실 카톡 파싱값
- * - 명의×증권사×종목 청약 원장 (증거금·배정·환불·매도) — 데모
+ * - 명의×증권사×종목 청약 내역 (증거금·배정·환불·매도) — 데모
  * - 요약 KPI: 묶인 증거금 / 미회수 / 미매도 / 실현손익
  */
 import { useMemo, useState } from 'react'
@@ -37,7 +37,7 @@ export default function IpoLedgerPage() {
   const [editingSub, setEditingSub] = useState<number | null>(null)
   const [addingSub, setAddingSub] = useState(false)
   const [tab, setTab] = useState('act')
-  // 공모주/스팩주 상단 분기 — 일정·KPI·원장이 이 축으로 필터. 계좌·자금맵은 공용.
+  // 공모주/스팩주 상단 분기 — 일정·KPI·청약 내역이 이 축으로 필터. 계좌·자금맵은 공용.
   const [kind, setKind] = useState<'IPO' | 'SPAC'>('IPO')
 
   // KPI 집계 — 선택된 축(kind)만
@@ -124,7 +124,7 @@ export default function IpoLedgerPage() {
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="act">일정 · 청약</TabsTrigger>
-          <TabsTrigger value="result">결과 · 원장</TabsTrigger>
+          <TabsTrigger value="result">결과</TabsTrigger>
           <TabsTrigger value="accounts">계좌 관리</TabsTrigger>
         </TabsList>
 
@@ -133,11 +133,11 @@ export default function IpoLedgerPage() {
           <ScheduleView data={data} kind={kind} />
         </TabsContent>
 
-        {/* C. 결과·기록 — 종목별 원장(손익·배정·상태) */}
+        {/* C. 결과·기록 — 종목별 내역(손익·배정·상태) */}
         <TabsContent value="result" className="space-y-3">
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-muted-foreground">종목별 원장 {groups.length > 0 && `· ${groups.length}종목`}</h3>
+          <h3 className="text-sm font-medium text-muted-foreground">종목별 내역 {groups.length > 0 && `· ${groups.length}종목`}</h3>
           <button onClick={() => setAddingSub(v => !v)}
             className="inline-flex items-center gap-1 rounded-md bg-foreground text-background px-2 py-1 text-xs font-medium hover:opacity-90">
             <Plus className="size-3.5" /> 청약 추가
@@ -149,7 +149,7 @@ export default function IpoLedgerPage() {
         )}
         {groups.map(([offering, rows]) => {
           const row = rows[0].row
-          // 일정은 실 카톡 파싱값(generated)에서, 없으면 원장 행 값으로 폴백
+          // 일정은 실 카톡 파싱값(generated)에서, 없으면 청약 행 값으로 폴백
           const off = OFFERING_BY_NAME.get(offering)
           const kind = off?.kind ?? row.kind
           const subStart = off?.subStart ?? row.subStart
