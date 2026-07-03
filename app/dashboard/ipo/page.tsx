@@ -174,26 +174,31 @@ export default function IpoLedgerPage() {
                       <SubForm data={data} initial={{ row: r, index }} onDone={() => setEditingSub(null)} />
                     </div>
                   ) : (
-                    <div key={index} className="grid grid-cols-12 items-center gap-2 py-2 text-sm">
-                      <span className="col-span-2 font-medium">{r.person}</span>
-                      <span className="col-span-2 text-muted-foreground text-xs">{r.broker} · {r.subType}</span>
-                      <span className="col-span-3 text-right tabular-nums">
-                        {r.deposit > 0 ? `${formatLargeNumber(r.deposit)}원` : <span className="text-muted-foreground">—</span>}
-                      </span>
-                      <span className="col-span-2 text-right tabular-nums">
-                        {r.allocatedShares > 0 ? `${r.allocatedShares}주` : <span className="text-muted-foreground">—</span>}
-                      </span>
-                      <span className="col-span-3 flex justify-end items-center gap-1.5">
+                    /* 모바일: 2줄 flex-wrap(명의·증권사·상태 / 증거금·배정) — 12칸 grid는 sm+에서만.
+                       좁은 폭에서 상태 칩이 세로로 깨지고 '균등'이 줄바꿈되던 이슈(2026-07-02 폰 캡처). */
+                    <div key={index} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-2 text-sm sm:grid sm:grid-cols-12 sm:gap-2">
+                      <span className="font-medium sm:col-span-2">{r.person}</span>
+                      <span className="text-muted-foreground text-xs whitespace-nowrap sm:col-span-2">{r.broker} · {r.subType}</span>
+                      <span className="ml-auto flex items-center gap-1.5 sm:ml-0 sm:order-last sm:col-span-3 sm:justify-end">
                         {r.status === 'SOLD' && r.realizedPnl != null && (
-                          <span className={cn('text-xs tabular-nums', r.realizedPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400')}>
+                          <span className={cn('text-xs tabular-nums whitespace-nowrap', r.realizedPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400')}>
                             {r.realizedPnl >= 0 ? '+' : ''}{formatLargeNumber(r.realizedPnl)}
                           </span>
                         )}
-                        <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-semibold', STATUS_META[r.status].tone)}>
+                        <span className={cn('whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-semibold', STATUS_META[r.status].tone)}>
                           {STATUS_META[r.status].label}
                         </span>
                         <EditBtn onClick={() => setEditingSub(index)} />
                         <DeleteBtn onClick={() => data.removeSub(index)} label="청약 삭제" />
+                      </span>
+                      <span className="basis-full sm:hidden" />
+                      <span className="text-xs tabular-nums sm:col-span-3 sm:text-right sm:text-sm">
+                        <span className="text-muted-foreground sm:hidden">증거금 </span>
+                        {r.deposit > 0 ? `${formatLargeNumber(r.deposit)}원` : <span className="text-muted-foreground">—</span>}
+                      </span>
+                      <span className="text-xs tabular-nums sm:col-span-2 sm:text-right sm:text-sm">
+                        <span className="text-muted-foreground sm:hidden">배정 </span>
+                        {r.allocatedShares > 0 ? `${r.allocatedShares}주` : <span className="text-muted-foreground">—</span>}
                       </span>
                     </div>
                   ))}

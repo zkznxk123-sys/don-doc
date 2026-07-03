@@ -140,7 +140,8 @@ export function AccountBoard({ accounts, ledger, data }: AccountBoardProps) {
 
               {open && (
                 <>
-                  <div className="grid grid-cols-12 gap-2 py-1 text-[10px] text-muted-foreground border-b border-border/60">
+                  {/* 컬럼 헤더 — 모바일(2줄 스택)에선 숨김 */}
+                  <div className="hidden sm:grid grid-cols-12 gap-2 py-1 text-[10px] text-muted-foreground border-b border-border/60">
                     <span className="col-span-3">증권사</span>
                     <span className="col-span-3">계좌번호</span>
                     <span className="col-span-4">준비 — 예외만</span>
@@ -181,27 +182,29 @@ function AccountRow({ account, ledger, reveal, onRemove, onEdit }: {
   const m = accountMoney(account, ledger)
   const exceptions = READINESS_LABELS.filter(({ key }) => account.readiness[key] !== 'OK')
   return (
-    <div className="grid grid-cols-12 items-center gap-2 py-1.5 text-sm">
-      <span className="col-span-3 flex items-center gap-1 min-w-0">
+    /* 모바일: 2줄 flex-wrap(증권사·번호 / 준비·자금·액션) — 12칸 grid는 sm+ */
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 py-1.5 text-sm sm:grid sm:grid-cols-12 sm:gap-2">
+      <span className="flex items-center gap-1 min-w-0 sm:col-span-3">
         <span className="font-medium truncate">{account.broker}</span>
         {account.bankLinked && (
           <span className="shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">제휴</span>
         )}
       </span>
-      <span className="col-span-3 text-[11px] text-muted-foreground tabular-nums truncate" title={reveal ? undefined : '상단 “계좌번호 보기”로 전체 확인'}>
+      <span className="ml-auto sm:ml-0 text-[11px] text-muted-foreground tabular-nums truncate sm:col-span-3" title={reveal ? undefined : '상단 “계좌번호 보기”로 전체 확인'}>
         {account.accountNo ? (reveal ? account.accountNo : maskAccountNo(account.accountNo)) : '—'}
       </span>
-      <span className="col-span-4 flex flex-wrap items-center gap-1 min-w-0">
+      <span className="basis-full sm:hidden" />
+      <span className="flex flex-wrap items-center gap-1 min-w-0 sm:col-span-4">
         {exceptions.length === 0 && <CheckCircle2 className="size-3.5 text-emerald-500" />}
         {exceptions.map(({ key, label }) => (
-          <span key={key} className={cn('rounded px-1 py-0.5 text-[9px] font-medium', READINESS_TONE[account.readiness[key]])}>
+          <span key={key} className={cn('whitespace-nowrap rounded px-1 py-0.5 text-[9px] font-medium', READINESS_TONE[account.readiness[key]])}>
             {label} {account.readiness[key] === 'EXPIRED' ? '만료' : '대기'}
           </span>
         ))}
       </span>
-      <span className="col-span-2 flex justify-end items-center gap-1.5 text-[11px] tabular-nums">
-        {m.locked > 0 && <span className="text-amber-600 dark:text-amber-400">{formatLargeNumber(m.locked)}</span>}
-        {m.refundPending > 0 && <span className="text-sky-600 dark:text-sky-400">{formatLargeNumber(m.refundPending)}</span>}
+      <span className="ml-auto sm:ml-0 flex justify-end items-center gap-1.5 text-[11px] tabular-nums sm:col-span-2">
+        {m.locked > 0 && <span className="whitespace-nowrap text-amber-600 dark:text-amber-400">{formatLargeNumber(m.locked)}</span>}
+        {m.refundPending > 0 && <span className="whitespace-nowrap text-sky-600 dark:text-sky-400">{formatLargeNumber(m.refundPending)}</span>}
         {m.locked === 0 && m.refundPending === 0 && <span className="text-muted-foreground">—</span>}
         <EditBtn onClick={onEdit} />
         <DeleteBtn onClick={onRemove} label="계좌 삭제" />

@@ -72,9 +72,9 @@ export function SpacList({ data }: { data: IpoData }) {
         <p className="text-sm text-muted-foreground py-8 text-center">스팩이 없어요. “스팩 추가”로 등록하세요.</p>
       )}
 
-      {/* 컬럼 헤더 — 행 grid(12)와 동일 분할, 카드 안 px-5에 맞춤 */}
+      {/* 컬럼 헤더 — 행 grid(12)와 동일 분할, 카드 안 px-5에 맞춤. 모바일(2줄 스택)은 숨김 */}
       {groups.length > 0 && (
-        <div className="grid grid-cols-12 gap-2 px-5 text-[10px] text-muted-foreground">
+        <div className="hidden sm:grid grid-cols-12 gap-2 px-5 text-[10px] text-muted-foreground">
           <span className="col-span-4">종목</span>
           <span className="col-span-2 text-right">시총</span>
           <span className="col-span-2 text-right">현재가</span>
@@ -116,19 +116,23 @@ function SpacRow({ spac, today, onEdit, onRemove }: {
   const below = gap < 0
   const d = spac.maturityDate ? ddays(spac.maturityDate, today) : null
   return (
-    <div className="grid grid-cols-12 items-center gap-2 py-2 text-sm">
-      <span className="col-span-4 font-medium truncate flex items-center gap-1.5">
-        {spac.live && <span className="size-1.5 rounded-full bg-emerald-500" title={`실시간 (${spac.code ?? ''})`} />}
+    /* 모바일: 2줄 flex-wrap(종목·현재가·대비 / 시총·만기·배지·액션) — 12칸 grid는 sm+ */
+    <div className="flex flex-wrap items-center gap-x-2 gap-y-1 py-2 text-sm sm:grid sm:grid-cols-12 sm:gap-2">
+      <span className="min-w-0 font-medium truncate flex items-center gap-1.5 sm:col-span-4">
+        {spac.live && <span className="size-1.5 rounded-full bg-emerald-500 shrink-0" title={`실시간 (${spac.code ?? ''})`} />}
         {spac.name}
       </span>
-      <span className="col-span-2 text-right text-xs text-muted-foreground tabular-nums">{spac.marketCapEok}억</span>
-      <span className="col-span-2 text-right tabular-nums font-medium">{spac.price.toLocaleString()}</span>
-      <span className={cn('col-span-2 text-right text-xs tabular-nums', below ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground')}>
+      <span className="ml-auto sm:ml-0 order-2 sm:order-none text-right tabular-nums font-medium sm:col-span-2 sm:order-3 whitespace-nowrap">{spac.price.toLocaleString()}</span>
+      <span className={cn('order-3 text-right text-xs tabular-nums whitespace-nowrap sm:col-span-2 sm:order-4', below ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground')}>
         {gap > 0 ? '+' : ''}{gap}
       </span>
-      <span className="col-span-2 flex justify-end items-center gap-1.5">
-        {below && <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">기준미만</span>}
-        {d != null && <span className="text-[10px] text-muted-foreground">만기 {ddayLabel(d)}</span>}
+      <span className="basis-full order-4 sm:hidden" />
+      <span className="order-5 text-xs text-muted-foreground tabular-nums whitespace-nowrap sm:col-span-2 sm:order-2 sm:text-right">
+        <span className="sm:hidden">시총 </span>{spac.marketCapEok}억
+      </span>
+      <span className="order-6 ml-auto sm:ml-0 flex justify-end items-center gap-1.5 sm:col-span-2 sm:order-last">
+        {below && <span className="whitespace-nowrap rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">기준미만</span>}
+        {d != null && <span className="whitespace-nowrap text-[10px] text-muted-foreground">만기 {ddayLabel(d)}</span>}
         {<button onClick={onEdit} title="수정" className="text-muted-foreground/50 hover:text-foreground"><Pencil className="size-3.5" /></button>}
         {<button onClick={onRemove} title="삭제" className="text-muted-foreground/50 hover:text-rose-500"><X className="size-3.5" /></button>}
       </span>

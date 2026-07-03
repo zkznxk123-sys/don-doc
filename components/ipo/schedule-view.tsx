@@ -89,18 +89,19 @@ function OfferingRow({ o, todayISO, today, open, onToggle }: { o: UpcomingOfferi
   const next = nextDate(o, todayISO)
   return (
     <div className="grid grid-cols-12 items-center gap-2 py-2 text-sm cursor-pointer hover:bg-muted/30 -mx-1 px-1 rounded" onClick={onToggle}>
-      <span className="col-span-4 flex items-center gap-1.5 min-w-0">
+      <span className="col-span-5 sm:col-span-4 flex items-center gap-1.5 min-w-0">
         <ChevronDown className={cn('size-3.5 shrink-0 text-muted-foreground transition-transform', open && 'rotate-180')} />
         <span className="font-medium truncate">{o.name}</span>
         <span className={cn('shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold',
           o.kind === 'SPAC' ? 'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300' : 'bg-muted text-muted-foreground')}>{o.kind}</span>
       </span>
-      <span className="col-span-4 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
+      <span className="col-span-5 sm:col-span-4 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
         {o.subStart && <DateChip label="청약" date={o.subStart} />}
         {o.refundDate && <DateChip label="환불" date={o.refundDate} />}
         {o.listingDate && <DateChip label="상장" date={o.listingDate} />}
       </span>
-      <span className="col-span-2 text-right text-[11px] text-muted-foreground truncate">{o.brokers.join(',')}</span>
+      {/* 주관사 — 좁은 화면에선 숨김(상세에서 확인) */}
+      <span className="hidden sm:block sm:col-span-2 text-right text-[11px] text-muted-foreground truncate">{o.brokers.join(',')}</span>
       <span className="col-span-2 text-right">
         {next && (
           <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-semibold',
@@ -213,18 +214,18 @@ function MySubs({ o, data }: { o: UpcomingOffering; data: IpoData }) {
               onDone={() => setEditing(null)} />
           </div>
         ) : (
-          <div key={index} className="flex items-center gap-2 py-1.5 text-sm">
+          <div key={index} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-1.5 text-sm">
             <span className="font-medium">{r.person}</span>
-            <span className="text-xs text-muted-foreground">{r.broker} · {r.subType}</span>
-            {r.deposit > 0 && <span className="text-xs tabular-nums text-muted-foreground">{formatLargeNumber(r.deposit)}</span>}
-            {r.allocatedShares > 0 && <span className="text-xs tabular-nums">{r.allocatedShares}주</span>}
-            <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-semibold', STATUS_META[r.status].tone)}>
+            <span className="text-xs text-muted-foreground whitespace-nowrap">{r.broker} · {r.subType}</span>
+            {r.deposit > 0 && <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap">{formatLargeNumber(r.deposit)}</span>}
+            {r.allocatedShares > 0 && <span className="text-xs tabular-nums whitespace-nowrap">{r.allocatedShares}주</span>}
+            <span className={cn('whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-semibold', STATUS_META[r.status].tone)}>
               {STATUS_META[r.status].label}
             </span>
             <span className="ml-auto flex items-center gap-1.5">
               {NEXT_STEP[r.status] && (
                 <button onClick={() => setEditing({ index, to: NEXT_STEP[r.status]!.to })}
-                  className="text-[11px] rounded bg-muted px-2 py-0.5 font-medium hover:bg-muted/70">
+                  className="text-[11px] whitespace-nowrap rounded bg-muted px-2 py-0.5 font-medium hover:bg-muted/70">
                   {NEXT_STEP[r.status]!.label}
                 </button>
               )}

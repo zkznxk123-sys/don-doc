@@ -40,19 +40,21 @@ export function SpacHoldings({ spacs }: { spacs: Spac[] }) {
             const pnl = evalAmt - cost
             const pnlPct = s.avgCost ? (s.price / s.avgCost - 1) * 100 : null
             return (
-              <div key={s.id} className="grid grid-cols-12 items-center gap-2 py-2 text-sm">
-                <span className="col-span-4 font-medium truncate">{s.name}</span>
-                <span className="col-span-2 text-right tabular-nums text-muted-foreground">{s.shares!.toLocaleString()}주</span>
-                <span className="col-span-3 text-right tabular-nums text-xs text-muted-foreground">
-                  {s.avgCost ? `${s.avgCost.toLocaleString()} → ` : ''}<span className="text-foreground">{s.price.toLocaleString()}</span>
-                </span>
-                <span className="col-span-3 text-right tabular-nums">
+              /* 모바일: 2줄 flex-wrap(종목·평가액 / 보유·단가경로) — 12칸 grid는 sm+ */
+              <div key={s.id} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-2 text-sm sm:grid sm:grid-cols-12 sm:gap-2">
+                <span className="min-w-0 font-medium truncate sm:col-span-4">{s.name}</span>
+                <span className="ml-auto sm:ml-0 text-right tabular-nums whitespace-nowrap sm:col-span-3 sm:order-last">
                   {formatLargeNumber(evalAmt)}
                   {pnlPct != null && (
                     <span className={cn('ml-1.5 text-xs', pnlTone(pnl))}>
                       {pnl >= 0 ? '+' : ''}{pnlPct.toFixed(1)}%
                     </span>
                   )}
+                </span>
+                <span className="basis-full sm:hidden" />
+                <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap sm:col-span-2 sm:text-right sm:text-sm">{s.shares!.toLocaleString()}주</span>
+                <span className="text-xs tabular-nums text-muted-foreground whitespace-nowrap sm:col-span-3 sm:text-right">
+                  {s.avgCost ? `${s.avgCost.toLocaleString()} → ` : ''}<span className="text-foreground">{s.price.toLocaleString()}</span>
                 </span>
               </div>
             )

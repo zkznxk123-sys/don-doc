@@ -92,13 +92,13 @@ export function SpacUniverse() {
                       <span className="col-span-5 font-medium truncate flex items-center gap-1.5">
                         <span className="size-1.5 rounded-full bg-emerald-500 shrink-0" />{s.name}
                       </span>
-                      <span className="col-span-2 text-right text-xs text-muted-foreground tabular-nums">{s.cap != null ? `${s.cap}억` : '—'}</span>
-                      <span className="col-span-2 text-right tabular-nums font-medium">{s.price.toLocaleString()}</span>
-                      <span className={cn('col-span-2 text-right text-xs tabular-nums', below ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground')}>
+                      <span className="col-span-2 text-right text-xs text-muted-foreground tabular-nums whitespace-nowrap">{s.cap != null ? `${s.cap}억` : '—'}</span>
+                      <span className="col-span-2 text-right tabular-nums font-medium whitespace-nowrap">{s.price.toLocaleString()}</span>
+                      <span className={cn('col-span-2 text-right text-xs tabular-nums whitespace-nowrap', below ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground')}>
                         {gap > 0 ? '+' : ''}{gap}
                       </span>
                       <span className="col-span-1 flex justify-end">
-                        {below && <span className="rounded bg-emerald-100 px-1 py-0.5 text-[9px] font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">미만</span>}
+                        {below && <span className="whitespace-nowrap rounded bg-emerald-100 px-1 py-0.5 text-[9px] font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">미만</span>}
                       </span>
                     </div>
                   )
