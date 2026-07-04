@@ -29,8 +29,8 @@ export function SpacHoldings({ spacs }: { spacs: Spac[] }) {
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium flex items-center gap-1.5"><Layers className="size-4" /> 스팩 보유현황</h3>
           <span className="text-xs text-muted-foreground">
-            평가액 <span className="tabular-nums text-foreground">{formatLargeNumber(totalEval)}</span>
-            {totalCost > 0 && <> · 평가손익 <span className={cn('tabular-nums', pnlTone(totalPnl))}>{totalPnl >= 0 ? '+' : ''}{formatLargeNumber(totalPnl)}</span></>}
+            평가액 <span data-priv className="tabular-nums text-foreground">{formatLargeNumber(totalEval)}</span>
+            {totalCost > 0 && <> · 평가손익 <span data-priv className={cn('tabular-nums', pnlTone(totalPnl))}>{totalPnl >= 0 ? '+' : ''}{formatLargeNumber(totalPnl)}</span></>}
           </span>
         </div>
         <div className="divide-y divide-border/60">

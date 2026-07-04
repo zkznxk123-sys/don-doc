@@ -8,7 +8,7 @@
  */
 import { useMemo, useState } from 'react'
 import {
-  TrendingUp, Coins, AlertCircle, CheckCircle2, Wallet, ArrowRightLeft, Plus,
+  TrendingUp, Coins, AlertCircle, CheckCircle2, Wallet, ArrowRightLeft, Plus, Camera,
 } from 'lucide-react'
 import { cn, formatLargeNumber } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
@@ -38,6 +38,8 @@ export default function IpoLedgerPage() {
   const [tab, setTab] = useState('act')
   // 공모주/스팩주 상단 분기 — 일정·KPI·청약 내역이 이 축으로 필터. 계좌·자금맵은 공용.
   const [kind, setKind] = useState<'IPO' | 'SPAC'>('IPO')
+  // 캡처 모드 — 개인값(금액·계좌번호)만 블러(data-priv). 공개 fact는 그대로 → 커뮤니티 스크린샷용.
+  const [capture, setCapture] = useState(false)
 
   // KPI 집계 — 선택된 축(kind)만
   const kpi = useMemo(() => {
@@ -67,6 +69,8 @@ export default function IpoLedgerPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 space-y-6">
+      {/* 캡처 모드 — 개인값(data-priv)만 블러. 토글 시에만 스타일 주입 */}
+      {capture && <style>{`[data-priv]{filter:blur(6px);user-select:none}`}</style>}
       {/* 헤더 + 공모주/스팩주 분기 */}
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -77,13 +81,20 @@ export default function IpoLedgerPage() {
             청약·계좌·시세를 한 화면에 — 명의 흩어짐 없이 청약~회수까지
           </p>
         </div>
-        <div className="inline-flex rounded-lg bg-card border border-border p-0.5 text-sm shrink-0">
+        <div className="flex items-center gap-2 shrink-0">
+        <button onClick={() => setCapture(v => !v)} title="캡처 모드 — 금액·계좌번호 블러"
+          className={cn('inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-xs font-medium',
+            capture ? 'bg-foreground text-background' : 'bg-card text-muted-foreground hover:text-foreground')}>
+          <Camera className="size-3.5" /> 캡처
+        </button>
+        <div className="inline-flex rounded-lg bg-card border border-border p-0.5 text-sm">
           {(['IPO', 'SPAC'] as const).map(k => (
             <button key={k} onClick={() => setKind(k)}
               className={cn('rounded-md px-3 py-1.5 font-medium', kind === k ? 'bg-foreground text-background' : 'text-muted-foreground hover:text-foreground')}>
               {k === 'IPO' ? '공모주' : '스팩주'}
             </button>
           ))}
+        </div>
         </div>
       </div>
 
@@ -233,7 +244,7 @@ function Kpi({ icon, label, value, hint, tone }: {
     <Card>
       <CardContent className="pt-4">
         <div className="flex items-center gap-1.5 text-xs text-muted-foreground">{icon}{label}</div>
-        <div className={cn('mt-1 text-lg font-semibold tabular-nums', valueTone)}>{value}</div>
+        <div data-priv className={cn('mt-1 text-lg font-semibold tabular-nums', valueTone)}>{value}</div>
         {hint && <div className="text-[11px] text-muted-foreground mt-0.5">{hint}</div>}
       </CardContent>
     </Card>

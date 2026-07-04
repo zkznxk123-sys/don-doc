@@ -52,13 +52,13 @@ export function MoneyMap({ accounts, ledger }: { accounts: Account[]; ledger: Le
       <CardContent className="pt-4 space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium flex items-center gap-1.5"><Wallet className="size-4" /> 자금 위치 맵</h3>
-          <span className="text-sm font-semibold tabular-nums">{formatLargeNumber(totals.total)}원</span>
+          <span data-priv className="text-sm font-semibold tabular-nums">{formatLargeNumber(totals.total)}원</span>
         </div>
         <MoneyBar locked={totals.locked} refund={totals.refund} />
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
           <Legend seg="locked" amount={totals.locked} />
           <Legend seg="refund" amount={totals.refund} />
-          {totals.held > 0 && <span className="text-muted-foreground">· 미매도 보유 {totals.held}주</span>}
+          {totals.held > 0 && <span data-priv className="text-muted-foreground">· 미매도 보유 {totals.held}주</span>}
         </div>
       </CardContent>
     </Card>
@@ -167,7 +167,7 @@ function Legend({ seg, amount }: { seg: keyof typeof SEG; amount: number }) {
   return (
     <span className="flex items-center gap-1.5 text-muted-foreground">
       <span className={cn('size-2 rounded-full', SEG[seg].dot)} />
-      {SEG[seg].label} <span className="tabular-nums text-foreground">{formatLargeNumber(amount)}</span>
+      {SEG[seg].label} <span data-priv className="tabular-nums text-foreground">{formatLargeNumber(amount)}</span>
     </span>
   )
 }

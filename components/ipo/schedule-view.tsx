@@ -323,7 +323,7 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
         </label>
         <label className="flex flex-col gap-0.5">
           <span className="text-[10px] text-muted-foreground">투자 예산(만원)</span>
-          <input type="number" value={budget} onChange={e => setBudget(e.target.value)} placeholder="예: 5000"
+          <input data-priv type="number" value={budget} onChange={e => setBudget(e.target.value)} placeholder="예: 5000"
             className="rounded-md border border-border bg-card px-2 py-1 text-sm outline-none focus:border-foreground/30" />
         </label>
       </div>
@@ -371,9 +371,9 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
       {plan && (
         <div className="rounded-md border border-border/60 bg-muted/20 p-2.5 space-y-1.5">
           <div className="flex items-center justify-between">
-            <span className="text-[11px] font-medium">예산 {won(B)}원 최적 배분 — 명의 {plan.n}개</span>
+            <span data-priv className="text-[11px] font-medium">예산 {won(B)}원 최적 배분 — 명의 {plan.n}개</span>
             {plan.n > 0 && (
-              <span className="text-[11px] tabular-nums">
+              <span data-priv className="text-[11px] tabular-nums">
                 예상 <b>{(plan.gyunTotal + plan.propTotal).toFixed(2)}주</b>
                 <span className="text-muted-foreground"> (균등 {plan.gyunTotal.toFixed(2)} + 비례 {plan.propTotal.toFixed(2)})</span>
               </span>
@@ -397,9 +397,9 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
                 return (
                   <Fragment key={a.id}>
                     <span className="truncate">{a.person} <span className="text-muted-foreground">{a.broker}</span>{issues > 0 && <span className="text-amber-600 dark:text-amber-400"> ⚠준비{issues}</span>}</span>
-                    <span className="text-right tabular-nums">{shares.toLocaleString()}</span>
-                    <span className="text-right tabular-nums">{won(dep)}</span>
-                    <span className="text-right tabular-nums text-muted-foreground">{(g + shares / r).toFixed(2)}</span>
+                    <span data-priv className="text-right tabular-nums">{shares.toLocaleString()}</span>
+                    <span data-priv className="text-right tabular-nums">{won(dep)}</span>
+                    <span data-priv className="text-right tabular-nums text-muted-foreground">{(g + shares / r).toFixed(2)}</span>
                   </Fragment>
                 )
               })}
