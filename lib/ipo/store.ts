@@ -7,6 +7,7 @@
  * 기존 로컬 작업본은 첫 로드 때 DB로 자동 마이그레이션.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { toast } from 'sonner'
 import {
   OFFERING_BY_NAME,
   type Account, type LedgerRow, type Spac,
@@ -102,6 +103,7 @@ export function useIpoData(): IpoData {
   const dbRef = useRef(false)        // DB 사용 가능(인증됨)
   const skipSaveRef = useRef(true)   // 첫 로드 직후 1회 저장 스킵
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const stampRef = useRef<string | null>(null)   // 마지막으로 본 서버 updatedAt — 낙관적 잠금 스탬프
 
   // 로드: DB > localStorage > EMPTY. 단, 로컬이 DB보다 확실히 최신(오프라인 편집)이면
   // 로컬 승격 후 DB로 저장 — "DB 우선"이 최신 로컬 편집을 조용히 덮던 유실 경로 차단(dev 7/2).
@@ -114,6 +116,7 @@ export function useIpoData(): IpoData {
         if (res.ok) {
           dbRef.current = true
           const j = await res.json()
+          stampRef.current = j.updatedAt ?? null
           // 클라이언트 savedAt vs 서버 updatedAt — 시계 오차 감안 5초 여유
           const localNewer = !!(local?.state.initialized && local.savedAt && j.updatedAt
             && new Date(local.savedAt).getTime() > new Date(j.updatedAt).getTime() + 5_000)
@@ -151,12 +154,27 @@ export function useIpoData(): IpoData {
     if (!dbRef.current) return
     dirtyRef.current = true
     if (timerRef.current) clearTimeout(timerRef.current)
-    timerRef.current = setTimeout(() => {
+    timerRef.current = setTimeout(async () => {
       dirtyRef.current = false
-      fetch('/api/ipo/workspace', {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: stateRef.current }),
-      }).catch(() => { dirtyRef.current = true })   // 실패 시 언로드 flush가 한 번 더 시도
+      try {
+        const res = await fetch('/api/ipo/workspace', {
+          method: 'PUT', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: stateRef.current, baseUpdatedAt: stampRef.current }),
+        })
+        if (res.status === 409) {
+          // 다른 기기가 먼저 저장 — 서버 최신본 채택(조용한 덮어쓰기 대신 눈에 보이는 갱신)
+          const j = await res.json()
+          stampRef.current = j.updatedAt ?? null
+          skipSaveRef.current = true            // 채택 반영이 재PUT 루프를 돌지 않게
+          setState(normalize(j.data))
+          toast.warning('다른 기기에서 먼저 저장돼 최신 데이터로 갱신했어요. 방금 편집은 다시 입력해 주세요.')
+        } else if (res.ok) {
+          const j = await res.json()
+          stampRef.current = j.updatedAt ?? stampRef.current
+        } else {
+          dirtyRef.current = true               // 실패 시 언로드 flush가 한 번 더 시도
+        }
+      } catch { dirtyRef.current = true }
     }, 800)
   }, [state, hydrated])
 
@@ -170,7 +188,8 @@ export function useIpoData(): IpoData {
       try {
         fetch('/api/ipo/workspace', {
           method: 'PUT', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ data: stateRef.current }),
+          // 스탬프 동반 — 백그라운드로 밀려 있던 낡은 탭이 최신 데이터를 덮지 못하게(서버 409)
+          body: JSON.stringify({ data: stateRef.current, baseUpdatedAt: stampRef.current }),
           keepalive: true,
         }).catch(() => {})
       } catch { /* 무시 */ }

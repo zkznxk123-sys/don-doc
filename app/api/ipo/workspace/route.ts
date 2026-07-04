@@ -2,8 +2,11 @@ export const dynamic = 'force-dynamic'
 
 /**
  * 공모주·스팩 워크스페이스 영속화 — userId당 JSON 문서 1개.
- * GET  → { data } | { data: null }   (내 작업본, 없으면 null → 클라이언트는 데모/로컬 폴백)
- * PUT  { data }  → upsert             (계좌·청약·스팩·메모·오버라이드 통째 저장)
+ * GET  → { data, updatedAt } | { data: null }
+ * PUT  { data, baseUpdatedAt } → 낙관적 잠금 upsert.
+ *   baseUpdatedAt = 클라이언트가 마지막으로 본 서버 updatedAt. 불일치(다른 기기가
+ *   먼저 저장) → 409 + 서버 최신본 반환 — 통째 덮어쓰기의 조용한 유실 차단.
+ *   baseUpdatedAt 미포함(구 클라이언트)은 기존처럼 무조건 저장.
  * 인증 필수. 실 비밀번호는 저장하지 않음(자격증명은 보관위치 힌트만 — §6 모델).
  * PUT은 zod 스키마 + 페이로드 상한으로 검증 — 임의 JSON 무제한 적재 차단(dev 7/2).
  */
@@ -58,11 +61,42 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: '워크스페이스 형식이 올바르지 않아요.' }, { status: 400 })
   }
   const data = parsed.data as object   // zod 통과분 → Prisma Json 입력
+  // 낙관적 잠금 스탬프: undefined=구 클라이언트(무조건 저장) / null=클라이언트가 "DB 비어 있음"으로 인지 / string=마지막으로 본 updatedAt
+  const baseUpdatedAt = (body as { baseUpdatedAt?: string | null }).baseUpdatedAt
 
-  const ws = await prisma.ipoWorkspace.upsert({
-    where: { userId: user.id },
-    create: { userId: user.id, data },
-    update: { data },
-  })
+  const conflict = async () => {
+    const cur = await prisma.ipoWorkspace.findUnique({ where: { userId: user.id } })
+    return NextResponse.json(
+      { conflict: true, data: cur?.data ?? null, updatedAt: cur?.updatedAt ?? null },
+      { status: 409 },
+    )
+  }
+
+  const existing = await prisma.ipoWorkspace.findUnique({ where: { userId: user.id }, select: { updatedAt: true } })
+
+  if (!existing) {
+    try {
+      const ws = await prisma.ipoWorkspace.create({ data: { userId: user.id, data } })
+      return NextResponse.json({ ok: true, updatedAt: ws.updatedAt })
+    } catch {
+      return conflict()   // 생성 경합(다른 기기가 방금 만듦)
+    }
+  }
+
+  if (baseUpdatedAt !== undefined) {
+    // null인데 행이 있음 = 이 클라이언트는 빈 DB를 봤는데 그 사이 다른 기기가 저장함 → 충돌
+    if (baseUpdatedAt === null) return conflict()
+    // 원자적 조건부 갱신 — updatedAt이 그대로일 때만 덮어씀(확인-후-쓰기 경합까지 차단)
+    const r = await prisma.ipoWorkspace.updateMany({
+      where: { userId: user.id, updatedAt: new Date(baseUpdatedAt) },
+      data: { data },
+    })
+    if (r.count === 0) return conflict()
+    const ws = await prisma.ipoWorkspace.findUnique({ where: { userId: user.id }, select: { updatedAt: true } })
+    return NextResponse.json({ ok: true, updatedAt: ws?.updatedAt ?? null })
+  }
+
+  // 구 클라이언트 호환 — 스탬프 없으면 기존처럼 무조건 저장
+  const ws = await prisma.ipoWorkspace.update({ where: { userId: user.id }, data: { data } })
   return NextResponse.json({ ok: true, updatedAt: ws.updatedAt })
 }
