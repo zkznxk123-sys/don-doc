@@ -8,7 +8,7 @@
  */
 import { useMemo, useState } from 'react'
 import {
-  TrendingUp, Coins, AlertCircle, CheckCircle2, Wallet, ArrowRightLeft, Plus, Camera,
+  TrendingUp, Coins, AlertCircle, CheckCircle2, Circle, Wallet, ArrowRightLeft, Plus, Camera,
 } from 'lucide-react'
 import { cn, formatLargeNumber } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
@@ -32,7 +32,7 @@ const KIND_TONE = {
 
 export default function IpoLedgerPage() {
   const data = useIpoData()
-  const { ledger, accounts } = data
+  const { ledger, accounts, hydrated } = data
   const [editingSub, setEditingSub] = useState<number | null>(null)
   const [addingSub, setAddingSub] = useState(false)
   const [tab, setTab] = useState('act')
@@ -100,8 +100,12 @@ export default function IpoLedgerPage() {
 
       <IpoDatalists accounts={accounts} />
 
-      {/* KPI + 자금 위치 맵 — 청약 라이프사이클(증거금·환불) 개념이라 공모주 전용. 스팩주에선 보유현황이 그 역할 */}
-      {kind === 'IPO' && (
+      {/* KPI + 자금 위치 맵 — 청약 기록이 있어야 의미 있는 값. 기록 전엔 시작 가이드(온보딩) */}
+      {kind === 'IPO' && hydrated && ledger.length === 0 && (
+        <OnboardingCard hasAccount={accounts.length > 0}
+          onAccounts={() => setTab('accounts')} onSchedule={() => setTab('act')} />
+      )}
+      {kind === 'IPO' && ledger.length > 0 && (
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Kpi icon={<Wallet className="size-4" />} label="묶인 증거금" value={`${formatLargeNumber(kpi.locked)}원`} hint="청약완료·환불 전" />
@@ -228,6 +232,51 @@ export default function IpoLedgerPage() {
       </Tabs>
       )}
     </div>
+  )
+}
+
+/** 시작 가이드 — 첫 청약 기록 전까지 KPI 자리에. 기록이 생기면 자동으로 사라짐. */
+function OnboardingCard({ hasAccount, onAccounts, onSchedule }: {
+  hasAccount: boolean; onAccounts: () => void; onSchedule: () => void
+}) {
+  const Step = ({ done, n, title, desc, action, onAction }: {
+    done: boolean; n: number; title: string; desc: string; action?: string; onAction?: () => void
+  }) => (
+    <div className="flex items-start gap-2.5">
+      {done
+        ? <CheckCircle2 className="size-4 mt-0.5 shrink-0 text-emerald-500" />
+        : <Circle className="size-4 mt-0.5 shrink-0 text-muted-foreground/50" />}
+      <div className="min-w-0">
+        <div className={cn('text-sm font-medium', done && 'text-muted-foreground line-through')}>{n}. {title}</div>
+        <p className="text-xs text-muted-foreground mt-0.5 break-keep">{desc}</p>
+        {!done && action && (
+          <button onClick={onAction}
+            className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-foreground text-background px-2 py-1 text-xs font-medium hover:opacity-90">
+            {action}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+  return (
+    <Card>
+      <CardContent className="pt-4 space-y-3.5">
+        <div>
+          <h3 className="text-sm font-semibold">시작하기</h3>
+          <p className="text-xs text-muted-foreground mt-0.5 break-keep">
+            일정·공모가·경쟁률은 자동으로 채워져요. 내 계좌와 청약만 기록하면 증거금·환불·손익이 여기서 집계돼요.
+          </p>
+        </div>
+        <Step done={hasAccount} n={1} title="계좌 등록"
+          desc="명의(본인·가족)×증권사 계좌를 등록해요. 준비상태(CDD·OTP·인증서·한도)도 함께."
+          action="계좌 등록하기" onAction={onAccounts} />
+        <Step done={false} n={2} title="다가올 청약 확인"
+          desc="일정에서 종목을 펼치면 공모가·경쟁률·배정 계산기가 있어요."
+          action="일정 보기" onAction={onSchedule} />
+        <Step done={false} n={3} title="청약 기록"
+          desc="청약하면 종목 카드의 “+ 청약 기록”으로 남겨요 — 증거금·환불이 자동 추적돼요." />
+      </CardContent>
+    </Card>
   )
 }
 
