@@ -54,6 +54,12 @@ export function DashboardShell({
 }) {
   const { signOut } = useClerk()
   const [sidebarOpen, setSidebarOpen] = useState(true)
+
+  // 모바일(lg 미만)은 사이드바가 오버레이 드로어라, 열린 채 시작하면 매 페이지
+  // 진입마다 콘텐츠를 덮는다(2026-07-04 모바일 QA) → 마운트 시 1회 닫고 시작.
+  useEffect(() => {
+    if (window.matchMedia('(max-width: 1023px)').matches) setSidebarOpen(false)
+  }, [])
   const [editTransaction, setEditTransaction] = useState<EditTransactionData | null>(null)
   const [isTransactionOpen, setIsTransactionOpen] = useState(false)
   const [isExcelOpen, setIsExcelOpen] = useState(false)

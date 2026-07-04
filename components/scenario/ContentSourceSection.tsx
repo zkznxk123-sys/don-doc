@@ -441,18 +441,19 @@ export function ContentSourceSection({
 
   return (
     <div className="bg-card border border-border rounded-2xl overflow-hidden">
-      <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Link2 className="w-4 h-4 text-muted-foreground/60" />
-          <span className="text-sm font-semibold text-foreground">관심 컨텐츠</span>
-          <span className="text-[10px] text-muted-foreground/50">시나리오 생성에 반영됩니다</span>
+      {/* 좁은 폭: 토글이 세로로 깨지지 않게 wrap + nowrap (2026-07-04 모바일 QA) */}
+      <div className="px-4 py-3 border-b border-border bg-muted/30 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          <Link2 className="w-4 h-4 shrink-0 text-muted-foreground/60" />
+          <span className="text-sm font-semibold text-foreground whitespace-nowrap">관심 컨텐츠</span>
+          <span className="text-[10px] text-muted-foreground/50 break-keep">시나리오 생성에 반영됩니다</span>
         </div>
         {/* URL / 텍스트 토글 */}
-        <div className="flex items-center bg-muted rounded-lg p-0.5">
+        <div className="flex shrink-0 items-center bg-muted rounded-lg p-0.5">
           <button
             onClick={() => setInputMode('url')}
             className={cn(
-              'flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors',
+              'flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap transition-colors',
               inputMode === 'url' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground',
             )}
           >
@@ -461,7 +462,7 @@ export function ContentSourceSection({
           <button
             onClick={() => setInputMode('text')}
             className={cn(
-              'flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors',
+              'flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium whitespace-nowrap transition-colors',
               inputMode === 'text' ? 'bg-card text-foreground shadow-xs' : 'text-muted-foreground',
             )}
           >

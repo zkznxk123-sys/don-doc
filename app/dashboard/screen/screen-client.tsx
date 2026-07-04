@@ -215,7 +215,7 @@ export function ScreenClient() {
             </select>
             <button
               onClick={() => update('sortDesc', !input.sortDesc)}
-              className="px-3 h-9 rounded-lg bg-muted border border-border/40 text-xs font-medium hover:bg-muted/60"
+              className="px-3 h-9 rounded-lg bg-muted border border-border/40 text-xs font-medium whitespace-nowrap hover:bg-muted/60"
             >
               {input.sortDesc ? '내림차순 ↓' : '오름차순 ↑'}
             </button>

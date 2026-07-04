@@ -104,11 +104,16 @@ export function TopBar({ onToggleSidebar }: TopBarProps) {
         <h1 className="text-sm font-semibold text-foreground truncate">{title}</h1>
       </div>
 
-      {/* 우측: 페이지 액션 또는 라우트별 기본 버튼 + 테마 토글 */}
-      <div className="flex items-center gap-2 shrink-0">
-        {pageActions ?? defaultActions}
-        <ThemeToggle />
-        <UserButton />
+      {/* 우측: 페이지 액션 또는 라우트별 기본 버튼 + 테마 토글.
+          좁은 폭에선 액션 그룹만 가로 스크롤 — 사이드바 토글·테마·프로필이 잘리지 않게 (2026-07-04 모바일 QA) */}
+      <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 overflow-x-auto min-w-0 [&>*]:shrink-0">
+          {pageActions ?? defaultActions}
+        </div>
+        <span className="shrink-0 flex items-center gap-2">
+          <ThemeToggle />
+          <UserButton />
+        </span>
       </div>
     </header>
   )

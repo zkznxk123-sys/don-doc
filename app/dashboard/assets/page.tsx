@@ -275,7 +275,8 @@ export default function AssetsPage() {
 
       {/* 순자산 헤더 카드 */}
       <div className="bg-card rounded-2xl p-5 border border-border">
-        <div className="flex items-start justify-between gap-3">
+        {/* 좁은 폭: 큰 금액이 버튼을 밀어내지 않게 wrap (2026-07-04 모바일 QA) */}
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div className="flex items-center gap-2 mb-2">
               <Wallet className="w-4 h-4 text-income" />
@@ -292,7 +293,7 @@ export default function AssetsPage() {
           {/* 현재 자산 기록하기 */}
           <button
             onClick={() => setConfirmOpen(true)}
-            className="shrink-0 flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground bg-muted hover:bg-accent border border-border px-3 py-2 rounded-xl transition-colors mt-0.5"
+            className="shrink-0 ml-auto flex items-center gap-1.5 whitespace-nowrap text-xs text-muted-foreground hover:text-foreground bg-muted hover:bg-accent border border-border px-3 py-2 rounded-xl transition-colors mt-0.5"
           >
             <Camera className="w-3.5 h-3.5" />
             현재 자산 기록
