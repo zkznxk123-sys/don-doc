@@ -228,10 +228,12 @@ export default function Dashboard() {
               {/* 카드1: 순자산 — baseLoading */}
               {baseLoading ? <KpiCardSkeleton /> : (
                 <KpiCard
+                  hero
+                  amount={totalNetWorth}
                   icon={<Wallet className="w-3.5 h-3.5 text-income" />}
                   label={isLite() ? '내 순자산' : '가족 순자산'}
                   value={formatLargeNumber(totalNetWorth)}
-                  sub={`총자산 ${formatLargeNumber(totalAssets)}`}
+                  sub={`₩${Math.round(totalNetWorth).toLocaleString('ko-KR')} · 총자산 ${formatLargeNumber(totalAssets)}`}
                 />
               )}
               {/* 카드2-4: 월별 — monthLoading */}
@@ -244,6 +246,7 @@ export default function Dashboard() {
               ) : (
                 <>
                   <KpiCard
+                    delay={60}
                     icon={<ArrowUpRight className="w-3.5 h-3.5 text-income" />}
                     label={`${monthLabel} 수입`}
                     value={formatLargeNumber(monthlyIncome)}
@@ -254,6 +257,7 @@ export default function Dashboard() {
                     accentColor="#34d399"
                   />
                   <KpiCard
+                    delay={120}
                     icon={<ArrowDownRight className="w-3.5 h-3.5 text-expense" />}
                     label={`${monthLabel} 지출`}
                     value={formatLargeNumber(monthlyExpense)}
@@ -268,6 +272,7 @@ export default function Dashboard() {
                     accentColor="#f87171"
                   />
                   <KpiCard
+                    delay={180}
                     icon={<PiggyBank className="w-3.5 h-3.5 text-savings" />}
                     label={`${monthLabel} 저축률`}
                     value={monthlyIncome > 0 ? `${savingsRate}%` : '—'}
