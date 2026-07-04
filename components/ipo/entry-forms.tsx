@@ -4,9 +4,10 @@
  * 공모주 직접 입력 — 계좌 추가 / 청약 추가 인라인 폼 + 초기화 바.
  * 금액은 만원 단위 입력 → 원으로 저장. 데이터는 useIpoData(localStorage).
  */
-import { useMemo, useState } from 'react'
-import { X, RotateCcw, Pencil, Search } from 'lucide-react'
+import { useMemo, useRef, useState } from 'react'
+import { X, RotateCcw, Pencil, Search, Download, Upload } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { toast } from 'sonner'
 import {
   AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter,
   AlertDialogTitle, AlertDialogDescription, AlertDialogAction, AlertDialogCancel,
@@ -153,15 +154,72 @@ function BrokerPicker({ value, onChange }: { value: string; onChange: (v: string
   )
 }
 
-/** 초기화 바 — 데이터가 있을 때만 우측에 얇게. 파괴적 액션이라 AlertDialog로 확인. */
+/**
+ * 데이터 툴바 — 내보내기(JSON 백업)·가져오기(복원)·초기화. 우측 얇게 한 줄.
+ * 가져오기는 빈 상태에서도 노출(유실 복구 경로). 파괴적 액션은 AlertDialog 확인.
+ */
 export function ResetBar({ data }: { data: IpoData }) {
   const [resetOpen, setResetOpen] = useState(false)
+  const [pendingImport, setPendingImport] = useState<string | null>(null)   // 덮어쓰기 확인 대기 중인 파일 내용
+  const fileRef = useRef<HTMLInputElement>(null)
   const hasData = data.accounts.length > 0 || data.ledger.length > 0 || data.spacs.length > 0
-  if (!hasData) return null
+
+  const exportJson = () => {
+    const payload = {
+      app: 'don-doc-ipo', exportedAt: new Date().toISOString(),
+      data: { accounts: data.accounts, ledger: data.ledger, spacs: data.spacs, memos: data.memos, overrides: data.overrides, initialized: true },
+    }
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `dondoc-ipo-backup-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const applyImport = (text: string) => {
+    if (data.importData(text)) toast.success('백업을 가져왔어요.')
+    else toast.error('백업 파일을 읽지 못했어요 — don-doc IPO 내보내기 파일인지 확인해 주세요.')
+  }
+
+  const onFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]
+    e.target.value = ''   // 같은 파일 재선택 허용
+    if (!f) return
+    const text = await f.text()
+    if (hasData) setPendingImport(text)   // 기존 데이터 있으면 덮어쓰기 확인
+    else applyImport(text)
+  }
 
   return (
-    <div className="flex items-center justify-end">
-      <button onClick={() => setResetOpen(true)} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><RotateCcw className="size-3.5" /> 초기화</button>
+    <div className="flex items-center justify-end gap-3">
+      <input ref={fileRef} type="file" accept="application/json,.json" className="hidden" onChange={onFile} />
+      {hasData && (
+        <button onClick={exportJson} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><Download className="size-3.5" /> 내보내기</button>
+      )}
+      <button onClick={() => fileRef.current?.click()} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><Upload className="size-3.5" /> 가져오기</button>
+      {hasData && (
+        <button onClick={() => setResetOpen(true)} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><RotateCcw className="size-3.5" /> 초기화</button>
+      )}
+
+      {/* 가져오기 덮어쓰기 확인 */}
+      <AlertDialog open={pendingImport != null} onOpenChange={open => { if (!open) setPendingImport(null) }}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>백업 가져오기</AlertDialogTitle>
+            <AlertDialogDescription>
+              지금 데이터를 백업 파일 내용으로 전체 교체해요. 필요하면 먼저 “내보내기”로 현재 상태를 저장하세요.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (pendingImport) applyImport(pendingImport); setPendingImport(null) }}>
+              교체하기
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={resetOpen} onOpenChange={setResetOpen}>
         <AlertDialogContent className="max-w-sm">

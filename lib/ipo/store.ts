@@ -22,7 +22,7 @@ export interface OfferingOverride {
   floatRatio?: number     // 유통가능비율(%)
 }
 
-interface IpoState {
+export interface IpoState {
   accounts: Account[]
   ledger: LedgerRow[]
   spacs: Spac[]
@@ -43,6 +43,24 @@ export function normalize(s: Partial<IpoState> | null | undefined): IpoState {
     overrides: s?.overrides ?? {},
     initialized: !!s?.initialized,
   }
+}
+
+/**
+ * 백업 JSON 파싱 — 내보내기 파일({app,exportedAt,data}) 또는 상태 원본 둘 다 수용.
+ * 실패 시 null. 성공 시 initialized 강제 true(가져온 데이터는 곧 내 작업본).
+ */
+export function parseImport(raw: unknown): IpoState | null {
+  try {
+    const obj = typeof raw === 'string' ? JSON.parse(raw) : raw
+    if (obj == null || typeof obj !== 'object') return null
+    const src = (obj as { data?: unknown }).data ?? obj
+    if (src == null || typeof src !== 'object') return null
+    const s = normalize(src as Partial<IpoState>)
+    // 완전 빈 파일은 가져오기 의미 없음 → 실패 처리(실수로 빈 백업 덮어쓰기 방지)
+    if (s.accounts.length === 0 && s.ledger.length === 0 && s.spacs.length === 0
+      && Object.keys(s.memos).length === 0) return null
+    return { ...s, initialized: true }
+  } catch { return null }
 }
 
 const SAVED_AT_KEY = `${KEY}.savedAt`
@@ -80,6 +98,7 @@ export interface IpoData {
   setMemo: (offering: string, text: string) => void
   overrides: Record<string, OfferingOverride>
   setOverride: (offering: string, patch: OfferingOverride) => void
+  importData: (raw: unknown) => boolean   // 백업 JSON 가져오기(전체 교체). 성공 여부 반환
   reset: () => void              // 내 데이터 전체 삭제(빈 상태로)
 }
 
@@ -251,7 +270,14 @@ export function useIpoData(): IpoData {
     setState(prev => ({ ...prev, overrides: { ...prev.overrides, [offering]: { ...prev.overrides[offering], ...patch } } }))
   }, [])
 
+  const importData = useCallback((raw: unknown): boolean => {
+    const parsed = parseImport(raw)
+    if (!parsed) return false
+    setState(parsed)   // 저장 effect가 localStorage+DB로 전파
+    return true
+  }, [])
+
   const reset = useCallback(() => setState(EMPTY), [])
 
-  return { hydrated, accounts, ledger, spacs, addAccount, updateAccount, removeAccount, addSub, updateSub, removeSub, addSpac, updateSpac, removeSpac, memos: state.memos, setMemo, overrides: state.overrides, setOverride, reset }
+  return { hydrated, accounts, ledger, spacs, addAccount, updateAccount, removeAccount, addSub, updateSub, removeSub, addSpac, updateSpac, removeSpac, memos: state.memos, setMemo, overrides: state.overrides, setOverride, importData, reset }
 }

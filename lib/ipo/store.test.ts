@@ -4,7 +4,7 @@
  * (dev 7/1: localStorage/DB 리듀서 무테스트 지적 → 회귀 가드)
  */
 import { describe, it, expect } from 'vitest'
-import { normalize, buildRow } from './store'
+import { normalize, buildRow, parseImport } from './store'
 
 describe('normalize — 저장본 백필', () => {
   it('null/undefined → 완전한 빈 상태', () => {
@@ -56,5 +56,32 @@ describe('buildRow — kind·일정 보강', () => {
   it('입력 필드 보존(증거금·상태 등)', () => {
     const row = buildRow(input)
     expect(row).toMatchObject({ person: '본인', broker: 'KB', deposit: 1_250_000, status: 'PLANNED' })
+  })
+})
+
+describe('parseImport — 백업 JSON 파싱', () => {
+  const acct = { id: 'a1', person: '본인', broker: '한화', readiness: { cdd: 'OK', otp: 'OK', cert: 'OK', limit: 'OK' } }
+
+  it('내보내기 래핑({app,data}) 수용 + initialized 강제 true', () => {
+    const r = parseImport(JSON.stringify({ app: 'don-doc-ipo', exportedAt: 'x', data: { accounts: [acct], initialized: false } }))
+    expect(r?.accounts).toHaveLength(1)
+    expect(r?.initialized).toBe(true)
+  })
+
+  it('상태 원본(래핑 없음)도 수용', () => {
+    const r = parseImport({ accounts: [acct] })
+    expect(r?.accounts).toHaveLength(1)
+    expect(r?.ledger).toEqual([])
+  })
+
+  it('완전 빈 백업은 거부(실수 덮어쓰기 방지)', () => {
+    expect(parseImport({ accounts: [], ledger: [] })).toBeNull()
+    expect(parseImport({ data: {} })).toBeNull()
+  })
+
+  it('잘못된 입력은 null', () => {
+    expect(parseImport('not json')).toBeNull()
+    expect(parseImport(null)).toBeNull()
+    expect(parseImport(42)).toBeNull()
   })
 })
