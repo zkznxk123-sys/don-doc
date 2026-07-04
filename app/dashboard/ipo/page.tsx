@@ -125,7 +125,7 @@ export default function IpoLedgerPage() {
       {/* 스팩주 = 탭 없이 보유현황 + 시세·유니버스만 (스크리너 성격) */}
       {kind === 'SPAC' && (
         <div className="space-y-4">
-          <SpacHoldings spacs={data.spacs} />
+          <SpacHoldings data={data} />
           <SpacPanel data={data} />
         </div>
       )}

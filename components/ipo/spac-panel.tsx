@@ -19,7 +19,7 @@ export function SpacPanel({ data }: { data: IpoData }) {
           </button>
         ))}
       </div>
-      {view === 'mine' ? <SpacList data={data} /> : <SpacUniverse />}
+      {view === 'mine' ? <SpacList data={data} /> : <SpacUniverse data={data} />}
     </div>
   )
 }

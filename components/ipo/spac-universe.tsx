@@ -7,15 +7,17 @@
  * ⚠️ 컴플라이언스: 사실·정렬만, 매수 추천 아님.
  */
 import { useEffect, useMemo, useState } from 'react'
+import { toast } from 'sonner'
 import { Layers, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { SPAC_UNIVERSE, SPAC_UNIVERSE_AT } from '@/components/ipo/spac-universe.generated'
 import { SPAC_BASELINE, SPAC_BUCKETS, spacBucket } from '@/components/ipo/board-data'
+import type { IpoData } from '@/lib/ipo/store'
 
 interface Quote { price: number; cap: number | null }
 
-export function SpacUniverse() {
+export function SpacUniverse({ data }: { data: IpoData }) {
   const [quotes, setQuotes] = useState<Map<string, Quote>>(new Map())
   const [loading, setLoading] = useState(false)
   const [asOf, setAsOf] = useState<string | null>(null)
@@ -57,6 +59,26 @@ export function SpacUniverse() {
     return { groups, pricedCount: priced.length, belowCount: priced.filter(s => s.price < SPAC_BASELINE).length }
   }, [quotes])
 
+  const registered = useMemo(() => new Set(data.spacs.map(x => x.name)), [data.spacs])
+  const quotedAtISO = () => new Date().toISOString()
+
+  /** 유니버스 행 → 관심 등록. 이미 조회된 시세 재사용(추가 fetch 없음). */
+  const addOne = (it: { name: string; code: string; price: number; cap: number | null }) => {
+    if (registered.has(it.name)) return false
+    data.addSpac({ name: it.name, code: it.code, price: it.price, marketCapEok: it.cap ?? 0, live: true, quotedAt: quotedAtISO() })
+    return true
+  }
+
+  /** 기준가 미만 전 종목 일괄 관심등록(중복 자동 제외). */
+  const bulkAddBelow = () => {
+    const below = groups.flatMap(g => g.items).filter(it => it.price < SPAC_BASELINE)
+    let added = 0
+    for (const it of below) if (addOne(it)) added++
+    toast[added > 0 ? 'success' : 'info'](added > 0
+      ? `기준가 미만 ${added}종목을 관심에 등록했어요.${below.length - added > 0 ? ` (${below.length - added}종목은 이미 등록)` : ''}`
+      : '기준가 미만 종목이 모두 이미 등록돼 있어요.')
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -64,7 +86,12 @@ export function SpacUniverse() {
           <Layers className="size-4" /> 전체 스팩 {SPAC_UNIVERSE.length}종목 · 시총별·가격 낮은순
         </h3>
         <div className="flex items-center gap-3">
-          {belowCount > 0 && <span className="text-xs text-emerald-600 dark:text-emerald-400">기준가 미만 {belowCount}</span>}
+          {belowCount > 0 && (
+            <button onClick={bulkAddBelow}
+              className="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:hover:bg-emerald-500/25">
+              기준가 미만 {belowCount} 일괄 관심등록
+            </button>
+          )}
           {asOf && <span className="text-[11px] text-muted-foreground">{asOf} · 조회 {pricedCount}</span>}
           <button onClick={load} disabled={loading}
             className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs font-medium hover:bg-muted/70 disabled:opacity-50">
@@ -97,8 +124,14 @@ export function SpacUniverse() {
                       <span className={cn('col-span-2 text-right text-xs tabular-nums whitespace-nowrap', below ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground')}>
                         {gap > 0 ? '+' : ''}{gap}
                       </span>
-                      <span className="col-span-1 flex justify-end">
+                      <span className="col-span-1 flex justify-end items-center gap-1.5">
                         {below && <span className="whitespace-nowrap rounded bg-emerald-100 px-1 py-0.5 text-[9px] font-semibold text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300">미만</span>}
+                        {registered.has(s.name)
+                          ? <span className="whitespace-nowrap text-[10px] text-muted-foreground">관심 ✓</span>
+                          : <button onClick={() => { if (addOne(s)) toast.success(`${s.name} 관심 등록`) }}
+                              className="whitespace-nowrap rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium hover:bg-muted/70">
+                              + 관심
+                            </button>}
                       </span>
                     </div>
                   )

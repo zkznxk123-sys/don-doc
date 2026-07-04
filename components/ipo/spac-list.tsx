@@ -8,18 +8,20 @@
  * ⚠️ 컴플라이언스: 사실(시총·현재가·괴리·만기) 표시·정렬만. 매수 추천 아님.
  */
 import { useMemo, useState } from 'react'
-import { Layers, Pencil, X, RefreshCw } from 'lucide-react'
+import { Layers, Pencil, X, RefreshCw, Search } from 'lucide-react'
 import { cn, formatLargeNumber } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
+import { toast } from 'sonner'
 import { SpacForm } from '@/components/ipo/entry-forms'
+import { SPAC_UNIVERSE } from '@/components/ipo/spac-universe.generated'
 import type { IpoData } from '@/lib/ipo/store'
 import { SPAC_BASELINE, groupSpacsByCap, ddays, ddayLabel, type Spac } from '@/components/ipo/board-data'
 
 export function SpacList({ data }: { data: IpoData }) {
-  const { spacs } = data
+  // 관심 = 미보유만. 보유(shares>0)는 상단 "스팩 보유현황" 카드에서 관리.
+  const spacs = useMemo(() => data.spacs.filter(s => !s.shares || s.shares === 0), [data.spacs])
   const today = useMemo(() => new Date(), [])
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [adding, setAdding] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const [asOf, setAsOf] = useState<string | null>(null)
 
@@ -27,16 +29,17 @@ export function SpacList({ data }: { data: IpoData }) {
   const belowBaseline = spacs.filter(s => s.price < SPAC_BASELINE).length
 
   const refresh = async () => {
-    if (refreshing || spacs.length === 0) return
+    const all = data.spacs   // 보유 포함 전체 갱신 — 보유현황 카드 가격도 여기서 채움
+    if (refreshing || all.length === 0) return
     setRefreshing(true)
     try {
       const res = await fetch('/api/ipo/quote', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items: spacs.map(s => ({ name: s.name, code: s.code })) }),
+        body: JSON.stringify({ items: all.map(s => ({ name: s.name, code: s.code })) }),
       })
       const { quotes } = await res.json()
       ;(quotes as { code: string | null; price: number | null; marketCapEok: number | null; asOf: string }[]).forEach((q, i) => {
-        const s = spacs[i]
+        const s = all[i]
         if (s && q.price != null) data.updateSpac(s.id, {
           ...s, price: q.price,
           marketCapEok: q.marketCapEok ?? s.marketCapEok,
@@ -51,7 +54,7 @@ export function SpacList({ data }: { data: IpoData }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium flex items-center gap-1.5"><Layers className="size-4" /> 스팩 시세 · 시총별 · 가격 낮은순</h3>
+        <h3 className="text-sm font-medium flex items-center gap-1.5"><Layers className="size-4" /> 관심 스팩 · 시총별 · 가격 낮은순</h3>
         <div className="flex items-center gap-3">
           {belowBaseline > 0 && <span className="text-xs text-emerald-600 dark:text-emerald-400">기준가 미만 {belowBaseline}</span>}
           {asOf && <span className="text-[11px] text-muted-foreground">{asOf} 기준</span>}
@@ -59,17 +62,14 @@ export function SpacList({ data }: { data: IpoData }) {
             className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-1 text-xs font-medium hover:bg-muted/70 disabled:opacity-50">
             <RefreshCw className={cn('size-3.5', refreshing && 'animate-spin')} /> 시세 새로고침
           </button>
-          <button onClick={() => setAdding(v => !v)}
-            className={cn('rounded-md px-2 py-1 text-xs font-medium', adding ? 'bg-foreground text-background' : 'bg-muted hover:bg-muted/70')}>
-            + 스팩 추가
-          </button>
         </div>
       </div>
 
-      {adding && <SpacForm data={data} onDone={() => setAdding(false)} />}
+      {/* 검색해서 바로 추가 — 유니버스에서 고르면 시세까지 자동 */}
+      <SpacSearchAdd data={data} />
 
       {groups.length === 0 && (
-        <p className="text-sm text-muted-foreground py-8 text-center">스팩이 없어요. “스팩 추가”로 등록하세요.</p>
+        <p className="text-sm text-muted-foreground py-8 text-center">관심 스팩이 없어요. 위 검색이나 “전체 시장”에서 등록하세요.</p>
       )}
 
       {/* 컬럼 헤더 — 행 grid(12)와 동일 분할, 카드 안 px-5에 맞춤. 모바일(2줄 스택)은 숨김 */}
@@ -105,6 +105,73 @@ export function SpacList({ data }: { data: IpoData }) {
       <p className="text-[11px] text-muted-foreground">
         기준가 {SPAC_BASELINE.toLocaleString()}원(만기 상환 floor) 대비 괴리 표시. 사실·정렬만 제공해요 — 매수 추천이 아니에요. 시세 출처: 네이버 금융.
       </p>
+    </div>
+  )
+}
+
+/** 유니버스 종목 1개를 관심으로 등록 — 시세 자동 조회. 중복이면 안내만. */
+export async function addSpacFromUniverse(data: IpoData, item: { name: string; code: string }): Promise<boolean> {
+  if (data.spacs.some(s => s.name === item.name)) { toast.info(`${item.name}은 이미 등록돼 있어요.`); return false }
+  let price = 0, cap = 0, live = false, quotedAt: string | undefined
+  try {
+    const res = await fetch('/api/ipo/quote', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ items: [{ name: item.name, code: item.code }] }),
+    })
+    const { quotes } = await res.json()
+    const q = quotes?.[0]
+    if (q?.price != null) { price = q.price; cap = q.marketCapEok ?? 0; live = true; quotedAt = q.asOf }
+  } catch { /* 시세 실패해도 등록은 진행 — 새로고침으로 채움 */ }
+  data.addSpac({ name: item.name, code: item.code, price, marketCapEok: cap, live, quotedAt })
+  return true
+}
+
+/** 스팩 검색 추가 — 유니버스(KRX 전체)에서 이름으로 찾아 클릭 한 번에 등록. */
+function SpacSearchAdd({ data }: { data: IpoData }) {
+  const [q, setQ] = useState('')
+  const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState<string | null>(null)
+  const registered = useMemo(() => new Set(data.spacs.map(s => s.name)), [data.spacs])
+  const list = useMemo(() => {
+    const t = q.trim().toLowerCase()
+    return SPAC_UNIVERSE.filter(u => !t || u.name.toLowerCase().includes(t)).slice(0, 8)
+  }, [q])
+
+  const pick = async (item: { name: string; code: string }) => {
+    if (busy) return
+    setBusy(item.name)
+    const ok = await addSpacFromUniverse(data, item)
+    if (ok) { toast.success(`${item.name} 관심 등록 완료`); setQ(''); setOpen(false) }
+    setBusy(null)
+  }
+
+  return (
+    <div className="relative max-w-sm">
+      <div className="relative">
+        <Search className="absolute left-2 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground pointer-events-none" />
+        <input value={q} placeholder="스팩 검색해서 바로 추가 (예: 신한, 미래)"
+          className="w-full rounded-md border border-border bg-card pl-7 pr-2.5 py-1.5 text-sm outline-none focus:border-foreground/30"
+          onChange={e => { setQ(e.target.value); setOpen(true) }}
+          onFocus={() => setOpen(true)} onBlur={() => setOpen(false)}
+          onKeyDown={e => { if (e.key === 'Escape') setOpen(false); if (e.key === 'Enter' && list.length > 0) { e.preventDefault(); pick(list[0]) } }} />
+      </div>
+      {open && list.length > 0 && (
+        <div className="absolute z-20 mt-1 w-full rounded-md border border-border bg-card shadow-lg max-h-64 overflow-y-auto">
+          {list.map(u => {
+            const dup = registered.has(u.name)
+            return (
+              <button key={u.code} type="button" disabled={dup || busy === u.name}
+                onMouseDown={e => e.preventDefault()}
+                onClick={() => pick(u)}
+                className={cn('w-full flex items-center gap-2 px-2.5 py-1.5 text-left text-sm hover:bg-muted/60', dup && 'opacity-50')}>
+                <span className="font-medium truncate">{u.name}</span>
+                <span className="text-[10px] text-muted-foreground">{u.market}</span>
+                <span className="ml-auto shrink-0 text-[11px] text-muted-foreground">{busy === u.name ? '등록 중…' : dup ? '등록됨' : '+ 관심'}</span>
+              </button>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
