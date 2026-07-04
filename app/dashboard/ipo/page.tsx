@@ -73,7 +73,7 @@ export default function IpoLedgerPage() {
           <h1 className="text-lg font-semibold flex items-center gap-2">
             <TrendingUp className="size-5" /> 공모주 · 스팩주
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
+          <p className="text-sm text-muted-foreground mt-0.5 break-keep">
             청약·계좌·시세를 한 화면에 — 명의 흩어짐 없이 청약~회수까지
           </p>
         </div>
@@ -154,16 +154,16 @@ export default function IpoLedgerPage() {
           return (
             <Card key={offering}>
               <CardContent className="pt-4">
-                {/* 종목 헤더 */}
-                <div className="flex items-center justify-between gap-2 pb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">{offering}</span>
-                    <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-semibold', KIND_TONE[kind])}>{kind}</span>
+                {/* 종목 헤더 — 좁은 폭: 종목명 유지, 날짜 그룹이 통째로 줄바꿈(글자 중간 분절 금지) */}
+                <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 pb-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-medium break-keep">{offering}</span>
+                    <span className={cn('shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold', KIND_TONE[kind])}>{kind}</span>
                   </div>
-                  <div className="text-xs text-muted-foreground flex items-center gap-2">
-                    {subStart && <span>청약 {subStart.slice(5)}</span>}
-                    {refundDate && <span>· 환불 {refundDate.slice(5)}</span>}
-                    {listingDate && <span className="flex items-center gap-0.5"><ArrowRightLeft className="size-3" />상장 {listingDate.slice(5)}</span>}
+                  <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                    {subStart && <span className="whitespace-nowrap">청약 {subStart.slice(5)}</span>}
+                    {refundDate && <span className="whitespace-nowrap">· 환불 {refundDate.slice(5)}</span>}
+                    {listingDate && <span className="whitespace-nowrap flex items-center gap-0.5"><ArrowRightLeft className="size-3" />상장 {listingDate.slice(5)}</span>}
                   </div>
                 </div>
 
