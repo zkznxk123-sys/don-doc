@@ -19,6 +19,7 @@ import {
   AlertDialogCancel,
 } from '@/components/ui/alert-dialog'
 import { formatCurrency, formatLargeNumber, cn } from '@/lib/utils'
+import { useCountUp } from '@/components/ui/number-ticker'
 import { useDashboardActions } from '@/components/layout/DashboardShell'
 import {
   getNetWorthHistory,
@@ -76,6 +77,7 @@ export default function AssetsPage() {
   const [totalAssets, setTotalAssets] = useState(0)
   const [totalLiabilities, setTotalLiabilities] = useState(0)
   const [totalNetWorth, setTotalNetWorth] = useState(0)
+  const animatedNetWorth = useCountUp(totalNetWorth)
   const [, setTotalNetEquity] = useState(0)
   const [loading, setLoading] = useState(true)
   const [selectedAccount, setSelectedAccount] = useState<AccountInitialData | undefined>()
@@ -282,12 +284,18 @@ export default function AssetsPage() {
               <Wallet className="w-4 h-4 text-income" />
               <span className="text-xs text-muted-foreground font-medium">가족 순자산</span>
             </div>
+            {/* A′ 표지: serif 축약 + 정밀값 서브 (대시보드 순자산 카드와 같은 문법) */}
             <p className={cn(
-              'text-3xl font-bold tabular-nums',
+              'numeric-display text-3xl leading-tight',
               totalNetWorth >= 0 ? 'text-foreground' : 'text-expense'
             )}>
-              {loading ? '...' : formatCurrency(totalNetWorth)}
+              {loading ? '...' : formatLargeNumber(animatedNetWorth)}
             </p>
+            {!loading && (
+              <p className="text-xs tabular-nums text-muted-foreground mt-1">
+                ₩{Math.round(totalNetWorth).toLocaleString('ko-KR')}
+              </p>
+            )}
           </div>
 
           {/* 현재 자산 기록하기 */}
