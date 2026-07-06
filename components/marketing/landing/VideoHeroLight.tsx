@@ -90,8 +90,18 @@ export function VideoHeroLight() {
       {/* ── hero content ── */}
       <div className="relative z-10 max-w-[1280px] mx-auto px-5 sm:px-8" style={{ paddingTop: 'clamp(40px, 8vw, 72px)' }}>
         <div style={{ maxWidth: 620 }}>
-          <motion.h1
+          {/* eyebrow = 북극성 태도 한 줄 (2026-07-06). H1은 정본 태그라인 유지(bio·SEO 파장 없음) */}
+          <motion.p
             custom={0} variants={fadeUp} initial="hidden" animate="visible"
+            className="inline-flex items-center gap-2"
+            style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.14em', color: ACCENT, marginBottom: 18 }}
+          >
+            <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: ACCENT }} />
+            복잡한 투자, 단순하게
+          </motion.p>
+
+          <motion.h1
+            custom={1} variants={fadeUp} initial="hidden" animate="visible"
             className="font-black"
             style={{ fontFamily: 'var(--font-sans)', fontSize: 'clamp(1.9rem, 5.4vw, 3.4rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: INK, marginBottom: 24 }}
           >
@@ -100,15 +110,16 @@ export function VideoHeroLight() {
             <IconInline><Sparkles /></IconInline>
           </motion.h1>
 
+          {/* sub = 정의를 가르치는 카피 (현금흐름→여유자금→단단한 자산→꾸준히) */}
           <motion.p
-            custom={1} variants={fadeUp} initial="hidden" animate="visible"
+            custom={2} variants={fadeUp} initial="hidden" animate="visible"
             style={{ fontFamily: 'var(--font-sans)', fontSize: 'clamp(0.95rem, 2.5vw, 1.1rem)', lineHeight: 1.65, opacity: 0.82, maxWidth: 560, color: INK }}
           >
-            현금·금융·부동산·연금·부채를 한 곳에. 분류와 분석은 AI가 —
-            매달 정리는 10분이면 끝납니다.
+            현금흐름을 보고, 남는 돈을 단단한 자산으로 꾸준히.
+            복잡한 계산은 AI가 — 매달 10분이면 끝납니다.
           </motion.p>
 
-          <motion.div custom={2} variants={fadeUp} initial="hidden" animate="visible" className="mt-9">
+          <motion.div custom={3} variants={fadeUp} initial="hidden" animate="visible" className="mt-9">
             <Link
               href="/sign-up"
               className="inline-flex items-center justify-between font-semibold text-white transition-transform hover:scale-[1.04]"
