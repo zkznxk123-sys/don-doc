@@ -4,8 +4,7 @@ import { Suspense } from 'react'
 import { MotionConfig } from 'framer-motion'
 import { DemoErrorBanner } from './landing/DemoErrorBanner'
 import { AnnouncementBar } from './landing/AnnouncementBar'
-import { Nav } from './landing/Nav'
-import { Hero } from './landing/Hero'
+import { VideoHeroLight } from './landing/VideoHeroLight'
 import { CoreFeatures } from './landing/CoreFeatures'
 import { ComparisonSection } from './landing/ComparisonSection'
 import { ClosingSection } from './landing/ClosingSection'
@@ -49,8 +48,7 @@ export function LandingPage() {
         <Suspense><DemoErrorBanner /></Suspense>
 
         <AnnouncementBar />
-        <Nav />
-        <Hero />
+        <VideoHeroLight />
         <CoreFeatures />
         {isFull() && <ComparisonSection />}
         <ClosingSection />
