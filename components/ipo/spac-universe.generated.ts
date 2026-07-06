@@ -3,7 +3,7 @@
 
 export interface SpacUniverseItem { name: string; code: string; market: string }
 
-export const SPAC_UNIVERSE_AT = '2026-07-01'
+export const SPAC_UNIVERSE_AT = '2026-07-06'
 export const SPAC_UNIVERSE: SpacUniverseItem[] = [
   {
     "name": "IBKS제23호스팩",

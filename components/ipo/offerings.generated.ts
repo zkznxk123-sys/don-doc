@@ -1,7 +1,7 @@
 // AUTO-GENERATED — 편집 금지. 재생성: npx tsx scripts/ipo-schedule-build.ts
 import type { UpcomingOffering } from './board-data'
 
-export const GENERATED_AT = '2026-07-01'
+export const GENERATED_AT = '2026-07-06'
 export const SOURCE = '38커뮤니케이션 (38.co.kr) 청약·상장·종목상세'
 
 /** 38.co.kr에서 추출한 공모주·스팩 일정 + 종목 기본정보(공모가·경쟁률·확약 등). */
@@ -502,24 +502,6 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "redemptionRight": false
   },
   {
-    "name": "빅웨이브로보틱스",
-    "kind": "IPO",
-    "brokers": [
-      "유진",
-      "미래"
-    ],
-    "subStart": "2026-06-19",
-    "subEnd": "2026-06-22",
-    "depositRate": 50,
-    "minSubShares": 10,
-    "priceBand": "22,000~27,000",
-    "offerAmountEok": 440,
-    "shares": 2000000,
-    "shareType": "신주 100%",
-    "refundDate": "2026-06-24",
-    "no38": "2294"
-  },
-  {
     "name": "한국스팩16호",
     "kind": "SPAC",
     "brokers": [
@@ -626,6 +608,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "subLimit": "10,000~12,000",
     "depositRate": 50,
     "minSubShares": 10,
+    "subCompetition": 3413,
     "ipoPrice": 20700,
     "priceBand": "17,800~20,700",
     "offerAmountEok": 248,
@@ -720,6 +703,24 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "shareType": "신주 100%",
     "refundDate": "2026-08-06",
     "no38": "2302"
+  },
+  {
+    "name": "빅웨이브로보틱스",
+    "kind": "IPO",
+    "brokers": [
+      "유진",
+      "미래"
+    ],
+    "subStart": "2026-08-05",
+    "subEnd": "2026-08-06",
+    "depositRate": 50,
+    "minSubShares": 10,
+    "priceBand": "20,000~24,000",
+    "offerAmountEok": 400,
+    "shares": 2000000,
+    "shareType": "신주 100%",
+    "refundDate": "2026-08-10",
+    "no38": "2294"
   },
   {
     "name": "니어스랩",
