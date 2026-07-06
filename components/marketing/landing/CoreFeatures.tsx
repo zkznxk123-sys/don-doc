@@ -1,4 +1,4 @@
-import { Upload, Sparkles, TrendingUp, Calendar } from 'lucide-react'
+import { Upload, Tags, TrendingUp, Calendar } from 'lucide-react'
 import { Section } from './Section'
 import { ACCENT, BG, BG_2, INK, INK_DIM, INK_FAINT } from './tokens'
 
@@ -31,7 +31,7 @@ export function CoreFeatures() {
             d: '뱅크샐러드·증권사 엑셀을 그대로 올리면 5종 자산(현금·금융·부동산·연금·부채)으로 자동 분리.',
           },
           {
-            Icon: Sparkles,
+            Icon: Tags,
             t: 'AI 자동 분류',
             d: '거래·계좌·종목을 AI가 카테고리에 매핑. 한 번 확정한 매핑은 다음부터 자동 적용.',
           },

@@ -15,7 +15,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Wallet, Layers, Sparkles, ArrowRightCircle, Menu, X } from 'lucide-react'
+import { Wallet, Layers, ArrowRightCircle, Menu, X } from 'lucide-react'
 
 const VIDEO_SRC = '/landing/hero2.mp4'          // 데스크톱(가로 16:9)
 // 모바일 세로(9:16) 영상 — 있으면 폰에서 자동 사용(가로 crop 해소). Spline/Higgsfield에서 세로로 export 후
@@ -106,8 +106,7 @@ export function VideoHeroLight() {
             style={{ fontFamily: 'var(--font-sans)', fontSize: 'clamp(1.9rem, 5.4vw, 3.4rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: INK, marginBottom: 24 }}
           >
             <IconInline><Wallet /></IconInline> 흩어진 자산을{' '}
-            <IconInline><Layers /></IconInline> 한 화면에{' '}
-            <IconInline><Sparkles /></IconInline>
+            <IconInline><Layers /></IconInline> 한 화면에
           </motion.h1>
 
           {/* sub = 정의를 가르치는 카피 (현금흐름→여유자금→단단한 자산→꾸준히) */}
