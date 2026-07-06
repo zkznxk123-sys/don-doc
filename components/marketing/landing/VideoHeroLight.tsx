@@ -17,7 +17,10 @@ import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Wallet, Layers, Sparkles, ArrowRightCircle, Menu, X } from 'lucide-react'
 
-const VIDEO_SRC = '/landing/hero2.mp4'
+const VIDEO_SRC = '/landing/hero2.mp4'          // 데스크톱(가로 16:9)
+// 모바일 세로(9:16) 영상 — 있으면 폰에서 자동 사용(가로 crop 해소). Spline/Higgsfield에서 세로로 export 후
+// public/landing/hero2-portrait.mp4 로 넣고 아래를 '/landing/hero2-portrait.mp4' 로 바꾸면 끝.
+const VIDEO_SRC_MOBILE: string | null = null
 const ACCENT = '#2F5D4F'
 const INK = '#1A1F1E'
 const BG = '#FAF8F3'
@@ -45,18 +48,29 @@ export function VideoHeroLight() {
 
   return (
     <section className="relative w-full min-h-screen overflow-hidden" style={{ color: INK, background: BG }}>
-      {/* 풀스크린 배경 비디오 */}
-      <video
-        autoPlay muted loop playsInline preload="auto" aria-hidden
-        className="absolute inset-0 w-full h-full object-cover z-0"
-      >
-        <source src={VIDEO_SRC} type="video/mp4" />
-      </video>
-      {/* 라이트 가독성 워시 — 텍스트 영역(좌상단) 밝게 */}
-      <div
-        aria-hidden className="absolute inset-0 z-[1] pointer-events-none"
-        style={{ background: 'linear-gradient(105deg, rgba(250,248,243,0.92) 0%, rgba(250,248,243,0.72) 34%, rgba(250,248,243,0.25) 60%, rgba(250,248,243,0) 100%)' }}
-      />
+      {/* 풀스크린 배경 비디오 — 세로 영상이 있으면 폰에서 그걸, 없으면 가로 영상을 초점 오른쪽으로 당겨 crop 완화 */}
+      {VIDEO_SRC_MOBILE ? (
+        <>
+          <video autoPlay muted loop playsInline preload="auto" aria-hidden
+            className="hidden sm:block absolute inset-0 w-full h-full object-cover z-0">
+            <source src={VIDEO_SRC} type="video/mp4" />
+          </video>
+          <video autoPlay muted loop playsInline preload="auto" aria-hidden
+            className="sm:hidden absolute inset-0 w-full h-full object-cover z-0">
+            <source src={VIDEO_SRC_MOBILE} type="video/mp4" />
+          </video>
+        </>
+      ) : (
+        <video autoPlay muted loop playsInline preload="auto" aria-hidden
+          className="absolute inset-0 w-full h-full object-cover object-[72%_42%] sm:object-center z-0">
+          <source src={VIDEO_SRC} type="video/mp4" />
+        </video>
+      )}
+      {/* 라이트 가독성 워시 — 텍스트 영역(좌상단) 밝게. 모바일은 상단 세로 워시, 데스크톱은 좌측 대각 워시 */}
+      <div aria-hidden className="absolute inset-0 z-[1] pointer-events-none sm:hidden"
+        style={{ background: 'linear-gradient(180deg, rgba(250,248,243,0.94) 0%, rgba(250,248,243,0.82) 30%, rgba(250,248,243,0.35) 52%, rgba(250,248,243,0.15) 78%, rgba(250,248,243,0.9) 100%)' }} />
+      <div aria-hidden className="absolute inset-0 z-[1] pointer-events-none hidden sm:block"
+        style={{ background: 'linear-gradient(105deg, rgba(250,248,243,0.92) 0%, rgba(250,248,243,0.72) 34%, rgba(250,248,243,0.25) 60%, rgba(250,248,243,0) 100%)' }} />
 
       {/* ── navbar ── */}
       <nav className="relative z-10 max-w-[1280px] mx-auto flex items-center justify-between px-5 sm:px-8 py-4 sm:py-5">
