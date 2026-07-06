@@ -66,7 +66,7 @@ components/
     AppSidebar.tsx           # core/beta/admin 3그룹 nav
     Header.tsx               # 디자인 토큰 기반 (bg-card·border-border)
   marketing/
-    LandingPage.tsx          # 랜딩 라이트 단일 (2026-06-11 dark-luxury 폐기). isFull()로 Comparison 분기
+    LandingPage.tsx          # 랜딩 라이트 단일 (2026-06-11 dark-luxury 폐기). 히어로=VideoHeroLight(시네마틱 비디오, 2026-07-06). isFull()로 Comparison 분기
   dashboard/
     InputGuide.tsx
 
@@ -303,5 +303,5 @@ npx tsx prisma/seed-demo.ts        # 데모 가족 시드 (가명 데이터)
 - 매매 등록(`addTradeRecord`)은 `prisma.$transaction`으로 묶여 있음 — read는 트랜잭션 외부, balance 재계산은 트랜잭션 후. 추가 액션 작성 시 동일 패턴 권장
 - 자동 생성 `Transaction.visibility` 기본 `PRIVATE` (5/22~) — 가족·동업자와 공유는 사용자가 명시적으로 SHARED 토글
 - 색상은 ad-hoc Tailwind(`text-emerald-500`·`text-red-500` 등) 금지 — globals.css의 `.text-income`·`.text-expense`·`.text-warning`·`.text-savings` viz 유틸 사용
-- 랜딩 페이지(`components/marketing/LandingPage.tsx`)는 BRAND_GUIDE §7 "Dark Luxury sub-palette"만 사용. 다른 페이지는 globals.css 토큰을 우회 금지
+- 랜딩 페이지(`components/marketing/LandingPage.tsx`)는 BRAND_GUIDE §7 "Landing · Light sub-palette"(warm off-white·forest)만 사용 — 2026-06-11 dark-luxury 폐기. 다른 페이지는 globals.css 토큰을 우회 금지. 히어로는 `landing/VideoHeroLight.tsx`(풀스크린 비디오 `public/landing/hero2.mp4` — 발행 전 브랜드 영상으로 교체 예정, docs/design/hero-explorations.md)
 - `app/api/demo/data/route.ts`는 무인증 — demo 계정 데이터(description·memo·feedPost.content)에 실명·실숫자가 섞이지 않게 시드 점검 필요

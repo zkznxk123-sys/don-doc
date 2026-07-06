@@ -150,7 +150,7 @@ CSS 변수는 `app/globals.css` 에 이미 반영됨. 요약:
 | Accent Forest | `#2F5D4F` primary action | `ACCENT` |
 | Positive | `#2F8A6E` | `POSITIVE` |
 
-**랜딩 라이트에서 골드의 역할**: primary accent는 forest(`ACCENT`)다. 골드(`#B49B3E`)는 라이트 BG 위 컨트라스트 ~2.2:1로 텍스트·CTA 부적격 — **로고 코인과 Hero ambient orb 한정** (§9 "골드 5–10% 이하" 규칙과 정합).
+**랜딩 라이트에서 골드의 역할**: primary accent는 forest(`ACCENT`)다. 골드(`#B49B3E`)는 라이트 BG 위 컨트라스트 ~2.2:1로 텍스트·CTA 부적격 — **로고 코인 한정** (§9 "골드 5–10% 이하" 규칙과 정합). ※ 구 Hero의 ambient orb는 2026-07-06 시네마틱 비디오 히어로(`VideoHeroLight`)로 교체되며 폐지.
 
 ---
 
@@ -171,6 +171,14 @@ CSS 변수는 `app/globals.css` 에 이미 반영됨. 요약:
 - **본문(데이터 행·테이블·IPO)은 정밀 뉴트럴 유지** — Pretendard `tabular-nums`, 밀도 우선. 프로암(공모주 커뮤니티) 화면은 이쪽이 기본.
 - **eyebrow·레이블은 한국어 우선** — 영문 대문자 eyebrow 남발 금지 (겉멋 리스크).
 - 근거: lite/대시보드=부부 대중(쉬움), full/IPO=프로암(정밀) — 화면 두 부류에 한 톤을 강요하지 않는다.
+
+### 랜딩 히어로 — 시네마틱 비디오 (2026-07-06 교체)
+
+랜딩 히어로는 서체 실험(에디토리얼 세리프)에서 **풀스크린 비디오 히어로**(`VideoHeroLight`)로 전환. motionsites 레퍼런스 3안 비교 후 라이트 톤 B 채택. 상세: `docs/design/hero-explorations.md`.
+
+- **헤드라인은 Pretendard 볼드 + 인라인 아이콘**(지갑·레이어·스파클, 포레스트) — 랜딩 히어로 헤드라인엔 serif 쓰지 않음. serif(`numeric-display`)는 **앱 대시보드 hero 숫자·에디토리얼 헤딩 전용**(A′ 규칙).
+- 배경 영상은 밝은 하이키·여백·단일 초점 조건 유지 (이게 "깔끔함"의 원천). 현재 `hero2.mp4`는 범용 AI 클립 플레이스홀더 — 발행 전 Spline/Higgsfield 등으로 브랜드 영상 제작·교체.
+- 액센트는 포레스트, 카피는 정본 태그라인. `prefers-reduced-motion` 정지 처리는 영상 교체 시 함께.
 
 ---
 
