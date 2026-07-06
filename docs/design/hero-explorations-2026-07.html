@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:ital,wght@0,500;0,600;0,700;1,400;1,500&display=swap" rel="stylesheet">
+<style>
+@font-face { font-family:'Pretendard'; font-weight:400; src:url('/fonts/Pretendard-Regular.otf') format('opentype'); }
+@font-face { font-family:'Pretendard'; font-weight:500; src:url('/fonts/Pretendard-Medium.otf') format('opentype'); }
+@font-face { font-family:'Pretendard'; font-weight:600; src:url('/fonts/Pretendard-SemiBold.otf') format('opentype'); }
+@font-face { font-family:'Pretendard'; font-weight:700; src:url('/fonts/Pretendard-Bold.otf') format('opentype'); }
+:root {
+  --bg:#FAF8F3; --bg2:#F3F0E8; --ink:#1A1F1E; --ink-dim:#5A625F; --ink-faint:rgba(26,31,30,0.12);
+  --accent:#2F5D4F; --gold:#B49B3E;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Pretendard',sans-serif; background:var(--bg); color:var(--ink); }
+.serif { font-family:'Noto Serif KR',serif; }
+section { min-height:100vh; position:relative; overflow:hidden; display:flex; align-items:center; justify-content:center; }
+.tag { position:absolute; top:20px; left:20px; z-index:50; font-size:12px; font-weight:700; letter-spacing:.06em;
+  background:var(--ink); color:var(--bg); padding:6px 14px; border-radius:99px; }
+.cta-row { display:flex; gap:10px; }
+.cta { display:inline-flex; align-items:center; gap:8px; padding:14px 30px; border-radius:99px; font-size:13px; font-weight:600;
+  background:var(--ink); color:var(--bg); text-decoration:none; }
+.cta.ghost { background:transparent; color:var(--ink); border:1px solid var(--ink-faint); font-weight:500; }
+.eyebrow { font-size:11px; letter-spacing:.22em; font-weight:600; color:var(--accent); display:inline-flex; align-items:center; gap:8px; }
+.eyebrow .dot { width:6px; height:6px; border-radius:99px; background:var(--accent); box-shadow:0 0 10px rgba(47,93,79,.55); animation:pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 0%,100%{opacity:.5;transform:scale(1)} 50%{opacity:1;transform:scale(1.4)} }
+
+/* ═══ 안2 · 질문 → 수렴 스토리 ═══ */
+#s2 { background:linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%); }
+#s2 .center { text-align:center; max-width:1100px; padding:0 40px; width:100%; }
+#s2 .q { font-size:58px; line-height:1.15; letter-spacing:-.03em; font-weight:500; }
+#s2 .q em { font-style:italic; font-weight:400; color:var(--accent); }
+#s2 .scatter { position:relative; height:340px; margin-top:40px; }
+.acard { position:absolute; left:50%; top:50%; width:170px; background:#fff; border:1px solid var(--ink-faint); border-radius:14px;
+  padding:14px 16px; text-align:left; box-shadow:0 16px 40px -16px rgba(26,31,30,.22); }
+.acard .t { font-size:11px; color:var(--ink-dim); font-weight:500; }
+.acard .v { font-size:18px; font-weight:700; font-variant-numeric:tabular-nums; margin-top:3px; }
+.acard .src { font-size:10px; color:var(--ink-dim); opacity:.7; margin-top:5px; }
+#s2.play .acard { animation:gather 3s cubic-bezier(.3,.8,.25,1) forwards; }
+@keyframes gather { 0% { transform:translate(-50%,-50%) translate(var(--sx),var(--sy)) rotate(var(--r)); opacity:0; }
+  30% { opacity:1; transform:translate(-50%,-50%) translate(var(--sx),var(--sy)) rotate(var(--r)); }
+  100% { opacity:1; transform:translate(-50%,-50%) translate(var(--ex),var(--ey)) rotate(0deg); } }
+#s2 .final { margin-top:36px; opacity:0; }
+#s2.play .final { animation:fadein 1s ease-out 3.2s forwards; }
+@keyframes fadein { to { opacity:1; } }
+#s2 .final .serif { font-size:24px; color:var(--accent); font-style:italic; }
+
+/* ═══ 안3 · 키네틱 세리프 + 리빙 캔버스 ═══ */
+#s3 .blob { position:absolute; border-radius:50%; filter:blur(90px); pointer-events:none; }
+#s3 .b1 { width:820px; height:820px; left:-160px; top:-220px; background:radial-gradient(circle, rgba(47,93,79,.16) 0%, transparent 65%);
+  animation:drift1 18s ease-in-out infinite; }
+#s3 .b2 { width:700px; height:700px; right:-140px; bottom:-200px; background:radial-gradient(circle, rgba(180,155,62,.14) 0%, transparent 65%);
+  animation:drift2 22s ease-in-out infinite; }
+@keyframes drift1 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(90px,60px) scale(1.15)} }
+@keyframes drift2 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-80px,-50px) scale(1.1)} }
+#s3 .wm { position:absolute; right:-40px; top:50%; transform:translateY(-50%); font-family:'Noto Serif KR',serif; font-weight:700;
+  font-size:420px; line-height:1; color:transparent; -webkit-text-stroke:1.5px rgba(26,31,30,.08); pointer-events:none; user-select:none;
+  animation:wmdrift 26s ease-in-out infinite; }
+@keyframes wmdrift { 0%,100%{transform:translateY(-52%)} 50%{transform:translateY(-48%)} }
+#s3 .center { text-align:center; max-width:960px; padding:0 40px; position:relative; z-index:2; }
+#s3 h1 { font-size:88px; line-height:1.02; letter-spacing:-.03em; font-weight:500; }
+#s3 h1 .ch { display:inline-block; opacity:0; transform:translateY(28px) rotate(2deg); animation:chin .7s cubic-bezier(.2,.8,.2,1) forwards; }
+@keyframes chin { to { opacity:1; transform:none; } }
+#s3 h1 .accent-line { display:block; margin-top:10px; font-style:italic; font-weight:400; color:var(--accent); position:relative; }
+#s3 .uline { position:absolute; left:50%; transform:translateX(-50%); bottom:-14px; width:min(420px,80%); height:14px; }
+#s3 .uline path { stroke:var(--accent); stroke-width:2.5; fill:none; stroke-linecap:round; stroke-dasharray:600; stroke-dashoffset:600;
+  animation:draw 1.4s ease-out 1.8s forwards; }
+@keyframes draw { to { stroke-dashoffset:0; } }
+#s3 .sub { color:var(--ink-dim); font-size:16px; line-height:1.65; margin:40px auto 36px; max-width:480px; opacity:0; animation:fadein 1s ease .9s forwards; }
+#s3 .cta-row { justify-content:center; opacity:0; animation:fadein 1s ease 1.2s forwards; }
+#s3 .kpi-strip { display:flex; gap:36px; justify-content:center; margin-top:56px; opacity:0; animation:fadein 1.2s ease 1.6s forwards; }
+#s3 .kpi-strip .k { text-align:center; }
+#s3 .kpi-strip .kv { font-family:'Noto Serif KR',serif; font-weight:700; font-size:26px; font-variant-numeric:tabular-nums; }
+#s3 .kpi-strip .kl { font-size:11px; color:var(--ink-dim); margin-top:3px; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ 안 2 ═══════════ -->
+<section id="s2">
+  <span class="tag">안 2 · 질문 → 수렴 스토리 (8초 루프)</span>
+  <div class="center">
+    <h1 class="q serif">내 돈은 지금,<br><em>몇 곳에 흩어져 있을까?</em></h1>
+    <div class="scatter">
+      <div class="acard" style="--sx:-420px; --sy:-90px; --r:-9deg; --ex:-360px; --ey:0px; animation-delay:.1s">
+        <div class="t">현금</div><div class="v">3,200만</div><div class="src">카카오뱅크 · 신한</div></div>
+      <div class="acard" style="--sx:330px; --sy:-130px; --r:7deg; --ex:-180px; --ey:0px; animation-delay:.35s">
+        <div class="t">금융자산</div><div class="v">1.8억</div><div class="src">키움 · 한투 · ISA</div></div>
+      <div class="acard" style="--sx:-360px; --sy:120px; --r:6deg; --ex:0px; --ey:0px; animation-delay:.6s">
+        <div class="t">부동산</div><div class="v">6.5억</div><div class="src">마포 신축 84m²</div></div>
+      <div class="acard" style="--sx:400px; --sy:90px; --r:-6deg; --ex:180px; --ey:0px; animation-delay:.85s">
+        <div class="t">연금</div><div class="v">9,400만</div><div class="src">IRP · 연금저축 · DC</div></div>
+      <div class="acard" style="--sx:60px; --sy:190px; --r:10deg; --ex:360px; --ey:0px; animation-delay:1.1s">
+        <div class="t">부채</div><div class="v" style="color:#b0533e">−1.2억</div><div class="src">주택담보대출</div></div>
+    </div>
+    <div class="final">
+      <p class="serif">— 돈Doc이 한 화면으로 모아드립니다.</p>
+      <div class="cta-row" style="justify-content:center; margin-top:22px"><a class="cta">무료로 시작하기 →</a><a class="cta ghost">데모 둘러보기</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════ 안 3 ═══════════ -->
+<section id="s3">
+  <span class="tag">안 3 · 키네틱 세리프 + 리빙 캔버스</span>
+  <div class="blob b1"></div><div class="blob b2"></div>
+  <div class="wm">₩</div>
+  <div class="center">
+    <span class="eyebrow" style="margin-bottom:26px"><span class="dot"></span>가장 쉬운 자산 관리</span>
+    <h1 class="serif" id="kinetic">
+      <span class="line1" data-text="흩어진 자산을"></span>
+      <span class="accent-line" data-text="한 화면에.">
+        <svg class="uline" viewBox="0 0 320 16" preserveAspectRatio="none"><path d="M 4 11 Q 80 3 160 8 T 316 7"/></svg>
+      </span>
+    </h1>
+    <p class="sub">현금·금융·부동산·연금·부채를 한 곳에. 분류와 분석은 AI가<br>— 매달 정리는 10분이면 끝납니다.</p>
+    <div class="cta-row"><a class="cta">무료로 시작하기 →</a><a class="cta ghost">데모 둘러보기</a></div>
+    <div class="kpi-strip">
+      <div class="k"><div class="kv">5종</div><div class="kl">통합 자산</div></div>
+      <div class="k"><div class="kv">10분</div><div class="kl">매달 정리</div></div>
+      <div class="k"><div class="kv">1장</div><div class="kl">가족 재무 화면</div></div>
+    </div>
+  </div>
+</section>
+
+<script>
+// 안2: 시퀀스 루프 (8초)
+const s2 = document.getElementById('s2');
+function playS2(){ s2.classList.remove('play'); void s2.offsetWidth; s2.classList.add('play'); }
+playS2(); setInterval(playS2, 8000);
+
+// 안3: 글자별 리빌 (루프)
+function playS3(){
+  document.querySelectorAll('#kinetic [data-text]').forEach((el, li) => {
+    el.querySelectorAll('.ch').forEach(n => n.remove());
+    const frag = document.createDocumentFragment();
+    [...el.dataset.text].forEach((c, i) => { const s = document.createElement('span'); s.className='ch';
+      s.style.animationDelay = `${0.15 + li*0.5 + i*0.05}s`; s.textContent = c === ' ' ? ' ' : c; frag.appendChild(s); });
+    el.prepend(frag);
+  });
+  const p = document.querySelector('#s3 .uline path');
+  p.style.animation = 'none'; void p.getBoundingClientRect(); p.style.animation = '';
+}
+playS3(); setInterval(playS3, 9000);
+</script>
+</body>
+</html>

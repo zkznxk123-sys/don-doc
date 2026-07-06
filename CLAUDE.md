@@ -223,22 +223,23 @@ if (isLite()) { /* lite 분기 */ }
 
 ---
 
-## 공모주·스팩 청약 원장 (IPO, BETA · 2026-06-30 도입)
+## 공모주·스팩 청약 (IPO, BETA · 2026-06-30 도입 · 07-05 일정 중심 재설계)
 
-**상태: DB 영속화(2026-07-01) — 멀티기기 동기화.** 워크스페이스(계좌·원장·스팩·메모·오버라이드)는 Prisma `IpoWorkspace`(userId PK + `data` Json)에 사용자 단위로 저장. localStorage는 오프라인/초기 캐시 역할. 기획: vault `03_personal/projects/공모주-청약{-서비스-구상,원장-데이터모델-스펙}.md`.
+**상태: DB 영속화 + 낙관적 잠금.** 워크스페이스(계좌·기록·스팩·메모·오버라이드)는 Prisma `IpoWorkspace`(userId PK + `data` Json)에 사용자 단위 저장, PUT은 `baseUpdatedAt` 낙관적 잠금(동시 편집 덮어쓰기 차단). localStorage는 오프라인/초기 캐시. JSON 내보내기/가져오기 백업 안전망(`entry-forms.tsx` 데이터 툴바). 기획: vault `03_personal/projects/공모주-청약{-서비스-구상,원장-데이터모델-스펙}.md`.
 
-🔒 **lite 미노출 — full 전용** (2026-07-02 결정, 별도 커뮤니티 공개 예정). 3중 게이트: `features.ipoLedger`(nav) + `LITE_BLOCKED_ROUTES`(middleware) + `blockIfLite`(api/ipo/* 3라우트).
+🔒 **lite 미노출 — full 전용** (2026-07-02 결정, 별도 커뮤니티 공개 예정). 3중 게이트: `features.ipoLedger`(nav) + `LITE_BLOCKED_ROUTES`(middleware) + `blockIfLite`(api/ipo/* 3라우트). 커뮤니티 공개 준비 장치: **캡처 모드**(`data-priv` 개인값만 블러) + 시작 가이드 온보딩.
 
+- **구조**: 일정 중심 — 상단 공모주/스팩주 분기(kind), 일정에서 인라인 청약 기록(PLANNED→SUBMITTED→ALLOCATED→SOLD). "원장" 용어는 폐기(결과·종목별 내역). 데모 모드 없음(빈 상태에서 직접 입력).
 - **페이지**: `app/dashboard/ipo/page.tsx` ("공모주·스팩주").
-- **`components/ipo/`** (~2,600줄):
-  - `board-data.ts` — 뷰 타입(`Account`·`Offering`)·데모 데이터·`readinessIssues`·`computeAllocation`(균등 분산 증거금 산술, 순수·테스트됨).
-  - `allocation-sim.tsx` — 자금 배분 시뮬(종목×계좌 균등 분산). ⚠️ **사실 산술만 — 종목 추천·비례 유불리 예측 금지**(컴플라이언스).
-  - `account-board`·`entry-forms`·`schedule-view`·`spac-{list,universe,panel}`·`upcoming-strip`.
+- **`components/ipo/`** (~3,000줄):
+  - `board-data.ts` — 뷰 타입(`Account`·`Offering`)·`readinessIssues`·`computeAllocation`·`maskAccountNo` (순수·테스트됨).
+  - `schedule-view.tsx` — 일정 + **배정 계산기**(목표 N주 × 도전/기본/안정) + **예산 최적 배분**(명의별 청약주수 자동 산출). ⚠️ **사실 산술만 — 종목 추천·비례 유불리 예측 금지**(컴플라이언스).
+  - `account-board.tsx` — 자금 위치 맵 + 명의별 밀집 계좌표(계좌번호 기본 마스킹·보기 토글, 비번 미저장). `entry-forms.tsx` — 검색형 피커(종목·증권사)·기본 증거금 자동 채움·데이터 툴바. `spac-{list,universe,panel,holdings}`.
   - `offerings.generated.ts`·`spac-universe.generated.ts` — 빌드 스크립트 산출(직접 수정 금지).
-- **`utils/ipo-ledger/`** — 운영자 카톡 "공모주 일정" 공지 → 이벤트 정규화(`schedule-notice.ts`)·캘린더 동기화(`calendar-sync.ts`).
+- **`utils/ipo-ledger/`** — 운영자 카톡 "공모주 일정" 공지 → 이벤트 정규화(`schedule-notice.ts`). `calendar-sync.ts`는 미사용(캘린더는 별도 IPO_calander Apps Script 담당).
 - **API** `app/api/ipo/`:
-  - `quote` — 네이버 금융 실시간 시세 프록시. `competition` — 38.co.kr 비례경쟁률. **둘 다 `getAuthUser` 가드**(무인증 오픈 프록시 남용 차단).
-- **`scripts/ipo-{schedule,offerings}-build.ts` + `ipo-schedule-cron.sh`** — 38.co.kr 라이브에서 일정·종목 유니버스 주간 재생성(launchd).
+  - `quote` — 네이버 금융 실시간 시세 프록시. `competition` — 38.co.kr 비례경쟁률. **둘 다 `blockIfLite` + `getAuthUser` 가드**(무인증 오픈 프록시 남용 차단). `workspace` — GET/PUT(zod 검증·512KB 상한).
+- **`scripts/ipo-{schedule,offerings}-build.ts` + `ipo-schedule-cron.sh`** — 38.co.kr 라이브에서 일정·종목 유니버스 주간 재생성(launchd), sanity 게이트 통과 시 생성 파일 2개만 자동 커밋·푸시.
 
 ---
 
