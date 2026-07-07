@@ -21,3 +21,17 @@ export const INK = '#1A1F1E'                   // body text (deep forest ink)
 export const INK_DIM = 'rgba(26,31,30,0.64)'   // secondary text
 export const INK_FAINT = 'rgba(26,31,30,0.14)' // border·divider
 export const POSITIVE = '#2F8A6E'                // 라이트 톤 positive
+
+/* ────────────────────────────────────────────────────────────────────────
+ * Solid Modern — 마케팅/공모주 다크 표면 (brand-guide-2.0-solid-modern.md).
+ * 랜딩 다크 마이그레이션(2026-07-07). 딥 포레스트 + 강한 골드 + 숫자 히어로.
+ * ──────────────────────────────────────────────────────────────────────── */
+export const SM_SURFACE = '#182A24'                    // 딥 포레스트/네이비 바탕
+export const SM_PANEL = '#1F2E28'                      // 카드·패널
+export const SM_RAISED = '#26362F'                     // 떠 있는 요소·호버
+export const SM_INK = '#F4F1E9'                        // 본문(웜 화이트)
+export const SM_INK_DIM = 'rgba(244,241,233,0.62)'     // 보조 텍스트
+export const SM_HAIRLINE = 'rgba(201,165,74,0.20)'     // 골드 hairline·구분선
+export const GOLD = '#C9A54A'                          // accent·CTA·숫자 강조·차트
+export const GOLD_SOFT = 'rgba(201,165,74,0.12)'       // 골드 배경 틴트
+export const TERRACOTTA = '#C0553D'                    // 하락·지출 시맨틱

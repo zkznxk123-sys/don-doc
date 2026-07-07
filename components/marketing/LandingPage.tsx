@@ -5,7 +5,7 @@ import { MotionConfig } from 'framer-motion'
 import { DemoErrorBanner } from './landing/DemoErrorBanner'
 import { AnnouncementBar } from './landing/AnnouncementBar'
 import { VideoHeroLight } from './landing/VideoHeroLight'
-import { ACCENT, BG, INK } from './landing/tokens'
+import { GOLD, SM_SURFACE, SM_INK } from './landing/tokens'
 
 /**
  * 2026-06-11 라이트 단일 전환 + designer v2 권고 반영:
@@ -22,12 +22,12 @@ export function LandingPage() {
       <div
         className="min-h-screen"
         style={{
-          background: BG,
-          color: INK,
+          background: SM_SURFACE,
+          color: SM_INK,
           fontFamily: 'var(--font-sans)',
           // focus ring 등 클래스에서 참조하는 단일 출처 — tokens.ts와 동기
-          '--landing-accent': ACCENT,
-          '--landing-bg': BG,
+          '--landing-accent': GOLD,
+          '--landing-bg': SM_SURFACE,
         } as React.CSSProperties}
       >
         {/* keyframes — landing 전용. CSS 가드는 cpDot/cpDraw 한정 (orb는 framer가 MotionConfig로 처리). */}

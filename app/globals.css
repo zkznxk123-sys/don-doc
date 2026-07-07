@@ -472,3 +472,18 @@
 }
 .hero-kenburns { animation: heroKenBurns 20s ease-in-out infinite; will-change: transform; }
 @media (prefers-reduced-motion: reduce) { .hero-kenburns { animation: none; transform: scale(1.03); } }
+
+/* ── Solid Modern 랜딩 다크 (brand-guide-2.0) ── */
+/* blueprint 그리드 — "축적=구조"의 은은한 바탕(2~3% 골드). */
+.hero-blueprint {
+  background-image:
+    linear-gradient(rgba(201,165,74,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201,165,74,0.05) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(120% 90% at 70% 10%, #000 0%, transparent 72%);
+  -webkit-mask-image: radial-gradient(120% 90% at 70% 10%, #000 0%, transparent 72%);
+}
+/* 골드 오빗 아크 — "꾸준한 축적의 궤도". 느린 dash 흐름 + glow. */
+@keyframes heroOrbitFlow { to { stroke-dashoffset: -1200; } }
+.hero-orbit path { animation: heroOrbitFlow 24s linear infinite; }
+@media (prefers-reduced-motion: reduce) { .hero-orbit path { animation: none; } }
