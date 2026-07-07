@@ -8,17 +8,19 @@ import {
   HandCoins, CreditCard, Users, Eye, EyeOff,
 } from 'lucide-react'
 import type { AccountType, ShareLevel, RepaymentType, DebtType, PensionType } from '@/lib/actions/accounts'
+import { assetColor } from '@/lib/asset-colors'
 
+// color = 단일 소스(lib/asset-colors) hex. drawer 타입 선택기에서 인라인 style로 적용.
 export const ACCOUNT_TYPES: {
   value: AccountType; label: string; desc: string; Icon: React.ElementType; color: string; isLiability?: boolean
 }[] = [
-  { value: 'CASH',        label: '현금 · 예적금', desc: '생활비, 비상금, 저축',         Icon: Banknote,   color: 'text-savings' },
-  { value: 'INVESTMENT',  label: '주식 · 펀드',   desc: '국내외 주식, 펀드, ETF',       Icon: TrendingUp, color: 'text-income' },
-  { value: 'PENSION',     label: '연금',           desc: 'IRP, 연금저축, 퇴직연금 등',  Icon: PiggyBank,  color: 'text-income' },
-  { value: 'CRYPTO',      label: '가상자산',       desc: '비트코인, 이더리움 등',        Icon: Bitcoin,    color: 'text-warning' },
-  { value: 'REAL_ESTATE', label: '부동산',         desc: '아파트, 토지, 상가',           Icon: Building2,  color: 'text-foreground' },
-  { value: 'DEBT',        label: '대출',           desc: '주택담보대출, 신용대출 등',    Icon: HandCoins,  color: 'text-destructive',  isLiability: true },
-  { value: 'CREDIT_CARD', label: '신용카드',       desc: '카드 사용액, 미결제 금액',     Icon: CreditCard, color: 'text-destructive',  isLiability: true },
+  { value: 'CASH',        label: '현금 · 예적금', desc: '생활비, 비상금, 저축',         Icon: Banknote,   color: assetColor('CASH') },
+  { value: 'INVESTMENT',  label: '주식 · 펀드',   desc: '국내외 주식, 펀드, ETF',       Icon: TrendingUp, color: assetColor('INVESTMENT') },
+  { value: 'PENSION',     label: '연금',           desc: 'IRP, 연금저축, 퇴직연금 등',  Icon: PiggyBank,  color: assetColor('PENSION') },
+  { value: 'CRYPTO',      label: '가상자산',       desc: '비트코인, 이더리움 등',        Icon: Bitcoin,    color: assetColor('CRYPTO') },
+  { value: 'REAL_ESTATE', label: '부동산',         desc: '아파트, 토지, 상가',           Icon: Building2,  color: assetColor('REAL_ESTATE') },
+  { value: 'DEBT',        label: '대출',           desc: '주택담보대출, 신용대출 등',    Icon: HandCoins,  color: assetColor('DEBT'),  isLiability: true },
+  { value: 'CREDIT_CARD', label: '신용카드',       desc: '카드 사용액, 미결제 금액',     Icon: CreditCard, color: assetColor('CREDIT_CARD'),  isLiability: true },
 ]
 
 export const SHARE_LEVELS: {

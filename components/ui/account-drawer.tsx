@@ -435,7 +435,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
                         : 'bg-muted/40 border-border hover:border-ring hover:bg-muted/70'
                     )}
                   >
-                    <TypeIcon className={cn('w-5 h-5 shrink-0', isSelected ? 'text-background' : t.color)} />
+                    <TypeIcon className={cn('w-5 h-5 shrink-0', isSelected && 'text-background')} style={!isSelected ? { color: t.color } : undefined} />
                     <div>
                       <p className={cn('text-xs font-semibold leading-tight', isSelected ? 'text-background' : 'text-foreground')}>{t.label}</p>
                       <p className={cn('text-[10px] mt-0.5', isSelected ? 'text-background/50' : 'text-muted-foreground')}>{t.desc}</p>

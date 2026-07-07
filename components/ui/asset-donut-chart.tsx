@@ -7,21 +7,21 @@ import { Banknote, TrendingUp, Bitcoin, Building2, Layers, HandCoins, CreditCard
 import Link from 'next/link'
 import { Switch } from '@/components/ui/switch'
 import { useAssetThreshold } from '@/lib/hooks/useAssetThreshold'
+import { assetColor, ASSET_COLOR_FALLBACK } from '@/lib/asset-colors'
 
-// Solid Modern 절제 팔레트(brand-guide-2.0 §6) — 어시(earthy) 골드+포레스트 계열.
-// 무지개 폐기, 자산=따뜻한 축적 톤 / 부채=테라코타.
+// 색은 단일 소스(lib/asset-colors)에서, 아이콘만 로컬. brand-guide-2.0 §6.
 const ASSET_PALETTE: Record<string, { color: string; icon: React.ReactNode }> = {
-  INVESTMENT:  { color: '#C9A54A', icon: <TrendingUp className="w-4 h-4" /> },  // 골드 — 성장 주역
-  CASH:        { color: '#5E8A72', icon: <Banknote   className="w-4 h-4" /> },  // 세이지 — 유동/안정
-  REAL_ESTATE: { color: '#7C8A5A', icon: <Building2  className="w-4 h-4" /> },  // 올리브 — 부동/토지
-  CRYPTO:      { color: '#CB8A3C', icon: <Bitcoin    className="w-4 h-4" /> },  // 코퍼/앰버
-  STO:         { color: '#7E8AA0', icon: <Layers     className="w-4 h-4" /> },  // 뮤트 슬레이트블루(구분용)
-  // 부채 — 테라코타 계열
-  DEBT:        { color: '#C0553D', icon: <HandCoins  className="w-4 h-4" /> },
-  CREDIT_CARD: { color: '#A8452F', icon: <CreditCard className="w-4 h-4" /> },
+  INVESTMENT:  { color: assetColor('INVESTMENT'),  icon: <TrendingUp className="w-4 h-4" /> },
+  CASH:        { color: assetColor('CASH'),        icon: <Banknote   className="w-4 h-4" /> },
+  PENSION:     { color: assetColor('PENSION'),     icon: <TrendingUp className="w-4 h-4" /> },
+  REAL_ESTATE: { color: assetColor('REAL_ESTATE'), icon: <Building2  className="w-4 h-4" /> },
+  CRYPTO:      { color: assetColor('CRYPTO'),      icon: <Bitcoin    className="w-4 h-4" /> },
+  STO:         { color: assetColor('STO'),         icon: <Layers     className="w-4 h-4" /> },
+  DEBT:        { color: assetColor('DEBT'),        icon: <HandCoins  className="w-4 h-4" /> },
+  CREDIT_CARD: { color: assetColor('CREDIT_CARD'), icon: <CreditCard className="w-4 h-4" /> },
 }
 
-const FALLBACK = { color: '#8A8574', icon: <Banknote className="w-4 h-4" /> }
+const FALLBACK = { color: ASSET_COLOR_FALLBACK, icon: <Banknote className="w-4 h-4" /> }
 
 export interface AssetTypeData {
   type: string

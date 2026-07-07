@@ -12,17 +12,19 @@ import type { AccountInitialData } from '@/components/ui/account-drawer'
 import type { HoldingData } from '@/lib/actions/investments'
 import { Switch } from '@/components/ui/switch'
 import { useAssetThreshold } from '@/lib/hooks/useAssetThreshold'
+import { assetColor } from '@/lib/asset-colors'
 import { toast } from 'sonner'
 
-const TYPE_META: Record<string, { label: string; Icon: React.ElementType; color: string; bg: string }> = {
-  CASH:        { label: '현금 · 예적금', Icon: Banknote,   color: 'text-savings',     bg: 'bg-savings-soft' },
-  INVESTMENT:  { label: '주식 · 펀드',   Icon: TrendingUp, color: 'text-income',      bg: 'bg-income-soft' },
-  PENSION:     { label: '연금',           Icon: PiggyBank,  color: 'text-teal-400',    bg: 'bg-teal-400/10' },
-  CRYPTO:      { label: '가상자산',       Icon: Bitcoin,    color: 'text-warning',   bg: 'bg-warning-soft' },
-  REAL_ESTATE: { label: '부동산',         Icon: Building2,  color: 'text-estate',  bg: 'bg-estate/10' },
-  STO:         { label: '토큰증권',       Icon: Layers,     color: 'text-pink-400',    bg: 'bg-pink-400/10' },
-  DEBT:        { label: '대출',           Icon: HandCoins,  color: 'text-destructive',     bg: 'bg-destructive/10' },
-  CREDIT_CARD: { label: '신용카드',       Icon: CreditCard, color: 'text-destructive',    bg: 'bg-destructive/10' },
+// 색은 단일 소스(lib/asset-colors). 아이콘 색·배경은 인라인 style로 적용(hex + soft alpha).
+const TYPE_META: Record<string, { label: string; Icon: React.ElementType; color: string }> = {
+  CASH:        { label: '현금 · 예적금', Icon: Banknote,   color: assetColor('CASH') },
+  INVESTMENT:  { label: '주식 · 펀드',   Icon: TrendingUp, color: assetColor('INVESTMENT') },
+  PENSION:     { label: '연금',           Icon: PiggyBank,  color: assetColor('PENSION') },
+  CRYPTO:      { label: '가상자산',       Icon: Bitcoin,    color: assetColor('CRYPTO') },
+  REAL_ESTATE: { label: '부동산',         Icon: Building2,  color: assetColor('REAL_ESTATE') },
+  STO:         { label: '토큰증권',       Icon: Layers,     color: assetColor('STO') },
+  DEBT:        { label: '대출',           Icon: HandCoins,  color: assetColor('DEBT') },
+  CREDIT_CARD: { label: '신용카드',       Icon: CreditCard, color: assetColor('CREDIT_CARD') },
 }
 
 interface AssetListProps {
@@ -148,8 +150,8 @@ function AssetRow({
 
   const infoContent = (
     <>
-      <div className={cn('w-10 h-10 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0', meta.bg)}>
-        <MetaIcon className={cn('w-5 h-5 sm:w-4 sm:h-4', meta.color)} />
+      <div className="w-10 h-10 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: meta.color + '1F' }}>
+        <MetaIcon className="w-5 h-5 sm:w-4 sm:h-4" style={{ color: meta.color }} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
@@ -284,8 +286,8 @@ function SubAccountRow({
       className="w-full flex items-center gap-2 pl-[52px] pr-5 py-2.5 border-t border-border/40 bg-background/30 hover:bg-muted/30 transition-colors text-left group"
     >
       <CornerDownRight className="w-3 h-3 text-border shrink-0" />
-      <div className={cn('w-6 h-6 rounded-lg flex items-center justify-center shrink-0', meta.bg)}>
-        <SubIcon className={cn('w-3.5 h-3.5', meta.color)} />
+      <div className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: meta.color + '1F' }}>
+        <SubIcon className="w-3.5 h-3.5" style={{ color: meta.color }} />
       </div>
       <span className="text-xs text-foreground flex-1 truncate">{sub.name}</span>
       <span className="text-xs font-medium text-muted-foreground tabular-nums shrink-0">
@@ -611,8 +613,8 @@ export function LiabilityList({ liabilities, totalLiabilities, onEdit, onAdd, cu
               onClick={() => onEdit(account)}
               className="w-full flex items-center gap-4 px-5 py-3.5 hover:bg-muted/50 transition-colors text-left group"
             >
-              <div className={cn('w-10 h-10 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0', meta.bg)}>
-                <MetaIcon className={cn('w-5 h-5 sm:w-4 sm:h-4', meta.color)} />
+              <div className="w-10 h-10 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center shrink-0" style={{ backgroundColor: meta.color + '1F' }}>
+                <MetaIcon className="w-5 h-5 sm:w-4 sm:h-4" style={{ color: meta.color }} />
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1.5">
