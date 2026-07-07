@@ -34,14 +34,13 @@ const fadeUp = {
   }),
 }
 
-// 심볼 마크 — 골드 ₩ 코인(앱 아이콘과 통일). 다크 nav용.
-function CoinMark({ size = 24 }: { size?: number }) {
+// 심볼 마크 — ㄷ=D 브래킷에 골드 코인 도킹(앱 아이콘과 통일). "돈"의 ㄷ + "Doc"의 D 이중판독.
+function BracketMark({ size = 24 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
-      <circle cx="12" cy="12" r="11" fill={GOLD} />
-      <circle cx="12" cy="12" r="8" fill="none" stroke={SM_SURFACE} strokeOpacity="0.30" strokeWidth="1.2" />
-      <text x="12" y="16" textAnchor="middle" fontFamily="'Pretendard','Apple SD Gothic Neo',sans-serif"
-        fontSize="12" fontWeight="800" fill={SM_SURFACE}>₩</text>
+      <path d="M7.5 5.5 H16.2 M7.5 5.5 V18.5 M7.5 18.5 H16.2"
+        stroke={SM_INK} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="15" cy="12" r="2.9" fill={GOLD} />
     </svg>
   )
 }
@@ -49,7 +48,7 @@ function CoinMark({ size = 24 }: { size?: number }) {
 function Logo() {
   return (
     <span className="inline-flex items-center gap-2">
-      <CoinMark size={24} />
+      <BracketMark size={24} />
       <span className="text-[19px] font-black tracking-[-0.02em]" style={{ color: SM_INK }}>돈Doc</span>
     </span>
   )
