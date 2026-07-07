@@ -463,3 +463,12 @@
     transition: background-color 0.3s ease, border-color 0.3s ease;
   }
 }
+
+/* ── 모바일 히어로 정지 이미지 — 은은한 ken-burns(느린 줌). 데스크톱은 영상 ── */
+@keyframes heroKenBurns {
+  0%   { transform: scale(1.03) translate(0, 0); }
+  50%  { transform: scale(1.09) translate(-1.2%, -1.2%); }
+  100% { transform: scale(1.03) translate(0, 0); }
+}
+.hero-kenburns { animation: heroKenBurns 20s ease-in-out infinite; will-change: transform; }
+@media (prefers-reduced-motion: reduce) { .hero-kenburns { animation: none; transform: scale(1.03); } }

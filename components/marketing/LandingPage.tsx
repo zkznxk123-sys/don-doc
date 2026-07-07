@@ -5,11 +5,7 @@ import { MotionConfig } from 'framer-motion'
 import { DemoErrorBanner } from './landing/DemoErrorBanner'
 import { AnnouncementBar } from './landing/AnnouncementBar'
 import { VideoHeroLight } from './landing/VideoHeroLight'
-import { CoreFeatures } from './landing/CoreFeatures'
-import { ComparisonSection } from './landing/ComparisonSection'
-import { ClosingSection } from './landing/ClosingSection'
 import { ACCENT, BG, INK } from './landing/tokens'
-import { isFull } from '@/lib/feature-flags'
 
 /**
  * 2026-06-11 라이트 단일 전환 + designer v2 권고 반영:
@@ -49,9 +45,6 @@ export function LandingPage() {
 
         <AnnouncementBar />
         <VideoHeroLight />
-        <CoreFeatures />
-        {isFull() && <ComparisonSection />}
-        <ClosingSection />
       </div>
     </MotionConfig>
   )

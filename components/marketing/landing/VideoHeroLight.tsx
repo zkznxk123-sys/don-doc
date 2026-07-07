@@ -1,31 +1,31 @@
 'use client'
 
 /**
- * VideoHeroLight — 라이트 시네마틱 비디오 히어로 (2026-07-06).
- * motionsites VaultShield 프롬프트 참고: 풀스크린 비디오 + 아이콘 임베드 볼드 헤딩 +
- * framer fadeUp + 모바일 슬라이드 시트.
- *
- * 돈Doc 브랜드 적용 조정:
- * - 액센트 보라(#7342E2) → 포레스트 그린(#2F5D4F, 브랜드 primary).
- * - 헤딩 폰트 Helvetica Now Display(한글 글리프 없음·불안정 CDN) → Pretendard ExtraBold.
- * - 배경 라이트(#F2F2EE) → 돈Doc BG(#FAF8F3) 계열.
- * - 카피는 돈Doc 정본 태그라인. 비디오는 VIDEO_SRC 슬롯(자체 호스팅).
+ * VideoHeroLight — 라이트 시네마틱 비디오 히어로 (2026-07-07 미니멀).
+ * full-bleed 자체제작 영상(투명 저장고 축적) + 로고 + eyebrow + H1(북극성) + CTA.
+ * 사용자 결정(2026-07-07): 서브카피·nav 메뉴·햄버거·하위 섹션 전부 제거 → 히어로 단일 화면.
  */
 
-import { useState } from 'react'
 import Link from 'next/link'
-import { motion, AnimatePresence } from 'framer-motion'
-import { Wallet, Layers, ArrowRightCircle, Menu, X } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { ArrowRightCircle } from 'lucide-react'
 
-const VIDEO_SRC = '/landing/hero2.mp4'          // 데스크톱(가로 16:9)
-// 모바일 세로(9:16) 영상 — 있으면 폰에서 자동 사용(가로 crop 해소). Spline/Higgsfield에서 세로로 export 후
-// public/landing/hero2-portrait.mp4 로 넣고 아래를 '/landing/hero2-portrait.mp4' 로 바꾸면 끝.
-const VIDEO_SRC_MOBILE: string | null = null
+// 자체 제작 히어로 (Gemini 이미지 → Higgsfield). 워터마크 제거.
+// 데스크톱 = 영상(가로, Kling i2v, 2560 샤픈) / 모바일 = 정지 이미지(세로 9:16) + 은은한 ken-burns.
+// AI i2v가 "동전 진입·스택 성장" 모션을 못 살려서 모바일은 razor-sharp 정지 이미지로 결정(2026-07-07).
+const VIDEO_SRC = '/landing/hero.mp4'
+const IMG_MOBILE = '/landing/hero-mobile.jpg'
+const VIDEO_FILTER = ''
 const ACCENT = '#2F5D4F'
 const INK = '#1A1F1E'
 const BG = '#FAF8F3'
 
-const NAV = ['소개', '요금', '설치', '소식', '도움말']
+// 북극성 흐름 3-step (본다→남긴다→옮긴다). 영문, 공모주 미노출·컴플라이언스 안전.
+const STEPS = [
+  { n: '01', t: 'See your cashflow' },
+  { n: '02', t: 'Keep the surplus' },
+  { n: '03', t: 'Build solid assets' },
+]
 
 const fadeUp = {
   hidden: { opacity: 0, y: 28 },
@@ -44,81 +44,72 @@ function Logo() {
 }
 
 export function VideoHeroLight() {
-  const [menuOpen, setMenuOpen] = useState(false)
-
   return (
     <section className="relative w-full min-h-screen overflow-hidden" style={{ color: INK, background: BG }}>
-      {/* 풀스크린 배경 비디오 — 세로 영상이 있으면 폰에서 그걸, 없으면 가로 영상을 초점 오른쪽으로 당겨 crop 완화 */}
-      {VIDEO_SRC_MOBILE ? (
-        <>
-          <video autoPlay muted loop playsInline preload="auto" aria-hidden
-            className="hidden sm:block absolute inset-0 w-full h-full object-cover z-0">
-            <source src={VIDEO_SRC} type="video/mp4" />
-          </video>
-          <video autoPlay muted loop playsInline preload="auto" aria-hidden
-            className="sm:hidden absolute inset-0 w-full h-full object-cover z-0">
-            <source src={VIDEO_SRC_MOBILE} type="video/mp4" />
-          </video>
-        </>
-      ) : (
-        <video autoPlay muted loop playsInline preload="auto" aria-hidden
-          className="absolute inset-0 w-full h-full object-cover object-[72%_42%] sm:object-center z-0">
-          <source src={VIDEO_SRC} type="video/mp4" />
-        </video>
-      )}
-      {/* 라이트 가독성 워시 — 텍스트 영역(좌상단) 밝게. 모바일은 상단 세로 워시, 데스크톱은 좌측 대각 워시 */}
+      {/* 배경 — 데스크톱: 영상 full-bleed / 모바일: 정지 이미지 + 은은한 ken-burns */}
+      <video autoPlay muted loop playsInline preload="auto" aria-hidden
+        style={{ filter: VIDEO_FILTER }}
+        className="hidden sm:block absolute inset-0 w-full h-full object-cover object-center z-0">
+        <source src={VIDEO_SRC} type="video/mp4" />
+      </video>
+      <div aria-hidden
+        className="sm:hidden absolute inset-0 z-0 hero-kenburns"
+        style={{ backgroundImage: `url(${IMG_MOBILE})`, backgroundSize: 'cover', backgroundPosition: 'center' }} />
+      {/* 가독성 워시 — 텍스트(좌상단) 밝게. 모바일=상단 세로, 데스크톱=좌측 대각 */}
       <div aria-hidden className="absolute inset-0 z-[1] pointer-events-none sm:hidden"
-        style={{ background: 'linear-gradient(180deg, rgba(250,248,243,0.94) 0%, rgba(250,248,243,0.82) 30%, rgba(250,248,243,0.35) 52%, rgba(250,248,243,0.15) 78%, rgba(250,248,243,0.9) 100%)' }} />
+        style={{ background: 'linear-gradient(180deg, rgba(250,248,243,0.95) 0%, rgba(250,248,243,0.72) 32%, rgba(250,248,243,0.22) 60%, rgba(250,248,243,0) 80%)' }} />
       <div aria-hidden className="absolute inset-0 z-[1] pointer-events-none hidden sm:block"
-        style={{ background: 'linear-gradient(105deg, rgba(250,248,243,0.92) 0%, rgba(250,248,243,0.72) 34%, rgba(250,248,243,0.25) 60%, rgba(250,248,243,0) 100%)' }} />
+        style={{ background: 'linear-gradient(105deg, rgba(250,248,243,0.95) 0%, rgba(250,248,243,0.76) 32%, rgba(250,248,243,0.28) 56%, rgba(250,248,243,0) 74%)' }} />
 
-      {/* ── navbar ── */}
+      {/* ── navbar — 로고 + CTA만 (메뉴·햄버거 제거) ── */}
       <nav className="relative z-10 max-w-[1280px] mx-auto flex items-center justify-between px-5 sm:px-8 py-4 sm:py-5">
         <Link href="/"><Logo /></Link>
-        <div className="hidden md:flex items-center gap-6 text-sm font-medium">
-          {NAV.map((t) => (
-            <a key={t} href="#" className="opacity-70 hover:opacity-100 transition-opacity" style={{ color: INK }}>{t}</a>
-          ))}
-        </div>
-        <div className="hidden md:flex items-center gap-2">
+        <div className="flex items-center gap-2">
           <a href="/sign-up" className="rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-transform hover:scale-[1.03]" style={{ background: ACCENT }}>무료로 시작</a>
-          <a href="/sign-in" className="rounded-full px-5 py-2.5 text-sm font-medium" style={{ background: '#F2EFE7', color: INK }}>로그인</a>
+          <a href="/sign-in" className="hidden sm:inline-flex rounded-full px-5 py-2.5 text-sm font-medium" style={{ background: '#F2EFE7', color: INK }}>로그인</a>
         </div>
-        <button className="md:hidden p-2" onClick={() => setMenuOpen(true)} aria-label="메뉴 열기"><Menu className="w-6 h-6" style={{ color: INK }} /></button>
       </nav>
 
-      {/* ── hero content ── */}
-      <div className="relative z-10 max-w-[1280px] mx-auto px-5 sm:px-8" style={{ paddingTop: 'clamp(40px, 8vw, 72px)' }}>
+      {/* ── hero content — eyebrow + H1 + CTA (서브카피 제거) ── */}
+      <div className="relative z-10 max-w-[1280px] mx-auto px-5 sm:px-8" style={{ paddingTop: 'clamp(48px, 9vw, 96px)' }}>
         <div style={{ maxWidth: 620 }}>
-          {/* eyebrow = 북극성 태도 한 줄 (2026-07-06). H1은 정본 태그라인 유지(bio·SEO 파장 없음) */}
           <motion.p
             custom={0} variants={fadeUp} initial="hidden" animate="visible"
             className="inline-flex items-center gap-2"
-            style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.14em', color: ACCENT, marginBottom: 18 }}
+            style={{ fontSize: 11.5, fontWeight: 600, letterSpacing: '0.16em', color: ACCENT, marginBottom: 18 }}
           >
             <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: ACCENT }} />
-            복잡한 투자, 단순하게
+            THE SIMPLEST WAY TO MANAGE MONEY
           </motion.p>
 
+          {/* H1 = 북극성. "단순하게"만 포레스트 accent */}
           <motion.h1
             custom={1} variants={fadeUp} initial="hidden" animate="visible"
             className="font-black"
-            style={{ fontFamily: 'var(--font-sans)', fontSize: 'clamp(1.9rem, 5.4vw, 3.4rem)', lineHeight: 1.08, letterSpacing: '-0.02em', color: INK, marginBottom: 24 }}
+            style={{ fontFamily: 'var(--font-sans)', fontSize: 'clamp(2.3rem, 6.4vw, 4.2rem)', lineHeight: 1.06, letterSpacing: '-0.03em', color: INK, marginBottom: 26 }}
           >
-            <IconInline><Wallet /></IconInline> 흩어진 자산을{' '}
-            <IconInline><Layers /></IconInline> 한 화면에
+            복잡한 투자,<br />
+            <span style={{ color: ACCENT }}>단순하게.</span>
           </motion.h1>
 
-          {/* sub = 정의를 가르치는 카피 (현금흐름→여유자금→단단한 자산→꾸준히) */}
-          <motion.p
+          {/* 북극성 3-step (영문) */}
+          <motion.div
             custom={2} variants={fadeUp} initial="hidden" animate="visible"
-            style={{ fontFamily: 'var(--font-sans)', fontSize: 'clamp(0.95rem, 2.5vw, 1.1rem)', lineHeight: 1.65, opacity: 0.82, maxWidth: 560, color: INK }}
+            className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-9"
+            style={{ fontSize: 13 }}
           >
-            현금흐름을 보고, 남는 돈을 단단한 자산으로 꾸준히.
-            복잡한 계산은 AI가 — 매달 10분이면 끝납니다.
-          </motion.p>
+            {STEPS.map((s, i) => (
+              <span key={s.n} className="inline-flex items-center gap-3">
+                <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+                  <span style={{ color: ACCENT, fontWeight: 700, fontSize: 11, letterSpacing: '0.04em' }}>{s.n}</span>
+                  <span style={{ color: INK, fontWeight: 500 }}>{s.t}</span>
+                </span>
+                {i < STEPS.length - 1 && <span aria-hidden style={{ color: INK, opacity: 0.28 }}>→</span>}
+              </span>
+            ))}
+          </motion.div>
 
-          <motion.div custom={3} variants={fadeUp} initial="hidden" animate="visible" className="mt-9">
+          <motion.div custom={3} variants={fadeUp} initial="hidden" animate="visible">
             <Link
               href="/sign-up"
               className="inline-flex items-center justify-between font-semibold text-white transition-transform hover:scale-[1.04]"
@@ -129,54 +120,6 @@ export function VideoHeroLight() {
           </motion.div>
         </div>
       </div>
-
-      {/* ── 모바일 슬라이드 시트 ── */}
-      <AnimatePresence>
-        {menuOpen && (
-          <>
-            <motion.div
-              className="fixed inset-0 z-40 md:hidden" onClick={() => setMenuOpen(false)}
-              style={{ background: 'rgba(26,31,30,0.35)', backdropFilter: 'blur(4px)' }}
-              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            />
-            <motion.div
-              className="fixed right-0 top-0 z-50 md:hidden flex flex-col"
-              style={{ width: 'min(88vw, 360px)', height: '100dvh', background: '#EFEBE3', boxShadow: '-12px 0 48px rgba(26,31,30,0.18)' }}
-              initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }}
-              transition={{ ease: [0.22, 1, 0.36, 1], duration: 0.45 }}
-            >
-              <div className="flex items-center justify-between px-6 py-5">
-                <Logo />
-                <button onClick={() => setMenuOpen(false)} aria-label="메뉴 닫기"><X className="w-6 h-6" style={{ color: INK }} /></button>
-              </div>
-              <div className="h-px mx-6" style={{ background: 'rgba(26,31,30,0.12)' }} />
-              <div className="flex flex-col px-6 py-6 gap-1">
-                {NAV.map((t, i) => (
-                  <motion.a
-                    key={t} href="#" className="py-3 text-lg font-medium" style={{ color: INK }}
-                    initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.18 + i * 0.07 }}
-                  >{t}</motion.a>
-                ))}
-              </div>
-              <div className="mt-auto px-6 pb-8 flex flex-col gap-2">
-                <a href="/sign-up" className="rounded-full px-5 py-3 text-center text-sm font-semibold text-white" style={{ background: ACCENT }}>무료로 시작</a>
-                <a href="/sign-in" className="rounded-full px-5 py-3 text-center text-sm font-medium" style={{ background: '#F2EFE7', color: INK }}>로그인</a>
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
     </section>
-  )
-}
-
-/** 헤딩 인라인 아이콘 — 텍스트 baseline에 맞춰 살짝 올림 */
-function IconInline({ children }: { children: React.ReactElement }) {
-  return (
-    <span className="inline-flex align-middle relative" style={{ top: -2, color: ACCENT }}>
-      {/* 24px, accent */}
-      <span className="[&>svg]:w-6 [&>svg]:h-6">{children}</span>
-    </span>
   )
 }

@@ -210,13 +210,14 @@ CSS 변수는 `app/globals.css` 에 이미 반영됨. 요약:
 - **eyebrow·레이블은 한국어 우선** — 영문 대문자 eyebrow 남발 금지 (겉멋 리스크).
 - 근거: lite/대시보드=부부 대중(쉬움), full/IPO=프로암(정밀) — 화면 두 부류에 한 톤을 강요하지 않는다.
 
-### 랜딩 히어로 — 시네마틱 비디오 (2026-07-06 교체)
+### 랜딩 히어로 — 미니멀 단일 화면 (2026-07-07 확정)
 
-랜딩 히어로는 서체 실험(에디토리얼 세리프)에서 **풀스크린 비디오 히어로**(`VideoHeroLight`)로 전환. motionsites 레퍼런스 3안 비교 후 라이트 톤 B 채택. 상세: `docs/design/hero-explorations.md`.
-
-- **헤드라인은 Pretendard 볼드 + 인라인 아이콘**(지갑·레이어·스파클, 포레스트) — 랜딩 히어로 헤드라인엔 serif 쓰지 않음. serif(`numeric-display`)는 **앱 대시보드 hero 숫자·에디토리얼 헤딩 전용**(A′ 규칙).
-- 배경 영상은 밝은 하이키·여백·단일 초점 조건 유지 (이게 "깔끔함"의 원천). 현재 `hero2.mp4`는 범용 AI 클립 플레이스홀더 — 발행 전 Spline/Higgsfield 등으로 브랜드 영상 제작·교체.
-- 액센트는 포레스트, 카피는 정본 태그라인. `prefers-reduced-motion` 정지 처리는 영상 교체 시 함께.
+`VideoHeroLight` = 히어로 한 화면으로 완성(그 아래 CoreFeatures·Comparison·Closing 섹션 전부 제거 — 파일은 parked, LandingPage import만 삭제). 구성:
+- **eyebrow(영문 작게)** `THE SIMPLEST WAY TO MANAGE MONEY` → **H1(대문) 「복잡한 투자, 단순하게.」**("단순하게" 포레스트 accent) → **3-step**(`01 See your cashflow → 02 Keep the surplus → 03 Build solid assets`, 북극성 "본다→남긴다→옮긴다"의 영문) → **CTA**. 서브카피·nav 메뉴·햄버거 없음.
+- H1은 Pretendard 볼드(serif 아님). serif(`numeric-display`)는 앱 대시보드 hero 숫자 전용(A′). "복잡한 투자, 단순하게"가 히어로 대문 = 북극성 승격.
+- **배경 = 자체 제작 3D 비주얼**(Gemini Nano Banana 이미지 → Higgsfield Kling i2v, 투명 유리 저장고에 코인이 흘러 축적). 워터마크 제거·웹 최적화. **데스크톱=영상 full-bleed**(`hero.mp4`, 2560 샤픈) / **모바일=정지 이미지**(`hero-mobile.jpg`, 세로 9:16) + 은은한 ken-burns. (모바일은 AI i2v가 "동전 진입·스택 성장" 모션을 못 살려 razor-sharp 정지 이미지로 결정.)
+- 좌상단 가독성 워시, `prefers-reduced-motion` 대응(ken-burns 정지). 영상 제작 워크플로우: [[reference_higgsfield_video_workflow]](메모리) / `docs/design/hero-explorations.md`.
+- ⚠️ AI 생성물엔 보이지 않는 SynthID가 남을 수 있음(정직: AI 생성). 보이는 워터마크는 delogo로 제거.
 
 ### 디자인 원칙 — 북극성 파생 (2026-07-06)
 
