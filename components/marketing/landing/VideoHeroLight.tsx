@@ -64,9 +64,9 @@ export function VideoHeroLight() {
       {/* ── navbar — 로고 + CTA만 (메뉴·햄버거 제거) ── */}
       <nav className="relative z-10 max-w-[1280px] mx-auto flex items-center justify-between px-5 sm:px-8 py-4 sm:py-5">
         <Link href="/"><Logo /></Link>
-        <div className="flex items-center gap-2">
-          <a href="/sign-up" className="rounded-full px-5 py-2.5 text-sm font-semibold text-white transition-transform hover:scale-[1.03]" style={{ background: ACCENT }}>무료로 시작</a>
-          <a href="/sign-in" className="hidden sm:inline-flex rounded-full px-5 py-2.5 text-sm font-medium" style={{ background: '#F2EFE7', color: INK }}>로그인</a>
+        <div className="flex items-center gap-2 sm:gap-2.5">
+          <a href="/sign-in" className="inline-flex items-center px-2.5 sm:px-5 py-2.5 text-sm font-medium sm:rounded-full sm:bg-[#F2EFE7]" style={{ color: INK }}>로그인</a>
+          <a href="/sign-up" className="rounded-full px-4 sm:px-5 py-2.5 text-sm font-semibold text-white transition-transform hover:scale-[1.03]" style={{ background: ACCENT }}>무료로 시작</a>
         </div>
       </nav>
 
@@ -92,10 +92,10 @@ export function VideoHeroLight() {
             <span style={{ color: ACCENT }}>단순하게.</span>
           </motion.h1>
 
-          {/* 북극성 3-step (영문) */}
+          {/* 북극성 3-step — 모바일: 세로 스택(화살표 제거) / 데스크톱: 가로 + 화살표 */}
           <motion.div
             custom={2} variants={fadeUp} initial="hidden" animate="visible"
-            className="flex flex-wrap items-center gap-x-3 gap-y-2 mb-9"
+            className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-y-2.5 sm:gap-x-3 mb-9"
             style={{ fontSize: 13 }}
           >
             {STEPS.map((s, i) => (
@@ -104,7 +104,7 @@ export function VideoHeroLight() {
                   <span style={{ color: ACCENT, fontWeight: 700, fontSize: 11, letterSpacing: '0.04em' }}>{s.n}</span>
                   <span style={{ color: INK, fontWeight: 500 }}>{s.t}</span>
                 </span>
-                {i < STEPS.length - 1 && <span aria-hidden style={{ color: INK, opacity: 0.28 }}>→</span>}
+                {i < STEPS.length - 1 && <span aria-hidden className="hidden sm:inline" style={{ color: INK, opacity: 0.28 }}>→</span>}
               </span>
             ))}
           </motion.div>
