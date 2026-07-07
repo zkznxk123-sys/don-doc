@@ -1,9 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#26362F"></rect>
-  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="13.25" fill="none" stroke="#C9A54A" stroke-opacity="0.28" stroke-width="1.5"></rect>
-  <g fill="none" stroke="#F4F1E9" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M19 13 L19 51"></path>
-    <path d="M19 13 Q48 13 48 32 Q48 51 19 51"></path>
-  </g>
-  <circle cx="32.5" cy="32" r="6.6" fill="#C9A54A"></circle>
+  <rect width="64" height="64" rx="15" fill="#26362F"></rect>
+  <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="14.25" fill="none" stroke="#C9A54A" stroke-opacity="0.28" stroke-width="1.5"></rect>
+  <circle cx="32" cy="32" r="18" fill="#C9A54A"></circle>
+  <circle cx="32" cy="32" r="13.5" fill="none" stroke="#26362F" stroke-opacity="0.30" stroke-width="1.4"></circle>
+  <text x="32" y="41" text-anchor="middle" font-family="'Pretendard','Apple SD Gothic Neo',sans-serif" font-size="24" font-weight="800" fill="#26362F">₩</text>
 </svg>
