@@ -15,6 +15,7 @@ import { ArrowRightCircle } from 'lucide-react'
 import { SM_SURFACE, SM_INK, SM_INK_DIM, GOLD } from './tokens'
 
 const HERO_BG = '/landing/hero-bg.jpg'
+const HERO_BG_MOBILE = '/landing/hero-bg-mobile.jpg'  // 세로 crop — 저장고 중심
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -31,15 +32,17 @@ function Logo() {
 export function VideoHeroLight() {
   return (
     <section className="relative w-full min-h-screen overflow-hidden" style={{ background: SM_SURFACE, color: SM_INK }}>
-      {/* 배경 — 자체 제작 다크+골드 비주얼(저장고 코인 축적) full-bleed */}
+      {/* 배경 — 자체 제작 다크+골드 비주얼. 데스크톱=가로 full / 모바일=저장고 중심 세로 crop */}
       <Image src={HERO_BG} alt="" aria-hidden fill priority sizes="100vw"
-        className="object-cover object-center z-0" />
+        className="hidden sm:block object-cover object-center z-0" />
+      <Image src={HERO_BG_MOBILE} alt="" aria-hidden fill priority sizes="100vw"
+        className="sm:hidden object-cover object-center z-0" />
 
-      {/* 가독성 워시 — 데스크톱: 좌측 forest 그라디언트 / 모바일: 상하 스크림 */}
+      {/* 가독성 워시 — 데스크톱: 좌측 forest 그라디언트 / 모바일: 상단 강한 스크림(텍스트) */}
       <div aria-hidden className="absolute inset-0 z-[1] pointer-events-none hidden sm:block"
         style={{ background: `linear-gradient(90deg, ${SM_SURFACE} 0%, rgba(24,42,36,0.86) 28%, rgba(24,42,36,0.25) 58%, transparent 74%)` }} />
       <div aria-hidden className="absolute inset-0 z-[1] pointer-events-none sm:hidden"
-        style={{ background: `linear-gradient(180deg, rgba(24,42,36,0.90) 0%, rgba(24,42,36,0.55) 42%, rgba(24,42,36,0.80) 100%)` }} />
+        style={{ background: `linear-gradient(180deg, rgba(24,42,36,0.95) 0%, rgba(24,42,36,0.82) 20%, rgba(24,42,36,0.34) 46%, rgba(24,42,36,0.58) 100%)` }} />
 
       {/* ── navbar ── */}
       <nav className="relative z-10 max-w-[1280px] mx-auto flex items-center justify-between px-5 sm:px-8 py-4 sm:py-5">
@@ -52,8 +55,8 @@ export function VideoHeroLight() {
       </nav>
 
       {/* ── hero content — 좌측 단일 컬럼 ── */}
-      <div className="relative z-10 max-w-[1280px] mx-auto px-5 sm:px-8 flex items-center"
-        style={{ minHeight: 'calc(100vh - 88px)', paddingTop: 'clamp(24px, 5vw, 40px)', paddingBottom: 'clamp(48px, 8vw, 96px)' }}>
+      <div className="relative z-10 max-w-[1280px] mx-auto px-5 sm:px-8 flex items-start sm:items-center"
+        style={{ minHeight: 'calc(100vh - 88px)', paddingTop: 'clamp(16px, 4vw, 40px)', paddingBottom: 'clamp(48px, 8vw, 96px)' }}>
         <div style={{ maxWidth: 560 }}>
           <motion.p custom={0} variants={fadeUp} initial="hidden" animate="visible"
             className="inline-flex items-center gap-2"
