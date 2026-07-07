@@ -220,11 +220,10 @@
 
 ## 14. 랜딩 히어로 (Solid Modern 다크, 2026-07-08)
 
-`VideoHeroLight` = 다크 이미지 배경 + 좌측 카피.
-- **배경** = 자체 제작 다크+골드 비주얼 `hero-bg.jpg`(Gemini): 딥 포레스트에 투명 저장고로 골드 코인이 슈트를 타고 흘러 축적 = 북극성 시각화. full-bleed(`object-cover`), 워터마크 delogo 제거.
-- **좌측 카피**: eyebrow(골드) `the simplest way to manage money` → H1(대문) 「복잡한 투자, **단순하게**」(골드 강조·언더라인) → 서브 한 줄 → 골드 CTA "무료로 시작하기". 좌측 forest 그라디언트 워시(데스크톱)·상하 스크림(모바일)으로 가독성.
-- **모션 업그레이드 경로**: `hero-bg`를 Higgsfield i2v(Kling)로 → `hero.mp4` 스왑(같은 배경 슬롯, `<video>`로 교체). 구 라이트 영상 파킹. 탐색: `docs/design/hero-explorations.md`.
-- 밝은 배경 절대 금지(지난 라이트 영상이 다크 랜딩과 안 맞았던 원인) — 히어로 소스는 딥 포레스트 + 골드만.
+`VideoHeroLight` = 다크 영상 배경 + 좌측 카피.
+- **배경** = 자체 제작 다크+골드 비주얼(Gemini 이미지 → Higgsfield i2v): 딥 포레스트에 투명 저장고로 골드 코인이 슈트를 타고 흘러 축적 = 북극성 시각화. **데스크톱=영상 모션**(`hero.mp4`, 2560 delogo·`hero-poster.jpg`) / **모바일=정지 이미지**(`hero-bg-mobile.jpg`, 저장고 중심 세로 crop). 워터마크 delogo 제거, `prefers-reduced-motion` 시 pause.
+- **좌측 카피**: eyebrow(골드) → H1 「복잡한 투자, **단순하게**」(골드 강조·언더라인) → 서브 한 줄 → 골드 CTA. 데스크톱=좌측 forest 워시, 모바일=저장고 위·텍스트 하단 앵커(하단 스크림).
+- 밝은 배경 절대 금지(지난 라이트 영상이 다크 랜딩과 안 맞았던 원인) — 히어로 소스는 딥 포레스트 + 골드만. 워크플로우: [[reference_higgsfield_video_workflow]] / `docs/design/hero-explorations.md`.
 
 ---
 

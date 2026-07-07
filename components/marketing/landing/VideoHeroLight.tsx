@@ -1,21 +1,23 @@
 'use client'
 
 /**
- * VideoHeroLight — Solid Modern 다크 히어로 (2026-07-08, 이미지 배경형).
- * BRAND_GUIDE.md 기준. 자체 제작 다크+골드 비주얼(Gemini): 딥 포레스트 배경에
- * 투명 저장고로 골드 코인이 슈트를 타고 흘러 쌓임 = 북극성 "여유자금을 단단한 자산으로 꾸준히".
- * full-bleed 이미지 배경(좌측 어두운 여백=텍스트) + 좌측 카피 단일 컬럼.
- * (모션 원하면 hero-bg를 Higgsfield i2v로 → hero.mp4 스왑, 같은 슬롯.)
+ * VideoHeroLight — Solid Modern 다크 히어로 (2026-07-08, 영상 배경형).
+ * BRAND_GUIDE.md 기준. 자체 제작 다크+골드 비주얼(Gemini 이미지 → Higgsfield i2v):
+ * 딥 포레스트 배경에 투명 저장고로 골드 코인이 슈트를 타고 흘러 쌓임 = 북극성 시각화.
+ * 데스크톱=영상 모션(hero.mp4, 워터마크 delogo) / 모바일=정지 이미지(저장고 세로 crop).
+ * 좌측 어두운 여백=카피. reduced-motion 가드(영상 pause + poster).
  */
 
 import Link from 'next/link'
 import Image from 'next/image'
+import { useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowRightCircle } from 'lucide-react'
 import { SM_SURFACE, SM_INK, SM_INK_DIM, GOLD } from './tokens'
 
-const HERO_BG = '/landing/hero-bg.jpg'
-const HERO_BG_MOBILE = '/landing/hero-bg-mobile.jpg'  // 세로 crop — 저장고 중심
+const VIDEO_SRC = '/landing/hero.mp4'                 // 데스크톱 모션(Higgsfield i2v, 2560 delogo)
+const HERO_POSTER = '/landing/hero-poster.jpg'        // 영상 첫 프레임(로딩·reduced-motion)
+const HERO_BG_MOBILE = '/landing/hero-bg-mobile.jpg'  // 모바일 정지 — 저장고 중심 세로 crop
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -30,11 +32,29 @@ function Logo() {
 }
 
 export function VideoHeroLight() {
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  // WCAG 2.2.2 — reduced-motion 시 데스크톱 영상 pause, poster 유지.
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const apply = () => {
+      const v = videoRef.current
+      if (!v) return
+      if (mq.matches) v.pause()
+      else v.play().catch(() => {})
+    }
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
+
   return (
     <section className="relative w-full min-h-screen overflow-hidden" style={{ background: SM_SURFACE, color: SM_INK }}>
-      {/* 배경 — 자체 제작 다크+골드 비주얼. 데스크톱=가로 full / 모바일=저장고 중심 세로 crop */}
-      <Image src={HERO_BG} alt="" aria-hidden fill priority sizes="100vw"
-        className="hidden sm:block object-cover object-center z-0" />
+      {/* 배경 — 데스크톱=영상 모션 / 모바일=정지 이미지(저장고 세로 crop) */}
+      <video ref={videoRef} autoPlay muted loop playsInline preload="auto" aria-hidden poster={HERO_POSTER}
+        className="hidden sm:block absolute inset-0 w-full h-full object-cover object-center z-0">
+        <source src={VIDEO_SRC} type="video/mp4" />
+      </video>
       <Image src={HERO_BG_MOBILE} alt="" aria-hidden fill priority sizes="100vw"
         className="sm:hidden object-cover object-center z-0" />
 
