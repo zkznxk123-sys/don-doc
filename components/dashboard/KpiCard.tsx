@@ -53,7 +53,7 @@ export function KpiCard({
         }
       </div>
       <p className={cn(
-        hero ? 'numeric-display text-[22px] sm:text-2xl' : 'numeric text-lg sm:text-xl',
+        hero ? 'numeric-display text-[26px] sm:text-[32px]' : 'numeric text-lg sm:text-xl',
         'text-foreground leading-tight',
       )}>{display}</p>
       {sub && <p className={cn('text-[10px] sm:text-xs tabular-nums leading-snug', subColor)}>{sub}</p>}

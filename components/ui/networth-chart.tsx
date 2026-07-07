@@ -80,10 +80,10 @@ const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
         </div>
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-1.5">
-            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: 'var(--viz-mint)' }} />
+            <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: 'hsl(var(--secondary))' }} />
             <span className="text-xs text-muted-foreground">순자산</span>
           </div>
-          <span className="text-xs font-semibold text-income tabular-nums">{formatCurrency(netWorth)}</span>
+          <span className="text-xs font-semibold text-foreground tabular-nums">{formatCurrency(netWorth)}</span>
         </div>
       </div>
 
@@ -156,7 +156,7 @@ export function NetWorthChart({ data, onDataSaved, onQuickSnapshot }: NetWorthCh
         <div className="flex items-center justify-between px-5 py-4 border-b border-border">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-income" />
-            <h2 className="text-sm font-semibold text-foreground font-serif tracking-tight">순자산 추이</h2>
+            <h2 className="text-sm font-semibold text-foreground tracking-tight">순자산 추이</h2>
             {chartData.length > 0 && (
               <span className="text-xs text-muted-foreground/60">{chartData.length}개월</span>
             )}
@@ -197,8 +197,8 @@ export function NetWorthChart({ data, onDataSaved, onQuickSnapshot }: NetWorthCh
                     <stop offset="95%" stopColor="var(--viz-sky)" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="gradNetWorth" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--viz-mint)" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="var(--viz-mint)" stopOpacity={0} />
+                    <stop offset="5%" stopColor="hsl(var(--secondary))" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="hsl(var(--secondary))" stopOpacity={0} />
                   </linearGradient>
                 </defs>
 
@@ -239,11 +239,11 @@ export function NetWorthChart({ data, onDataSaved, onQuickSnapshot }: NetWorthCh
                   type="monotone"
                   dataKey="netWorth"
                   name="순자산"
-                  stroke="var(--viz-mint)"
+                  stroke="hsl(var(--secondary))"
                   strokeWidth={2}
                   fill="url(#gradNetWorth)"
                   dot={false}
-                  activeDot={{ r: 5, fill: 'var(--viz-mint)', strokeWidth: 0 }}
+                  activeDot={{ r: 5, fill: 'hsl(var(--secondary))', strokeWidth: 0 }}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -254,7 +254,7 @@ export function NetWorthChart({ data, onDataSaved, onQuickSnapshot }: NetWorthCh
         {!isEmpty && (
           <div className="flex items-center gap-4 px-5 pb-4">
             <div className="flex items-center gap-1.5">
-              <div className="w-3 h-0.5 rounded-full" style={{ backgroundColor: 'var(--viz-mint)' }} />
+              <div className="w-3 h-0.5 rounded-full" style={{ backgroundColor: 'hsl(var(--secondary))' }} />
               <span className="text-xs text-muted-foreground">순자산</span>
             </div>
             <div className="flex items-center gap-1.5">

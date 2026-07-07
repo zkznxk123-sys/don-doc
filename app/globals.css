@@ -224,10 +224,10 @@
   letter-spacing: 0.16em;
 }
 @utility numeric-display {
-  /* Numeric · Hero display — Serif, editorial magazine tone */
-  font-family: var(--font-serif);
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  /* Numeric · Hero display — Solid Modern: tabular 그로테스크 볼드, 숫자가 주인공(serif 폐지, brand-guide-2.0) */
+  font-family: var(--font-sans);
+  font-weight: 800;
+  letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
 }
 @utility numeric {
