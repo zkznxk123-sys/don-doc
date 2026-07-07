@@ -86,6 +86,64 @@ export function isRouteBlockedInLite(pathname: string): boolean {
   return LITE_BLOCKED_ROUTES.some(prefix => pathname === prefix || pathname.startsWith(prefix + '/'))
 }
 
+/* ────────────────────────────────────────────────────────────────────────
+ * cohort 엔타이틀먼트 — lite/full 위에 얹는 per-user 3번째 축.
+ * 커뮤니티 웨지(예: 공모주/스팩 cohort)는 "IPO만 켜고 나머지 대시보드를 끈다"
+ * = lite/full의 역방향 게이트. specs/ipo-spac-wedge-v1.md 참조.
+ *
+ * cohort 값은 Clerk publicMetadata.cohort에 저장. middleware는 session claims로,
+ * 서버 컴포넌트/클라이언트는 currentUser()/useUser() publicMetadata로 읽는다.
+ * 미설정 시 null = 일반 사용자 = 게이트 미작동(fail-safe: 영향 0).
+ * ──────────────────────────────────────────────────────────────────────── */
+
+export type Cohort = 'ipo-spac'
+
+const KNOWN_COHORTS: readonly string[] = ['ipo-spac'] as const
+
+/** Clerk publicMetadata(또는 session claims metadata)에서 cohort 파싱. 알 수 없으면 null. */
+export function parseCohort(metadata: unknown): Cohort | null {
+  if (metadata && typeof metadata === 'object' && 'cohort' in metadata) {
+    const c = (metadata as { cohort?: unknown }).cohort
+    if (typeof c === 'string' && KNOWN_COHORTS.includes(c)) return c as Cohort
+  }
+  return null
+}
+
+/** cohort 사용자가 접근 가능한 route (역방향 allowlist — 이것만 통과, 나머지 대시보드는 차단). */
+export const WEDGE_ALLOWED_ROUTES: readonly string[] = [
+  '/dashboard/ipo',
+  '/dashboard/settings',
+] as const
+
+/** cohort 사용자의 홈 (로그인 후 진입 지점). */
+export const WEDGE_HOME = '/dashboard/ipo'
+
+/**
+ * cohort 사용자에게 이 dashboard route가 차단되는가.
+ * 대시보드 밖(랜딩·인증·온보딩)은 관여하지 않는다 — dashboard 내부만 제한.
+ */
+export function isRouteBlockedForCohort(cohort: Cohort | null, pathname: string): boolean {
+  if (!cohort) return false
+  if (!pathname.startsWith('/dashboard')) return false
+  return !WEDGE_ALLOWED_ROUTES.some(prefix => pathname === prefix || pathname.startsWith(prefix + '/'))
+}
+
+/**
+ * cohort 사용자가 접근 가능한 API prefix (역방향 allowlist). 이것 밖의 도메인 API는 차단.
+ * 방어심층 — UI에서 가려져도 endpoint 직접 호출을 막는다.
+ */
+export const WEDGE_ALLOWED_API: readonly string[] = [
+  '/api/ipo',
+  '/api/me',
+  '/api/health',
+] as const
+
+export function isApiBlockedForCohort(cohort: Cohort | null, pathname: string): boolean {
+  if (!cohort) return false
+  if (!pathname.startsWith('/api')) return false
+  return !WEDGE_ALLOWED_API.some(prefix => pathname === prefix || pathname.startsWith(prefix + '/'))
+}
+
 /**
  * API route 진입부에서 lite 빌드 차단 (방어심층). middleware가 dashboard
  * 페이지만 차단하므로 API endpoint는 별도 가드 필요. lite 사용자는 가족이

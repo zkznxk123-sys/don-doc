@@ -10,7 +10,7 @@ import { FloatingChatButton } from '@/components/chat/FloatingChatButton'
 import { AlertCircle, X } from 'lucide-react'
 import Link from 'next/link'
 import type { AppRole } from '@/lib/roles'
-import { isLite } from '@/lib/feature-flags'
+import { isLite, type Cohort } from '@/lib/feature-flags'
 
 export interface ShellUser {
   id: string
@@ -19,6 +19,7 @@ export interface ShellUser {
   role: AppRole
   familyId: string | null
   familyName: string | null
+  cohort?: Cohort | null
 }
 
 interface DashboardActionsContextType {

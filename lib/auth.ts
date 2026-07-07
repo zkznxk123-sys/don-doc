@@ -1,6 +1,7 @@
 import { auth, currentUser } from '@clerk/nextjs/server'
 import { prisma } from '@/lib/prisma'
 import type { AppRole } from '@/lib/roles'
+import { parseCohort, type Cohort } from '@/lib/feature-flags'
 
 export interface AuthUser {
   id: string
@@ -10,6 +11,8 @@ export interface AuthUser {
   familyId: string | null
   familyName: string | null
   familyAiMode: 'api' | 'claude' | 'chatgpt' | 'gemini'
+  /** 커뮤니티 웨지 cohort (Clerk publicMetadata). 일반 사용자는 null. */
+  cohort: Cohort | null
 }
 
 /**
@@ -21,7 +24,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
   try {
     // auth() works when Clerk middleware is active; currentUser() works without middleware
     let clerkId: string | null = null
-    const { userId } = await auth()
+    const { userId, sessionClaims } = await auth()
     if (userId) {
       clerkId = userId
     } else {
@@ -29,6 +32,11 @@ export async function getAuthUser(): Promise<AuthUser | null> {
       clerkId = clerkUser?.id ?? null
     }
     if (!clerkId) return null
+
+    // 웨지 cohort — session token metadata 클레임에서 (zero-cost). 미설정 시 null.
+    const cohort = parseCohort(
+      (sessionClaims as { metadata?: unknown } | null)?.metadata ?? sessionClaims,
+    )
 
     // clerkId로 Prisma User 조회
     const prismaUser = await prisma.user.findUnique({
@@ -46,6 +54,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
         familyId: prismaUser.familyId,
         familyName: prismaUser.family?.name ?? null,
         familyAiMode: (rawAiMode === 'proxy' ? 'claude' : rawAiMode) as 'api' | 'claude' | 'chatgpt' | 'gemini',
+        cohort,
       }
     }
 
@@ -79,6 +88,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
         familyId: updated.familyId,
         familyName: updated.family?.name ?? null,
         familyAiMode: (rawUpdatedMode === 'proxy' ? 'claude' : rawUpdatedMode) as 'api' | 'claude' | 'chatgpt' | 'gemini',
+        cohort,
       }
     }
 
@@ -96,6 +106,7 @@ export async function getAuthUser(): Promise<AuthUser | null> {
       familyId: newUser.familyId,
       familyName: null,
       familyAiMode: 'api',
+      cohort,
     }
   } catch (e) {
     if (process.env.NODE_ENV !== 'production') {

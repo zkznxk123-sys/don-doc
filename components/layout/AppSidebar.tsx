@@ -38,7 +38,7 @@ type NavItem = {
   group: NavGroup
 }
 
-import { features } from '@/lib/feature-flags'
+import { features, WEDGE_ALLOWED_ROUTES } from '@/lib/feature-flags'
 
 // 5/10 정체성 결정: 본질 4개 → Beta 그룹 → admin 순. Feed는 Beta로 노출(6/1 임시 복귀).
 // 6/10 제품 분리: lite 라인은 시나리오·피드 제외 (features.scenarios·familyFeed false).
@@ -74,6 +74,12 @@ interface AppSidebarProps {
 
 export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
   const pathname = usePathname()
+
+  // 웨지 cohort 사용자는 허용 route(IPO·설정)만 노출 — middleware가 접근을 막고,
+  // 사이드바는 그에 맞춰 메뉴를 숨긴다(시각 정합). 일반 사용자는 전체 노출.
+  const navItems = user.cohort
+    ? NAV_ITEMS.filter(i => WEDGE_ALLOWED_ROUTES.some(p => i.href === p || i.href.startsWith(p + '/')))
+    : NAV_ITEMS
 
   const isActive = (item: NavItem) =>
     item.exact ? pathname === item.href : pathname.startsWith(item.href)
@@ -121,7 +127,7 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
       {/* 메뉴 — core / beta / admin 3그룹, 사이에 구분선 */}
       <nav className="flex-1 px-2 py-3 overflow-y-auto overflow-x-hidden">
         {NAV_GROUP_ORDER.map((groupId, groupIdx) => {
-          const items = NAV_ITEMS.filter(i => i.group === groupId)
+          const items = navItems.filter(i => i.group === groupId)
           if (items.length === 0) return null
           return (
             <div
@@ -159,7 +165,7 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
               })}
 
               {/* CFO 전용: 가족 관리·초대 코드는 admin 그룹에 묶음. lite는 가족 관리 자체 제외. */}
-              {groupId === 'admin' && user.role === 'CFO' && features.familyManagement && (
+              {groupId === 'admin' && !user.cohort && user.role === 'CFO' && features.familyManagement && (
                 <>
                   <Link
                     href="/dashboard/family"

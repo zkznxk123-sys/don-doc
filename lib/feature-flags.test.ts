@@ -82,4 +82,42 @@ describe('feature-flags', () => {
     const { blockIfLite } = await import('./feature-flags')
     expect(blockIfLite()).toBeNull()
   })
+
+  // ── cohort 엔타이틀먼트 (웨지 역방향 게이트) ──
+
+  it('parseCohort — 알려진 cohort만 파싱, 나머지 null (fail-safe)', async () => {
+    const { parseCohort } = await import('./feature-flags')
+    expect(parseCohort({ cohort: 'ipo-spac' })).toBe('ipo-spac')
+    expect(parseCohort({ cohort: 'unknown' })).toBeNull()
+    expect(parseCohort({ other: 'x' })).toBeNull()
+    expect(parseCohort(null)).toBeNull()
+    expect(parseCohort(undefined)).toBeNull()
+    expect(parseCohort('ipo-spac')).toBeNull() // 객체 아니면 null
+  })
+
+  it('isRouteBlockedForCohort — 허용 route(IPO·설정)만 통과, 나머지 대시보드 차단', async () => {
+    const { isRouteBlockedForCohort } = await import('./feature-flags')
+    // cohort 사용자
+    expect(isRouteBlockedForCohort('ipo-spac', '/dashboard/ipo')).toBe(false)
+    expect(isRouteBlockedForCohort('ipo-spac', '/dashboard/ipo/detail')).toBe(false)
+    expect(isRouteBlockedForCohort('ipo-spac', '/dashboard/settings')).toBe(false)
+    expect(isRouteBlockedForCohort('ipo-spac', '/dashboard')).toBe(true)
+    expect(isRouteBlockedForCohort('ipo-spac', '/dashboard/assets')).toBe(true)
+    expect(isRouteBlockedForCohort('ipo-spac', '/dashboard/cashflow')).toBe(true)
+    // 대시보드 밖은 관여 안 함 (랜딩·인증)
+    expect(isRouteBlockedForCohort('ipo-spac', '/')).toBe(false)
+    expect(isRouteBlockedForCohort('ipo-spac', '/sign-in')).toBe(false)
+    // 일반 사용자(cohort null)는 전부 통과
+    expect(isRouteBlockedForCohort(null, '/dashboard/assets')).toBe(false)
+  })
+
+  it('isApiBlockedForCohort — 허용 API(ipo·me·health)만 통과, 도메인 API 차단', async () => {
+    const { isApiBlockedForCohort } = await import('./feature-flags')
+    expect(isApiBlockedForCohort('ipo-spac', '/api/ipo/workspace')).toBe(false)
+    expect(isApiBlockedForCohort('ipo-spac', '/api/me')).toBe(false)
+    expect(isApiBlockedForCohort('ipo-spac', '/api/assets')).toBe(true)
+    expect(isApiBlockedForCohort('ipo-spac', '/api/family/invite')).toBe(true)
+    // 일반 사용자는 전부 통과
+    expect(isApiBlockedForCohort(null, '/api/assets')).toBe(false)
+  })
 })
