@@ -42,7 +42,7 @@ export function VideoHeroLight() {
       <div aria-hidden className="absolute inset-0 z-[1] pointer-events-none hidden sm:block"
         style={{ background: `linear-gradient(90deg, ${SM_SURFACE} 0%, rgba(24,42,36,0.86) 28%, rgba(24,42,36,0.25) 58%, transparent 74%)` }} />
       <div aria-hidden className="absolute inset-0 z-[1] pointer-events-none sm:hidden"
-        style={{ background: `linear-gradient(180deg, rgba(24,42,36,0.95) 0%, rgba(24,42,36,0.82) 20%, rgba(24,42,36,0.34) 46%, rgba(24,42,36,0.58) 100%)` }} />
+        style={{ background: `linear-gradient(180deg, rgba(24,42,36,0.55) 0%, rgba(24,42,36,0.12) 24%, rgba(24,42,36,0.30) 52%, rgba(24,42,36,0.82) 78%, rgba(24,42,36,0.97) 100%)` }} />
 
       {/* ── navbar ── */}
       <nav className="relative z-10 max-w-[1280px] mx-auto flex items-center justify-between px-5 sm:px-8 py-4 sm:py-5">
@@ -55,8 +55,8 @@ export function VideoHeroLight() {
       </nav>
 
       {/* ── hero content — 좌측 단일 컬럼 ── */}
-      <div className="relative z-10 max-w-[1280px] mx-auto px-5 sm:px-8 flex items-start sm:items-center"
-        style={{ minHeight: 'calc(100vh - 88px)', paddingTop: 'clamp(16px, 4vw, 40px)', paddingBottom: 'clamp(48px, 8vw, 96px)' }}>
+      <div className="relative z-10 max-w-[1280px] mx-auto px-5 sm:px-8 flex items-end sm:items-center"
+        style={{ minHeight: 'calc(100vh - 88px)', paddingTop: 'clamp(16px, 4vw, 40px)', paddingBottom: 'clamp(40px, 8vw, 96px)' }}>
         <div style={{ maxWidth: 560 }}>
           <motion.p custom={0} variants={fadeUp} initial="hidden" animate="visible"
             className="inline-flex items-center gap-2"
