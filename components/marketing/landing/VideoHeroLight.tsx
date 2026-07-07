@@ -10,17 +10,17 @@ import Link from 'next/link'
 import { useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowRightCircle } from 'lucide-react'
+import { BrandMark } from '@/components/ui/brand-mark'
+import { ACCENT, INK, BG } from './tokens'
 
 // 자체 제작 히어로 (Gemini 이미지 → Higgsfield). 워터마크 제거.
 // 데스크톱 = 영상(가로, Kling i2v, 2560 샤픈) / 모바일 = 정지 이미지(세로 9:16) + 은은한 ken-burns.
 // AI i2v가 "동전 진입·스택 성장" 모션을 못 살려서 모바일은 razor-sharp 정지 이미지로 결정(2026-07-07).
+// 색상은 tokens.ts 단일 출처(§7). 로고는 골드 코인 wordmark(§6).
 const VIDEO_SRC = '/landing/hero.mp4'
 const IMG_POSTER = '/landing/hero-poster.jpg'
 const IMG_MOBILE = '/landing/hero-mobile.jpg'
 const VIDEO_FILTER = ''
-const ACCENT = '#2F5D4F'
-const INK = '#1A1F1E'
-const BG = '#FAF8F3'
 
 // 북극성 흐름 3-step (본다→남긴다→옮긴다). 영문, 공모주 미노출·컴플라이언스 안전.
 const STEPS = [
@@ -38,11 +38,8 @@ const fadeUp = {
 }
 
 function Logo() {
-  return (
-    <span className="text-[19px] font-black tracking-[-0.02em]" style={{ color: INK }}>
-      돈Doc
-    </span>
-  )
+  // 골드 코인 wordmark — 라이트 랜딩에서 골드가 남는 유일한 자리(§6·§7-191).
+  return <BrandMark variant="wordmark" size={20} />
 }
 
 export function VideoHeroLight() {

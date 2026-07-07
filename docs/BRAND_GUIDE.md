@@ -56,8 +56,8 @@
 ### Primary Tagline (자산 버전 설명)
 > **가장 쉬운 자산 관리 — 흩어진 자산을 한 화면에.**
 
-- 우산(투자)의 하위 = 자산 버전 **설명**. Hero, SEO description, OG image, App Store description, 채널 bio 에 사용
-- 구조: 랜딩 Hero eyebrow(「가장 쉬운 자산 관리」) + H1(「흩어진 자산을 한 화면에」) 결합 = Threads bio 정본과 1:1 일치
+- 우산(투자)의 하위 = 자산 버전 **설명**. SEO description, OG image, App Store description, 채널 bio 에 사용 (**랜딩 Hero엔 미노출** — 아래 구조 참조)
+- 구조: 랜딩 Hero는 **북극성**을 대문으로 승격 — eyebrow(영문) 「THE SIMPLEST WAY TO MANAGE MONEY」 + H1 「복잡한 투자, 단순하게.」 (§8 랜딩 규범). Primary Tagline(「가장 쉬운 자산 관리 — 흩어진 자산을 한 화면에」)은 Hero 화면엔 쓰지 않고 SEO·OG·bio 전용이며 Threads bio 정본과 1:1 일치
 - 영문 버전: *The easiest way to manage your assets — scattered assets, one view.*
 
 ### One-liner (elevator)
@@ -109,7 +109,7 @@
 
 | 상황 | 톤 | 예시 |
 |---|---|---|
-| Hero / 헤드라인 | Confident, editorial, 짧음 | "가장 쉬운 자산 관리 — 흩어진 자산을 한 화면에." |
+| Hero / 헤드라인 | Confident, editorial, 짧음 | "복잡한 투자, 단순하게." (북극성 · 랜딩 H1 정본) |
 | 본문 설명 | Clear, 존댓말, 단정 | "가족 각자의 사생활은 지키면서, 자산은 한 화면에서 투명하게." |
 | CTA 버튼 | 동사 원형, 간결 | "무료로 시작하기", "데모 체험하기" |
 | 빈 상태 / 안내 | Warm, 부드러움 | "아직 가족이 초대되지 않았어요." |
@@ -216,14 +216,14 @@ CSS 변수는 `app/globals.css` 에 이미 반영됨. 요약:
 - **eyebrow(영문 작게)** `THE SIMPLEST WAY TO MANAGE MONEY` → **H1(대문) 「복잡한 투자, 단순하게.」**("단순하게" 포레스트 accent) → **3-step**(`01 See your cashflow → 02 Keep the surplus → 03 Build solid assets`, 북극성 "본다→남긴다→옮긴다"의 영문) → **CTA**. 서브카피·nav 메뉴·햄버거 없음.
 - H1은 Pretendard 볼드(serif 아님). serif(`numeric-display`)는 앱 대시보드 hero 숫자 전용(A′). "복잡한 투자, 단순하게"가 히어로 대문 = 북극성 승격.
 - **배경 = 자체 제작 3D 비주얼**(Gemini Nano Banana 이미지 → Higgsfield Kling i2v, 투명 유리 저장고에 코인이 흘러 축적). 워터마크 제거·웹 최적화. **데스크톱=영상 full-bleed**(`hero.mp4`, 2560 샤픈) / **모바일=정지 이미지**(`hero-mobile.jpg`, 세로 9:16) + 은은한 ken-burns. (모바일은 AI i2v가 "동전 진입·스택 성장" 모션을 못 살려 razor-sharp 정지 이미지로 결정.)
-- 좌상단 가독성 워시, `prefers-reduced-motion` 대응(ken-burns 정지). 영상 제작 워크플로우: [[reference_higgsfield_video_workflow]](메모리) / `docs/design/hero-explorations.md`.
+- 좌상단 가독성 워시. `prefers-reduced-motion` 가드 **완비**(2026-07-07, `bb04429`): 데스크톱 video JS `pause()` + `hero-poster.jpg` 노출 / 모바일 ken-burns CSS 정지. 로고 = 골드 코인 wordmark(§6), 색상 = tokens.ts 단일 출처(§7). 영상 제작 워크플로우: [[reference_higgsfield_video_workflow]](메모리) / `docs/design/hero-explorations.md`.
 - ⚠️ AI 생성물엔 보이지 않는 SynthID가 남을 수 있음(정직: AI 생성). 보이는 워터마크는 delogo로 제거.
 
 ### 디자인 원칙 — 북극성 파생 (2026-07-06)
 
 모든 시각 선택은 북극성(「복잡한 투자, 단순하게」 = 여유자금을 단단한 자산으로 꾸준히)을 이 4원칙으로 내려 대본다:
 
-1. **흐름 → 단단함** — 모션·이미지는 "움직임이 단단한 것으로 쌓이는" 걸 보여준다(장식 모션 X). 히어로 비디오/Spline = 흐름이 단단한 층으로 쌓이는 시각화.
+1. **흐름 → 단단함** — 모션·이미지는 "움직임이 단단한 것으로 쌓이는" 걸 보여준다(장식 모션 X). 히어로 비디오(투명 저장고에 코인 축적) = 흐름이 단단한 층으로 쌓이는 시각화.
 2. **단단·꾸준 > 반짝·hype** — 솔리드·촉각·차분함 우선. 반짝이·마법·재테크 hype 미감 지양. (예: 장식용 ✨ Sparkles류는 꾸준한 축적/우상향 은유로 대체 검토)
 3. **단순함이 태도** — 과감한 여백·초점 하나·짧은 카피 = "복잡한 건 접어두자"의 시각화.
 4. **친근하되 진중** — 웜 라이트 + 위트, 그러나 유치하지 않게. 사용자의 실제 돈·미래를 다룬다.
@@ -235,9 +235,9 @@ CSS 변수는 `app/globals.css` 에 이미 반영됨. 요약:
 ## 9. Do / Don't
 
 ### ✅ Do
-- 로고 + 태그라인을 항상 함께 (랜딩, OG 이미지, 초대 이메일)
+- 로고 + 태그라인을 함께 (OG 이미지, 초대 이메일). **랜딩 Hero는 미니멀 예외** — 골드 코인 wordmark 로고 + 북극성 H1만, Primary Tagline 병기 안 함(§8 랜딩 규범)
 - "돈Doc" 표기 유지 — 대소문자, 한영 혼용 그대로
-- Hero에 serif, 나머지 UI에 Pretendard
+- **표지 KPI display 숫자에 serif**(앱 대시보드 hero 숫자 1곳), 헤드라인·나머지 UI는 Pretendard (랜딩 H1도 Pretendard 볼드)
 - 골드를 강조점으로 — 전체 UI의 5–10% 이하
 
 ### ❌ Don't
