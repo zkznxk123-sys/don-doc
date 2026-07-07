@@ -1,5 +1,5 @@
 /**
- * 자산타입 색 단일 소스 (Solid Modern 어시 팔레트 · brand-guide-2.0 §6).
+ * 자산타입 색 단일 소스 (Solid Modern 어시 팔레트 · BRAND_GUIDE §6).
  *
  * 이전: 도넛(hex 무지개)·asset-list/drawer(semantic 클래스)·demo(hex)로 4곳 분산 → 표면마다 불일치.
  * 이후: 모든 자산 표면이 이 파일에서 색을 가져온다. 골드+포레스트 어시 계열, 자산=따뜻한 축적 톤 / 부채=테라코타.

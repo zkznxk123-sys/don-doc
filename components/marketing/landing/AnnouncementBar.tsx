@@ -1,7 +1,7 @@
 import { SM_RAISED, SM_INK, SM_INK_DIM, SM_HAIRLINE, GOLD } from './tokens'
 
 export function AnnouncementBar() {
-  // Solid Modern 다크 — 히어로와 정합(brand-guide-2.0).
+  // Solid Modern 다크 — 히어로와 정합(BRAND_GUIDE).
   return (
     <div
       className="flex items-center justify-center gap-2.5 px-6 md:px-14 py-2.5 text-[12px] text-center"

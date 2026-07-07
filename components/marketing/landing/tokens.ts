@@ -23,7 +23,7 @@ export const INK_FAINT = 'rgba(26,31,30,0.14)' // border·divider
 export const POSITIVE = '#2F8A6E'                // 라이트 톤 positive
 
 /* ────────────────────────────────────────────────────────────────────────
- * Solid Modern — 마케팅/공모주 다크 표면 (brand-guide-2.0-solid-modern.md).
+ * Solid Modern — 마케팅/공모주 다크 표면 (BRAND_GUIDE.md).
  * 랜딩 다크 마이그레이션(2026-07-07). 딥 포레스트 + 강한 골드 + 숫자 히어로.
  * ──────────────────────────────────────────────────────────────────────── */
 export const SM_SURFACE = '#182A24'                    // 딥 포레스트/네이비 바탕

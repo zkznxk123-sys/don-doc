@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch'
 import { useAssetThreshold } from '@/lib/hooks/useAssetThreshold'
 import { assetColor, ASSET_COLOR_FALLBACK } from '@/lib/asset-colors'
 
-// 색은 단일 소스(lib/asset-colors)에서, 아이콘만 로컬. brand-guide-2.0 §6.
+// 색은 단일 소스(lib/asset-colors)에서, 아이콘만 로컬. BRAND_GUIDE §6.
 const ASSET_PALETTE: Record<string, { color: string; icon: React.ReactNode }> = {
   INVESTMENT:  { color: assetColor('INVESTMENT'),  icon: <TrendingUp className="w-4 h-4" /> },
   CASH:        { color: assetColor('CASH'),        icon: <Banknote   className="w-4 h-4" /> },

@@ -224,7 +224,7 @@
   letter-spacing: 0.16em;
 }
 @utility numeric-display {
-  /* Numeric · Hero display — Solid Modern: tabular 그로테스크 볼드, 숫자가 주인공(serif 폐지, brand-guide-2.0) */
+  /* Numeric · Hero display — Solid Modern: tabular 그로테스크 볼드, 숫자가 주인공(serif 폐지, BRAND_GUIDE) */
   font-family: var(--font-sans);
   font-weight: 800;
   letter-spacing: -0.03em;
@@ -473,7 +473,7 @@
 .hero-kenburns { animation: heroKenBurns 20s ease-in-out infinite; will-change: transform; }
 @media (prefers-reduced-motion: reduce) { .hero-kenburns { animation: none; transform: scale(1.03); } }
 
-/* ── Solid Modern 랜딩 다크 (brand-guide-2.0) ── */
+/* ── Solid Modern 랜딩 다크 (BRAND_GUIDE) ── */
 /* blueprint 그리드 — "축적=구조"의 은은한 바탕(2~3% 골드). */
 .hero-blueprint {
   background-image:
