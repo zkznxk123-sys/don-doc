@@ -7,6 +7,7 @@
  */
 
 import Link from 'next/link'
+import { useEffect, useRef } from 'react'
 import { motion } from 'framer-motion'
 import { ArrowRightCircle } from 'lucide-react'
 
@@ -14,6 +15,7 @@ import { ArrowRightCircle } from 'lucide-react'
 // 데스크톱 = 영상(가로, Kling i2v, 2560 샤픈) / 모바일 = 정지 이미지(세로 9:16) + 은은한 ken-burns.
 // AI i2v가 "동전 진입·스택 성장" 모션을 못 살려서 모바일은 razor-sharp 정지 이미지로 결정(2026-07-07).
 const VIDEO_SRC = '/landing/hero.mp4'
+const IMG_POSTER = '/landing/hero-poster.jpg'
 const IMG_MOBILE = '/landing/hero-mobile.jpg'
 const VIDEO_FILTER = ''
 const ACCENT = '#2F5D4F'
@@ -44,10 +46,27 @@ function Logo() {
 }
 
 export function VideoHeroLight() {
+  const videoRef = useRef<HTMLVideoElement>(null)
+
+  // WCAG 2.2.2 — reduced-motion 사용자는 자동재생 영상을 멈추고 poster(첫 프레임)만 노출.
+  // framer 모션은 MotionConfig가 처리하지만 네이티브 video는 별도 가드가 필요.
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const apply = () => {
+      const v = videoRef.current
+      if (!v) return
+      if (mq.matches) v.pause()
+      else v.play().catch(() => {})
+    }
+    apply()
+    mq.addEventListener('change', apply)
+    return () => mq.removeEventListener('change', apply)
+  }, [])
+
   return (
     <section className="relative w-full min-h-screen overflow-hidden" style={{ color: INK, background: BG }}>
       {/* 배경 — 데스크톱: 영상 full-bleed / 모바일: 정지 이미지 + 은은한 ken-burns */}
-      <video autoPlay muted loop playsInline preload="auto" aria-hidden
+      <video ref={videoRef} autoPlay muted loop playsInline preload="auto" aria-hidden poster={IMG_POSTER}
         style={{ filter: VIDEO_FILTER }}
         className="hidden sm:block absolute inset-0 w-full h-full object-cover object-center z-0">
         <source src={VIDEO_SRC} type="video/mp4" />

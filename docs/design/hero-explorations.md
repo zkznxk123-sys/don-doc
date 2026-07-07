@@ -25,6 +25,8 @@ motionsites.ai 저장 레퍼런스(풀스크린 loop 비디오 + liquid-glass) 3
 - 채택 근거: B가 "가장 깔끔"한 이유 = 하이키 밝은 이미지 + 텍스트쪽 여백 + 초점 하나 + **브랜드 라이트 톤 일치**(A·C 다크는 "다른 사이트" 느낌). → 실제 브랜드 영상 제작 시 *밝은 하이키·여백·단일 초점* 클립을 골라야 이 깔끔함이 유지됨.
 - 브랜드 조정: 보라 액센트(#7342E2)→포레스트(#2F5D4F), Helvetica Now(한글 X)→Pretendard, 카피는 정본 태그라인.
 - ⚠️ 현재 영상(`hero2.mp4`)은 범용 AI 추상 클립 — 발행 전 돈Doc다운 영상으로 교체 권장.
+- **2026-07-07 교체 완료**: `hero2.mp4`(범용 AI 플레이스홀더) → `hero.mp4`(자체 제작). 파이프라인 = Gemini(Nano Banana) 이미지 → Higgsfield image-to-video(Kling), 워터마크 delogo + 2560 샤픈. 근거: BRAND_GUIDE §8 "발행 전 브랜드 영상 제작·교체" 이행 + 소유권·브랜드색(포레스트·골드) 내장으로 그레이딩 불필요. 저작권 이슈 있던 남의 CDN 클립 전량 폐기.
+- **2026-07-07 미니멀 재구성**: 사용자 결정으로 풀블리드 단일화면 확정(분할 레이아웃·서브카피·하위 섹션·nav 메뉴 제거). 데스크톱=영상 full-bleed / 모바일=정지 이미지(`hero-mobile.jpg`)+ken-burns(AI i2v가 "코인 진입·스택 성장" 모션을 못 살려서). reduced-motion 가드: 모바일 ken-burns CSS + 데스크톱 video JS pause + `hero-poster.jpg`.
 - A·C 컴포넌트·영상은 채택 후 삭제(레포 경량화). 복구용 원본 비디오 URL:
   - A(Velorah): `https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260314_131748_f2ca2a28-fed7-44c8-b9a9-bd9acdd5ec31.mp4`
   - C(Equilibrium): `https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260511_230229_7c9bc431-46cf-489a-948d-e8144d8eb5d4.mp4`
