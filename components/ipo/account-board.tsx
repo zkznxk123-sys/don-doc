@@ -129,7 +129,7 @@ export function AccountBoard({ accounts, ledger, data }: AccountBoardProps) {
             <CardContent className="pt-3 pb-2">
               <button onClick={() => togglePerson(person)} className="w-full flex items-center gap-2 pb-1.5 text-left">
                 <ChevronDown className={cn('size-3.5 shrink-0 text-muted-foreground transition-transform', !open && '-rotate-90')} />
-                <span className="text-sm font-medium">{person}</span>
+                <span data-priv className="text-sm font-medium">{person}</span>
                 <span className="text-xs text-muted-foreground">{accts.length}계좌</span>
                 {issues > 0 && (
                   <span className="ml-auto text-[11px] text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
@@ -190,7 +190,7 @@ function AccountRow({ account, ledger, reveal, onRemove, onEdit }: {
           <span className="shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300">제휴</span>
         )}
       </span>
-      <span className="ml-auto sm:ml-0 text-[11px] text-muted-foreground tabular-nums truncate sm:col-span-3" title={reveal ? undefined : '상단 “계좌번호 보기”로 전체 확인'}>
+      <span data-priv className="ml-auto sm:ml-0 text-[11px] text-muted-foreground tabular-nums truncate sm:col-span-3" title={reveal ? undefined : '상단 “계좌번호 보기”로 전체 확인'}>
         {account.accountNo ? (reveal ? account.accountNo : maskAccountNo(account.accountNo)) : '—'}
       </span>
       <span className="basis-full sm:hidden" />
