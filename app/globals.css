@@ -488,34 +488,35 @@
 .hero-orbit path { animation: heroOrbitFlow 24s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .hero-orbit path { animation: none; } }
 
-/* ── 포커싱 박스 — 입력 집중 영역(예: 내 청약). 골드 테두리가 천천히 반짝이며 흐른다.
-   테두리(::before, mask-xor)만 애니메이션 → 본문 가독성 유지. + 은은한 골드 외부 glow. */
+/* ── 포커싱 박스 — 입력 집중 영역(예: 내 청약). 골드 테두리 + 글로우 + 빛 셰인 스윕.
+   테두리·글로우는 항상 보이고, 빛줄기(::before)가 본문 뒤로 천천히 지나간다. */
 .focus-box {
   position: relative;
+  border: 1.5px solid rgba(201, 165, 74, 0.55);
   border-radius: 0.5rem;
-  box-shadow: 0 6px 26px -10px rgba(201, 165, 74, 0.28);
+  box-shadow: 0 0 0 1px rgba(201, 165, 74, 0.12), 0 8px 30px -10px rgba(201, 165, 74, 0.38);
+  overflow: hidden;
+  isolation: isolate;
 }
+.focus-box > * { position: relative; z-index: 1; }   /* 본문은 셰인 위 */
 .focus-box::before {
   content: '';
   position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1.5px;                 /* 테두리 두께 */
-  background: linear-gradient(110deg,
-    rgba(201, 165, 74, 0.28) 0%,
-    rgba(201, 165, 74, 0.90) 34%,
-    rgba(244, 241, 233, 0.95) 50%,
-    rgba(201, 165, 74, 0.90) 66%,
-    rgba(201, 165, 74, 0.28) 100%);
-  background-size: 220% 100%;
-  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  animation: focusBorderFlow 5.5s linear infinite;
+  top: 0; bottom: 0; left: 0;
+  width: 55%;
+  z-index: 0;
+  background: linear-gradient(100deg,
+    transparent 0%,
+    rgba(201, 165, 74, 0.16) 42%,
+    rgba(244, 241, 233, 0.24) 50%,
+    rgba(201, 165, 74, 0.16) 58%,
+    transparent 100%);
+  transform: translateX(-160%);
+  animation: focusSheen 4.8s ease-in-out infinite;
   pointer-events: none;
 }
-@keyframes focusBorderFlow { to { background-position: -220% 0; } }
-@media (prefers-reduced-motion: reduce) {
-  .focus-box::before { animation: none; background-position: 50% 0; }
+@keyframes focusSheen {
+  0%       { transform: translateX(-160%); }
+  55%, 100% { transform: translateX(340%); }
 }
+@media (prefers-reduced-motion: reduce) { .focus-box::before { animation: none; opacity: 0; } }
