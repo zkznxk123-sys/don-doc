@@ -17,7 +17,7 @@ import type { IpoData } from '@/lib/ipo/store'
 
 /** 종목의 대표일(정렬·월그룹 기준): 청약 시작 → 상장 → 환불 순 우선. */
 function primaryDate(o: UpcomingOffering): string {
-  return o.subStart ?? o.listingDate ?? o.refundDate ?? ''
+  return (o.subEnd ?? o.subStart) ?? o.listingDate ?? o.refundDate ?? ''
 }
 
 export function ScheduleView({ data, kind }: { data: IpoData; kind?: 'IPO' | 'SPAC' }) {
@@ -30,7 +30,7 @@ export function ScheduleView({ data, kind }: { data: IpoData; kind?: 'IPO' | 'SP
     const inScope = OFFERINGS.filter(o => {
       if (kind && o.kind !== kind) return false
       if (scope === 'all') return true
-      const dates = [o.subStart, o.refundDate, o.listingDate, o.transferDate].filter(Boolean) as string[]
+      const dates = [(o.subEnd ?? o.subStart), o.refundDate, o.listingDate, o.transferDate].filter(Boolean) as string[]
       return dates.some(d => d >= todayISO)
     })
     const map = new Map<string, UpcomingOffering[]>()
@@ -120,7 +120,7 @@ function OfferingDetail({ o, data, today }: { o: UpcomingOffering; data: IpoData
   const override = data.overrides[o.name] ?? {}
   const onOverride = (p: Parameters<typeof data.setOverride>[1]) => data.setOverride(o.name, p)
   const hasInfo = !!(o.ipoPrice || o.offerAmountEok || o.shares || o.instCompetition || o.lockupRatio != null)
-  const dSub = o.subStart ? ddays(o.subStart, today) : null
+  const dSub = (o.subEnd ?? o.subStart) ? ddays((o.subEnd ?? o.subStart)!, today) : null
   return (
     <div className="pb-3 pt-1 space-y-2">
       {/* ── 핵심 4지표 — 청약 판단에 가장 중요한 것 먼저, 크게 ── */}
@@ -441,7 +441,7 @@ function DateChip({ label, date, prefix = '' }: { label: string; date: string; p
 
 /** 오늘 이후 가장 가까운 이벤트일(없으면 null). */
 function nextDate(o: UpcomingOffering, todayISO: string): string | null {
-  const ds = [o.subStart, o.refundDate, o.listingDate, o.transferDate].filter(Boolean) as string[]
+  const ds = [(o.subEnd ?? o.subStart), o.refundDate, o.listingDate, o.transferDate].filter(Boolean) as string[]
   return ds.filter(d => d >= todayISO).sort()[0] ?? null
 }
 
