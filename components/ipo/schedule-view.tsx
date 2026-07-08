@@ -60,14 +60,14 @@ export function ScheduleView({ data, kind }: { data: IpoData; kind?: 'IPO' | 'SP
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-medium flex items-center gap-1.5"><Calendar className="size-4" /> 전체 일정 · {total}종목</h3>
-        <div className="flex items-center gap-1.5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h3 className="text-sm font-medium flex items-center gap-1.5 whitespace-nowrap"><Calendar className="size-4 shrink-0" /> 전체 일정 · {total}종목</h3>
+        <div className="flex items-center gap-1.5 ml-auto">
           {view === 'list' && (
             <div className="inline-flex rounded-lg bg-card border border-border p-0.5 text-xs">
               {(['upcoming', 'all'] as const).map(s => (
                 <button key={s} onClick={() => setScope(s)}
-                  className={cn('rounded-md px-2.5 py-1 font-medium', scope === s ? 'bg-muted text-foreground' : 'text-muted-foreground')}>
+                  className={cn('rounded-md px-2.5 py-1 font-medium whitespace-nowrap', scope === s ? 'bg-muted text-foreground' : 'text-muted-foreground')}>
                   {s === 'upcoming' ? '다가올' : '전체'}
                 </button>
               ))}
@@ -76,7 +76,7 @@ export function ScheduleView({ data, kind }: { data: IpoData; kind?: 'IPO' | 'SP
           <div className="inline-flex rounded-lg bg-card border border-border p-0.5 text-xs">
             {(['list', 'calendar'] as const).map(v => (
               <button key={v} onClick={() => setView(v)}
-                className={cn('rounded-md px-2.5 py-1 font-medium', view === v ? 'bg-muted text-foreground' : 'text-muted-foreground')}>
+                className={cn('rounded-md px-2.5 py-1 font-medium whitespace-nowrap', view === v ? 'bg-muted text-foreground' : 'text-muted-foreground')}>
                 {v === 'list' ? '리스트' : '캘린더'}
               </button>
             ))}

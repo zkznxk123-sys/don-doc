@@ -155,16 +155,16 @@ export default function IpoLedgerPage() {
       {/* 캡처 모드 — 개인값(data-priv)만 블러. 토글 시에만 스타일 주입 */}
       {capture && <style>{`[data-priv]{filter:blur(6px);user-select:none}`}</style>}
       {/* 헤더 + 공모주/스팩주 분기 */}
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-x-3 gap-y-2">
         <div>
-          <h1 className="text-lg font-semibold flex items-center gap-2">
-            <TrendingUp className="size-5" /> 공모주 · 스팩주
+          <h1 className="text-lg font-semibold flex items-center gap-2 break-keep">
+            <TrendingUp className="size-5 shrink-0" /> 공모주 · 스팩주
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5 break-keep">
             흩어진 청약을 한 화면에 — 배정·환불까지 한눈에
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 ml-auto">
         <button onClick={() => setCapture(v => !v)} title="가리기 모드 — 금액·명의·계좌번호 블러 (스크린샷 전 켜기)"
           className={cn('inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-xs font-medium',
             capture ? 'bg-foreground text-background' : 'bg-card text-muted-foreground hover:text-foreground')}>
