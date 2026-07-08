@@ -140,7 +140,8 @@ export function DashboardShell({
         onSuccess={handleDrawerSuccess}
       />
 
-      <FloatingChatButton />
+      {/* cohort(순수 IPO 웨지) 유저에겐 AI 챗 미노출 */}
+      {!user.cohort && <FloatingChatButton />}
     </DashboardActionsContext.Provider>
   )
 }
