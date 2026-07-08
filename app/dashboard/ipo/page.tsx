@@ -17,7 +17,7 @@ import { AccountBoard, MoneyMap } from '@/components/ipo/account-board'
 import { SpacPanel } from '@/components/ipo/spac-panel'
 import { SpacHoldings } from '@/components/ipo/spac-holdings'
 import { ScheduleView } from '@/components/ipo/schedule-view'
-import { ResetBar, IpoDatalists, DeleteBtn, EditBtn, SubForm } from '@/components/ipo/entry-forms'
+import { IpoDatalists, DeleteBtn, EditBtn, SubForm } from '@/components/ipo/entry-forms'
 import { useIpoData } from '@/lib/ipo/store'
 import {
   OFFERING_BY_NAME,
@@ -119,8 +119,8 @@ export default function IpoLedgerPage() {
         </>
       )}
 
-      {/* 초기화 — 데이터 있을 때만 */}
-      <ResetBar data={data} />
+      {/* 데이터 툴바(내보내기·가져오기·초기화) — 일단 숨김(2026-07-08). 필요 시 아래 주석 해제. */}
+      {/* <ResetBar data={data} /> */}
 
       {/* 스팩주 = 탭 없이 보유현황 + 시세·유니버스만 (스크리너 성격) */}
       {kind === 'SPAC' && (
