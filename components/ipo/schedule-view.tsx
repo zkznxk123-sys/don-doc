@@ -35,15 +35,19 @@ export function ScheduleView({ data, kind }: { data: IpoData; kind?: 'IPO' | 'SP
       const dates = [(o.subEnd ?? o.subStart), o.refundDate, o.listingDate, o.transferDate].filter(Boolean) as string[]
       return dates.some(d => d >= todayISO)
     })
+    // 다가올: 가장 임박한 "다음 일정"으로 묶고 정렬 → 청약 지나고 상장만 남은 종목도 상장 달에 노출.
+    // 전체: 종목 대표일(청약 시작) 기준.
+    const anchorOf = (o: UpcomingOffering) =>
+      (scope === 'upcoming' ? (nextEvent(o, todayISO)?.date ?? primaryDate(o)) : primaryDate(o))
     const map = new Map<string, UpcomingOffering[]>()
     for (const o of inScope) {
-      const ym = primaryDate(o).slice(0, 7) || '미정'
+      const ym = anchorOf(o).slice(0, 7) || '미정'
       const arr = map.get(ym) ?? []
       arr.push(o); map.set(ym, arr)
     }
     return [...map.entries()]
       .sort((a, b) => (a[0] < b[0] ? -1 : 1))
-      .map(([ym, items]) => ({ ym, items: items.sort((x, y) => (primaryDate(x) < primaryDate(y) ? -1 : 1)) }))
+      .map(([ym, items]) => ({ ym, items: items.sort((x, y) => (anchorOf(x) < anchorOf(y) ? -1 : 1)) }))
   }, [scope, todayISO, kind])
 
   const total = months.reduce((n, m) => n + m.items.length, 0)
