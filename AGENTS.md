@@ -162,9 +162,10 @@ if (features.familyManagement) { /* full 전용 */ }
 if (isLite()) { /* lite 분기 */ }
 ```
 
-- **features 8-flag**: `scenarios`·`familyFeed`·`familyManagement`·`tradeAutoLink`·`pensionDetail`·`familyOAuth`·`visibilityRoles`·`stockScreen`
-- **lite 라인**: 위 8개 모두 false. 가입 직후 `createFamily('내 자산')` 자동 1인 가족. 초대 UI 미노출.
-- **route 차단**: `middleware.ts`의 `LITE_BLOCKED_ROUTES`(`/dashboard/scenario`, `/family`, `/feed`, `/screen`)는 lite 빌드에서 redirect.
+- **features 9-flag**: `scenarios`·`familyFeed`·`familyManagement`·`tradeAutoLink`·`pensionDetail`·`familyOAuth`·`visibilityRoles`·`stockScreen`·`ipoLedger`
+- **lite 라인**: 위 9개 모두 false. 가입 직후 `createFamily('내 자산')` 자동 1인 가족. 초대 UI 미노출.
+- **route 차단**: `middleware.ts`의 `LITE_BLOCKED_ROUTES`(`/dashboard/scenario`, `/family`, `/feed`, `/screen`, `/ipo`)는 lite 빌드에서 redirect.
+- **cohort 웨지(역방향 게이트)**: `feature-flags.ts`의 `Cohort`(예: `ipo-spac`)는 lite/full 위 per-user 3번째 축. cohort 사용자는 `WEDGE_ALLOWED_ROUTES`(=`/dashboard/ipo`)만 허용, 나머지 대시보드·API 차단. Clerk `publicMetadata.cohort` + session claim으로 판정(DB 조회 0), 미설정 시 null=게이트 미작동(fail-safe). `/join/[cohort]` 링크로 부여. specs/ipo-spac-wedge-v1.md.
 - **랜딩 분기**: `LandingPage.tsx`에서 `{isFull() && <ComparisonSection />}`. CoreFeatures·Closing은 양쪽 공통.
 - **lite 가드 3층**: middleware(route redirect) + API route(`blockIfLite()` — family 5종·scenario 3종·stocks/screen, `family/info` GET은 lite 1인 가족도 필요해 제외) + 서버 액션(`isLite()` 진입부 가드 — feed·scenario·oauth 전체, family는 `getLatestInviteCode`/`joinFamily`만). 과잉 가드 주의: lite도 1인 가족이 존재한다 (`7f6fc0e` budget crash 사례).
 
@@ -223,9 +224,9 @@ if (isLite()) { /* lite 분기 */ }
 
 ---
 
-## 공모주·스팩 청약 원장 (IPO, BETA · 2026-06-30 도입)
+## 공모주·스팩 청약 (IPO, BETA · 2026-06-30 도입 · 07-05 일정 중심 재설계)
 
-**상태: DB 영속화(2026-07-01) — 멀티기기 동기화.** 워크스페이스(계좌·원장·스팩·메모·오버라이드)는 Prisma `IpoWorkspace`(userId PK + `data` Json)에 사용자 단위로 저장. localStorage는 오프라인/초기 캐시 역할. 기획: vault `03_personal/projects/공모주-청약{-서비스-구상,원장-데이터모델-스펙}.md`.
+**상태: DB 영속화(2026-07-01) + 낙관적 잠금 — 멀티기기 동기화.** 워크스페이스(계좌·기록·스팩·메모·오버라이드)는 Prisma `IpoWorkspace`(userId PK + `data` Json)에 사용자 단위로 저장, PUT은 `baseUpdatedAt` 낙관적 잠금(동시 편집 덮어쓰기 차단). localStorage는 오프라인/초기 캐시. "원장" 용어 폐기(결과·종목별 내역). 기획: vault `03_personal/projects/공모주-청약{-서비스-구상,원장-데이터모델-스펙}.md`.
 
 - **페이지**: `app/dashboard/ipo/page.tsx` ("공모주·스팩주").
 - **`components/ipo/`** (~2,600줄):
@@ -233,7 +234,7 @@ if (isLite()) { /* lite 분기 */ }
   - `allocation-sim.tsx` — 자금 배분 시뮬(종목×계좌 균등 분산). ⚠️ **사실 산술만 — 종목 추천·비례 유불리 예측 금지**(컴플라이언스).
   - `account-board`·`entry-forms`·`schedule-view`·`spac-{list,universe,panel}`·`upcoming-strip`.
   - `offerings.generated.ts`·`spac-universe.generated.ts` — 빌드 스크립트 산출(직접 수정 금지).
-- **`utils/ipo-ledger/`** — 운영자 카톡 "공모주 일정" 공지 → 이벤트 정규화(`schedule-notice.ts`)·캘린더 동기화(`calendar-sync.ts`).
+- **`utils/ipo-ledger/`** — 운영자 카톡 "공모주 일정" 공지 → 이벤트 정규화(`schedule-notice.ts`). `calendar-sync.ts`는 미사용(캘린더는 별도 IPO_calander Apps Script 담당).
 - **API** `app/api/ipo/`:
   - `quote` — 네이버 금융 실시간 시세 프록시. `competition` — 38.co.kr 비례경쟁률. **둘 다 `getAuthUser` 가드**(무인증 오픈 프록시 남용 차단).
 - **`scripts/ipo-{schedule,offerings}-build.ts` + `ipo-schedule-cron.sh`** — 38.co.kr 라이브에서 일정·종목 유니버스 주간 재생성(launchd).
