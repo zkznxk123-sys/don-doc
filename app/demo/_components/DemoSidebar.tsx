@@ -1,6 +1,7 @@
 import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LogoLockup } from '@/components/ui/brand-mark'
+import { Wordmark } from '@/components/ui/wordmark'
 import { NAV_ITEMS, type PageKey } from '../_shared'
 
 export function DemoSidebar({ activePage, onNav, open, onClose, familyName }: {
@@ -17,10 +18,10 @@ export function DemoSidebar({ activePage, onNav, open, onClose, familyName }: {
       )}>
         {/* 브랜드 */}
         <div className={cn('flex items-center gap-3 px-4 h-14 border-b border-border/60 shrink-0', !open && 'lg:justify-center lg:px-0')}>
-          <LogoLockup showText={false} size="md" />
+          {!open && <LogoLockup showText={false} size="md" />}
           {open && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-foreground truncate font-serif tracking-tight">돈독</p>
+              <Wordmark size={18} />
               <p className="text-[10px] text-muted-foreground truncate">{familyName}</p>
             </div>
           )}

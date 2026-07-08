@@ -5,51 +5,48 @@ import { dark } from '@clerk/themes'
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
 
+// Solid Modern — 라이트(페이퍼+포레스트 잉크, CTA 골드)
 const LIGHT_APPEARANCE = {
   baseTheme: undefined,
   variables: {
-    colorPrimary: '#1A1A1A',
-    colorBackground: '#FCF9F8',
+    colorPrimary: '#182A24',
+    colorBackground: '#F5F3EE',
     colorInputBackground: '#FFFFFF',
-    colorInputText: '#1A1A1A',
-    colorText: '#1A1A1A',
-    colorTextSecondary: '#735C00',
-    colorDanger: '#DC2626',
+    colorInputText: '#182A24',
+    colorText: '#182A24',
+    colorTextSecondary: 'rgba(24,42,36,0.55)',
+    colorDanger: '#C0553D',
     borderRadius: '0.375rem',
     fontFamily: 'var(--font-sans), ui-sans-serif, system-ui, sans-serif',
     fontFamilyButtons: 'var(--font-sans), ui-sans-serif, system-ui, sans-serif',
     fontSize: '14px',
   },
   elements: {
-    // 카드 — No-Line, 앰비언트 섀도만
     card: {
       backgroundColor: '#FFFFFF',
-      boxShadow: '0 1px 3px rgba(26,26,26,0.06), 0 4px 16px rgba(26,26,26,0.04)',
+      boxShadow: '0 1px 3px rgba(24,42,36,0.06), 0 4px 16px rgba(24,42,36,0.05)',
       border: 'none',
       borderRadius: '0.5rem',
     },
-    // 헤더
     headerTitle: {
-      fontFamily: 'var(--font-noto-serif), Georgia, serif',
-      fontWeight: '700',
+      fontFamily: 'var(--font-sans), sans-serif',
+      fontWeight: '800',
       letterSpacing: '-0.02em',
-      color: '#1A1A1A',
+      color: '#182A24',
     },
     headerSubtitle: {
-      color: '#735C00',
+      color: 'rgba(24,42,36,0.55)',
     },
-    // 소셜 버튼 (공통)
     socialButtonsBlockButton: {
-      border: '1px solid rgba(26,26,26,0.10)',
+      border: '1px solid rgba(24,42,36,0.12)',
       borderRadius: '0.375rem',
       backgroundColor: '#FFFFFF',
-      color: '#1A1A1A',
+      color: '#182A24',
       fontWeight: '500',
       '&:hover': {
-        backgroundColor: '#F6F3F2',
+        backgroundColor: '#F2EFE7',
       },
     },
-    // 카카오 버튼 — 브랜드 컬러 (#FEE500 노란색)
     'socialButtonsBlockButton__kakao': {
       backgroundColor: '#FEE500',
       borderColor: '#FEE500',
@@ -59,65 +56,63 @@ const LIGHT_APPEARANCE = {
         borderColor: '#F0D900',
       },
     },
-    // 구분선
     dividerLine: {
-      backgroundColor: 'rgba(26,26,26,0.08)',
+      backgroundColor: 'rgba(24,42,36,0.08)',
     },
     dividerText: {
-      color: '#735C00',
+      color: 'rgba(24,42,36,0.5)',
     },
-    // 입력창
     formFieldInput: {
-      border: '1px solid rgba(26,26,26,0.12)',
+      border: '1px solid rgba(24,42,36,0.14)',
       borderRadius: '0.375rem',
       backgroundColor: '#FFFFFF',
-      color: '#1A1A1A',
+      color: '#182A24',
       fontSize: '14px',
       '&:focus': {
-        borderColor: '#1A1A1A',
+        borderColor: '#B88A2A',
         boxShadow: 'none',
       },
     },
     formFieldLabel: {
-      color: '#1A1A1A',
+      color: '#182A24',
       fontSize: '12px',
       fontWeight: '500',
     },
-    // Primary 버튼 — 우리 bg-foreground text-background
+    // Primary CTA — 골드(브랜드 액션)
     formButtonPrimary: {
-      backgroundColor: '#1A1A1A',
-      color: '#FFFFFF',
+      backgroundColor: '#B88A2A',
+      color: '#182A24',
       borderRadius: '0.375rem',
-      fontWeight: '600',
+      fontWeight: '700',
       fontSize: '14px',
       '&:hover': {
-        backgroundColor: 'rgba(26,26,26,0.85)',
+        backgroundColor: '#a67c25',
       },
     },
-    // 링크
     footerActionLink: {
-      color: '#735C00',
+      color: '#B88A2A',
       fontWeight: '500',
     },
     identityPreviewText: {
-      color: '#1A1A1A',
+      color: '#182A24',
     },
     formResendCodeLink: {
-      color: '#735C00',
+      color: '#B88A2A',
     },
   },
 } as const
 
+// Solid Modern — 다크(딥 포레스트+골드, CTA 골드)
 const DARK_APPEARANCE = {
   baseTheme: dark,
   variables: {
-    colorPrimary: '#F1F5F9',
-    colorBackground: '#0F172A',
-    colorInputBackground: '#1E293B',
-    colorInputText: '#F1F5F9',
-    colorText: '#F1F5F9',
-    colorTextSecondary: '#B49B3E',
-    colorDanger: '#F87171',
+    colorPrimary: '#C9A54A',
+    colorBackground: '#182A24',
+    colorInputBackground: '#1F2E28',
+    colorInputText: '#F4F1E9',
+    colorText: '#F4F1E9',
+    colorTextSecondary: 'rgba(244,241,233,0.6)',
+    colorDanger: '#D9765E',
     borderRadius: '0.375rem',
     fontFamily: 'var(--font-sans), ui-sans-serif, system-ui, sans-serif',
     fontFamilyButtons: 'var(--font-sans), ui-sans-serif, system-ui, sans-serif',
@@ -125,28 +120,30 @@ const DARK_APPEARANCE = {
   },
   elements: {
     card: {
-      backgroundColor: '#1E293B',
+      backgroundColor: '#1F2E28',
       boxShadow: 'none',
-      border: '1px solid rgba(241,245,249,0.08)',
+      border: '1px solid rgba(201,165,74,0.18)',
       borderRadius: '0.5rem',
     },
     headerTitle: {
-      fontFamily: 'var(--font-noto-serif), Georgia, serif',
-      fontWeight: '700',
+      fontFamily: 'var(--font-sans), sans-serif',
+      fontWeight: '800',
       letterSpacing: '-0.02em',
-      color: '#F1F5F9',
+      color: '#F4F1E9',
     },
     headerSubtitle: {
-      color: '#B49B3E',
+      color: 'rgba(244,241,233,0.6)',
     },
     socialButtonsBlockButton: {
-      border: '1px solid rgba(241,245,249,0.10)',
+      border: '1px solid rgba(244,241,233,0.12)',
       borderRadius: '0.375rem',
       backgroundColor: 'transparent',
-      color: '#F1F5F9',
+      color: '#F4F1E9',
       fontWeight: '500',
+      '&:hover': {
+        backgroundColor: 'rgba(244,241,233,0.05)',
+      },
     },
-    // 카카오 버튼 — 다크 모드에도 브랜드 컬러 유지
     'socialButtonsBlockButton__kakao': {
       backgroundColor: '#FEE500',
       borderColor: '#FEE500',
@@ -157,36 +154,44 @@ const DARK_APPEARANCE = {
       },
     },
     dividerLine: {
-      backgroundColor: 'rgba(241,245,249,0.08)',
+      backgroundColor: 'rgba(244,241,233,0.1)',
     },
     dividerText: {
-      color: '#B49B3E',
+      color: 'rgba(244,241,233,0.5)',
     },
     formFieldInput: {
-      border: '1px solid rgba(241,245,249,0.12)',
+      border: '1px solid rgba(201,165,74,0.2)',
       borderRadius: '0.375rem',
-      backgroundColor: '#1E293B',
-      color: '#F1F5F9',
+      backgroundColor: '#1F2E28',
+      color: '#F4F1E9',
       fontSize: '14px',
+      '&:focus': {
+        borderColor: '#C9A54A',
+        boxShadow: 'none',
+      },
     },
     formFieldLabel: {
-      color: '#F1F5F9',
+      color: '#F4F1E9',
       fontSize: '12px',
       fontWeight: '500',
     },
+    // Primary CTA — 골드
     formButtonPrimary: {
-      backgroundColor: '#F1F5F9',
-      color: '#0F172A',
+      backgroundColor: '#C9A54A',
+      color: '#182A24',
       borderRadius: '0.375rem',
-      fontWeight: '600',
+      fontWeight: '700',
       fontSize: '14px',
+      '&:hover': {
+        backgroundColor: '#d4b45f',
+      },
     },
     footerActionLink: {
-      color: '#B49B3E',
+      color: '#C9A54A',
       fontWeight: '500',
     },
     formResendCodeLink: {
-      color: '#B49B3E',
+      color: '#C9A54A',
     },
   },
 } as const

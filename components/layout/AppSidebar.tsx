@@ -23,6 +23,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { BrandMark } from '@/components/ui/brand-mark'
+import { Wordmark } from '@/components/ui/wordmark'
 import type { ShellUser } from './DashboardShell'
 import { useState, useEffect, useRef } from 'react'
 import { getLatestInviteCode } from '@/lib/actions/family'
@@ -104,13 +105,13 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
         )}>
           {open ? (
             <div className="min-w-0 flex flex-col gap-0.5">
-              <span className="text-sm font-black tracking-tight text-foreground">돈독</span>
+              <Wordmark size={19} />
               {user.familyName && (
                 <p className="text-[10px] text-muted-foreground truncate">{user.familyName}</p>
               )}
             </div>
           ) : (
-            <BrandMark variant="symbol" size={28} />
+            <BrandMark size={28} />
           )}
         </Link>
         {/* 모바일 닫기 */}

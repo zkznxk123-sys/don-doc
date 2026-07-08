@@ -1,5 +1,6 @@
 import { SignUp } from '@clerk/nextjs'
 import Link from 'next/link'
+import { Wordmark } from '@/components/ui/wordmark'
 
 interface Props {
   searchParams: Promise<{ code?: string }>
@@ -12,7 +13,7 @@ export default async function SignUpPage({ searchParams }: Props) {
     <div className="min-h-screen bg-background flex flex-col">
       {/* 상단 브랜드 */}
       <div className="flex items-center px-8 h-16 border-b border-border/40">
-        <Link href="/" className="text-sm font-bold tracking-tight text-foreground font-serif hover:opacity-70 transition-opacity">돈독</Link>
+        <Link href="/" className="hover:opacity-70 transition-opacity"><Wordmark size={20} /></Link>
       </div>
 
       {/* 콘텐츠 */}
@@ -20,7 +21,7 @@ export default async function SignUpPage({ searchParams }: Props) {
         <div className="w-full max-w-md">
           {/* 헤딩 */}
           <div className="mb-8 text-center">
-            <h1 className="text-2xl font-bold tracking-tight font-serif text-foreground mb-2">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground mb-2">
               무료로 시작하세요
             </h1>
             <p className="text-sm text-muted-foreground">
