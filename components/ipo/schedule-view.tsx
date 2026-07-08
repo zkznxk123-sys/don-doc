@@ -265,7 +265,10 @@ function OfferingDetail({ o, data, today }: { o: UpcomingOffering; data: IpoData
   const toggle = (p: 'info' | 'calc' | 'memo') => setPanel(cur => (cur === p ? null : p))
   return (
     <div className="pb-3 pt-1 space-y-2">
-      {/* ── 정보: 핵심 4지표 — 청약 판단에 가장 중요한 것 먼저, 크게 ── */}
+      {/* ── 입력: 내 청약 — 종목 펼치면 바로 기록할 수 있게 맨 위 ── */}
+      <MySubs o={o} data={data} />
+
+      {/* ── 정보: 핵심 4지표 — 청약 판단 근거 ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <Hero label="공모가"
           value={o.ipoPrice != null ? `${o.ipoPrice.toLocaleString()}원` : o.priceBand ? o.priceBand : '미정'}
@@ -281,9 +284,6 @@ function OfferingDetail({ o, data, today }: { o: UpcomingOffering; data: IpoData
           value={o.lockupRatio != null ? `${o.lockupRatio}%` : '—'}
           sub={o.lockupBreakdown ? `15일 ${o.lockupBreakdown.d15 ?? '—'} · 1·3·6M ${o.lockupBreakdown.m1 ?? '—'}·${o.lockupBreakdown.m3 ?? '—'}·${o.lockupBreakdown.m6 ?? '—'}` : undefined} />
       </div>
-
-      {/* ── 입력: 내 청약 — 일정에서 바로 기록 ── */}
-      <MySubs o={o} data={data} />
 
       {/* ── 보조 도구 — 필요할 때만 펼침(카드 가볍게 유지) ── */}
       <div className="flex flex-wrap gap-1.5">
