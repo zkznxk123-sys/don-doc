@@ -309,7 +309,7 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
   presetOffering?: string
 }) {
   const r0 = initial?.row
-  // 명의 = 등록한 계좌 명의(중복 제거), 증권사 = 선택한 종목의 청약 주간사. 둘 다 첫 값을 기본으로.
+  // 명의 = 등록한 계좌 명의(중복 제거), 증권사 = 선택한 종목의 청약 주관사. 둘 다 첫 값을 기본으로.
   const personOptions = useMemo(() => [...new Set(data.accounts.map(a => a.person))], [data.accounts])
   // 일정 카드에서 종목이 미리 채워진 채로 열릴 때(신규 입력만) 증권사·증거금까지 자동 채움 → 재선택 불필요.
   const presetO = !r0 ? OFFERINGS.find(o => o.name === (presetOffering ?? '').trim()) : undefined
@@ -327,9 +327,9 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
   const [refunded, setRefunded] = useState(r0?.refunded ?? false)
   const [pnl, setPnl] = useState(r0?.realizedPnl != null ? String(r0.realizedPnl / 10_000) : '')
 
-  // 선택한 종목의 주간사 = 증권사 후보. 목록에 없는 종목(자유 입력)은 폴백으로 자유 검색.
+  // 선택한 종목의 주관사 = 증권사 후보. 목록에 없는 종목(자유 입력)은 폴백으로 자유 검색.
   const offeringBrokers = useMemo(() => OFFERINGS.find(o => o.name === offering.trim())?.brokers ?? [], [offering])
-  // 현재 값이 후보에 없으면(계좌 삭제·주간사 변경 등) 옵션에 포함해 편집 중 값이 사라지지 않게.
+  // 현재 값이 후보에 없으면(계좌 삭제·주관사 변경 등) 옵션에 포함해 편집 중 값이 사라지지 않게.
   const personOpts = person && !personOptions.includes(person) ? [...personOptions, person] : personOptions
   const brokerOpts = broker && !offeringBrokers.includes(broker) ? [broker, ...offeringBrokers] : offeringBrokers
 
@@ -359,7 +359,7 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <Field label="종목">
           <OfferingPicker value={offering} onChange={setOffering} onPick={o => {
-            if (o.brokers.length > 0) setBroker(o.brokers[0])   // 증권사는 종목에 종속 → 첫 주간사로 채움
+            if (o.brokers.length > 0) setBroker(o.brokers[0])   // 증권사는 종목에 종속 → 첫 주관사로 채움
             // 기본 증거금 = 균등 최소청약. 확정공모가 없으면 밴드 상단으로 추정. 비어 있을 때만.
             const minDep = minEqualDeposit(o)
             if (!deposit.trim() && minDep) setDeposit(String(minDep / 10_000))
@@ -381,7 +381,7 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
               {brokerOpts.map(b => <option key={b} value={b}>{b}</option>)}
             </select>
           ) : (
-            // 주간사 정보 없는 종목(자유 입력)은 자유 검색으로 폴백
+            // 주관사 정보 없는 종목(자유 입력)은 자유 검색으로 폴백
             <BrokerPicker value={broker} onChange={setBroker} />
           )}
         </Field>

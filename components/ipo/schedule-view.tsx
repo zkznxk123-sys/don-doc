@@ -233,9 +233,11 @@ function OfferingRow({ o, todayISO, today, open, onToggle }: { o: UpcomingOfferi
         <span className="font-medium truncate">{o.name}</span>
         <span className={cn('shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold',
           o.kind === 'SPAC' ? 'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300' : 'bg-muted text-muted-foreground')}>{o.kind}</span>
+        {/* 주관사 — 종목명 옆 작게 상시 표기(별도 열·하단 줄 없이). */}
+        {o.brokers.length > 0 && <span className="shrink-0 text-[10px] text-muted-foreground truncate max-w-[84px]">{o.brokers.join('·')}</span>}
       </span>
-      {/* 펼치면 날짜·주간사는 아래 상세에서 보이므로 헤더에선 숨김(그리드 열은 유지). */}
-      <span className="col-span-5 sm:col-span-4 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
+      {/* 펼치면 날짜는 아래 상세에서 보이므로 헤더에선 숨김(그리드 열은 유지). */}
+      <span className="col-span-5 sm:col-span-6 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
         {!open && <>
           {/* 청약은 보통 마지막 날에 하므로 마감일(subEnd) 기준 "~MM.DD" 표기. subEnd 없으면 시작일. */}
           {(o.subEnd ?? o.subStart) && <DateChip label="청약" date={(o.subEnd ?? o.subStart)!} prefix={o.subEnd ? '~' : ''} />}
@@ -243,8 +245,6 @@ function OfferingRow({ o, todayISO, today, open, onToggle }: { o: UpcomingOfferi
           {o.listingDate && <DateChip label="상장" date={o.listingDate} />}
         </>}
       </span>
-      {/* 주관사 — 좁은 화면·펼침 시 숨김(상세 하단에서 확인) */}
-      <span className="hidden sm:block sm:col-span-2 text-right text-[11px] text-muted-foreground truncate">{!open && o.brokers.join(',')}</span>
       <span className="col-span-2 text-right">
         {next && (
           <span className={cn('whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-semibold',
@@ -329,11 +329,6 @@ function OfferingDetail({ o, data, today }: { o: UpcomingOffering; data: IpoData
         <textarea autoFocus value={memo} onChange={e => data.setMemo(o.name, e.target.value)} rows={3}
           placeholder="개인 메모 — 본인 판단 기록용 (추천 아님)"
           className="w-full rounded-md border border-border bg-card px-2.5 py-1.5 text-sm outline-none focus:border-foreground/30 resize-none" />
-      )}
-
-      {/* 주간사 — 헤더에서 뺀 대신 상세 하단에 상시 노출. */}
-      {o.brokers.length > 0 && (
-        <p className="text-[11px] text-muted-foreground pt-0.5">주간사 <span className="text-foreground/80 font-medium">{o.brokers.join(', ')}</span></p>
       )}
     </div>
   )
