@@ -19,7 +19,7 @@ export default function SignInPage() {
               다시 오셨군요
             </h1>
             <p className="text-sm text-muted-foreground">
-              가족 재정을 한 눈에 — 로그인하고 시작하세요
+              흩어진 자산을 한 화면에 — 로그인하고 이어가세요
             </p>
           </div>
 
@@ -41,7 +41,7 @@ export default function SignInPage() {
 
       {/* 푸터 */}
       <div className="px-8 py-6 text-center border-t border-border/40">
-        <p className="text-xs text-muted-foreground/50">© 2025 돈독 · 가족 재정관리 플랫폼</p>
+        <p className="text-xs text-muted-foreground/50">© 2025 돈독 · 가장 쉬운 자산 관리</p>
       </div>
     </div>
   )
