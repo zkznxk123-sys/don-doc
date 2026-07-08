@@ -531,7 +531,7 @@ function SettingsClient() {
             </div>
             <div>
               <p className="text-sm font-medium text-foreground">엑셀 매핑 관리</p>
-              <p className="text-xs text-muted-foreground mt-0.5">뱅크샐러드 표기명 ↔ 돈Doc 계좌 매핑 관리</p>
+              <p className="text-xs text-muted-foreground mt-0.5">뱅크샐러드 표기명 ↔ 돈독 계좌 매핑 관리</p>
             </div>
           </div>
           <ChevronRight className="w-4 h-4 text-muted-foreground/60 group-hover:text-muted-foreground transition-colors" />

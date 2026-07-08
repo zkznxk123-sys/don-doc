@@ -1,4 +1,4 @@
-# 돈Doc Design System
+# 돈독 Design System
 
 Family finance dashboard. Warm editorial tone — numbers should feel approachable, not clinical.
 
@@ -217,7 +217,7 @@ Charts use `Recharts` with `ResponsiveContainer`. Always use the `viz-*` palette
 
 ## Brand
 
-- **App name**: 돈Doc
+- **App name**: 돈독
 - **Brand mark**: D-shaped letterform + luminous gold dot (`/brand-mark.svg` light, `/brand-mark-dark.svg` dark)
 - **Wordmark**: horizontal lockup (`/logo-wordmark.svg`, `/logo-wordmark-dark.svg`)
 - **Use `<LogoLockup />` or `<BrandMark />` from `components/ui/brand-mark.tsx`** — never recreate the logo in JSX.

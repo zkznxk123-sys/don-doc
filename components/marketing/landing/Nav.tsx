@@ -9,13 +9,13 @@ export function Nav() {
         <Link href="/" className="flex items-center gap-2.5">
           <Image
             src="/brand-mark.svg"
-            alt="돈Doc"
+            alt="돈독"
             width={32}
             height={32}
             priority
           />
           <span className="font-black text-[16px] tracking-[-0.02em]" style={{ color: INK }}>
-            돈Doc
+            돈독
           </span>
         </Link>
       </div>

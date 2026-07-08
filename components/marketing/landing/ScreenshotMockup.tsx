@@ -55,7 +55,7 @@ export function ScreenshotMockup() {
         {hasImage ? (
           <Image
             src="/landing/hero-screenshot.png"
-            alt="돈Doc 대시보드 — 12개월 순자산 추이, 자산 5종 카드, 카테고리 분석"
+            alt="돈독 대시보드 — 12개월 순자산 추이, 자산 5종 카드, 카테고리 분석"
             width={2880}
             height={1800}
             priority

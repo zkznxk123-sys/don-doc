@@ -20,7 +20,7 @@ export function DemoSidebar({ activePage, onNav, open, onClose, familyName }: {
           <LogoLockup showText={false} size="md" />
           {open && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-foreground truncate font-serif tracking-tight">돈Doc</p>
+              <p className="text-sm font-bold text-foreground truncate font-serif tracking-tight">돈독</p>
               <p className="text-[10px] text-muted-foreground truncate">{familyName}</p>
             </div>
           )}

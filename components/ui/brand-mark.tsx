@@ -21,7 +21,7 @@ export function BrandMark({ variant = 'symbol', size = 32, className }: BrandMar
     return (
       <Image
         src={src}
-        alt="돈Doc"
+        alt="돈독"
         width={size}
         height={size}
         priority
@@ -36,7 +36,7 @@ export function BrandMark({ variant = 'symbol', size = 32, className }: BrandMar
   return (
     <Image
       src={src}
-      alt="돈Doc"
+      alt="돈독"
       width={width}
       height={size}
       priority

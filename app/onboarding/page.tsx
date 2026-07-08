@@ -146,7 +146,7 @@ function OnboardingContent() {
         <div className="mb-10 text-center">
           <Image
             src="/logo-wordmark-dark.svg"
-            alt="돈Doc"
+            alt="돈독"
             width={120}
             height={32}
             priority

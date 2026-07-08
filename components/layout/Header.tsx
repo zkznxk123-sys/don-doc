@@ -30,7 +30,7 @@ export function Header({
       {/* 좌측: 가족 이름 + 유저 이름 */}
       <div>
         <h1 className="text-3xl font-bold text-foreground tracking-tight">
-          {familyName || '돈Doc'}
+          {familyName || '돈독'}
         </h1>
         <p className="text-muted-foreground text-sm mt-1">
           {userName ? `${userName}님의 자산 본부` : '자산 본부'}

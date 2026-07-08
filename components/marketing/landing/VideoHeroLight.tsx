@@ -5,7 +5,7 @@
  * BRAND_GUIDE.md 기준. 자체 제작 다크+골드 비주얼(Gemini→Higgsfield i2v):
  * 딥 포레스트에 투명 저장고로 골드 코인이 슈트를 타고 흘러 축적 = 북극성 시각화.
  * 데스크톱=영상 배경 + 좌측 카피 / 모바일=A안 분리형(위 카피 · 아래 저장고 이미지).
- * 로고=골드 ₩ 코인 심볼 + "돈Doc" 텍스트. reduced-motion 가드.
+ * 로고=골드 ₩ 코인 심볼 + "돈독" 텍스트. reduced-motion 가드.
  */
 
 import Link from 'next/link'

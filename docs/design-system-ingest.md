@@ -1,4 +1,4 @@
-# 돈Doc — Design System (Claude Design ingestion)
+# 돈독 — Design System (Claude Design ingestion)
 
 > 이 파일은 **클로드 디자인 "디자인 시스템" 생성 전용 피드**입니다.
 > 정본은 `DESIGN.md`(product 시스템) + `BRAND_GUIDE.md`(브랜드). 여기선 둘을 클로드 디자인이 한 번에 학습하기 좋게 응축했습니다.
@@ -45,7 +45,7 @@
 income/savings/investments=`#10b981` · cash/links=`#3b82f6` · AI/activity=`#8b5cf6` · real-estate=`#c084fc` · warning/crypto=`#f59e0b` · expense=`#f97316` · liability=`#ef4444` · credit-card=`#f43f5e` · cash(light)=`#60a5fa` · investments(light)=`#34d399` · crypto(light)=`#fbbf24`.
 시맨틱 단축: `text-income`(emerald)·`text-expense`(red)·`text-savings`(blue)·`text-warning`(amber), soft 배경 `bg-*-soft`(10% fill).
 
-> **골드 사용량 5–10% 이하.** eyebrow 라벨, "돈Doc" 강조, hover ring, viz accent 한정. 바탕 전체에 금지.
+> **골드 사용량 5–10% 이하.** eyebrow 라벨, "돈독" 강조, hover ring, viz accent 한정. 바탕 전체에 금지.
 
 ---
 
@@ -87,7 +87,7 @@ income/savings/investments=`#10b981` · cash/links=`#3b82f6` · AI/activity=`#8b
 
 ## 5. 브랜드
 
-- 앱명 **돈Doc** (절대 "돈독" 단독 X — Doc=Document/Doctor/Dock 중의성). 단 형용사 "돈독하게"는 카피에서 유지.
+- 앱명 **돈독** (절대 "돈독" 단독 X — Doc=Document/Doctor/Dock 중의성). 단 형용사 "돈독하게"는 카피에서 유지.
 - 태그라인: **가장 쉬운 자산 관리 — 흩어진 자산을 한 화면에.**
 - 로고 3레이어: Family connection(satellite 도트 2개) · Coin(D 내부 골드 코인, radial `#E8C960→#C9A13C→#8B6E1E`) · Doc system(두꺼운 D 글리프). 새 아이콘은 셋 중 하나 이상 반영.
 - 로고는 `<BrandMark/>`·`<LogoLockup/>` 사용 — JSX로 재현 금지. 회전·변형·그림자 금지.

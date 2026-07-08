@@ -6,7 +6,7 @@ export default function SignInPage() {
     <div className="min-h-screen bg-background flex flex-col">
       {/* 상단 브랜드 */}
       <div className="flex items-center px-8 h-16 border-b border-border/40">
-        <Link href="/" className="text-sm font-bold tracking-tight text-foreground font-serif hover:opacity-70 transition-opacity">돈Doc</Link>
+        <Link href="/" className="text-sm font-bold tracking-tight text-foreground font-serif hover:opacity-70 transition-opacity">돈독</Link>
       </div>
 
       {/* 콘텐츠 */}
@@ -40,7 +40,7 @@ export default function SignInPage() {
 
       {/* 푸터 */}
       <div className="px-8 py-6 text-center border-t border-border/40">
-        <p className="text-xs text-muted-foreground/50">© 2025 돈Doc · 가족 재정관리 플랫폼</p>
+        <p className="text-xs text-muted-foreground/50">© 2025 돈독 · 가족 재정관리 플랫폼</p>
       </div>
     </div>
   )

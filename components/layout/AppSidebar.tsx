@@ -104,7 +104,7 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
         )}>
           {open ? (
             <div className="min-w-0 flex flex-col gap-0.5">
-              <span className="text-sm font-black tracking-tight text-foreground">돈Doc</span>
+              <span className="text-sm font-black tracking-tight text-foreground">돈독</span>
               {user.familyName && (
                 <p className="text-[10px] text-muted-foreground truncate">{user.familyName}</p>
               )}
@@ -266,7 +266,7 @@ function InviteCodeButton() {
   const handleCopy = async () => {
     if (!code) return
     const url = `${window.location.origin}/invite/${code}`
-    const msg = `여보, 우리 집 자산 관리를 위해 초대해요! 🏠\n돈Doc 앱에서 함께 가족 자산을 관리해요.\n\n링크: ${url}`
+    const msg = `여보, 우리 집 자산 관리를 위해 초대해요! 🏠\n돈독 앱에서 함께 가족 자산을 관리해요.\n\n링크: ${url}`
     try { await navigator.clipboard.writeText(msg) } catch {
       const ta = document.createElement('textarea')
       ta.value = msg; ta.style.cssText = 'position:fixed;opacity:0'

@@ -15,7 +15,7 @@ export function ComparisonSection() {
           </span>
         </>
       }
-      body="가계부 앱은 카드 내역 정도만, 엑셀 수작업은 시간이 너무 든다 — 그 사이 5종 자산을 한 곳에서 통합 운영하는 도구는 비어 있었습니다. 돈Doc은 이 공백을 채웁니다."
+      body="가계부 앱은 카드 내역 정도만, 엑셀 수작업은 시간이 너무 든다 — 그 사이 5종 자산을 한 곳에서 통합 운영하는 도구는 비어 있었습니다. 돈독은 이 공백을 채웁니다."
       bg={BG_2}
     >
       <div
@@ -37,7 +37,7 @@ export function ComparisonSection() {
               </p>
             </div>
             {[
-              { l: '돈Doc', highlight: true },
+              { l: '돈독', highlight: true },
               { l: '개인 가계부 앱', highlight: false },
               { l: '엑셀 수작업', highlight: false },
             ].map(c => (

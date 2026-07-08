@@ -31,10 +31,10 @@ const description = isLite()
   : "가장 쉬운 자산 관리 — 흩어진 자산을 한 화면에. 현금·금융·부동산·연금·부채를 통합 운영하는 자산 관리 시스템. 혼자든 가족이든 — 공유는 필요할 때만 선별적으로."
 
 export const metadata: Metadata = {
-  title: "돈Doc — 가장 쉬운 자산 관리",
+  title: "돈독 — 가장 쉬운 자산 관리",
   description,
   openGraph: {
-    title: "돈Doc",
+    title: "돈독",
     description: "가장 쉬운 자산 관리 — 흩어진 자산을 한 화면에.",
     // images: ["/og-image.png"],  // 별도 제작 필요
     // ↑ 1200×630 OG 링크카드 미제작. 첫 스레드에 링크 붙이기 전 제작 필요 (프로필 아바타와 별개 자산)

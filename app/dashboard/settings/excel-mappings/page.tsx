@@ -142,7 +142,7 @@ export default function ExcelMappingsPage() {
         <h1 className="text-lg font-bold text-foreground">엑셀 매핑 관리</h1>
       </div>
       <p className="text-xs text-muted-foreground mb-6">
-        뱅크샐러드 엑셀에서 발견된 표기명을 돈Doc 계좌에 어떻게 매핑할지 한 번 확정한 결과입니다.
+        뱅크샐러드 엑셀에서 발견된 표기명을 돈독 계좌에 어떻게 매핑할지 한 번 확정한 결과입니다.
         다음 업로드부터 자동 적용되며, 잘못 매핑된 항목은 여기서 삭제할 수 있습니다.
       </p>
 
