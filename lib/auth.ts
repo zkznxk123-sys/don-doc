@@ -1,7 +1,23 @@
-import { auth, currentUser } from '@clerk/nextjs/server'
+import { auth, currentUser, clerkClient } from '@clerk/nextjs/server'
+import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import type { AppRole } from '@/lib/roles'
 import { parseCohort, type Cohort } from '@/lib/feature-flags'
+
+/**
+ * 초대 링크(/join/{cohort})가 심은 쿠키를 읽어 신규 유저의 Clerk publicMetadata.cohort로 승격.
+ * 특정 초대 링크로 온 가입자만 cohort 부여. 실패해도 인증 흐름을 막지 않는다.
+ * ※ 세션 토큰 반영은 다음 갱신/재로그인 때 — 첫 화면은 일반, 이후 IPO-only.
+ */
+async function promoteCohortFromCookie(clerkId: string): Promise<void> {
+  try {
+    const pending = (await cookies()).get('dondoc_pending_cohort')?.value
+    const cohort = parseCohort({ cohort: pending })
+    if (!cohort) return
+    const client = await clerkClient()
+    await client.users.updateUserMetadata(clerkId, { publicMetadata: { cohort } })
+  } catch { /* 승격 실패는 무시 — 인증은 계속 */ }
+}
 
 export interface AuthUser {
   id: string
@@ -97,6 +113,9 @@ export async function getAuthUser(): Promise<AuthUser | null> {
       data: { clerkId, email, name: displayName },
       include: { family: true },
     })
+
+    // 초대 링크(/join/{cohort})로 온 신규 가입자면 cohort 부여(Clerk publicMetadata).
+    await promoteCohortFromCookie(clerkId)
 
     return {
       id: newUser.id,
