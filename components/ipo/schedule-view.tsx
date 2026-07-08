@@ -5,7 +5,7 @@
  * 월별로 묶어 청약·환불·상장일을 한눈에. 다가올/전체 토글.
  */
 import { Fragment, useMemo, useState } from 'react'
-import { Calendar, ChevronDown, Calculator, ClipboardList } from 'lucide-react'
+import { Calendar, ChevronDown, Calculator, ClipboardList, Table2, StickyNote, type LucideIcon } from 'lucide-react'
 import { cn, formatLargeNumber } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { SubForm, EditBtn } from '@/components/ipo/entry-forms'
@@ -121,9 +121,12 @@ function OfferingDetail({ o, data, today }: { o: UpcomingOffering; data: IpoData
   const onOverride = (p: Parameters<typeof data.setOverride>[1]) => data.setOverride(o.name, p)
   const hasInfo = !!(o.ipoPrice || o.offerAmountEok || o.shares || o.instCompetition || o.lockupRatio != null)
   const dSub = (o.subEnd ?? o.subStart) ? ddays((o.subEnd ?? o.subStart)!, today) : null
+  // 보조 패널 — 한 번에 하나만 펼쳐 카드를 가볍게(정보/계산기/메모).
+  const [panel, setPanel] = useState<null | 'info' | 'calc' | 'memo'>(null)
+  const toggle = (p: 'info' | 'calc' | 'memo') => setPanel(cur => (cur === p ? null : p))
   return (
     <div className="pb-3 pt-1 space-y-2">
-      {/* ── 핵심 4지표 — 청약 판단에 가장 중요한 것 먼저, 크게 ── */}
+      {/* ── 정보: 핵심 4지표 — 청약 판단에 가장 중요한 것 먼저, 크게 ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <Hero label="공모가"
           value={o.ipoPrice != null ? `${o.ipoPrice.toLocaleString()}원` : o.priceBand ? o.priceBand : '미정'}
@@ -140,38 +143,66 @@ function OfferingDetail({ o, data, today }: { o: UpcomingOffering; data: IpoData
           sub={o.lockupBreakdown ? `15일 ${o.lockupBreakdown.d15 ?? '—'} · 1·3·6M ${o.lockupBreakdown.m1 ?? '—'}·${o.lockupBreakdown.m3 ?? '—'}·${o.lockupBreakdown.m6 ?? '—'}` : undefined} />
       </div>
 
-      {/* ── 내 청약 — 일정에서 바로 기록 ── */}
+      {/* ── 입력: 내 청약 — 일정에서 바로 기록 ── */}
       <MySubs o={o} data={data} />
 
-      {/* 세부 정보 (보조) */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {o.offerAmountEok != null && <Info label="공모금액" value={`${o.offerAmountEok.toLocaleString()}억`} />}
-        {o.shares != null && <Info label="총공모주식수" value={`${o.shares.toLocaleString()}주`} sub={o.shareType} />}
-        {o.allotShares != null && <Info label="일반배정" value={`${o.allotShares.toLocaleString()}주`} sub={`균등물량 ${Math.round(o.allotShares / 2).toLocaleString()}`} />}
-        {o.subLimit && <Info label="청약한도" value={`${o.subLimit}주`} sub={o.minSubShares ? `최소 ${o.minSubShares}주·증거금${o.depositRate ?? 50}%` : undefined} />}
-        {o.redemptionRight != null && <Info label="환매청구권" value={o.redemptionRight ? 'O' : 'X'} />}
-        <Info label="환불일" value={o.refundDate ? o.refundDate.slice(5) : '—'} />
-        <Info label="상장일" value={o.listingDate ? o.listingDate.slice(5) : '—'} />
-        <Info label="주관사" value={o.brokers.join(', ') || '—'} />
+      {/* ── 보조 도구 — 필요할 때만 펼침(카드 가볍게 유지) ── */}
+      <div className="flex flex-wrap gap-1.5">
+        <ToolBtn active={panel === 'info'} onClick={() => toggle('info')} icon={Table2} label="상세 정보" />
+        <ToolBtn active={panel === 'calc'} onClick={() => toggle('calc')} icon={Calculator} label="배정 계산기" />
+        <ToolBtn active={panel === 'memo'} onClick={() => toggle('memo')} icon={StickyNote} label="메모" dot={!!memo} />
       </div>
-      {/* DART 증권신고서 자동(수정 가능) */}
-      <div className="grid grid-cols-3 gap-2">
-        <NumInput label="시가총액(억)" value={override.marketCapEok ?? o.marketCapEok} onChange={v => onOverride({ marketCapEok: v })} />
-        <NumInput label="유통금액(억)" value={override.floatAmountEok ?? o.floatAmountEok} onChange={v => onOverride({ floatAmountEok: v })} />
-        <NumInput label="유통가능비율(%)" value={override.floatRatio ?? o.floatRatio} onChange={v => onOverride({ floatRatio: v })} />
-      </div>
-      {(() => {
-        const fr = override.floatRatio ?? o.floatRatio
-        if (fr == null || o.publicFloatRatio == null) return null
-        const existing = Math.round((fr - o.publicFloatRatio) * 100) / 100
-        return <p className="text-[10px] text-muted-foreground">유통 {fr}% 중 공모주주 {o.publicFloatRatio}% · 기존주주 {existing}%</p>
-      })()}
-      {!hasInfo && <p className="text-[11px] text-muted-foreground">공모 상세(공모가·경쟁률·확약)는 수요예측 후 38에서 자동 채워져요.</p>}
-      <AllocationCalc o={o} accounts={data.accounts} />
-      <textarea value={memo} onChange={e => data.setMemo(o.name, e.target.value)} rows={2}
-        placeholder="개인 메모 — 본인 판단 기록용 (추천 아님)"
-        className="w-full rounded-md border border-border bg-card px-2.5 py-1.5 text-sm outline-none focus:border-foreground/30 resize-none" />
+
+      {panel === 'info' && (
+        <div className="space-y-2 pt-0.5">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {o.offerAmountEok != null && <Info label="공모금액" value={`${o.offerAmountEok.toLocaleString()}억`} />}
+            {o.shares != null && <Info label="총공모주식수" value={`${o.shares.toLocaleString()}주`} sub={o.shareType} />}
+            {o.allotShares != null && <Info label="일반배정" value={`${o.allotShares.toLocaleString()}주`} sub={`균등물량 ${Math.round(o.allotShares / 2).toLocaleString()}`} />}
+            {o.subLimit && <Info label="청약한도" value={`${o.subLimit}주`} sub={o.minSubShares ? `최소 ${o.minSubShares}주·증거금${o.depositRate ?? 50}%` : undefined} />}
+            {o.redemptionRight != null && <Info label="환매청구권" value={o.redemptionRight ? 'O' : 'X'} />}
+            <Info label="환불일" value={o.refundDate ? o.refundDate.slice(5) : '—'} />
+            <Info label="상장일" value={o.listingDate ? o.listingDate.slice(5) : '—'} />
+            <Info label="주관사" value={o.brokers.join(', ') || '—'} />
+          </div>
+          {/* DART 증권신고서 자동(수정 가능) */}
+          <div className="grid grid-cols-3 gap-2">
+            <NumInput label="시가총액(억)" value={override.marketCapEok ?? o.marketCapEok} onChange={v => onOverride({ marketCapEok: v })} />
+            <NumInput label="유통금액(억)" value={override.floatAmountEok ?? o.floatAmountEok} onChange={v => onOverride({ floatAmountEok: v })} />
+            <NumInput label="유통가능비율(%)" value={override.floatRatio ?? o.floatRatio} onChange={v => onOverride({ floatRatio: v })} />
+          </div>
+          {(() => {
+            const fr = override.floatRatio ?? o.floatRatio
+            if (fr == null || o.publicFloatRatio == null) return null
+            const existing = Math.round((fr - o.publicFloatRatio) * 100) / 100
+            return <p className="text-[10px] text-muted-foreground">유통 {fr}% 중 공모주주 {o.publicFloatRatio}% · 기존주주 {existing}%</p>
+          })()}
+          {!hasInfo && <p className="text-[11px] text-muted-foreground">공모 상세(공모가·경쟁률·확약)는 수요예측 후 38에서 자동 채워져요.</p>}
+        </div>
+      )}
+
+      {panel === 'calc' && <AllocationCalc o={o} accounts={data.accounts} />}
+
+      {panel === 'memo' && (
+        <textarea autoFocus value={memo} onChange={e => data.setMemo(o.name, e.target.value)} rows={3}
+          placeholder="개인 메모 — 본인 판단 기록용 (추천 아님)"
+          className="w-full rounded-md border border-border bg-card px-2.5 py-1.5 text-sm outline-none focus:border-foreground/30 resize-none" />
+      )}
     </div>
+  )
+}
+
+/** 보조 패널 토글 버튼 — 상세정보·계산기·메모를 필요할 때만 연다. */
+function ToolBtn({ active, onClick, icon: Icon, label, dot }: {
+  active: boolean; onClick: () => void; icon: LucideIcon; label: string; dot?: boolean
+}) {
+  return (
+    <button onClick={onClick}
+      className={cn('inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium transition-colors',
+        active ? 'border-foreground/30 bg-muted text-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>
+      <Icon className="size-3.5" /> {label}
+      {dot && <span className="size-1.5 rounded-full bg-amber-500" />}
+    </button>
   )
 }
 
