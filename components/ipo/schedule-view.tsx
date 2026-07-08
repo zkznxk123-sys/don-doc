@@ -5,7 +5,7 @@
  * 월별로 묶어 청약·환불·상장일을 한눈에. 다가올/전체 토글.
  */
 import { Fragment, useMemo, useState } from 'react'
-import { Calendar, ChevronDown, Calculator, ClipboardList, Table2, StickyNote, type LucideIcon } from 'lucide-react'
+import { Calendar, ChevronDown, ChevronLeft, ChevronRight, Calculator, ClipboardList, Table2, StickyNote, type LucideIcon } from 'lucide-react'
 import { cn, formatLargeNumber } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { SubForm, EditBtn } from '@/components/ipo/entry-forms'
@@ -24,7 +24,9 @@ export function ScheduleView({ data, kind }: { data: IpoData; kind?: 'IPO' | 'SP
   const today = useMemo(() => new Date(), [])
   const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
   const [scope, setScope] = useState<'upcoming' | 'all'>('upcoming')
+  const [view, setView] = useState<'list' | 'calendar'>('list')
   const [expanded, setExpanded] = useState<string | null>(null)
+  const kindOfferings = useMemo(() => OFFERINGS.filter(o => !kind || o.kind === kind), [kind])
 
   const months = useMemo(() => {
     const inScope = OFFERINGS.filter(o => {
@@ -48,39 +50,165 @@ export function ScheduleView({ data, kind }: { data: IpoData; kind?: 'IPO' | 'SP
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <h3 className="text-sm font-medium flex items-center gap-1.5"><Calendar className="size-4" /> 전체 일정 · {total}종목</h3>
-        <div className="inline-flex rounded-lg bg-card border border-border p-0.5 text-xs">
-          {(['upcoming', 'all'] as const).map(s => (
-            <button key={s} onClick={() => setScope(s)}
-              className={cn('rounded-md px-2.5 py-1 font-medium', scope === s ? 'bg-muted text-foreground' : 'text-muted-foreground')}>
-              {s === 'upcoming' ? '다가올' : '전체'}
-            </button>
-          ))}
+        <div className="flex items-center gap-1.5">
+          {view === 'list' && (
+            <div className="inline-flex rounded-lg bg-card border border-border p-0.5 text-xs">
+              {(['upcoming', 'all'] as const).map(s => (
+                <button key={s} onClick={() => setScope(s)}
+                  className={cn('rounded-md px-2.5 py-1 font-medium', scope === s ? 'bg-muted text-foreground' : 'text-muted-foreground')}>
+                  {s === 'upcoming' ? '다가올' : '전체'}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="inline-flex rounded-lg bg-card border border-border p-0.5 text-xs">
+            {(['list', 'calendar'] as const).map(v => (
+              <button key={v} onClick={() => setView(v)}
+                className={cn('rounded-md px-2.5 py-1 font-medium', view === v ? 'bg-muted text-foreground' : 'text-muted-foreground')}>
+                {v === 'list' ? '리스트' : '캘린더'}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {months.length === 0 && <p className="text-sm text-muted-foreground py-8 text-center">다가올 일정이 없어요.</p>}
-
-      {months.map(({ ym, items }) => (
-        <div key={ym} className="space-y-1.5">
-          <div className="text-xs font-medium text-muted-foreground pl-0.5">{fmtMonth(ym)}</div>
-          <Card>
-            <CardContent className="pt-2 pb-2">
-              <div className="divide-y divide-border/60">
-                {items.map(o => (
-                  <div key={o.name}>
-                    <OfferingRow o={o} todayISO={todayISO} today={today}
-                      open={expanded === o.name} onToggle={() => setExpanded(expanded === o.name ? null : o.name)} />
-                    {expanded === o.name && <OfferingDetail o={o} data={data} today={today} />}
+      {view === 'calendar' ? (
+        <CalendarView offerings={kindOfferings} data={data} today={today} todayISO={todayISO}
+          expanded={expanded} onToggle={name => setExpanded(expanded === name ? null : name)} />
+      ) : (
+        <>
+          {months.length === 0 && <p className="text-sm text-muted-foreground py-8 text-center">다가올 일정이 없어요.</p>}
+          {months.map(({ ym, items }) => (
+            <div key={ym} className="space-y-1.5">
+              <div className="text-xs font-medium text-muted-foreground pl-0.5">{fmtMonth(ym)}</div>
+              <Card>
+                <CardContent className="pt-2 pb-2">
+                  <div className="divide-y divide-border/60">
+                    {items.map(o => (
+                      <div key={o.name}>
+                        <OfferingRow o={o} todayISO={todayISO} today={today}
+                          open={expanded === o.name} onToggle={() => setExpanded(expanded === o.name ? null : o.name)} />
+                        {expanded === o.name && <OfferingDetail o={o} data={data} today={today} />}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      ))}
+                </CardContent>
+              </Card>
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  )
+}
 
+/** 이벤트 종류별 칩 색 — 청약/상장/환불. */
+const EVENT_TONE: Record<string, string> = {
+  청약: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
+  상장: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
+  환불: 'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300',
+}
+
+type CalEvent = { name: string; type: '청약' | '상장' | '환불' }
+
+/** 캘린더 뷰 — 월 그리드에 청약·상장·환불을 날짜별 칩으로. 칩 클릭 시 아래 상세 펼침. */
+function CalendarView({ offerings, data, today, todayISO, expanded, onToggle }: {
+  offerings: UpcomingOffering[]; data: IpoData; today: Date; todayISO: string
+  expanded: string | null; onToggle: (name: string) => void
+}) {
+  const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1))
+  const y = cursor.getFullYear(), m = cursor.getMonth()
+
+  const events = useMemo(() => {
+    const map = new Map<string, CalEvent[]>()
+    const add = (date: string | undefined, name: string, type: CalEvent['type']) => {
+      if (!date) return
+      const arr = map.get(date) ?? []
+      arr.push({ name, type }); map.set(date, arr)
+    }
+    for (const o of offerings) {
+      add(o.subEnd ?? o.subStart, o.name, '청약')  // 청약은 마감일(없으면 시작일) 기준
+      add(o.listingDate, o.name, '상장')
+      add(o.refundDate, o.name, '환불')
+    }
+    return map
+  }, [offerings])
+
+  const iso = (d: number) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+  const startWeekday = new Date(y, m, 1).getDay()
+  const daysInMonth = new Date(y, m + 1, 0).getDate()
+  const cells: (number | null)[] = [
+    ...Array(startWeekday).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ]
+  while (cells.length % 7 !== 0) cells.push(null)
+
+  const selected = expanded ? offerings.find(o => o.name === expanded) ?? null : null
+  const WD = ['일', '월', '화', '수', '목', '금', '토']
+
+  return (
+    <div className="space-y-3">
+      {/* 월 이동 */}
+      <div className="flex items-center justify-center gap-4">
+        <button onClick={() => setCursor(new Date(y, m - 1, 1))} className="rounded-md p-1 hover:bg-muted text-muted-foreground"><ChevronLeft className="size-4" /></button>
+        <span className="text-sm font-medium tabular-nums">{y}년 {m + 1}월</span>
+        <button onClick={() => setCursor(new Date(y, m + 1, 1))} className="rounded-md p-1 hover:bg-muted text-muted-foreground"><ChevronRight className="size-4" /></button>
+      </div>
+
+      {/* 요일 헤더 */}
+      <div className="grid grid-cols-7 gap-px">
+        {WD.map((w, i) => (
+          <div key={w} className={cn('text-center text-[10px] font-medium pb-0.5', i === 0 ? 'text-rose-500' : i === 6 ? 'text-sky-500' : 'text-muted-foreground')}>{w}</div>
+        ))}
+      </div>
+
+      {/* 날짜 그리드 */}
+      <div className="grid grid-cols-7 gap-px rounded-lg overflow-hidden bg-border">
+        {cells.map((d, i) => {
+          const evs = d ? (events.get(iso(d)) ?? []) : []
+          const isToday = d != null && iso(d) === todayISO
+          return (
+            <div key={i} className={cn('min-h-[62px] sm:min-h-[76px] p-1 space-y-0.5', d ? 'bg-card' : 'bg-muted/30')}>
+              {d && (
+                <div className={cn('text-[10px] tabular-nums leading-none pb-0.5',
+                  isToday ? 'inline-flex items-center justify-center size-4 rounded-full bg-rose-500 text-white font-bold' : 'text-muted-foreground')}>{d}</div>
+              )}
+              {evs.map((e, j) => (
+                <button key={j} onClick={() => onToggle(e.name)} title={`${e.type} · ${e.name}`}
+                  className={cn('block w-full truncate rounded px-1 py-0.5 text-left text-[9px] font-medium leading-tight',
+                    EVENT_TONE[e.type], expanded === e.name && 'ring-1 ring-foreground/40')}>
+                  {e.type} {e.name}
+                </button>
+              ))}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* 범례 */}
+      <div className="flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-muted-foreground">
+        {(['청약', '상장', '환불'] as const).map(t => (
+          <span key={t} className="flex items-center gap-1"><span className={cn('size-2 rounded-sm', EVENT_TONE[t])} />{t}</span>
+        ))}
+        <span className="ml-auto">칩을 누르면 상세가 열려요</span>
+      </div>
+
+      {/* 선택 종목 상세 */}
+      {selected && (
+        <Card>
+          <CardContent className="pt-2 pb-1">
+            <div className="flex items-center gap-2 pb-1">
+              <span className="font-medium">{selected.name}</span>
+              <span className={cn('shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold',
+                selected.kind === 'SPAC' ? 'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300' : 'bg-muted text-muted-foreground')}>{selected.kind}</span>
+              <button onClick={() => onToggle(selected.name)} className="ml-auto text-xs text-muted-foreground hover:text-foreground">닫기</button>
+            </div>
+            <OfferingDetail o={selected} data={data} today={today} />
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 }
