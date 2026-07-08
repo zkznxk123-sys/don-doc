@@ -308,8 +308,9 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
   const [refunded, setRefunded] = useState(r0?.refunded ?? false)
   const [pnl, setPnl] = useState(r0?.realizedPnl != null ? String(r0.realizedPnl / 10_000) : '')
 
-  const showAlloc = status === 'ALLOCATED' || status === 'SOLD'   // 배정주 입력
-  const showRefund = showAlloc || status === 'UNALLOCATED'        // 환불액·회수 (미배정 = 전액 환불)
+  const showAlloc = status === 'ALLOCATED' || status === 'SOLD'   // 배정주 + 환불액 수동 입력
+  const isUnalloc = status === 'UNALLOCATED'                      // 미배정 = 증거금 전액 환불(자동)
+  const showRefunded = showAlloc || isUnalloc                     // 회수완료 체크
   const showSold = status === 'SOLD'
 
   const submit = () => {
@@ -318,8 +319,9 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
       offering: offering.trim(), person: person.trim() || '본인', broker: broker.trim(), subType, status,
       deposit: won(deposit),
       allocatedShares: showAlloc ? (parseInt(shares) || 0) : 0,
-      refundAmount: showRefund ? won(refund) : 0,
-      refunded: showRefund ? refunded : false,
+      // 미배정은 증거금 전액 환불 → 별도 입력 없이 deposit 사용
+      refundAmount: isUnalloc ? won(deposit) : (showAlloc ? won(refund) : 0),
+      refunded: showRefunded ? refunded : false,
       realizedPnl: showSold ? won(pnl) : undefined,
     }
     if (initial) data.updateSub(initial.index, values)
@@ -359,19 +361,24 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
         <Field label="증거금(만원)">
           <input type="number" className={inputCls} value={deposit} onChange={e => setDeposit(e.target.value)} placeholder="0" />
         </Field>
-        {showAlloc && (
+        {showAlloc && <>
           <Field label="배정주(주)">
             <input type="number" className={inputCls} value={shares} onChange={e => setShares(e.target.value)} placeholder="0" />
           </Field>
-        )}
-        {showRefund && <>
           <Field label="환불액(만원)">
             <input type="number" className={inputCls} value={refund} onChange={e => setRefund(e.target.value)} placeholder="0" />
           </Field>
+        </>}
+        {isUnalloc && (
+          <Field label="환불액(만원)">
+            <input type="number" className={cn(inputCls, 'opacity-60')} value={deposit} disabled title="미배정 = 증거금 전액 환불" />
+          </Field>
+        )}
+        {showRefunded && (
           <label className="flex items-center gap-1.5 self-end pb-1.5 text-sm">
             <input type="checkbox" checked={refunded} onChange={e => setRefunded(e.target.checked)} /> 회수 완료
           </label>
-        </>}
+        )}
         {showSold && (
           <Field label="매도손익(만원, 세후)">
             <input type="number" className={inputCls} value={pnl} onChange={e => setPnl(e.target.value)} placeholder="+0" />

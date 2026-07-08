@@ -128,8 +128,8 @@ export function accountMoney(acct: Account, ledger: LedgerRow[]): AccountMoney {
     if (r.person !== acct.person || r.broker !== acct.broker) continue
     if (r.status === 'SUBMITTED') locked += r.deposit
     if (r.status === 'ALLOCATED') { heldShares += r.allocatedShares; if (!r.refunded) refundPending += r.refundAmount }
-    // 미배정 = 배정 0 → 증거금 전액 환불. 회수 전이면 환불 대기.
-    if (r.status === 'UNALLOCATED' && !r.refunded) refundPending += r.refundAmount
+    // 미배정 = 배정 0 → 증거금 전액 환불. 회수 전이면 증거금 전액이 환불 대기.
+    if (r.status === 'UNALLOCATED' && !r.refunded) refundPending += (r.refundAmount || r.deposit)
   }
   return { locked, refundPending, heldShares, total: locked + refundPending }
 }
