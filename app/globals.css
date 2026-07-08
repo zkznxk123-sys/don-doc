@@ -496,32 +496,33 @@
   border-radius: 0.5rem;
   overflow: hidden;
   isolation: isolate;
-  box-shadow: 0 8px 30px -10px rgba(201, 165, 74, 0.35);
+  box-shadow: 0 0 0 1px rgba(201, 165, 74, 0.22), 0 10px 34px -10px rgba(201, 165, 74, 0.42);
 }
 .focus-box > * { position: relative; z-index: 1; }   /* 본문은 링 위 */
-.focus-box::before {                                  /* 회전 빛 링 */
+.focus-box::before {                                  /* 회전 빛 링 — baseline 골드 + 밝은 beam */
   content: '';
   position: absolute;
   z-index: -2;
   left: 50%; top: 50%;
-  width: 240%; height: 240%;
+  width: 260%; height: 260%;
   translate: -50% -50%;
   background: conic-gradient(from 0deg,
-    rgba(201, 165, 74, 0.25) 0deg,
-    rgba(201, 165, 74, 0.25) 300deg,
-    rgba(201, 165, 74, 0.85) 338deg,
-    #F4F1E9 352deg,
-    rgba(201, 165, 74, 0.25) 360deg);
-  animation: focusBeam 4.5s linear infinite;
+    rgba(201, 165, 74, 0.45) 0deg,
+    rgba(201, 165, 74, 0.45) 292deg,
+    rgba(201, 165, 74, 0.95) 330deg,
+    #F4F1E9 350deg,
+    rgba(201, 165, 74, 0.95) 356deg,
+    rgba(201, 165, 74, 0.45) 360deg);
+  animation: focusBeam 4s linear infinite;
   pointer-events: none;
 }
-.focus-box::after {                                   /* 안쪽 카드 채움 → 링만 남김 */
+.focus-box::after {                                   /* 안쪽 = 살짝 골드 틴트 → 박스 자체가 구분됨 */
   content: '';
   position: absolute;
   z-index: -1;
-  inset: 1.5px;
-  border-radius: calc(0.5rem - 1.5px);
-  background: hsl(var(--card));
+  inset: 2.5px;
+  border-radius: calc(0.5rem - 2.5px);
+  background: color-mix(in oklab, hsl(var(--card)) 92%, #C9A54A);
 }
 @keyframes focusBeam { to { rotate: 360deg; } }
 @media (prefers-reduced-motion: reduce) { .focus-box::before { animation-play-state: paused; } }
