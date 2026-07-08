@@ -19,7 +19,7 @@ export default function SignInPage() {
               다시 오셨군요
             </h1>
             <p className="text-sm text-muted-foreground">
-              흩어진 자산을 한 화면에 — 로그인하고 이어가세요
+              복잡한 투자, 단순하게 — 로그인하고 이어가세요
             </p>
           </div>
 
