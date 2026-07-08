@@ -488,35 +488,40 @@
 .hero-orbit path { animation: heroOrbitFlow 24s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .hero-orbit path { animation: none; } }
 
-/* ── 포커싱 박스 — 입력 집중 영역(예: 내 청약). 골드 테두리 + 글로우 + 빛 셰인 스윕.
-   테두리·글로우는 항상 보이고, 빛줄기(::before)가 본문 뒤로 천천히 지나간다. */
+/* ── 포커싱 박스(border beam) — 골드 빛이 테두리를 따라 빙 돈다.
+   회전하는 conic-gradient(::before)를 ::after(카드색)가 안쪽만 덮어 1.5px 링만 노출.
+   mask-composite 불필요 → 렌더 안정적. baseline 골드 링 + 밝은 beam 스윕. */
 .focus-box {
   position: relative;
-  border: 1.5px solid rgba(201, 165, 74, 0.55);
   border-radius: 0.5rem;
-  box-shadow: 0 0 0 1px rgba(201, 165, 74, 0.12), 0 8px 30px -10px rgba(201, 165, 74, 0.38);
   overflow: hidden;
   isolation: isolate;
+  box-shadow: 0 8px 30px -10px rgba(201, 165, 74, 0.35);
 }
-.focus-box > * { position: relative; z-index: 1; }   /* 본문은 셰인 위 */
-.focus-box::before {
+.focus-box > * { position: relative; z-index: 1; }   /* 본문은 링 위 */
+.focus-box::before {                                  /* 회전 빛 링 */
   content: '';
   position: absolute;
-  top: 0; bottom: 0; left: 0;
-  width: 55%;
-  z-index: 0;
-  background: linear-gradient(100deg,
-    transparent 0%,
-    rgba(201, 165, 74, 0.16) 42%,
-    rgba(244, 241, 233, 0.24) 50%,
-    rgba(201, 165, 74, 0.16) 58%,
-    transparent 100%);
-  transform: translateX(-160%);
-  animation: focusSheen 4.8s ease-in-out infinite;
+  z-index: -2;
+  left: 50%; top: 50%;
+  width: 240%; height: 240%;
+  translate: -50% -50%;
+  background: conic-gradient(from 0deg,
+    rgba(201, 165, 74, 0.25) 0deg,
+    rgba(201, 165, 74, 0.25) 300deg,
+    rgba(201, 165, 74, 0.85) 338deg,
+    #F4F1E9 352deg,
+    rgba(201, 165, 74, 0.25) 360deg);
+  animation: focusBeam 4.5s linear infinite;
   pointer-events: none;
 }
-@keyframes focusSheen {
-  0%       { transform: translateX(-160%); }
-  55%, 100% { transform: translateX(340%); }
+.focus-box::after {                                   /* 안쪽 카드 채움 → 링만 남김 */
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 1.5px;
+  border-radius: calc(0.5rem - 1.5px);
+  background: hsl(var(--card));
 }
-@media (prefers-reduced-motion: reduce) { .focus-box::before { animation: none; opacity: 0; } }
+@keyframes focusBeam { to { rotate: 360deg; } }
+@media (prefers-reduced-motion: reduce) { .focus-box::before { animation-play-state: paused; } }
