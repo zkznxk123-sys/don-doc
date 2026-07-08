@@ -219,9 +219,10 @@ function MySubs({ o, data }: { o: UpcomingOffering; data: IpoData }) {
   const [editing, setEditing] = useState<{ index: number; to?: SubStatus } | null>(null)
   const [adding, setAdding] = useState(false)
   const mine = ledger.map((row, index) => ({ row, index })).filter(x => x.row.offering === o.name)
+  const active = adding || editing !== null   // 편집 중일 때만 빛 회전
 
   return (
-    <div className="focus-box rounded-md p-3 space-y-2">
+    <div className={cn('focus-box rounded-md p-3 space-y-2', active && 'is-active')}>
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold flex items-center gap-1.5">
           <ClipboardList className="size-3.5 text-[#C9A54A]" /> 내 청약{mine.length > 0 && ` · ${mine.length}`}

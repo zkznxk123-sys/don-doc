@@ -491,15 +491,26 @@
 /* ── 포커싱 박스(border beam) — 골드 빛이 테두리를 따라 빙 돈다.
    회전하는 conic-gradient(::before)를 ::after(카드색)가 안쪽만 덮어 1.5px 링만 노출.
    mask-composite 불필요 → 렌더 안정적. baseline 골드 링 + 밝은 beam 스윕. */
+/* 기본 — 정적 골드 테두리 강조 + 살짝 골드 틴트(회전 없음) */
 .focus-box {
   position: relative;
   border-radius: 0.5rem;
+  border: 2px solid rgba(201, 165, 74, 0.5);
+  background: color-mix(in oklab, hsl(var(--card)) 93%, #C9A54A);
+  box-shadow: 0 0 0 1px rgba(201, 165, 74, 0.10), 0 8px 24px -12px rgba(201, 165, 74, 0.28);
+  transition: box-shadow 0.3s ease;
+}
+
+/* 편집 활성(.is-active) — 골드 빛이 테두리를 천천히 순회 */
+.focus-box.is-active {
+  border-color: transparent;
   overflow: hidden;
   isolation: isolate;
-  box-shadow: 0 0 0 1px rgba(201, 165, 74, 0.22), 0 10px 34px -10px rgba(201, 165, 74, 0.42);
+  background: transparent;
+  box-shadow: 0 0 0 1px rgba(201, 165, 74, 0.24), 0 10px 34px -8px rgba(201, 165, 74, 0.45);
 }
-.focus-box > * { position: relative; z-index: 1; }   /* 본문은 링 위 */
-.focus-box::before {                                  /* 회전 빛 링 — baseline 골드 + 밝은 beam */
+.focus-box.is-active > * { position: relative; z-index: 1; }   /* 본문은 링 위 */
+.focus-box.is-active::before {                                 /* 회전 빛 링 */
   content: '';
   position: absolute;
   z-index: -2;
@@ -507,22 +518,22 @@
   width: 260%; height: 260%;
   translate: -50% -50%;
   background: conic-gradient(from 0deg,
-    rgba(201, 165, 74, 0.45) 0deg,
-    rgba(201, 165, 74, 0.45) 292deg,
+    rgba(201, 165, 74, 0.5) 0deg,
+    rgba(201, 165, 74, 0.5) 288deg,
     rgba(201, 165, 74, 0.95) 330deg,
     #F4F1E9 350deg,
     rgba(201, 165, 74, 0.95) 356deg,
-    rgba(201, 165, 74, 0.45) 360deg);
-  animation: focusBeam 4s linear infinite;
+    rgba(201, 165, 74, 0.5) 360deg);
+  animation: focusBeam 7s linear infinite;
   pointer-events: none;
 }
-.focus-box::after {                                   /* 안쪽 = 살짝 골드 틴트 → 박스 자체가 구분됨 */
+.focus-box.is-active::after {                                  /* 안쪽 = 골드 틴트 채움 */
   content: '';
   position: absolute;
   z-index: -1;
-  inset: 2.5px;
-  border-radius: calc(0.5rem - 2.5px);
-  background: color-mix(in oklab, hsl(var(--card)) 92%, #C9A54A);
+  inset: 2px;
+  border-radius: calc(0.5rem - 2px);
+  background: color-mix(in oklab, hsl(var(--card)) 93%, #C9A54A);
 }
 @keyframes focusBeam { to { rotate: 360deg; } }
-@media (prefers-reduced-motion: reduce) { .focus-box::before { animation-play-state: paused; } }
+@media (prefers-reduced-motion: reduce) { .focus-box.is-active::before { animation-play-state: paused; } }
