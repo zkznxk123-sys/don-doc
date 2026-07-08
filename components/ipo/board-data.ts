@@ -5,7 +5,7 @@
  * 전체 데이터 엔티티 설계: vault `공모주-청약원장-데이터모델-스펙.md`.
  */
 
-export type SubStatus = 'PLANNED' | 'SUBMITTED' | 'ALLOCATED' | 'SOLD' | 'MISSED'
+export type SubStatus = 'PLANNED' | 'SUBMITTED' | 'ALLOCATED' | 'UNALLOCATED' | 'SOLD' | 'MISSED'
 
 /** 청약 1건 = 명의 × 증권사 × 종목. */
 export interface LedgerRow {
@@ -61,11 +61,12 @@ export interface UpcomingOffering {
 }
 
 export const STATUS_META: Record<SubStatus, { label: string; tone: string }> = {
-  PLANNED:   { label: '청약예정', tone: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300' },
-  SUBMITTED: { label: '청약완료', tone: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300' },
-  ALLOCATED: { label: '배정·보유', tone: 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300' },
-  SOLD:      { label: '매도완료', tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' },
-  MISSED:    { label: '놓침', tone: 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300' },
+  PLANNED:     { label: '청약예정', tone: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300' },
+  SUBMITTED:   { label: '청약완료', tone: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300' },
+  ALLOCATED:   { label: '배정', tone: 'bg-violet-100 text-violet-700 dark:bg-violet-500/15 dark:text-violet-300' },
+  UNALLOCATED: { label: '미배정', tone: 'bg-slate-100 text-slate-600 dark:bg-slate-500/15 dark:text-slate-300' },
+  SOLD:        { label: '매도완료', tone: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300' },
+  MISSED:      { label: '놓침', tone: 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300' },
 }
 
 /**
@@ -127,6 +128,8 @@ export function accountMoney(acct: Account, ledger: LedgerRow[]): AccountMoney {
     if (r.person !== acct.person || r.broker !== acct.broker) continue
     if (r.status === 'SUBMITTED') locked += r.deposit
     if (r.status === 'ALLOCATED') { heldShares += r.allocatedShares; if (!r.refunded) refundPending += r.refundAmount }
+    // 미배정 = 배정 0 → 증거금 전액 환불. 회수 전이면 환불 대기.
+    if (r.status === 'UNALLOCATED' && !r.refunded) refundPending += r.refundAmount
   }
   return { locked, refundPending, heldShares, total: locked + refundPending }
 }

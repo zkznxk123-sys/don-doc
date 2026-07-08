@@ -178,7 +178,7 @@ function OfferingDetail({ o, data, today }: { o: UpcomingOffering; data: IpoData
 /** 다음 단계 진행 버튼 — 현재 상태에서 자연스러운 한 걸음(폼이 해당 상태로 열림). */
 const NEXT_STEP: Partial<Record<SubStatus, { label: string; to: SubStatus }>> = {
   PLANNED:   { label: '청약했어요', to: 'SUBMITTED' },
-  SUBMITTED: { label: '배정 입력', to: 'ALLOCATED' },
+  SUBMITTED: { label: '결과 입력', to: 'ALLOCATED' },   // 배정/미배정 — 폼 드롭다운에서 선택
   ALLOCATED: { label: '매도 기록', to: 'SOLD' },
 }
 

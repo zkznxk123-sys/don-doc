@@ -48,6 +48,7 @@ export default function IpoLedgerPage() {
       if (r.kind !== kind) continue
       if (r.status === 'SUBMITTED') locked += r.deposit
       if (r.status === 'ALLOCATED') { unsoldShares += r.allocatedShares; if (!r.refunded) unrecovered += r.refundAmount }
+      if (r.status === 'UNALLOCATED' && !r.refunded) unrecovered += r.refundAmount
       if (r.status === 'SOLD') realized += r.realizedPnl ?? 0
       if (r.status === 'PLANNED') planned++
       if (r.status === 'MISSED') missed++

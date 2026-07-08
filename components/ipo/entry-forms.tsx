@@ -29,7 +29,8 @@ const READINESS_BTN: Record<ReadinessState, string> = {
 }
 const STATUSES: { v: SubStatus; label: string }[] = [
   { v: 'PLANNED', label: '청약예정' }, { v: 'SUBMITTED', label: '청약완료' },
-  { v: 'ALLOCATED', label: '배정·보유' }, { v: 'SOLD', label: '매도완료' }, { v: 'MISSED', label: '놓침' },
+  { v: 'ALLOCATED', label: '배정' }, { v: 'UNALLOCATED', label: '미배정' },
+  { v: 'SOLD', label: '매도완료' }, { v: 'MISSED', label: '놓침' },
 ]
 
 const inputCls = 'rounded-md border border-border bg-card px-2.5 py-1.5 text-sm outline-none focus:border-foreground/30'
@@ -307,7 +308,8 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
   const [refunded, setRefunded] = useState(r0?.refunded ?? false)
   const [pnl, setPnl] = useState(r0?.realizedPnl != null ? String(r0.realizedPnl / 10_000) : '')
 
-  const showAlloc = status === 'ALLOCATED' || status === 'SOLD'
+  const showAlloc = status === 'ALLOCATED' || status === 'SOLD'   // 배정주 입력
+  const showRefund = showAlloc || status === 'UNALLOCATED'        // 환불액·회수 (미배정 = 전액 환불)
   const showSold = status === 'SOLD'
 
   const submit = () => {
@@ -316,8 +318,8 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
       offering: offering.trim(), person: person.trim() || '본인', broker: broker.trim(), subType, status,
       deposit: won(deposit),
       allocatedShares: showAlloc ? (parseInt(shares) || 0) : 0,
-      refundAmount: showAlloc ? won(refund) : 0,
-      refunded: showAlloc ? refunded : false,
+      refundAmount: showRefund ? won(refund) : 0,
+      refunded: showRefund ? refunded : false,
       realizedPnl: showSold ? won(pnl) : undefined,
     }
     if (initial) data.updateSub(initial.index, values)
@@ -357,10 +359,12 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
         <Field label="증거금(만원)">
           <input type="number" className={inputCls} value={deposit} onChange={e => setDeposit(e.target.value)} placeholder="0" />
         </Field>
-        {showAlloc && <>
+        {showAlloc && (
           <Field label="배정주(주)">
             <input type="number" className={inputCls} value={shares} onChange={e => setShares(e.target.value)} placeholder="0" />
           </Field>
+        )}
+        {showRefund && <>
           <Field label="환불액(만원)">
             <input type="number" className={inputCls} value={refund} onChange={e => setRefund(e.target.value)} placeholder="0" />
           </Field>
