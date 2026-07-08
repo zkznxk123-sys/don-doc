@@ -86,7 +86,7 @@ export function ScheduleView({ data, kind }: { data: IpoData; kind?: 'IPO' | 'SP
 }
 
 function OfferingRow({ o, todayISO, today, open, onToggle }: { o: UpcomingOffering; todayISO: string; today: Date; open: boolean; onToggle: () => void }) {
-  const next = nextDate(o, todayISO)
+  const next = nextEvent(o, todayISO)
   return (
     <div className="grid grid-cols-12 items-center gap-2 py-2 text-sm cursor-pointer hover:bg-muted/30 -mx-1 px-1 rounded" onClick={onToggle}>
       <span className="col-span-5 sm:col-span-4 flex items-center gap-1.5 min-w-0">
@@ -105,9 +105,9 @@ function OfferingRow({ o, todayISO, today, open, onToggle }: { o: UpcomingOfferi
       <span className="hidden sm:block sm:col-span-2 text-right text-[11px] text-muted-foreground truncate">{o.brokers.join(',')}</span>
       <span className="col-span-2 text-right">
         {next && (
-          <span className={cn('rounded px-1.5 py-0.5 text-[10px] font-semibold',
-            ddays(next, today) <= 1 ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300' : 'bg-muted text-muted-foreground')}>
-            {ddayLabel(ddays(next, today))}
+          <span className={cn('whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-semibold',
+            ddays(next.date, today) <= 1 ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300' : 'bg-muted text-muted-foreground')}>
+            {next.label} {ddayLabel(ddays(next.date, today))}
           </span>
         )}
       </span>
@@ -471,10 +471,15 @@ function DateChip({ label, date, prefix = '' }: { label: string; date: string; p
   return <span>{label} {prefix}{date.slice(5)}</span>
 }
 
-/** 오늘 이후 가장 가까운 이벤트일(없으면 null). */
-function nextDate(o: UpcomingOffering, todayISO: string): string | null {
-  const ds = [(o.subEnd ?? o.subStart), o.refundDate, o.listingDate, o.transferDate].filter(Boolean) as string[]
-  return ds.filter(d => d >= todayISO).sort()[0] ?? null
+/** 오늘 이후 가장 가까운 이벤트(종류 라벨 포함, 없으면 null). D-day가 청약/상장 등 무엇 기준인지 표기용. */
+function nextEvent(o: UpcomingOffering, todayISO: string): { date: string; label: string } | null {
+  const evts = [
+    { date: o.subEnd ?? o.subStart, label: '청약' },
+    { date: o.refundDate, label: '환불' },
+    { date: o.listingDate, label: '상장' },
+    { date: o.transferDate, label: '전환' },
+  ].filter(e => e.date && e.date >= todayISO) as { date: string; label: string }[]
+  return evts.sort((a, b) => (a.date < b.date ? -1 : 1))[0] ?? null
 }
 
 function fmtMonth(ym: string): string {
