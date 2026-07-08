@@ -189,7 +189,8 @@ function CalendarView({ offerings, data, today, todayISO, expanded, onToggle }: 
                 <button key={j} onClick={() => onToggle(e.name)} title={`${e.type} · ${e.name}`}
                   className={cn('block w-full truncate rounded px-1 py-0.5 text-left text-[9px] font-medium leading-tight',
                     EVENT_TONE[e.type], expanded === e.name && 'ring-1 ring-foreground/40')}>
-                  {e.type} {e.name}
+                  {/* 유형은 칩 색상(범례)로 구분 → 좁은 셀엔 종목명만 노출 */}
+                  {e.name}
                 </button>
               ))}
             </div>
