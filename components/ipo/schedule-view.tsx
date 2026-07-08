@@ -5,7 +5,7 @@
  * 월별로 묶어 청약·환불·상장일을 한눈에. 다가올/전체 토글.
  */
 import { Fragment, useMemo, useState } from 'react'
-import { Calendar, ChevronDown, ChevronLeft, ChevronRight, Calculator, ClipboardList, Table2, StickyNote, type LucideIcon } from 'lucide-react'
+import { Calendar, ChevronDown, ChevronLeft, ChevronRight, Calculator, ClipboardList, Table2, StickyNote, HelpCircle, type LucideIcon } from 'lucide-react'
 import { cn, formatLargeNumber } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { SubForm, EditBtn } from '@/components/ipo/entry-forms'
@@ -431,6 +431,7 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
   const [rate, setRate] = useState(o.subCompetition ? String(o.subCompetition) : '')
   const [gyun, setGyun] = useState('')
   const [budget, setBudget] = useState('')   // 예산(만원)
+  const [showHelp, setShowHelp] = useState(false)   // 계산식 설명 토글
   const r = parseFloat(rate) || 0
   const g = parseFloat(gyun) || 0
   const price = o.ipoPrice
@@ -438,11 +439,12 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
   const limit = o.subLimit ? parseInt(o.subLimit.split('~')[0].replace(/[^\d]/g, ''), 10) : undefined
   const won = (n: number) => (n >= 1e8 ? `${(n / 1e8).toFixed(2)}억` : `${Math.round(n / 1e4).toLocaleString()}만`)
   const targets = [1, 2, 3]
-  // 도전/기본/안정 = 경쟁률 상승 버퍼. 예상경쟁률이 그만큼 올라도 목표 총배정 유지.
+  // 안정/기본/도전 = 경쟁률 상승 버퍼. 예상경쟁률이 그만큼 올라도 목표 총배정 유지.
+  // 도전보다 '안정적으로 주수 확보'가 우선 → 안정을 앵커(첫 행·강조)로.
   const levels = [
-    { key: '도전', mult: 1.0, tone: 'text-rose-600 dark:text-rose-400' },
-    { key: '기본', mult: 1.15, tone: '' },
     { key: '안정', mult: 1.3, tone: 'text-emerald-600 dark:text-emerald-400' },
+    { key: '기본', mult: 1.15, tone: '' },
+    { key: '도전', mult: 1.0, tone: 'text-rose-600 dark:text-rose-400' },
   ]
 
   // ── 예산 최적 배분 ──────────────────────────────────────────────
@@ -484,22 +486,30 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
 
   return (
     <div className="rounded-md border border-border p-3 space-y-2">
-      <div className="text-xs font-medium flex items-center gap-1.5"><Calculator className="size-3.5" /> 청약 배정 계산기</div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="flex items-center justify-between">
+        <div className="text-xs font-medium flex items-center gap-1.5"><Calculator className="size-3.5" /> 청약 배정 계산기</div>
+        <button type="button" onClick={() => setShowHelp(v => !v)}
+          className={cn('inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors',
+            showHelp ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground')}>
+          <HelpCircle className="size-3" /> 계산식
+        </button>
+      </div>
+      {/* 주 입력: 투자 예산(결과를 좌우) — 크게. 보조 입력(경쟁률·균등)은 아래 작게. */}
+      <label className="flex flex-col gap-0.5">
+        <span className="text-[11px] font-medium">투자 예산 (만원)</span>
+        <input data-priv type="number" value={budget} onChange={e => setBudget(e.target.value)} placeholder="예: 5000"
+          className="rounded-md border border-border bg-card px-2.5 py-1.5 text-base tabular-nums outline-none focus:border-foreground/30" />
+      </label>
+      <div className="grid grid-cols-2 gap-2">
         <label className="flex flex-col gap-0.5">
           <span className="text-[10px] text-muted-foreground">현재 비례경쟁률</span>
           <input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="예: 2910"
-            className="rounded-md border border-border bg-card px-2 py-1 text-sm outline-none focus:border-foreground/30" />
+            className="rounded-md border border-border bg-card px-2 py-1 text-[13px] text-muted-foreground outline-none focus:border-foreground/30 focus:text-foreground" />
         </label>
         <label className="flex flex-col gap-0.5">
           <span className="text-[10px] text-muted-foreground">균등 예상수량(주)</span>
           <input type="number" value={gyun} onChange={e => setGyun(e.target.value)} placeholder="예: 0.8"
-            className="rounded-md border border-border bg-card px-2 py-1 text-sm outline-none focus:border-foreground/30" />
-        </label>
-        <label className="flex flex-col gap-0.5">
-          <span className="text-[10px] text-muted-foreground">투자 예산(만원)</span>
-          <input data-priv type="number" value={budget} onChange={e => setBudget(e.target.value)} placeholder="예: 5000"
-            className="rounded-md border border-border bg-card px-2 py-1 text-sm outline-none focus:border-foreground/30" />
+            className="rounded-md border border-border bg-card px-2 py-1 text-[13px] text-muted-foreground outline-none focus:border-foreground/30 focus:text-foreground" />
         </label>
       </div>
       {!price && <p className="text-[11px] text-muted-foreground">공모가 확정(수요예측 후) 이후 증거금 계산 가능.</p>}
@@ -538,9 +548,11 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
           })}
         </div>
       )}
-      <p className="text-[10px] text-muted-foreground">
-        총배정 = 균등{g ? ` ${g}주` : ''} + 비례. 청약주수 = (목표−균등)×경쟁률×버퍼. <b>도전 +0 / 기본 +15 / 안정 +30%</b> = 경쟁률이 그만큼 올라도 목표 유지. 예상배정=총(비=비례). 증거금 {Math.round(dr * 100)}%{limit != null && ` · 청약한도 ${limit.toLocaleString()}주 초과 ⚠`}.
-      </p>
+      {showHelp && (
+        <p className="text-[10px] text-muted-foreground">
+          총배정 = 균등{g ? ` ${g}주` : ''} + 비례. 청약주수 = (목표−균등)×경쟁률×버퍼. <b>안정 +30% / 기본 +15 / 도전 +0</b> = 경쟁률이 그만큼 올라도 목표 유지. 예상배정=총(비=비례). 증거금 {Math.round(dr * 100)}%{limit != null && ` · 청약한도 ${limit.toLocaleString()}주 초과 ⚠`}.
+        </p>
+      )}
 
       {/* ── 예산 최적 배분 — 내 계좌로 명의별 얼마씩 ── */}
       {plan && (
@@ -580,9 +592,12 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
               })}
             </div>
           )}
-          <p className="text-[10px] text-muted-foreground">
-            중복청약 금지 → 명의당 주관사 계좌 1개. 균등이 비례보다 훨씬 효율적이라(최소청약 {won(plan.minDep)}원당 {g || '?'}주 vs 비례 {(10 / r).toFixed(3)}주) <b>모든 명의 최소청약 + 잔액 비례 집중</b>이 최적. 사실 계산이며 청약 권유 아님.
-          </p>
+          {showHelp && (
+            <p className="text-[10px] text-muted-foreground">
+              중복청약 금지 → 명의당 주관사 계좌 1개. 균등이 비례보다 훨씬 효율적이라(최소청약 {won(plan.minDep)}원당 {g || '?'}주 vs 비례 {(10 / r).toFixed(3)}주) <b>모든 명의 최소청약 + 잔액 비례 집중</b>이 최적.
+            </p>
+          )}
+          <p className="text-[10px] text-muted-foreground/80">사실 계산이며 청약 권유가 아닙니다.</p>
         </div>
       )}
     </div>
