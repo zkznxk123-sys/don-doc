@@ -7,13 +7,18 @@
  * 기존 로컬 작업본은 첫 로드 때 DB로 자동 마이그레이션.
  */
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { useAuth } from '@clerk/nextjs'
 import { toast } from 'sonner'
 import {
   OFFERING_BY_NAME,
   type Account, type LedgerRow, type Spac,
 } from '@/components/ipo/board-data'
 
-const KEY = 'dondoc.ipo.v1'
+// localStorage 키는 유저별로 스코프 — 같은 브라우저에서 계정 전환 시 데이터가 새지 않게.
+// 구 전역 키(dondoc.ipo.v1)는 로드 시 제거(유저간 누출 원인). DB가 소스오브트루스라 캐시 손실 없음.
+const KEY_PREFIX = 'dondoc.ipo.v1'
+const LEGACY_KEY = 'dondoc.ipo.v1'
+const userKey = (userId: string | null | undefined) => `${KEY_PREFIX}.${userId ?? 'anon'}`
 
 /** 38 미제공 종목 필드(수동 입력) — 시총·유통금액·유통가능비율. */
 export interface OfferingOverride {
@@ -63,15 +68,13 @@ export function parseImport(raw: unknown): IpoState | null {
   } catch { return null }
 }
 
-const SAVED_AT_KEY = `${KEY}.savedAt`
-
-function load(): { state: IpoState; savedAt: string | null } | null {
+function load(key: string): { state: IpoState; savedAt: string | null } | null {
   try {
-    const raw = localStorage.getItem(KEY)
+    const raw = localStorage.getItem(key)
     if (!raw) return null
     return {
       state: normalize(JSON.parse(raw) as Partial<IpoState>),
-      savedAt: localStorage.getItem(SAVED_AT_KEY),
+      savedAt: localStorage.getItem(`${key}.savedAt`),
     }
   } catch { return null }
 }
@@ -117,6 +120,8 @@ export function buildRow(r: Omit<LedgerRow, 'kind' | 'subStart' | 'refundDate' |
 }
 
 export function useIpoData(): IpoData {
+  const { userId, isLoaded } = useAuth()
+  const storageKey = userKey(userId)
   const [state, setState] = useState<IpoState>(EMPTY)
   const [hydrated, setHydrated] = useState(false)
   const dbRef = useRef(false)        // DB 사용 가능(인증됨)
@@ -127,9 +132,14 @@ export function useIpoData(): IpoData {
   // 로드: DB > localStorage > EMPTY. 단, 로컬이 DB보다 확실히 최신(오프라인 편집)이면
   // 로컬 승격 후 DB로 저장 — "DB 우선"이 최신 로컬 편집을 조용히 덮던 유실 경로 차단(dev 7/2).
   useEffect(() => {
+    if (!isLoaded) return   // Clerk userId 확정 후 로드(유저별 키 확정)
+    // 구 전역 키 제거 — 유저간 누출 원인. DB가 소스오브트루스라 캐시 손실 없음.
+    try { localStorage.removeItem(LEGACY_KEY); localStorage.removeItem(`${LEGACY_KEY}.savedAt`) } catch {}
     let cancelled = false
+    setHydrated(false)
+    skipSaveRef.current = true   // 계정 전환 재로드 시 저장 1회 스킵
     ;(async () => {
-      const local = load()
+      const local = load(storageKey)
       try {
         const res = await fetch('/api/ipo/workspace')
         if (res.ok) {
@@ -157,7 +167,7 @@ export function useIpoData(): IpoData {
       }
     })()
     return () => { cancelled = true }
-  }, [])
+  }, [isLoaded, storageKey])
 
   // 저장: localStorage(항상 캐시, savedAt 동반) + DB(debounced, 인증 시). 첫 로드 반영은 1회 스킵.
   const stateRef = useRef(state)
@@ -166,8 +176,8 @@ export function useIpoData(): IpoData {
     if (!hydrated) return
     stateRef.current = state
     try {
-      localStorage.setItem(KEY, JSON.stringify(state))
-      localStorage.setItem(SAVED_AT_KEY, new Date().toISOString())
+      localStorage.setItem(storageKey, JSON.stringify(state))
+      localStorage.setItem(`${storageKey}.savedAt`, new Date().toISOString())
     } catch {}
     if (skipSaveRef.current) { skipSaveRef.current = false; return }
     if (!dbRef.current) return
@@ -195,7 +205,7 @@ export function useIpoData(): IpoData {
         }
       } catch { dirtyRef.current = true }
     }, 800)
-  }, [state, hydrated])
+  }, [state, hydrated, storageKey])
 
   // 탭 닫기·백그라운드 전환 시 debounce 대기분 즉시 flush — 800ms 안에 떠나면
   // 마지막 편집이 DB에 못 가던 조용한 유실 차단(dev 7/2). keepalive로 언로드 중에도 전송 유지.
