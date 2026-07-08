@@ -108,7 +108,13 @@ export function VideoHeroLight() {
 
       {/* ── navbar ── */}
       <nav className="relative z-10 max-w-[1280px] mx-auto flex items-center justify-between px-5 sm:px-8 py-4 sm:py-5">
-        <Link href="/"><Wordmark size={25} ink={SM_INK} dim={SM_INK_DIM} gold={GOLD} /></Link>
+        <div className="flex items-center gap-7">
+          <Link href="/"><Wordmark size={25} ink={SM_INK} dim={SM_INK_DIM} gold={GOLD} /></Link>
+          <div className="hidden sm:flex items-center gap-5">
+            <Link href="/product" className="text-sm font-medium transition-opacity hover:opacity-80" style={{ color: SM_INK_DIM }}>제품</Link>
+            <Link href="/about" className="text-sm font-medium transition-opacity hover:opacity-80" style={{ color: SM_INK_DIM }}>소개</Link>
+          </div>
+        </div>
         <div className="flex items-center gap-2 sm:gap-2.5">
           <a href="/sign-in" className="inline-flex items-center px-2.5 sm:px-4 py-2.5 text-sm font-medium" style={{ color: SM_INK_DIM }}>로그인</a>
           <a href="/sign-up" className="rounded-full px-4 sm:px-5 py-2.5 text-sm font-semibold transition-transform hover:scale-[1.03]"
