@@ -67,6 +67,88 @@ export default function IpoLedgerPage() {
     return [...map.entries()].sort((a, b) => (a[1][0].row.subStart < b[1][0].row.subStart ? -1 : 1))
   }, [ledger, kind])
 
+  // 종목별 청약 내역 — 편집(청약·상장 탭) / 읽기전용(결과 탭) 공용. 편집은 한 곳(청약·상장)으로 일원화.
+  const renderLedger = (readOnly: boolean) => (
+    <section className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-sm font-medium text-muted-foreground">
+          종목별 내역 {groups.length > 0 && `· ${groups.length}종목`}
+          {readOnly && <span className="ml-1.5 text-xs text-muted-foreground/60">· 확인 전용 (수정은 「청약·상장」)</span>}
+        </h3>
+        {!readOnly && (
+          <button onClick={() => setAddingSub(v => !v)}
+            className="inline-flex items-center gap-1 rounded-md bg-foreground text-background px-2 py-1 text-xs font-medium hover:opacity-90">
+            <Plus className="size-3.5" /> 청약 추가
+          </button>
+        )}
+      </div>
+      {!readOnly && addingSub && <SubForm data={data} onDone={() => setAddingSub(false)} />}
+      {groups.length === 0 && !addingSub && (
+        <p className="text-sm text-muted-foreground py-8 text-center">
+          {readOnly ? '아직 청약 내역이 없어요. 「청약·상장」 탭에서 등록하세요.' : '아직 청약 내역이 없어요. “청약 추가”로 등록하세요.'}
+        </p>
+      )}
+      {groups.map(([offering, rows]) => {
+        const row = rows[0].row
+        const off = OFFERING_BY_NAME.get(offering)
+        const rk = off?.kind ?? row.kind
+        const subStart = off?.subStart ?? row.subStart
+        const refundDate = off?.refundDate ?? row.refundDate
+        const listingDate = off?.listingDate ?? row.listingDate
+        return (
+          <Card key={offering}>
+            <CardContent className="pt-4">
+              <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 pb-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="font-medium break-keep">{offering}</span>
+                  <span className={cn('shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold', KIND_TONE[rk])}>{rk}</span>
+                </div>
+                <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                  {subStart && <span className="whitespace-nowrap">청약 {subStart.slice(5)}</span>}
+                  {refundDate && <span className="whitespace-nowrap">· 환불 {refundDate.slice(5)}</span>}
+                  {listingDate && <span className="whitespace-nowrap flex items-center gap-0.5"><ArrowRightLeft className="size-3" />상장 {listingDate.slice(5)}</span>}
+                </div>
+              </div>
+              <div className="divide-y divide-border/60">
+                {rows.map(({ row: r, index }) => !readOnly && editingSub === index ? (
+                  <div key={index} className="py-2">
+                    <SubForm data={data} initial={{ row: r, index }} onDone={() => setEditingSub(null)} />
+                  </div>
+                ) : (
+                  <div key={index} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-2 text-sm sm:grid sm:grid-cols-12 sm:gap-2">
+                    <span className="font-medium sm:col-span-2">{r.person}</span>
+                    <span className="text-muted-foreground text-xs whitespace-nowrap sm:col-span-2">{r.broker} · {r.subType}</span>
+                    <span className="ml-auto flex items-center gap-1.5 sm:ml-0 sm:order-last sm:col-span-3 sm:justify-end">
+                      {r.status === 'SOLD' && r.realizedPnl != null && (
+                        <span className={cn('text-xs tabular-nums whitespace-nowrap', r.realizedPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400')}>
+                          {r.realizedPnl >= 0 ? '+' : ''}{formatLargeNumber(r.realizedPnl)}
+                        </span>
+                      )}
+                      <span className={cn('whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-semibold', STATUS_META[r.status].tone)}>
+                        {STATUS_META[r.status].label}
+                      </span>
+                      {!readOnly && <EditBtn onClick={() => setEditingSub(index)} />}
+                      {!readOnly && <DeleteBtn onClick={() => data.removeSub(index)} label="청약 삭제" />}
+                    </span>
+                    <span className="basis-full sm:hidden" />
+                    <span className="text-xs tabular-nums sm:col-span-3 sm:text-right sm:text-sm">
+                      <span className="text-muted-foreground sm:hidden">증거금 </span>
+                      {r.deposit > 0 ? `${formatLargeNumber(r.deposit)}원` : <span className="text-muted-foreground">—</span>}
+                    </span>
+                    <span className="text-xs tabular-nums sm:col-span-2 sm:text-right sm:text-sm">
+                      <span className="text-muted-foreground sm:hidden">배정 </span>
+                      {r.allocatedShares > 0 ? `${r.allocatedShares}주` : <span className="text-muted-foreground">—</span>}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )
+      })}
+    </section>
+  )
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-6 space-y-6">
       {/* 캡처 모드 — 개인값(data-priv)만 블러. 토글 시에만 스타일 주입 */}
@@ -130,99 +212,24 @@ export default function IpoLedgerPage() {
         </div>
       )}
 
-      {/* 공모주 = 일정(실행) / 결과 / 계좌 관리 */}
+      {/* 공모주 = 청약·상장(일정+입력) / 결과(읽기전용) / 계좌 관리 */}
       {kind === 'IPO' && (
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value="act">일정 · 청약</TabsTrigger>
+          <TabsTrigger value="act">청약·상장</TabsTrigger>
           <TabsTrigger value="result">결과</TabsTrigger>
           <TabsTrigger value="accounts">계좌 관리</TabsTrigger>
         </TabsList>
 
-        {/* A. 실행 — 일정 직행(자금배분은 종목 카드 배정 계산기에 통합) */}
-        <TabsContent value="act">
+        {/* A. 청약·상장 — 일정 + 청약 내역 입력/수정(편집은 여기 한 곳으로 일원화) */}
+        <TabsContent value="act" className="space-y-6">
           <ScheduleView data={data} kind={kind} />
+          {renderLedger(false)}
         </TabsContent>
 
-        {/* C. 결과·기록 — 종목별 내역(손익·배정·상태) */}
+        {/* B. 결과 — 종목별 내역(손익·배정·상태) 확인 전용. 수정은 청약·상장 탭 */}
         <TabsContent value="result" className="space-y-3">
-      <section className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium text-muted-foreground">종목별 내역 {groups.length > 0 && `· ${groups.length}종목`}</h3>
-          <button onClick={() => setAddingSub(v => !v)}
-            className="inline-flex items-center gap-1 rounded-md bg-foreground text-background px-2 py-1 text-xs font-medium hover:opacity-90">
-            <Plus className="size-3.5" /> 청약 추가
-          </button>
-        </div>
-        {addingSub && <SubForm data={data} onDone={() => setAddingSub(false)} />}
-        {groups.length === 0 && !addingSub && (
-          <p className="text-sm text-muted-foreground py-8 text-center">아직 청약 내역이 없어요. “청약 추가”로 등록하세요.</p>
-        )}
-        {groups.map(([offering, rows]) => {
-          const row = rows[0].row
-          // 일정은 실 카톡 파싱값(generated)에서, 없으면 청약 행 값으로 폴백
-          const off = OFFERING_BY_NAME.get(offering)
-          const kind = off?.kind ?? row.kind
-          const subStart = off?.subStart ?? row.subStart
-          const refundDate = off?.refundDate ?? row.refundDate
-          const listingDate = off?.listingDate ?? row.listingDate
-          return (
-            <Card key={offering}>
-              <CardContent className="pt-4">
-                {/* 종목 헤더 — 좁은 폭: 종목명 유지, 날짜 그룹이 통째로 줄바꿈(글자 중간 분절 금지) */}
-                <div className="flex flex-wrap items-center justify-between gap-x-2 gap-y-1 pb-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="font-medium break-keep">{offering}</span>
-                    <span className={cn('shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold', KIND_TONE[kind])}>{kind}</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                    {subStart && <span className="whitespace-nowrap">청약 {subStart.slice(5)}</span>}
-                    {refundDate && <span className="whitespace-nowrap">· 환불 {refundDate.slice(5)}</span>}
-                    {listingDate && <span className="whitespace-nowrap flex items-center gap-0.5"><ArrowRightLeft className="size-3" />상장 {listingDate.slice(5)}</span>}
-                  </div>
-                </div>
-
-                {/* 명의별 행 */}
-                <div className="divide-y divide-border/60">
-                  {rows.map(({ row: r, index }) => editingSub === index ? (
-                    <div key={index} className="py-2">
-                      <SubForm data={data} initial={{ row: r, index }} onDone={() => setEditingSub(null)} />
-                    </div>
-                  ) : (
-                    /* 모바일: 2줄 flex-wrap(명의·증권사·상태 / 증거금·배정) — 12칸 grid는 sm+에서만.
-                       좁은 폭에서 상태 칩이 세로로 깨지고 '균등'이 줄바꿈되던 이슈(2026-07-02 폰 캡처). */
-                    <div key={index} className="flex flex-wrap items-center gap-x-2 gap-y-1 py-2 text-sm sm:grid sm:grid-cols-12 sm:gap-2">
-                      <span className="font-medium sm:col-span-2">{r.person}</span>
-                      <span className="text-muted-foreground text-xs whitespace-nowrap sm:col-span-2">{r.broker} · {r.subType}</span>
-                      <span className="ml-auto flex items-center gap-1.5 sm:ml-0 sm:order-last sm:col-span-3 sm:justify-end">
-                        {r.status === 'SOLD' && r.realizedPnl != null && (
-                          <span className={cn('text-xs tabular-nums whitespace-nowrap', r.realizedPnl >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400')}>
-                            {r.realizedPnl >= 0 ? '+' : ''}{formatLargeNumber(r.realizedPnl)}
-                          </span>
-                        )}
-                        <span className={cn('whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-semibold', STATUS_META[r.status].tone)}>
-                          {STATUS_META[r.status].label}
-                        </span>
-                        <EditBtn onClick={() => setEditingSub(index)} />
-                        <DeleteBtn onClick={() => data.removeSub(index)} label="청약 삭제" />
-                      </span>
-                      <span className="basis-full sm:hidden" />
-                      <span className="text-xs tabular-nums sm:col-span-3 sm:text-right sm:text-sm">
-                        <span className="text-muted-foreground sm:hidden">증거금 </span>
-                        {r.deposit > 0 ? `${formatLargeNumber(r.deposit)}원` : <span className="text-muted-foreground">—</span>}
-                      </span>
-                      <span className="text-xs tabular-nums sm:col-span-2 sm:text-right sm:text-sm">
-                        <span className="text-muted-foreground sm:hidden">배정 </span>
-                        {r.allocatedShares > 0 ? `${r.allocatedShares}주` : <span className="text-muted-foreground">—</span>}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
-      </section>
+          {renderLedger(true)}
         </TabsContent>
 
         {/* C. 계좌 인프라 — 별도 관리 영역 (사람×증권사, 10+계좌 밀집 테이블) */}
