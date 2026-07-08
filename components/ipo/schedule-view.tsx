@@ -96,7 +96,8 @@ function OfferingRow({ o, todayISO, today, open, onToggle }: { o: UpcomingOfferi
           o.kind === 'SPAC' ? 'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300' : 'bg-muted text-muted-foreground')}>{o.kind}</span>
       </span>
       <span className="col-span-5 sm:col-span-4 flex flex-wrap gap-x-2 gap-y-0.5 text-[11px] text-muted-foreground">
-        {o.subStart && <DateChip label="청약" date={o.subStart} />}
+        {/* 청약은 보통 마지막 날에 하므로 마감일(subEnd) 기준 "~MM.DD" 표기. subEnd 없으면 시작일. */}
+        {(o.subEnd ?? o.subStart) && <DateChip label="청약" date={(o.subEnd ?? o.subStart)!} prefix={o.subEnd ? '~' : ''} />}
         {o.refundDate && <DateChip label="환불" date={o.refundDate} />}
         {o.listingDate && <DateChip label="상장" date={o.listingDate} />}
       </span>
@@ -434,8 +435,8 @@ function Info({ label, value, sub }: { label: string; value: string; sub?: strin
   )
 }
 
-function DateChip({ label, date }: { label: string; date: string }) {
-  return <span>{label} {date.slice(5)}</span>
+function DateChip({ label, date, prefix = '' }: { label: string; date: string; prefix?: string }) {
+  return <span>{label} {prefix}{date.slice(5)}</span>
 }
 
 /** 오늘 이후 가장 가까운 이벤트일(없으면 null). */

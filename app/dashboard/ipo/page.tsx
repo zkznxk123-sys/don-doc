@@ -8,7 +8,7 @@
  */
 import { useMemo, useState } from 'react'
 import {
-  TrendingUp, Coins, AlertCircle, CheckCircle2, Circle, Wallet, ArrowRightLeft, Plus, Camera,
+  TrendingUp, Coins, AlertCircle, CheckCircle2, Circle, Wallet, ArrowRightLeft, Plus, EyeOff,
 } from 'lucide-react'
 import { cn, formatLargeNumber } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
@@ -82,10 +82,10 @@ export default function IpoLedgerPage() {
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-        <button onClick={() => setCapture(v => !v)} title="캡처 모드 — 금액·계좌번호 블러"
+        <button onClick={() => setCapture(v => !v)} title="가리기 모드 — 금액·명의·계좌번호 블러 (스크린샷 전 켜기)"
           className={cn('inline-flex items-center gap-1 rounded-md border border-border px-2 py-1.5 text-xs font-medium',
             capture ? 'bg-foreground text-background' : 'bg-card text-muted-foreground hover:text-foreground')}>
-          <Camera className="size-3.5" /> 캡처
+          <EyeOff className="size-3.5" /> 가리기
         </button>
         <div className="inline-flex rounded-lg bg-card border border-border p-0.5 text-sm">
           {(['IPO', 'SPAC'] as const).map(k => (
