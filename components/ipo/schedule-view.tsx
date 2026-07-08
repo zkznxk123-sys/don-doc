@@ -29,16 +29,22 @@ export function ScheduleView({ data, kind }: { data: IpoData; kind?: 'IPO' | 'SP
   const kindOfferings = useMemo(() => OFFERINGS.filter(o => !kind || o.kind === kind), [kind])
 
   const months = useMemo(() => {
+    // 내가 아직 정리 안 한 청약(매도·놓침 아님) = 오래돼도 계속 챙겨야 할 종목.
+    const myOpen = new Set(data.ledger.filter(r => r.status !== 'SOLD' && r.status !== 'MISSED').map(r => r.offering))
     const inScope = OFFERINGS.filter(o => {
       if (kind && o.kind !== kind) return false
       if (scope === 'all') return true
+      // 다가올 = "챙겨야 할 활성 종목": 미래 일정 / 최근 상장(21일 내, 배정·매도 기록 창) / 내 미완료 청약
       const dates = [(o.subEnd ?? o.subStart), o.refundDate, o.listingDate, o.transferDate].filter(Boolean) as string[]
-      return dates.some(d => d >= todayISO)
+      if (dates.some(d => d >= todayISO)) return true
+      if (myOpen.has(o.name)) return true
+      if (o.listingDate && ddays(o.listingDate, today) >= -21) return true
+      return false
     })
     // 다가올: 가장 임박한 "다음 일정"으로 묶고 정렬 → 청약 지나고 상장만 남은 종목도 상장 달에 노출.
-    // 전체: 종목 대표일(청약 시작) 기준.
+    //         과거 이벤트만 남은(방금 상장) 종목은 상장일로 앵커. 전체: 종목 대표일(청약 시작) 기준.
     const anchorOf = (o: UpcomingOffering) =>
-      (scope === 'upcoming' ? (nextEvent(o, todayISO)?.date ?? primaryDate(o)) : primaryDate(o))
+      (scope === 'upcoming' ? (nextEvent(o, todayISO)?.date ?? o.listingDate ?? primaryDate(o)) : primaryDate(o))
     const map = new Map<string, UpcomingOffering[]>()
     for (const o of inScope) {
       const ym = anchorOf(o).slice(0, 7) || '미정'
@@ -48,7 +54,7 @@ export function ScheduleView({ data, kind }: { data: IpoData; kind?: 'IPO' | 'SP
     return [...map.entries()]
       .sort((a, b) => (a[0] < b[0] ? -1 : 1))
       .map(([ym, items]) => ({ ym, items: items.sort((x, y) => (anchorOf(x) < anchorOf(y) ? -1 : 1)) }))
-  }, [scope, todayISO, kind])
+  }, [scope, todayISO, kind, data.ledger, today])
 
   const total = months.reduce((n, m) => n + m.items.length, 0)
 
