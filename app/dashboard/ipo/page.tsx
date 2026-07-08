@@ -161,7 +161,7 @@ export default function IpoLedgerPage() {
             <TrendingUp className="size-5" /> 공모주 · 스팩주
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5 break-keep">
-            청약·계좌·시세를 한 화면에 — 명의 흩어짐 없이 청약~회수까지
+            흩어진 청약을 한 화면에 — 배정·환불까지 한눈에
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">

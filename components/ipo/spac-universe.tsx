@@ -89,7 +89,7 @@ export function SpacUniverse({ data }: { data: IpoData }) {
           {belowCount > 0 && (
             <button onClick={bulkAddBelow}
               className="inline-flex items-center gap-1 rounded-md bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-500/15 dark:text-emerald-300 dark:hover:bg-emerald-500/25">
-              기준가 미만 {belowCount} 일괄 관심등록
+              기준가 미만 일괄 등록
             </button>
           )}
           {asOf && <span className="text-[11px] text-muted-foreground">{asOf} · 조회 {pricedCount}</span>}

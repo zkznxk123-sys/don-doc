@@ -36,6 +36,18 @@ const STATUSES: { v: SubStatus; label: string }[] = [
 const inputCls = 'rounded-md border border-border bg-card px-2.5 py-1.5 text-sm outline-none focus:border-foreground/30'
 const won = (manwon: string) => Math.round((parseFloat(manwon) || 0) * 10_000)
 
+/** 희망공모가밴드("16,700~21,600")에서 상단가를 뽑는다. 확정공모가가 없을 때의 추정 기준. */
+const bandUpper = (band?: string) => {
+  const nums = band?.replace(/,/g, '').match(/\d+/g)
+  return nums?.length ? Number(nums[nums.length - 1]) : undefined
+}
+
+/** 균등 최소 증거금(원) = 최소청약수량 × 공모가 × 증거금률. 공모가는 확정가 우선, 없으면 밴드 상단. */
+const minEqualDeposit = (o: UpcomingOffering) => {
+  const price = o.ipoPrice ?? bandUpper(o.priceBand)
+  return price ? (o.minSubShares ?? 10) * price * ((o.depositRate ?? 50) / 100) : undefined
+}
+
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label className="flex flex-col gap-1">
@@ -297,16 +309,29 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
   presetOffering?: string
 }) {
   const r0 = initial?.row
+  // 명의 = 등록한 계좌 명의(중복 제거), 증권사 = 선택한 종목의 청약 주간사. 둘 다 첫 값을 기본으로.
+  const personOptions = useMemo(() => [...new Set(data.accounts.map(a => a.person))], [data.accounts])
+  // 일정 카드에서 종목이 미리 채워진 채로 열릴 때(신규 입력만) 증권사·증거금까지 자동 채움 → 재선택 불필요.
+  const presetO = !r0 ? OFFERINGS.find(o => o.name === (presetOffering ?? '').trim()) : undefined
+  const presetDep = presetO ? minEqualDeposit(presetO) : undefined
   const [offering, setOffering] = useState(r0?.offering ?? presetOffering ?? '')
-  const [person, setPerson] = useState(r0?.person ?? '본인')
-  const [broker, setBroker] = useState(r0?.broker ?? '')
+  const [person, setPerson] = useState(r0?.person ?? personOptions[0] ?? '본인')
+  const [broker, setBroker] = useState(r0?.broker ?? presetO?.brokers[0] ?? '')
   const [subType, setSubType] = useState<LedgerRow['subType']>(r0?.subType ?? '균등')
   const [status, setStatus] = useState<SubStatus>(r0?.status ?? 'SUBMITTED')
-  const [deposit, setDeposit] = useState(r0 && r0.deposit ? String(r0.deposit / 10_000) : '')
+  const [deposit, setDeposit] = useState(
+    r0 && r0.deposit ? String(r0.deposit / 10_000) : presetDep ? String(presetDep / 10_000) : ''
+  )
   const [shares, setShares] = useState(r0 && r0.allocatedShares ? String(r0.allocatedShares) : '')
   const [refund, setRefund] = useState(r0 && r0.refundAmount ? String(r0.refundAmount / 10_000) : '')
   const [refunded, setRefunded] = useState(r0?.refunded ?? false)
   const [pnl, setPnl] = useState(r0?.realizedPnl != null ? String(r0.realizedPnl / 10_000) : '')
+
+  // 선택한 종목의 주간사 = 증권사 후보. 목록에 없는 종목(자유 입력)은 폴백으로 자유 검색.
+  const offeringBrokers = useMemo(() => OFFERINGS.find(o => o.name === offering.trim())?.brokers ?? [], [offering])
+  // 현재 값이 후보에 없으면(계좌 삭제·주간사 변경 등) 옵션에 포함해 편집 중 값이 사라지지 않게.
+  const personOpts = person && !personOptions.includes(person) ? [...personOptions, person] : personOptions
+  const brokerOpts = broker && !offeringBrokers.includes(broker) ? [broker, ...offeringBrokers] : offeringBrokers
 
   const showAlloc = status === 'ALLOCATED' || status === 'SOLD'   // 배정주 + 환불액 수동 입력
   const isUnalloc = status === 'UNALLOCATED'                      // 미배정 = 증거금 전액 환불(자동)
@@ -334,19 +359,31 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         <Field label="종목">
           <OfferingPicker value={offering} onChange={setOffering} onPick={o => {
-            if (!broker.trim() && o.brokers.length === 1) setBroker(o.brokers[0])
-            // 기본 증거금 = 균등 최소청약(최소주수 × 공모가 × 증거금률). 비어 있을 때만.
-            if (!deposit.trim() && o.ipoPrice) {
-              const minDep = (o.minSubShares ?? 10) * o.ipoPrice * ((o.depositRate ?? 50) / 100)
-              setDeposit(String(minDep / 10_000))
-            }
+            if (o.brokers.length > 0) setBroker(o.brokers[0])   // 증권사는 종목에 종속 → 첫 주간사로 채움
+            // 기본 증거금 = 균등 최소청약. 확정공모가 없으면 밴드 상단으로 추정. 비어 있을 때만.
+            const minDep = minEqualDeposit(o)
+            if (!deposit.trim() && minDep) setDeposit(String(minDep / 10_000))
           }} />
         </Field>
         <Field label="명의">
-          <input list="ipo-persons" className={inputCls} value={person} onChange={e => setPerson(e.target.value)} placeholder="본인" />
+          {personOpts.length > 0 ? (
+            <select className={inputCls} value={person} onChange={e => setPerson(e.target.value)}>
+              {personOpts.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          ) : (
+            // 등록한 계좌가 없으면 자유 입력으로 폴백
+            <input list="ipo-persons" className={inputCls} value={person} onChange={e => setPerson(e.target.value)} placeholder="본인" />
+          )}
         </Field>
         <Field label="증권사">
-          <BrokerPicker value={broker} onChange={setBroker} />
+          {brokerOpts.length > 0 ? (
+            <select className={inputCls} value={broker} onChange={e => setBroker(e.target.value)}>
+              {brokerOpts.map(b => <option key={b} value={b}>{b}</option>)}
+            </select>
+          ) : (
+            // 주간사 정보 없는 종목(자유 입력)은 자유 검색으로 폴백
+            <BrokerPicker value={broker} onChange={setBroker} />
+          )}
         </Field>
         <Field label="청약유형">
           <select className={inputCls} value={subType} onChange={e => setSubType(e.target.value as LedgerRow['subType'])}>

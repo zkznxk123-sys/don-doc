@@ -178,8 +178,8 @@ export interface Spac {
 
 export const SPAC_BUCKETS: { key: string; label: string; max: number }[] = [
   { key: 'small', label: '소형 (~100억)', max: 100 },
-  { key: 'mid', label: '중형 (100~200억)', max: 200 },
-  { key: 'large', label: '대형 (200억~)', max: Infinity },
+  { key: 'mid', label: '중형 (100~150억)', max: 150 },
+  { key: 'large', label: '대형 (150억~)', max: Infinity },
 ]
 
 export function spacBucket(cap: number) {
