@@ -109,10 +109,10 @@ export function parseCohort(metadata: unknown): Cohort | null {
   return null
 }
 
-/** cohort 사용자가 접근 가능한 route (역방향 allowlist — 이것만 통과, 나머지 대시보드는 차단). */
+/** cohort 사용자가 접근 가능한 route (역방향 allowlist — 이것만 통과, 나머지 대시보드는 차단).
+ *  순수 IPO 웨지 — 공모주·스팩만. 설정 제외(로그아웃=사이드바 하단 버튼, 테마=상단바로 대체). */
 export const WEDGE_ALLOWED_ROUTES: readonly string[] = [
   '/dashboard/ipo',
-  '/dashboard/settings',
 ] as const
 
 /** cohort 사용자의 홈 (로그인 후 진입 지점). */

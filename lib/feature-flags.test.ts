@@ -95,12 +95,12 @@ describe('feature-flags', () => {
     expect(parseCohort('ipo-spac')).toBeNull() // 객체 아니면 null
   })
 
-  it('isRouteBlockedForCohort — 허용 route(IPO·설정)만 통과, 나머지 대시보드 차단', async () => {
+  it('isRouteBlockedForCohort — 허용 route(IPO만) 통과, 나머지 대시보드 차단', async () => {
     const { isRouteBlockedForCohort } = await import('./feature-flags')
-    // cohort 사용자
+    // cohort 사용자 — 공모주·스팩(IPO)만, 설정 포함 나머지 차단
     expect(isRouteBlockedForCohort('ipo-spac', '/dashboard/ipo')).toBe(false)
     expect(isRouteBlockedForCohort('ipo-spac', '/dashboard/ipo/detail')).toBe(false)
-    expect(isRouteBlockedForCohort('ipo-spac', '/dashboard/settings')).toBe(false)
+    expect(isRouteBlockedForCohort('ipo-spac', '/dashboard/settings')).toBe(true)
     expect(isRouteBlockedForCohort('ipo-spac', '/dashboard')).toBe(true)
     expect(isRouteBlockedForCohort('ipo-spac', '/dashboard/assets')).toBe(true)
     expect(isRouteBlockedForCohort('ipo-spac', '/dashboard/cashflow')).toBe(true)
