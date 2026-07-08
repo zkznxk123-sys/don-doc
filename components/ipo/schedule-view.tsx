@@ -441,10 +441,11 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
   const targets = [1, 2, 3]
   // 안정/기본/도전 = 경쟁률 상승 버퍼. 예상경쟁률이 그만큼 올라도 목표 총배정 유지.
   // 도전보다 '안정적으로 주수 확보'가 우선 → 안정을 앵커(첫 행·강조)로.
+  // 버퍼 상수: 도전도 무버퍼가 아니라 +30%부터(경쟁률 상승 대비). 2026-07-09 상향.
   const levels = [
-    { key: '안정', mult: 1.3, tone: 'text-emerald-600 dark:text-emerald-400' },
-    { key: '기본', mult: 1.15, tone: '' },
-    { key: '도전', mult: 1.0, tone: 'text-rose-600 dark:text-rose-400' },
+    { key: '안정', mult: 1.53, tone: 'text-emerald-600 dark:text-emerald-400' },
+    { key: '기본', mult: 1.42, tone: '' },
+    { key: '도전', mult: 1.3, tone: 'text-rose-600 dark:text-rose-400' },
   ]
 
   // ── 예산 최적 배분 ──────────────────────────────────────────────
@@ -550,7 +551,7 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
       )}
       {showHelp && (
         <p className="text-[10px] text-muted-foreground">
-          총배정 = 균등{g ? ` ${g}주` : ''} + 비례. 청약주수 = (목표−균등)×경쟁률×버퍼. <b>안정 +30% / 기본 +15 / 도전 +0</b> = 경쟁률이 그만큼 올라도 목표 유지. 예상배정=총(비=비례). 증거금 {Math.round(dr * 100)}%{limit != null && ` · 청약한도 ${limit.toLocaleString()}주 초과 ⚠`}.
+          총배정 = 균등{g ? ` ${g}주` : ''} + 비례. 청약주수 = (목표−균등)×경쟁률×버퍼. <b>안정 +53% / 기본 +42 / 도전 +30</b> = 경쟁률이 그만큼 올라도 목표 유지. 예상배정=총(비=비례). 증거금 {Math.round(dr * 100)}%{limit != null && ` · 청약한도 ${limit.toLocaleString()}주 초과 ⚠`}.
         </p>
       )}
 
