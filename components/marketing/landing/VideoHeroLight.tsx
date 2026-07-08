@@ -34,22 +34,15 @@ const fadeUp = {
   }),
 }
 
-// 심볼 마크 — ㄷ=D 브래킷에 골드 코인 도킹(앱 아이콘과 통일). "돈"의 ㄷ + "Doc"의 D 이중판독.
-function BracketMark({ size = 24 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path d="M7.5 5.5 H16.2 M7.5 5.5 V18.5 M7.5 18.5 H16.2"
-        stroke={SM_INK} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-      <circle cx="15" cy="12" r="2.9" fill={GOLD} />
-    </svg>
-  )
-}
-
+// 워드마크 "don D●c" — don(가늘게, 흘러듦) + Doc(볼드, 커짐, o=골드 코인). Space Grotesk.
+// 심볼(브래킷+골드 코인)은 favicon/앱아이콘 전용(brand-mark.svg). 코인은 한 곳에만.
 function Logo() {
   return (
-    <span className="inline-flex items-center gap-2">
-      <BracketMark size={24} />
-      <span className="text-[19px] font-black tracking-[-0.02em]" style={{ color: SM_INK }}>돈Doc</span>
+    <span className="inline-flex items-baseline" style={{ fontFamily: 'var(--font-grotesk)', lineHeight: 1 }}>
+      <span style={{ fontWeight: 300, fontSize: 17, color: SM_INK_DIM, letterSpacing: '0.01em' }}>don</span>
+      <span style={{ fontWeight: 700, fontSize: 25, color: SM_INK, letterSpacing: '-0.02em', marginLeft: 3 }}>
+        D<span aria-hidden style={{ display: 'inline-block', width: '0.58em', height: '0.58em', borderRadius: '50%', background: GOLD, verticalAlign: '0.0em', margin: '0 0.035em' }} />c
+      </span>
     </span>
   )
 }

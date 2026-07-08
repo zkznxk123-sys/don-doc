@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { Noto_Serif } from "next/font/google"
+import { Noto_Serif, Space_Grotesk } from "next/font/google"
 import { Toaster } from "sonner"
 import { ThemeProvider } from "@/components/ThemeProvider"
 import { ClerkThemeProvider } from "@/components/ClerkThemeProvider"
@@ -14,6 +14,14 @@ const notoSerif = Noto_Serif({
   subsets: ["latin"],
   variable: "--font-noto-serif",
   weight: ["400", "700"],
+  display: "swap",
+})
+
+// 영문 헤드/워드마크(BRAND_GUIDE §8) — don Doc 워드마크·영문 헤드라인
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-grotesk",
+  weight: ["300", "400", "500", "700"],
   display: "swap",
 })
 
@@ -46,7 +54,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="ko" suppressHydrationWarning>
-      <body className={`${notoSerif.variable} font-sans`}>
+      <body className={`${notoSerif.variable} ${spaceGrotesk.variable} font-sans`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
