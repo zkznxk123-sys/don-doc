@@ -9,7 +9,7 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Users, UserPlus, ArrowRight, Loader2, ChevronLeft } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import Image from 'next/image'
+import { Wordmark } from '@/components/ui/wordmark'
 import { createFamily, joinFamily } from '@/lib/actions/family'
 import { isFull } from '@/lib/feature-flags'
 import { track } from '@/lib/posthog'
@@ -144,14 +144,9 @@ function OnboardingContent() {
       <div className="w-full max-w-sm">
         {/* Header */}
         <div className="mb-10 text-center">
-          <Image
-            src="/logo-wordmark-dark.svg"
-            alt="돈독"
-            width={120}
-            height={32}
-            priority
-            className="mx-auto"
-          />
+          <div className="flex justify-center">
+            <Wordmark size={26} ink="#F4F1E9" dim="rgba(244,241,233,0.55)" />
+          </div>
           <p className="text-sm text-zinc-500 mt-2">시작하기</p>
         </div>
 

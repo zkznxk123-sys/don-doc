@@ -4,49 +4,29 @@ import Image from 'next/image'
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
+import { Wordmark } from '@/components/ui/wordmark'
 
 interface BrandMarkProps {
-  variant?: 'wordmark' | 'symbol'
+  /** 심볼(ㄷ=D 브래킷+골드 코인) 전용. 워드마크는 <Wordmark> 사용. */
+  variant?: 'symbol'
   size?: number
   className?: string
 }
 
-export function BrandMark({ variant = 'symbol', size = 32, className }: BrandMarkProps) {
+// 심볼 마크 — ㄷ=D 브래킷 + 골드 코인(favicon/앱아이콘, brand-mark.svg). 다크 테마 시 별도 svg.
+export function BrandMark({ size = 32, className }: BrandMarkProps) {
   const { resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
   useEffect(() => setMounted(true), [])
 
-  if (variant === 'symbol') {
-    const src = mounted && resolvedTheme === 'dark' ? '/brand-mark-dark.svg' : '/brand-mark.svg'
-    return (
-      <Image
-        src={src}
-        alt="돈독"
-        width={size}
-        height={size}
-        priority
-        className={cn('shrink-0', className)}
-      />
-    )
-  }
-
-  // wordmark — use separate dark SVG instead of invert (preserves gold coin color)
-  const src = mounted && resolvedTheme === 'dark' ? '/logo-wordmark-dark.svg' : '/logo-wordmark.svg'
-  const width = Math.round(size * (230 / 64))
+  const src = mounted && resolvedTheme === 'dark' ? '/brand-mark-dark.svg' : '/brand-mark.svg'
   return (
-    <Image
-      src={src}
-      alt="돈독"
-      width={width}
-      height={size}
-      priority
-      className={cn('shrink-0', className)}
-    />
+    <Image src={src} alt="돈독" width={size} height={size} priority className={cn('shrink-0', className)} />
   )
 }
 
 export function LogoWordmark({ height = 24, className }: { height?: number; className?: string }) {
-  return <BrandMark variant="wordmark" size={height} className={className} />
+  return <Wordmark size={height} className={className} />
 }
 
 export function LogoLockup({
@@ -63,8 +43,8 @@ export function LogoLockup({
 
   return (
     <span className={cn('flex items-center gap-2.5', className)}>
-      <BrandMark variant="symbol" size={markSize} />
-      {showText && <BrandMark variant="wordmark" size={wordmarkSize} />}
+      <BrandMark size={markSize} />
+      {showText && <Wordmark size={wordmarkSize} />}
     </span>
   )
 }
