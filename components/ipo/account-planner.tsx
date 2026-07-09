@@ -6,8 +6,8 @@
  * ② 갭 플래너 — 다가올 IPO 주관사 vs 보유 계좌 → 열어야 할 (구성원×증권사) 우선순위.
  * 갭에서 바로 계좌 스켈레톤(준비 대기)을 추가하면 계좌 보드로 이어짐.
  */
-import { useMemo, useState } from 'react'
-import { Users, UserPlus, X, Plus, AlertTriangle, Lightbulb, Baby, Pencil, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useMemo, useRef, useState, type PointerEvent as RPointerEvent } from 'react'
+import { Users, UserPlus, X, Plus, AlertTriangle, Lightbulb, Baby, Pencil, GripVertical } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   OFFERINGS, computeAccountGaps, ddays, ddayLabel,
@@ -47,8 +47,20 @@ export function AccountPlanner({ data }: { data: IpoData }) {
 function FamilyPool({ data }: { data: IpoData }) {
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<FamilyMember | null>(null)
-  const [dragId, setDragId] = useState<string | null>(null)   // 드래그 중인 구성원
-  const [overId, setOverId] = useState<string | null>(null)   // 드롭 대상(위 hover)
+  // 포인터 드래그 재정렬(마우스+터치). 그립 잡고 끌면 hover하는 칩 위치로 실시간 이동.
+  const [dragId, setDragId] = useState<string | null>(null)
+  const dragIdRef = useRef<string | null>(null)
+  const startDrag = (e: RPointerEvent<HTMLButtonElement>, id: string) => {
+    dragIdRef.current = id; setDragId(id)
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+  const onDragMove = (e: RPointerEvent<HTMLButtonElement>) => {
+    if (!dragIdRef.current) return
+    const over = (document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null)?.closest('[data-mid]') as HTMLElement | null
+    const overId = over?.dataset.mid
+    if (overId && overId !== dragIdRef.current) data.reorderMembers(dragIdRef.current, overId)
+  }
+  const endDrag = () => { dragIdRef.current = null; setDragId(null) }
   // 기존 계좌 명의 중 아직 풀에 없는 것 — 이름 공간 불일치로 플래너가 꼬이는 주범. 가져오기로 화해.
   const orphans = useMemo(() => {
     const inPool = new Set(data.members.map(m => m.name))
@@ -81,22 +93,15 @@ function FamilyPool({ data }: { data: IpoData }) {
       )}
       {data.members.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {data.members.map((m, idx) => (
-            <span key={m.id}
-              draggable={data.members.length > 1}
-              onDragStart={() => setDragId(m.id)}
-              onDragOver={e => { e.preventDefault(); if (dragId && dragId !== m.id) setOverId(m.id) }}
-              onDragLeave={() => setOverId(cur => cur === m.id ? null : cur)}
-              onDrop={() => { if (dragId) data.reorderMembers(dragId, m.id); setDragId(null); setOverId(null) }}
-              onDragEnd={() => { setDragId(null); setOverId(null) }}
-              className={cn('inline-flex items-center gap-1.5 rounded-full border bg-card px-2.5 py-1 text-xs transition-colors',
-                data.members.length > 1 && 'cursor-grab active:cursor-grabbing',
-                dragId === m.id ? 'opacity-40 border-border' : overId === m.id ? 'border-foreground/50 ring-1 ring-foreground/30' : 'border-border')}>
+          {data.members.map(m => (
+            <span key={m.id} data-mid={m.id}
+              className={cn('inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-xs transition-opacity',
+                dragId === m.id && 'opacity-40')}>
               {data.members.length > 1 && (
-                <span className="inline-flex items-center -ml-0.5">
-                  <button onClick={() => data.moveMember(m.id, 'up')} disabled={idx === 0} title="앞으로" className="text-muted-foreground/50 hover:text-foreground disabled:opacity-20"><ChevronLeft className="size-3" /></button>
-                  <button onClick={() => data.moveMember(m.id, 'down')} disabled={idx === data.members.length - 1} title="뒤로" className="text-muted-foreground/50 hover:text-foreground disabled:opacity-20"><ChevronRight className="size-3" /></button>
-                </span>
+                <button type="button"
+                  onPointerDown={e => startDrag(e, m.id)} onPointerMove={onDragMove} onPointerUp={endDrag} onPointerCancel={endDrag}
+                  title="드래그로 순서 변경" aria-label="순서 변경"
+                  className="touch-none cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-foreground -ml-0.5"><GripVertical className="size-3.5" /></button>
               )}
               <span className="font-medium">{m.name}</span>
               <span className="text-muted-foreground">{m.relation}</span>
