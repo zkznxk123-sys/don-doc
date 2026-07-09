@@ -431,7 +431,6 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
   const [rate, setRate] = useState(o.subCompetition ? String(o.subCompetition) : '')
   const [gyun, setGyun] = useState('')
   const [budget, setBudget] = useState('')   // 예산(만원)
-  const [count, setCount] = useState('')     // 청약 건수(계좌수) — 균등 예상수량 산출용
   const [showHelp, setShowHelp] = useState(false)   // 계산식 설명 토글
   const [loadingComp, setLoadingComp] = useState(false)   // 38 경쟁률 조회 중
   const [compNote, setCompNote] = useState<string | null>(null)   // 기준 시각/에러 안내
@@ -458,11 +457,7 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
     } finally { setLoadingComp(false) }
   }
   const r = parseFloat(rate) || 0
-  // 균등 예상수량 = 균등물량(일반배정÷2) ÷ 청약 건수(수동 입력). 건수 없으면 gyun 직접 입력값 사용.
-  const gyunMul = o.allotShares != null ? o.allotShares / 2 : null   // 균등 배정물량(주)
-  const cnt = parseFloat(count) || 0
-  const autoG = gyunMul != null && cnt > 0 ? gyunMul / cnt : null
-  const g = autoG != null ? autoG : (parseFloat(gyun) || 0)
+  const g = parseFloat(gyun) || 0   // 균등 예상수량 — 직접 입력(청약 라이브·카톡방이 예상 균등을 그대로 제공)
   const price = o.ipoPrice
   const dr = (o.depositRate ?? 50) / 100
   const limit = o.subLimit ? parseInt(o.subLimit.split('~')[0].replace(/[^\d]/g, ''), 10) : undefined
@@ -566,22 +561,11 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
             className="rounded-md border border-border bg-card px-2 py-1 text-[13px] text-muted-foreground outline-none focus:border-foreground/30 focus:text-foreground" />
           {compNote && <span className="text-[9px] text-muted-foreground leading-tight">{compNote}</span>}
         </label>
-        {gyunMul != null ? (
-          <label className="flex flex-col gap-0.5">
-            <span className="text-[10px] text-muted-foreground">청약 건수(계좌수)</span>
-            <input type="number" value={count} onChange={e => setCount(e.target.value)} placeholder="예: 250000"
-              className="rounded-md border border-border bg-card px-2 py-1 text-[13px] text-muted-foreground outline-none focus:border-foreground/30 focus:text-foreground" />
-            <span className="text-[9px] text-muted-foreground leading-tight">
-              {autoG != null ? `균등 예상 ${autoG.toFixed(2)}주` : `균등물량 ${Math.round(gyunMul).toLocaleString()}주 ÷ 건수`}
-            </span>
-          </label>
-        ) : (
-          <label className="flex flex-col gap-0.5">
-            <span className="text-[10px] text-muted-foreground">균등 예상수량(주)</span>
-            <input type="number" value={gyun} onChange={e => setGyun(e.target.value)} placeholder="예: 0.8"
-              className="rounded-md border border-border bg-card px-2 py-1 text-[13px] text-muted-foreground outline-none focus:border-foreground/30 focus:text-foreground" />
-          </label>
-        )}
+        <label className="flex flex-col gap-0.5">
+          <span className="text-[10px] text-muted-foreground">예상 균등수량(주)</span>
+          <input type="number" value={gyun} onChange={e => setGyun(e.target.value)} placeholder="예: 0.48"
+            className="rounded-md border border-border bg-card px-2 py-1 text-[13px] text-muted-foreground outline-none focus:border-foreground/30 focus:text-foreground" />
+        </label>
       </div>
       {!price && <p className="text-[11px] text-muted-foreground">공모가 확정(수요예측 후) 이후 증거금 계산 가능.</p>}
       {/* ── 예산 최적 배분 — 투자 예산 바로 아래 주 결과(균등 포함 총배정) ── */}
