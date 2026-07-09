@@ -7,7 +7,7 @@
  */
 
 import { MotionConfig } from 'framer-motion'
-import { Users, Coins, Box } from 'lucide-react'
+import { Users, Coins, FileText } from 'lucide-react'
 import {
   MarketingNav, PageHero, SectionHead, Reveal, Gold, ClosingCta, MarketingFooter,
 } from './marketing-chrome'
@@ -22,11 +22,11 @@ const RHYTHM = [
   { n: '03', en: 'Build solid assets', ko: '자산으로 옮긴다', d: '남긴 돈을 단단한 자산으로 꾸준히 옮긴다. 그게 축적이다.' },
 ]
 
-// 이름의 3-Layer (BRAND_GUIDE §3).
+// 이름 풀이(돈 + Doc = 돈독) — 로고 해설(글리프·앵커)이 아니라 사용자 언어로 (2026-07-10 재검토).
 const MEANING = [
-  { Icon: Users, t: '돈독한 사이', d: '가족을 잇는 유대. 혼자 써도 충분하고, 필요하면 선별적으로 공유합니다.' },
-  { Icon: Coins, t: '자산의 중심', d: 'D 안의 골드 코인 — 돈은 브랜드의 앵커이자 화면의 주인공입니다.' },
-  { Icon: Box, t: '단단한 구조', d: '두꺼운 D 글리프 — 안정적으로 연결하고 확장하는 시스템입니다.' },
+  { Icon: Coins, t: '돈 — 숫자가 주인공', d: '이름의 앞은 돈. 이번 달 얼마가 들어오고, 남고, 쌓였는지 — 숫자를 가장 또렷하게 보여줍니다.' },
+  { Icon: FileText, t: 'Doc — 기록이 쌓임', d: '이름의 뒤는 Doc, 기록입니다. 매달 10분씩 같은 흐름으로 쌓인 기록이 다음 판단의 근거가 됩니다.' },
+  { Icon: Users, t: '그래서, 돈독', d: '돈 얘기는 어색하기 쉽습니다. 자산이 한 화면에 모이면 가족과 나누는 돈 얘기가 짧고 편해집니다.' },
 ]
 
 export function AboutPage() {
