@@ -532,7 +532,7 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
               <div className="absolute right-0 top-full mt-1 z-40 w-72 rounded-md border border-border bg-card shadow-lg p-3 space-y-1.5 text-left text-[11px] leading-relaxed text-muted-foreground">
                 <p><b className="text-foreground">청약주수</b> = (목표−균등) × 경쟁률 × 버퍼 · 100주 단위 반올림</p>
                 <p><b className="text-foreground">버퍼</b> 안정 +53% · 기본 +42 · 도전 +30 — 경쟁률이 그만큼 올라도 목표 총배정 유지</p>
-                <p><b className="text-foreground">총배정</b> = 균등 + 비례 · 예상배정 = 총(비=비례)</p>
+                <p><b className="text-foreground">예상배정</b> 목표·단계 표=비례배정만 · 예산 배분 결과=균등 포함 총배정</p>
                 <p><b className="text-foreground">증거금</b> = 청약주수 × 공모가 × {Math.round(dr * 100)}%{limit != null && ` · 한도 ${limit.toLocaleString()}주 초과 ⚠`}</p>
                 <p><b className="text-foreground">예산 배분</b> 중복청약 금지 → 명의당 주관사 1계좌, 모든 명의 최소청약 + 잔액 비례 집중이 최적</p>
               </div>
@@ -568,58 +568,7 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
         </label>
       </div>
       {!price && <p className="text-[11px] text-muted-foreground">공모가 확정(수요예측 후) 이후 증거금 계산 가능.</p>}
-      {price != null && r > 0 && (
-        <div className="space-y-2">
-          {/* 공통 헤더 — 아래 그룹들과 같은 그리드로 정렬 */}
-          <div className="grid grid-cols-[3.2rem_1fr_1fr_1fr] gap-x-2 px-2.5 text-[10px] text-muted-foreground">
-            <span>단계</span>
-            <span className="text-right">청약주수</span>
-            <span className="text-right">증거금</span>
-            <span className="text-right">예상배정</span>
-          </div>
-          {targets.map(T => {
-            const need = Math.max(0, T - g)   // 목표 총배정 T → 필요 비례
-            return (
-              <div key={T} className="rounded-lg border border-border/60 overflow-hidden">
-                <div className="flex items-center justify-between px-2.5 py-1 bg-muted/40 text-[11px] font-semibold">
-                  <span>목표 {T}주</span>
-                  {need <= 0 && <span className="font-normal text-muted-foreground">균등({g}주)만으로 달성</span>}
-                </div>
-                {need > 0 && (
-                  <div className="divide-y divide-border/40">
-                    {levels.map((lv, i) => {
-                      const shares = roundLot(need * r * lv.mult)   // 실제 신청 단위(100주)로 반올림
-                      const over = limit != null && shares > limit
-                      const expProp = shares / r          // 예상 비례(예상경쟁률 기준)
-                      const expTotal = g + expProp        // 예상 총배정
-                      const isSafe = i === 0               // 안정 = 권장 앵커(강조)
-                      return (
-                        <div key={lv.key}
-                          className={cn('grid grid-cols-[3.2rem_1fr_1fr_1fr] items-center gap-x-2 px-2.5 py-2',
-                            isSafe && 'bg-emerald-50/70 dark:bg-emerald-500/[0.07]')}>
-                          <span className={cn('inline-flex items-center gap-1 text-xs font-semibold', lv.tone)}>
-                            {isSafe && <span className="size-1.5 rounded-full bg-emerald-500 shrink-0" />}{lv.key}
-                          </span>
-                          <span className={cn('text-right tabular-nums text-[15px] font-semibold', over ? 'text-rose-600 dark:text-rose-400' : 'text-foreground')}>
-                            {shares.toLocaleString()}<span className="text-[11px] font-normal text-muted-foreground">주</span>{over && ' ⚠'}
-                          </span>
-                          <span className="text-right tabular-nums text-[13px] text-muted-foreground">{won(shares * price * dr)}</span>
-                          <span className="text-right tabular-nums text-[13px]">
-                            <span className="font-medium">{expTotal.toFixed(2)}</span><span className="text-muted-foreground">주</span>
-                            <span className="block text-[10px] text-muted-foreground leading-none">비 {expProp.toFixed(2)}</span>
-                          </span>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {/* ── 예산 최적 배분 — 내 계좌로 명의별 얼마씩 ── */}
+      {/* ── 예산 최적 배분 — 투자 예산 바로 아래 주 결과(균등 포함 총배정) ── */}
       {plan && (
         <div className="rounded-md border border-border/60 bg-muted/20 p-2.5 space-y-1.5">
           <div className="flex items-center justify-between">
@@ -657,9 +606,57 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
               })}
             </div>
           )}
-          <p className="text-[10px] text-muted-foreground/80">사실 계산이며 청약 권유가 아닙니다. 자세한 계산식은 상단 ‘계산식’.</p>
         </div>
       )}
+
+      {/* ── 목표·단계별 필요 청약주수(참고) — 예상배정은 비례배정만 ── */}
+      {price != null && r > 0 && (
+        <div className="space-y-2">
+          <div className="grid grid-cols-[3.2rem_1fr_1fr_1fr] gap-x-2 px-2.5 text-[10px] text-muted-foreground">
+            <span>단계</span>
+            <span className="text-right">청약주수</span>
+            <span className="text-right">증거금</span>
+            <span className="text-right">예상 비례</span>
+          </div>
+          {targets.map(T => {
+            const need = Math.max(0, T - g)   // 목표 총배정 T → 필요 비례
+            return (
+              <div key={T} className="rounded-lg border border-border/60 overflow-hidden">
+                <div className="flex items-center justify-between px-2.5 py-1 bg-muted/40 text-[11px] font-semibold">
+                  <span>목표 {T}주</span>
+                  {need <= 0 && <span className="font-normal text-muted-foreground">균등({g}주)만으로 달성</span>}
+                </div>
+                {need > 0 && (
+                  <div className="divide-y divide-border/40">
+                    {levels.map((lv, i) => {
+                      const shares = roundLot(need * r * lv.mult)   // 실제 신청 단위(100주)로 반올림
+                      const over = limit != null && shares > limit
+                      const expProp = shares / r          // 예상 비례배정(예상경쟁률 기준)
+                      const isSafe = i === 0               // 안정 = 권장 앵커(강조)
+                      return (
+                        <div key={lv.key}
+                          className={cn('grid grid-cols-[3.2rem_1fr_1fr_1fr] items-center gap-x-2 px-2.5 py-2',
+                            isSafe && 'bg-emerald-50/70 dark:bg-emerald-500/[0.07]')}>
+                          <span className={cn('inline-flex items-center gap-1 text-xs font-semibold', lv.tone)}>
+                            {isSafe && <span className="size-1.5 rounded-full bg-emerald-500 shrink-0" />}{lv.key}
+                          </span>
+                          <span className={cn('text-right tabular-nums text-[15px] font-semibold', over ? 'text-rose-600 dark:text-rose-400' : 'text-foreground')}>
+                            {shares.toLocaleString()}<span className="text-[11px] font-normal text-muted-foreground">주</span>{over && ' ⚠'}
+                          </span>
+                          <span className="text-right tabular-nums text-[13px] text-muted-foreground">{won(shares * price * dr)}</span>
+                          <span className="text-right tabular-nums text-[13px] font-medium">{expProp.toFixed(2)}<span className="text-[11px] font-normal text-muted-foreground">주</span></span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {price != null && <p className="text-[10px] text-muted-foreground/80">사실 계산이며 청약 권유가 아닙니다. 자세한 계산식은 상단 ‘계산식’.</p>}
     </div>
   )
 }
