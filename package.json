@@ -6,7 +6,7 @@
     "dev": "next dev --turbo",
     "build": "node scripts/check-tone.mjs && prisma generate && next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "check:tone": "node scripts/check-tone.mjs",
     "test": "vitest run",
     "test:watch": "vitest",

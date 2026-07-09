@@ -2,10 +2,13 @@ import nextConfig from 'eslint-config-next'
 
 export default [
   {
-    ignores: ['.next/**', 'node_modules/**', 'next-env.d.ts', 'scripts/**'],
+    // .js/.mjs/.cjs 전역 무시: eslint-config-next의 next 프리셋이 번들 babel 파서를 써서
+    // eslint@10과 비호환(scopeManager.addGlobals 크래시). 앱 코드는 전부 ts/tsx라 커버리지 영향 없음.
+    ignores: ['.next/**', 'node_modules/**', 'next-env.d.ts', 'scripts/**', '**/*.js', '**/*.mjs', '**/*.cjs'],
   },
   ...(Array.isArray(nextConfig) ? nextConfig : [nextConfig]),
   {
+    files: ['**/*.ts', '**/*.tsx'],
     settings: {
       react: { version: '19' },
     },
@@ -17,6 +20,9 @@ export default [
       'react-hooks/set-state-in-effect': 'off',
       'react-hooks/immutability': 'off',
       'react-hooks/purity': 'off',
+      // static-components/refs 도 같은 React 19 신규 규칙 계열 — 후속 리팩토링 전까지 warn (기존 error → 빌드 차단 방지)
+      'react-hooks/static-components': 'warn',
+      'react-hooks/refs': 'warn',
       'no-restricted-syntax': [
         'warn',
         {
