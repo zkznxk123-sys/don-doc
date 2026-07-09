@@ -7,7 +7,7 @@
  * 갭에서 바로 계좌 스켈레톤(준비 대기)을 추가하면 계좌 보드로 이어짐.
  */
 import { useMemo, useState } from 'react'
-import { Users, UserPlus, X, Plus, AlertTriangle, Lightbulb, Baby, Pencil } from 'lucide-react'
+import { Users, UserPlus, X, Plus, AlertTriangle, Lightbulb, Baby, Pencil, ChevronLeft, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   OFFERINGS, computeAccountGaps, ddays, ddayLabel,
@@ -79,8 +79,14 @@ function FamilyPool({ data }: { data: IpoData }) {
       )}
       {data.members.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
-          {data.members.map(m => (
+          {data.members.map((m, idx) => (
             <span key={m.id} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-xs">
+              {data.members.length > 1 && (
+                <span className="inline-flex items-center -ml-0.5">
+                  <button onClick={() => data.moveMember(m.id, 'up')} disabled={idx === 0} title="앞으로" className="text-muted-foreground/50 hover:text-foreground disabled:opacity-20"><ChevronLeft className="size-3" /></button>
+                  <button onClick={() => data.moveMember(m.id, 'down')} disabled={idx === data.members.length - 1} title="뒤로" className="text-muted-foreground/50 hover:text-foreground disabled:opacity-20"><ChevronRight className="size-3" /></button>
+                </span>
+              )}
               <span className="font-medium">{m.name}</span>
               <span className="text-muted-foreground">{m.relation}</span>
               {m.minor && <Baby className="size-3 text-amber-600 dark:text-amber-400" aria-label="미성년" />}

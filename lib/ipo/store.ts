@@ -91,6 +91,7 @@ export interface IpoData {
   addMember: (m: Omit<FamilyMember, 'id'>) => void
   updateMember: (id: string, patch: Omit<FamilyMember, 'id'>) => void
   removeMember: (id: string) => void
+  moveMember: (id: string, dir: 'up' | 'down') => void
   accounts: Account[]
   ledger: LedgerRow[]
   spacs: Spac[]
@@ -264,6 +265,17 @@ export function useIpoData(): IpoData {
     setState(prev => ({ ...prev, members: prev.members.filter(m => m.id !== id) }))
   }, [])
 
+  const moveMember = useCallback((id: string, dir: 'up' | 'down') => {
+    setState(prev => {
+      const i = prev.members.findIndex(m => m.id === id)
+      const j = dir === 'up' ? i - 1 : i + 1
+      if (i < 0 || j < 0 || j >= prev.members.length) return prev
+      const members = [...prev.members]
+      ;[members[i], members[j]] = [members[j], members[i]]
+      return { ...prev, members }
+    })
+  }, [])
+
   const addAccount = useCallback((a: Omit<Account, 'id'>) => {
     setState(prev => ({ ...prev, initialized: true, accounts: [...prev.accounts, { ...a, id: newId() }] }))
   }, [])
@@ -319,5 +331,5 @@ export function useIpoData(): IpoData {
 
   const reset = useCallback(() => setState(EMPTY), [])
 
-  return { hydrated, members, addMember, updateMember, removeMember, accounts, ledger, spacs, addAccount, updateAccount, removeAccount, addSub, updateSub, removeSub, addSpac, updateSpac, removeSpac, memos: state.memos, setMemo, overrides: state.overrides, setOverride, importData, reset }
+  return { hydrated, members, addMember, updateMember, removeMember, moveMember, accounts, ledger, spacs, addAccount, updateAccount, removeAccount, addSub, updateSub, removeSub, addSpac, updateSpac, removeSpac, memos: state.memos, setMemo, overrides: state.overrides, setOverride, importData, reset }
 }
