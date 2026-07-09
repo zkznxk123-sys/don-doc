@@ -19,6 +19,15 @@ import type { IpoData } from '@/lib/ipo/store'
 const RELATIONS: Relation[] = ['본인', '배우자', '자녀', '부모', '기타']
 const inputCls = 'rounded-md border border-border bg-card px-2.5 py-1.5 text-sm outline-none focus:border-foreground/30'
 
+/** 이름에서 관계 추론(기존 계좌 명의 가져올 때 기본값). */
+function inferRelation(name: string): Relation {
+  if (/본인|나$/.test(name)) return '본인'
+  if (/배우자|아내|와이프|처|남편|신랑/.test(name)) return '배우자'
+  if (/자녀|아들|딸|첫째|둘째|셋째|아이|애기/.test(name)) return '자녀'
+  if (/부모|아버지|어머니|엄마|아빠|장인|장모|시부|시모/.test(name)) return '부모'
+  return '기타'
+}
+
 export function AccountPlanner({ data }: { data: IpoData }) {
   const today = useMemo(() => new Date(), [])
   const todayISO = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
@@ -37,6 +46,15 @@ export function AccountPlanner({ data }: { data: IpoData }) {
 /** 가족 풀 — 구성원 CRUD. */
 function FamilyPool({ data }: { data: IpoData }) {
   const [adding, setAdding] = useState(false)
+  // 기존 계좌 명의 중 아직 풀에 없는 것 — 이름 공간 불일치로 플래너가 꼬이는 주범. 가져오기로 화해.
+  const orphans = useMemo(() => {
+    const inPool = new Set(data.members.map(m => m.name))
+    return [...new Set(data.accounts.map(a => a.person))].filter(p => p && !inPool.has(p))
+  }, [data.members, data.accounts])
+  const importOrphans = () => orphans.forEach(name => {
+    const rel = inferRelation(name)
+    data.addMember({ name, relation: rel, minor: rel === '자녀' ? true : undefined })
+  })
   return (
     <div className="rounded-lg border border-border p-3 space-y-2.5">
       <div className="flex items-center justify-between">
@@ -47,7 +65,15 @@ function FamilyPool({ data }: { data: IpoData }) {
           </button>
         )}
       </div>
-      {data.members.length === 0 && !adding && (
+      {orphans.length > 0 && (
+        <div className="flex items-center justify-between gap-2 rounded-md bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-2.5 py-1.5">
+          <span className="text-[11px] text-amber-700 dark:text-amber-300 min-w-0">
+            기존 계좌 명의 <b>{orphans.join('·')}</b>가 풀에 없어요 — 안 맞으면 플래너가 계좌를 중복으로 잡습니다.
+          </span>
+          <button onClick={importOrphans} className="shrink-0 rounded-md bg-amber-600 px-2 py-1 text-[11px] font-medium text-white hover:bg-amber-700">풀에 가져오기</button>
+        </div>
+      )}
+      {data.members.length === 0 && orphans.length === 0 && !adding && (
         <p className="text-xs text-muted-foreground">청약할 명의(본인·배우자·자녀…)를 먼저 등록하세요. 계좌가 없어도 미리 세팅해두면 아래 플래너가 열어야 할 계좌를 잡아줍니다.</p>
       )}
       {data.members.length > 0 && (
