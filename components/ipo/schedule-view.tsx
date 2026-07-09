@@ -5,7 +5,7 @@
  * 월별로 묶어 청약·환불·상장일을 한눈에. 다가올/전체 토글.
  */
 import { Fragment, useMemo, useState } from 'react'
-import { Calendar, ChevronDown, ChevronLeft, ChevronRight, Calculator, ClipboardList, Table2, StickyNote, HelpCircle, RefreshCw, type LucideIcon } from 'lucide-react'
+import { Calendar, ChevronDown, ChevronLeft, ChevronRight, Calculator, ClipboardList, Table2, StickyNote, HelpCircle, Download, Loader2, type LucideIcon } from 'lucide-react'
 import { cn, formatLargeNumber } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { SubForm, EditBtn } from '@/components/ipo/entry-forms'
@@ -552,8 +552,9 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
             현재 비례경쟁률
             {o.no38 && (
               <button type="button" onClick={loadCompetition} disabled={loadingComp}
-                className="inline-flex items-center gap-0.5 text-[9px] font-medium text-foreground/70 hover:text-foreground disabled:opacity-50">
-                <RefreshCw className={cn('size-2.5', loadingComp && 'animate-spin')} /> 38
+                title="38에서 청약경쟁률 가져오기" aria-label="38에서 청약경쟁률 가져오기"
+                className="inline-flex items-center rounded p-0.5 text-muted-foreground hover:text-foreground disabled:opacity-50">
+                {loadingComp ? <Loader2 className="size-3.5 animate-spin" /> : <Download className="size-3.5" />}
               </button>
             )}
           </span>
