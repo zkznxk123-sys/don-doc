@@ -245,7 +245,19 @@ export function useIpoData(): IpoData {
   }, [])
 
   const updateMember = useCallback((id: string, patch: Omit<FamilyMember, 'id'>) => {
-    setState(prev => ({ ...prev, members: prev.members.map(m => m.id === id ? { ...patch, id } : m) }))
+    setState(prev => {
+      const oldName = prev.members.find(m => m.id === id)?.name
+      const members = prev.members.map(m => m.id === id ? { ...patch, id } : m)
+      // 이름이 바뀌면 그 이름을 쓰던 계좌·청약의 person도 함께 갱신 — 유기적 연결 유지.
+      if (oldName && patch.name && patch.name !== oldName) {
+        return {
+          ...prev, members,
+          accounts: prev.accounts.map(a => a.person === oldName ? { ...a, person: patch.name } : a),
+          ledger: prev.ledger.map(r => r.person === oldName ? { ...r, person: patch.name } : r),
+        }
+      }
+      return { ...prev, members }
+    })
   }, [])
 
   const removeMember = useCallback((id: string) => {

@@ -7,7 +7,7 @@
  * 갭에서 바로 계좌 스켈레톤(준비 대기)을 추가하면 계좌 보드로 이어짐.
  */
 import { useMemo, useState } from 'react'
-import { Users, UserPlus, X, Plus, AlertTriangle, Lightbulb, Baby } from 'lucide-react'
+import { Users, UserPlus, X, Plus, AlertTriangle, Lightbulb, Baby, Pencil } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import {
   OFFERINGS, computeAccountGaps, ddays, ddayLabel,
@@ -46,6 +46,7 @@ export function AccountPlanner({ data }: { data: IpoData }) {
 /** 가족 풀 — 구성원 CRUD. */
 function FamilyPool({ data }: { data: IpoData }) {
   const [adding, setAdding] = useState(false)
+  const [editing, setEditing] = useState<FamilyMember | null>(null)
   // 기존 계좌 명의 중 아직 풀에 없는 것 — 이름 공간 불일치로 플래너가 꼬이는 주범. 가져오기로 화해.
   const orphans = useMemo(() => {
     const inPool = new Set(data.members.map(m => m.name))
@@ -83,23 +84,30 @@ function FamilyPool({ data }: { data: IpoData }) {
               <span className="font-medium">{m.name}</span>
               <span className="text-muted-foreground">{m.relation}</span>
               {m.minor && <Baby className="size-3 text-amber-600 dark:text-amber-400" aria-label="미성년" />}
+              <button onClick={() => { setEditing(m); setAdding(false) }} title="편집" className="text-muted-foreground/50 hover:text-foreground"><Pencil className="size-3" /></button>
               <button onClick={() => data.removeMember(m.id)} title="삭제" className="text-muted-foreground/50 hover:text-rose-500"><X className="size-3" /></button>
             </span>
           ))}
         </div>
       )}
-      {adding && <MemberForm onDone={() => setAdding(false)} onAdd={data.addMember} />}
+      {adding && <MemberForm onDone={() => setAdding(false)} onSubmit={data.addMember} />}
+      {editing && (
+        <MemberForm key={editing.id} initial={editing} onDone={() => setEditing(null)}
+          onSubmit={v => data.updateMember(editing.id, v)} />
+      )}
     </div>
   )
 }
 
-function MemberForm({ onDone, onAdd }: { onDone: () => void; onAdd: IpoData['addMember'] }) {
-  const [name, setName] = useState('')
-  const [relation, setRelation] = useState<Relation>('배우자')
-  const [minor, setMinor] = useState(false)
+function MemberForm({ onDone, onSubmit, initial }: {
+  onDone: () => void; onSubmit: (v: Omit<FamilyMember, 'id'>) => void; initial?: FamilyMember
+}) {
+  const [name, setName] = useState(initial?.name ?? '')
+  const [relation, setRelation] = useState<Relation>(initial?.relation ?? '배우자')
+  const [minor, setMinor] = useState(initial?.minor ?? false)
   const submit = () => {
     if (!name.trim()) return
-    onAdd({ name: name.trim(), relation, minor: relation === '자녀' ? minor : undefined })
+    onSubmit({ name: name.trim(), relation, minor: relation === '자녀' ? minor : undefined })
     onDone()
   }
   return (
@@ -124,7 +132,7 @@ function MemberForm({ onDone, onAdd }: { onDone: () => void; onAdd: IpoData['add
       </div>
       <div className="flex justify-end gap-2">
         <button onClick={onDone} className="rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground">취소</button>
-        <button onClick={submit} disabled={!name.trim()} className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background disabled:opacity-40">추가</button>
+        <button onClick={submit} disabled={!name.trim()} className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background disabled:opacity-40">{initial ? '저장' : '추가'}</button>
       </div>
     </div>
   )
