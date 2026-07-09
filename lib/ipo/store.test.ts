@@ -9,7 +9,7 @@ import { normalize, buildRow, parseImport } from './store'
 describe('normalize — 저장본 백필', () => {
   it('null/undefined → 완전한 빈 상태', () => {
     expect(normalize(null)).toEqual({
-      accounts: [], ledger: [], spacs: [], memos: {}, overrides: {}, initialized: false,
+      members: [], accounts: [], ledger: [], spacs: [], memos: {}, overrides: {}, initialized: false,
     })
     expect(normalize(undefined)).toEqual(normalize(null))
   })

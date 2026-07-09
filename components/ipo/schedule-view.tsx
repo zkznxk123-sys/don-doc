@@ -13,6 +13,7 @@ import {
   OFFERINGS, STATUS_META, ddays, ddayLabel, readinessIssues,
   type UpcomingOffering, type SubStatus, type Account,
 } from '@/components/ipo/board-data'
+import { computeBudgetPlan, requiredShares, depositFor, expectedProportional, BUFFER_LEVELS } from '@/lib/ipo/allocation'
 import type { IpoData } from '@/lib/ipo/store'
 
 /** 종목의 대표일(정렬·월그룹 기준): 청약 시작 → 상장 → 환불 순 우선. */
@@ -462,58 +463,16 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
   const dr = (o.depositRate ?? 50) / 100
   const limit = o.subLimit ? parseInt(o.subLimit.split('~')[0].replace(/[^\d]/g, ''), 10) : undefined
   const won = (n: number) => (n >= 1e8 ? `${(n / 1e8).toFixed(2)}억` : `${Math.round(n / 1e4).toLocaleString()}만`)
-  // 실제 청약은 라운드 수량으로 넣으므로 100주 단위 반올림(100주 미만은 10주 단위).
-  const roundLot = (n: number) => (n < 100 ? Math.round(n / 10) * 10 : Math.round(n / 100) * 100)
   const targets = [1, 2, 3]
-  // 안정/기본/도전 = 경쟁률 상승 버퍼. 예상경쟁률이 그만큼 올라도 목표 총배정 유지.
-  // 도전보다 '안정적으로 주수 확보'가 우선 → 안정을 앵커(첫 행·강조)로.
-  // 버퍼 상수: 도전도 무버퍼가 아니라 +30%부터(경쟁률 상승 대비). 2026-07-09 상향.
-  const levels = [
-    { key: '안정', mult: 1.53, tone: 'text-emerald-600 dark:text-emerald-400' },
-    { key: '기본', mult: 1.42, tone: '' },
-    { key: '도전', mult: 1.3, tone: 'text-rose-600 dark:text-rose-400' },
-  ]
+  // 버퍼 단계는 순수 모듈에서(안정 앵커). tone만 UI에서 매핑.
+  const LEVEL_TONE: Record<string, string> = { 안정: 'text-emerald-600 dark:text-emerald-400', 기본: '', 도전: 'text-rose-600 dark:text-rose-400' }
 
-  // ── 예산 최적 배분 ──────────────────────────────────────────────
-  // 중복청약 금지 → 명의당 주관사 계좌 1개. 균등(계좌당 최소청약으로 g주)이
-  // 비례(10주≈g의 1/100)보다 압도적 효율 → "명의 전부 최소청약 + 잔액 비례 집중"이 항상 최적.
+  // ── 예산 최적 배분 — 순수 로직 computeBudgetPlan에 위임 ──
   const B = (parseFloat(budget) || 0) * 10_000
-  const plan = useMemo(() => {
-    if (!price || r <= 0 || B <= 0) return null
-    const minShares = o.minSubShares ?? 10
-    const perShareDep = price * dr
-    const minDep = minShares * perShareDep
-    const cap = limit ?? Infinity
-    // 명의당 1계좌: 주관사 취급 증권사 계좌만, 준비상태 양호 우선.
-    const byPerson = new Map<string, Account>()
-    for (const a of [...accounts].sort((x, y) => readinessIssues(x) - readinessIssues(y))) {
-      if (!o.brokers.some(b => a.broker.includes(b) || b.includes(a.broker))) continue
-      if (!byPerson.has(a.person)) byPerson.set(a.person, a)
-    }
-    const eligible = [...byPerson.values()]
-    const n = Math.min(eligible.length, Math.floor(B / minDep))
-    if (n === 0) return { rows: [], n: 0, eligibleCount: eligible.length, minDep, gyunTotal: 0, propTotal: 0, totalDep: 0 }
-    const rows = eligible.slice(0, n).map(a => ({ a, shares: minShares }))
-    // 잔액 → 비례 집중(한도까지 순서대로). 비례는 금액 비례라 어디 두든 합계 동일(5사6입 미세차만).
-    let left = B - n * minDep
-    for (const row of rows) {
-      const add = Math.min(Math.floor(left / perShareDep), cap - row.shares)
-      if (add <= 0) continue
-      row.shares += add
-      left -= add * perShareDep
-    }
-    // 실제 청약은 100주 단위 → 100주 이상은 100주 단위 내림(예산 초과 방지, 최소청약은 유지).
-    for (const row of rows) {
-      if (row.shares >= 100) row.shares = Math.floor(row.shares / 100) * 100
-    }
-    const totalShares = rows.reduce((s, x) => s + x.shares, 0)
-    return {
-      rows, n, eligibleCount: eligible.length, minDep,
-      totalDep: totalShares * perShareDep,
-      gyunTotal: g * n,
-      propTotal: totalShares / r,
-    }
-  }, [accounts, B, price, r, g, dr, limit, o])
+  const plan = useMemo(() => computeBudgetPlan({
+    accounts, budgetWon: B, price: price ?? 0, depositRate: dr,
+    minShares: o.minSubShares ?? 10, rate: r, gyun: g, brokers: o.brokers, limit,
+  }), [accounts, B, price, r, g, dr, limit, o])
 
   return (
     <div className="rounded-md border border-border p-3 space-y-2">
@@ -593,15 +552,15 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
               <span className="text-[10px] text-muted-foreground text-right">청약주수</span>
               <span className="text-[10px] text-muted-foreground text-right">증거금</span>
               <span className="text-[10px] text-muted-foreground text-right">예상배정</span>
-              {plan.rows.map(({ a, shares }) => {
+              {plan.rows.map(({ account: a, shares }) => {
                 const issues = readinessIssues(a)
-                const dep = shares * price! * dr
+                const dep = depositFor(shares, price!, dr)
                 return (
                   <Fragment key={a.id}>
                     <span className="truncate">{a.person} <span className="text-muted-foreground">{a.broker}</span>{issues > 0 && <span className="text-amber-600 dark:text-amber-400"> ⚠준비{issues}</span>}</span>
                     <span data-priv className="text-right tabular-nums">{shares.toLocaleString()}</span>
                     <span data-priv className="text-right tabular-nums">{won(dep)}</span>
-                    <span data-priv className="text-right tabular-nums text-muted-foreground">{(g + shares / r).toFixed(2)}</span>
+                    <span data-priv className="text-right tabular-nums text-muted-foreground">{(g + expectedProportional(shares, r)).toFixed(2)}</span>
                   </Fragment>
                 )
               })}
@@ -629,22 +588,22 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
                 </div>
                 {need > 0 && (
                   <div className="divide-y divide-border/40">
-                    {levels.map((lv, i) => {
-                      const shares = roundLot(need * r * lv.mult)   // 실제 신청 단위(100주)로 반올림
+                    {BUFFER_LEVELS.map((lv, i) => {
+                      const shares = requiredShares(T, g, r, lv.mult)
                       const over = limit != null && shares > limit
-                      const expProp = shares / r          // 예상 비례배정(예상경쟁률 기준)
+                      const expProp = expectedProportional(shares, r)   // 예상 비례배정
                       const isSafe = i === 0               // 안정 = 권장 앵커(강조)
                       return (
                         <div key={lv.key}
                           className={cn('grid grid-cols-[3.2rem_1fr_1fr_1fr] items-center gap-x-2 px-2.5 py-2',
                             isSafe && 'bg-emerald-50/70 dark:bg-emerald-500/[0.07]')}>
-                          <span className={cn('inline-flex items-center gap-1 text-xs font-semibold', lv.tone)}>
+                          <span className={cn('inline-flex items-center gap-1 text-xs font-semibold', LEVEL_TONE[lv.key])}>
                             {isSafe && <span className="size-1.5 rounded-full bg-emerald-500 shrink-0" />}{lv.key}
                           </span>
                           <span className={cn('text-right tabular-nums text-[15px] font-semibold', over ? 'text-rose-600 dark:text-rose-400' : 'text-foreground')}>
                             {shares.toLocaleString()}<span className="text-[11px] font-normal text-muted-foreground">주</span>{over && ' ⚠'}
                           </span>
-                          <span className="text-right tabular-nums text-[13px] text-muted-foreground">{won(shares * price * dr)}</span>
+                          <span className="text-right tabular-nums text-[13px] text-muted-foreground">{won(depositFor(shares, price, dr))}</span>
                           <span className="text-right tabular-nums text-[13px] font-medium">{expProp.toFixed(2)}<span className="text-[11px] font-normal text-muted-foreground">주</span></span>
                         </div>
                       )
