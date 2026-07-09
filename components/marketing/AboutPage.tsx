@@ -96,7 +96,8 @@ export function AboutPage() {
         {/* 4. 이름 이야기 (돈독) */}
         <section className="px-6 md:px-14 py-20 md:py-28" style={{ background: SM_SURFACE }}>
           <div className="max-w-[1280px] mx-auto">
-            <Reveal><SectionHead kicker="이름" title={<>돈 관리는 똑똑하게,<br />관계는 더 <Gold>돈독하게.</Gold></>} /></Reveal>
+            <Reveal><SectionHead kicker="이름" title={<>돈 + Doc<br />= <Gold>돈독.</Gold></>}
+              body="숫자를 보여주는 돈, 쌓이는 기록 Doc — 두 글자를 합치면 이름이 됩니다." /></Reveal>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mt-12">
               {MEANING.map((m, i) => (
                 <Reveal key={m.t} delay={i * 0.07}>
