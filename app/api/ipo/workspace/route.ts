@@ -24,6 +24,7 @@ const MAX_BODY_BYTES = 512 * 1024
  * normalize가 백필하므로 느슨하게).
  */
 const WorkspaceSchema = z.object({
+  members: z.array(z.record(z.string(), z.unknown())).max(200).optional(),
   accounts: z.array(z.record(z.string(), z.unknown())).max(500).optional(),
   ledger: z.array(z.record(z.string(), z.unknown())).max(5_000).optional(),
   spacs: z.array(z.record(z.string(), z.unknown())).max(1_000).optional(),

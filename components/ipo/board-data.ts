@@ -86,6 +86,16 @@ export const OFFERING_BY_NAME: Map<string, UpcomingOffering> =
 
 export type ReadinessState = 'OK' | 'PENDING' | 'EXPIRED'
 
+/** 가족 풀 구성원 — 명의의 출처. 계좌 갭 플래너가 이 풀 × 증권사로 돈다. */
+export type Relation = '본인' | '배우자' | '자녀' | '부모' | '기타'
+export interface FamilyMember {
+  id: string
+  name: string        // 별칭/이름 (본인·아내·첫째…) — 계좌·청약의 person과 매칭
+  relation: Relation
+  minor?: boolean     // 미성년 — 자녀 계좌는 개설 방식·순서가 다름
+  memo?: string
+}
+
 /** 계좌 = 명의 × 증권사. 준비상태(통증 1위)가 핵심. */
 export interface Account {
   id: string
@@ -207,4 +217,53 @@ export function ddays(dateStr: string, today: Date): number {
 export function ddayLabel(n: number): string {
   if (n === 0) return 'D-DAY'
   return n > 0 ? `D-${n}` : `D+${-n}`
+}
+
+// ─────────────────────────────────────────────────────────────
+// 계좌 갭 플래너 — 다가올 IPO 주관사 vs 보유 계좌 → 열어야 할 (구성원×증권사)
+// ─────────────────────────────────────────────────────────────
+
+/** 한 증권사에 대해 계좌가 없는 구성원 묶음 + 다가올 IPO 커버리지. */
+export interface BrokerGap {
+  broker: string
+  upcomingCount: number       // 이 증권사가 주관사인 다가올 IPO 수
+  nearestDate?: string        // 가장 임박한 청약 시작일
+  missing: FamilyMember[]     // 이 증권사 계좌가 아직 없는 구성원
+}
+
+/** 계좌 broker가 주관사명을 포함/피포함하면 보유로 간주(표기 편차 흡수). */
+function accountCovers(accounts: Account[], person: string, broker: string): boolean {
+  return accounts.some(a => a.person === person && (a.broker.includes(broker) || broker.includes(a.broker)))
+}
+
+/**
+ * 다가올 IPO 주관사별로, 계좌가 없는 구성원을 모아 개설 우선순위순으로 반환.
+ * 우선순위: 다가올 커버리지(count) 큰 순 → 임박도(청약일 가까운 순) → 증권사명.
+ */
+export function computeAccountGaps(
+  members: FamilyMember[], accounts: Account[], offerings: UpcomingOffering[], todayISO: string,
+): BrokerGap[] {
+  const stat = new Map<string, { count: number; nearest?: string }>()
+  for (const o of offerings) {
+    if (o.kind === 'SPAC') continue
+    const anchor = o.subStart ?? o.listingDate ?? ''
+    if ((o.subEnd ?? anchor) < todayISO) continue   // 지난 종목 제외
+    for (const b of o.brokers) {
+      const cur = stat.get(b) ?? { count: 0 }
+      cur.count += 1
+      if (o.subStart && (!cur.nearest || o.subStart < cur.nearest)) cur.nearest = o.subStart
+      stat.set(b, cur)
+    }
+  }
+  const gaps: BrokerGap[] = []
+  for (const [broker, s] of stat) {
+    const missing = members.filter(m => !accountCovers(accounts, m.name, broker))
+    if (missing.length === 0) continue
+    gaps.push({ broker, upcomingCount: s.count, nearestDate: s.nearest, missing })
+  }
+  gaps.sort((a, b) =>
+    a.upcomingCount !== b.upcomingCount ? b.upcomingCount - a.upcomingCount
+      : (a.nearestDate ?? '9999') !== (b.nearestDate ?? '9999') ? ((a.nearestDate ?? '9999') < (b.nearestDate ?? '9999') ? -1 : 1)
+        : a.broker < b.broker ? -1 : 1)
+  return gaps
 }

@@ -11,7 +11,7 @@ import { useAuth } from '@clerk/nextjs'
 import { toast } from 'sonner'
 import {
   OFFERING_BY_NAME,
-  type Account, type LedgerRow, type Spac,
+  type Account, type LedgerRow, type Spac, type FamilyMember,
 } from '@/components/ipo/board-data'
 
 // localStorage 키는 유저별로 스코프 — 같은 브라우저에서 계정 전환 시 데이터가 새지 않게.
@@ -28,6 +28,7 @@ export interface OfferingOverride {
 }
 
 export interface IpoState {
+  members: FamilyMember[]         // 가족 풀 — 명의의 출처(계좌 없어도 미리 세팅)
   accounts: Account[]
   ledger: LedgerRow[]
   spacs: Spac[]
@@ -36,11 +37,12 @@ export interface IpoState {
   initialized: boolean   // 사용자가 직접 입력하기 시작했나
 }
 
-const EMPTY: IpoState = { accounts: [], ledger: [], spacs: [], memos: {}, overrides: {}, initialized: false }
+const EMPTY: IpoState = { members: [], accounts: [], ledger: [], spacs: [], memos: {}, overrides: {}, initialized: false }
 
 /** 임의 저장본(로컬·DB) → 완전한 IpoState. 옛 저장본에 없던 필드 백필. */
 export function normalize(s: Partial<IpoState> | null | undefined): IpoState {
   return {
+    members: s?.members ?? [],
     accounts: s?.accounts ?? [],
     ledger: s?.ledger ?? [],
     spacs: s?.spacs ?? [],
@@ -85,6 +87,10 @@ function newId(): string {
 
 export interface IpoData {
   hydrated: boolean
+  members: FamilyMember[]
+  addMember: (m: Omit<FamilyMember, 'id'>) => void
+  updateMember: (id: string, patch: Omit<FamilyMember, 'id'>) => void
+  removeMember: (id: string) => void
   accounts: Account[]
   ledger: LedgerRow[]
   spacs: Spac[]
@@ -232,7 +238,19 @@ export function useIpoData(): IpoData {
     }
   }, [])
 
-  const { accounts, ledger, spacs } = state
+  const { members, accounts, ledger, spacs } = state
+
+  const addMember = useCallback((m: Omit<FamilyMember, 'id'>) => {
+    setState(prev => ({ ...prev, initialized: true, members: [...prev.members, { ...m, id: newId() }] }))
+  }, [])
+
+  const updateMember = useCallback((id: string, patch: Omit<FamilyMember, 'id'>) => {
+    setState(prev => ({ ...prev, members: prev.members.map(m => m.id === id ? { ...patch, id } : m) }))
+  }, [])
+
+  const removeMember = useCallback((id: string) => {
+    setState(prev => ({ ...prev, members: prev.members.filter(m => m.id !== id) }))
+  }, [])
 
   const addAccount = useCallback((a: Omit<Account, 'id'>) => {
     setState(prev => ({ ...prev, initialized: true, accounts: [...prev.accounts, { ...a, id: newId() }] }))
@@ -289,5 +307,5 @@ export function useIpoData(): IpoData {
 
   const reset = useCallback(() => setState(EMPTY), [])
 
-  return { hydrated, accounts, ledger, spacs, addAccount, updateAccount, removeAccount, addSub, updateSub, removeSub, addSpac, updateSpac, removeSpac, memos: state.memos, setMemo, overrides: state.overrides, setOverride, importData, reset }
+  return { hydrated, members, addMember, updateMember, removeMember, accounts, ledger, spacs, addAccount, updateAccount, removeAccount, addSub, updateSub, removeSub, addSpac, updateSpac, removeSpac, memos: state.memos, setMemo, overrides: state.overrides, setOverride, importData, reset }
 }

@@ -319,8 +319,11 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
   presetOffering?: string
 }) {
   const r0 = initial?.row
-  // 명의 = 등록한 계좌 명의(중복 제거), 증권사 = 선택한 종목의 청약 주관사. 둘 다 첫 값을 기본으로.
-  const personOptions = useMemo(() => [...new Set(data.accounts.map(a => a.person))], [data.accounts])
+  // 명의 = 가족 풀 + 등록 계좌 명의(중복 제거), 증권사 = 선택한 종목의 청약 주관사. 둘 다 첫 값 기본.
+  const personOptions = useMemo(
+    () => [...new Set([...data.members.map(m => m.name), ...data.accounts.map(a => a.person)])],
+    [data.members, data.accounts],
+  )
   // 일정 카드에서 종목이 미리 채워진 채로 열릴 때(신규 입력만) 증권사·증거금까지 자동 채움 → 재선택 불필요.
   const presetO = !r0 ? OFFERINGS.find(o => o.name === (presetOffering ?? '').trim()) : undefined
   const presetDep = presetO ? minEqualDeposit(presetO) : undefined

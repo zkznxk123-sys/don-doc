@@ -14,6 +14,7 @@ import { cn, formatLargeNumber } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import { AccountBoard, MoneyMap } from '@/components/ipo/account-board'
+import { AccountPlanner } from '@/components/ipo/account-planner'
 import { SpacPanel } from '@/components/ipo/spac-panel'
 import { SpacHoldings } from '@/components/ipo/spac-holdings'
 import { ScheduleView } from '@/components/ipo/schedule-view'
@@ -233,8 +234,9 @@ export default function IpoLedgerPage() {
           {renderLedger(true)}
         </TabsContent>
 
-        {/* C. 계좌 인프라 — 별도 관리 영역 (사람×증권사, 10+계좌 밀집 테이블) */}
-        <TabsContent value="accounts">
+        {/* C. 계좌 인프라 — 가족 풀·개설 플래너(무엇을 열지) + 계좌 보드(준비상태) */}
+        <TabsContent value="accounts" className="space-y-4">
+          <AccountPlanner data={data} />
           <AccountBoard accounts={accounts} ledger={ledger} data={data} />
         </TabsContent>
       </Tabs>
