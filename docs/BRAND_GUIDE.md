@@ -60,8 +60,10 @@
 - SEO description, OG image, App Store, 채널 bio에 사용. **랜딩 Hero엔 미노출** — Hero는 북극성 H1이 대문(§14). Threads bio 정본과 1:1 일치.
 - 영문: *The easiest way to manage your assets — scattered assets, one view.*
 
-### One-liner (elevator)
-> 돈 관리는 똑똑하게, 관계는 더 돈독하게.
+### One-liner — ⚠️ 강등 (2026-07-10)
+> ~~돈 관리는 똑똑하게, 관계는 더 돈독하게.~~
+
+- 가족 유대 시절 원라이너. 북극성(「복잡한 투자, 단순하게」) 전환 후 실사용 0 → **참고 카피로 강등, 신규 산출물에 쓰지 말 것**. /about 이름 섹션도 「돈 + Doc = 돈독」 풀이로 교체(`3fa474b`). 관계 레이어는 이름 3-Layer(§3)와 /about "그래서, 돈독" 카드가 담당.
 
 ### Mission
 > 복잡하게 흩어진 자산을 가장 쉽게 한 화면으로 통합하는 도구. 혼자 써도 충분하고, 필요하면 가족·동업자와 선별적으로 공유한다.
