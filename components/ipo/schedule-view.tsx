@@ -438,6 +438,8 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
   const dr = (o.depositRate ?? 50) / 100
   const limit = o.subLimit ? parseInt(o.subLimit.split('~')[0].replace(/[^\d]/g, ''), 10) : undefined
   const won = (n: number) => (n >= 1e8 ? `${(n / 1e8).toFixed(2)}억` : `${Math.round(n / 1e4).toLocaleString()}만`)
+  // 실제 청약은 라운드 수량으로 넣으므로 100주 단위 반올림(100주 미만은 10주 단위).
+  const roundLot = (n: number) => (n < 100 ? Math.round(n / 10) * 10 : Math.round(n / 100) * 100)
   const targets = [1, 2, 3]
   // 안정/기본/도전 = 경쟁률 상승 버퍼. 예상경쟁률이 그만큼 올라도 목표 총배정 유지.
   // 도전보다 '안정적으로 주수 확보'가 우선 → 안정을 앵커(첫 행·강조)로.
@@ -531,7 +533,7 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
               )
             }
             return levels.map((lv, i) => {
-              const shares = Math.round(need * r * lv.mult)
+              const shares = roundLot(need * r * lv.mult)   // 실제 신청 단위(100주)로 반올림
               const over = limit != null && shares > limit
               const expProp = shares / r          // 예상 비례(예상경쟁률 기준)
               const expTotal = g + expProp        // 예상 총배정
