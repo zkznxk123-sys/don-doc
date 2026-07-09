@@ -335,13 +335,27 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
   const [deposit, setDeposit] = useState(
     r0 && r0.deposit ? String(r0.deposit / 10_000) : presetDep ? String(presetDep / 10_000) : ''
   )
+  // 입력 기준: 청약주수(기본) ↔ 증거금. 청약주수 넣으면 증거금 자동 계산.
+  const [depMode, setDepMode] = useState<'shares' | 'deposit'>(r0?.appliedShares != null ? 'shares' : (r0 ? 'deposit' : 'shares'))
+  const [subShares, setSubShares] = useState(
+    r0?.appliedShares != null ? String(r0.appliedShares) : presetO ? String(presetO.minSubShares ?? 10) : ''
+  )
   const [shares, setShares] = useState(r0 && r0.allocatedShares ? String(r0.allocatedShares) : '')
   const [refund, setRefund] = useState(r0 && r0.refundAmount ? String(r0.refundAmount / 10_000) : '')
   const [refunded, setRefunded] = useState(r0?.refunded ?? false)
   const [pnl, setPnl] = useState(r0?.realizedPnl != null ? String(r0.realizedPnl / 10_000) : '')
 
-  // 선택한 종목의 주관사 = 증권사 후보. 목록에 없는 종목(자유 입력)은 폴백으로 자유 검색.
-  const offeringBrokers = useMemo(() => OFFERINGS.find(o => o.name === offering.trim())?.brokers ?? [], [offering])
+  // 선택한 종목 — 증권사 후보 + 공모가/증거금률(청약주수→증거금 계산용).
+  const curO = useMemo(() => OFFERINGS.find(o => o.name === offering.trim()), [offering])
+  const offeringBrokers = curO?.brokers ?? []
+  const perShareDep = (() => {   // 주당 증거금(원) = 공모가(확정 우선, 없으면 밴드 상단) × 증거금률
+    const price = curO?.ipoPrice ?? bandUpper(curO?.priceBand)
+    return price ? price * ((curO?.depositRate ?? 50) / 100) : null
+  })()
+  const computedDep = perShareDep ? (parseInt(subShares) || 0) * perShareDep : 0   // 청약주수 기준 증거금(원)
+  const fmtDep = (w: number) => (w >= 1e8 ? `${(w / 1e8).toFixed(2)}억` : `${Math.round(w / 1e4).toLocaleString()}만원`)
+  // 실제 저장될 증거금(원): 주수 모드면 계산값, 증거금 모드면 입력값.
+  const depositWon = depMode === 'shares' ? computedDep : won(deposit)
   // 현재 값이 후보에 없으면(계좌 삭제·주관사 변경 등) 옵션에 포함해 편집 중 값이 사라지지 않게.
   const personOpts = person && !personOptions.includes(person) ? [...personOptions, person] : personOptions
   const brokerOpts = broker && !offeringBrokers.includes(broker) ? [broker, ...offeringBrokers] : offeringBrokers
@@ -356,10 +370,11 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
     const finalPerson = person.trim() || '본인'
     const values = {
       offering: offering.trim(), person: finalPerson, broker: broker.trim(), subType, status,
-      deposit: won(deposit),
+      deposit: depositWon,
+      appliedShares: depMode === 'shares' && subShares.trim() ? (parseInt(subShares) || 0) : undefined,
       allocatedShares: showAlloc ? (parseInt(shares) || 0) : 0,
       // 미배정은 증거금 전액 환불 → 별도 입력 없이 deposit 사용
-      refundAmount: isUnalloc ? won(deposit) : (showAlloc ? won(refund) : 0),
+      refundAmount: isUnalloc ? depositWon : (showAlloc ? won(refund) : 0),
       refunded: showRefunded ? refunded : false,
       realizedPnl: showSold ? won(pnl) : undefined,
     }
@@ -374,7 +389,8 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
         <Field label="종목">
           <OfferingPicker value={offering} onChange={setOffering} onPick={o => {
             if (o.brokers.length > 0) setBroker(o.brokers[0])   // 증권사는 종목에 종속 → 첫 주관사로 채움
-            // 기본 증거금 = 균등 최소청약. 확정공모가 없으면 밴드 상단으로 추정. 비어 있을 때만.
+            // 기본값: 청약주수 = 최소청약수량, 증거금 = 균등 최소청약(밴드 상단 추정). 각각 비어 있을 때만.
+            if (!subShares.trim()) setSubShares(String(o.minSubShares ?? 10))
             const minDep = minEqualDeposit(o)
             if (!deposit.trim() && minDep) setDeposit(String(minDep / 10_000))
           }} />
@@ -409,9 +425,25 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
             {STATUSES.map(s => <option key={s.v} value={s.v}>{s.label}</option>)}
           </select>
         </Field>
-        <Field label="증거금(만원)">
-          <input type="number" className={inputCls} value={deposit} onChange={e => setDeposit(e.target.value)} placeholder="0" />
-        </Field>
+        <label className="flex flex-col gap-1">
+          <span className="text-[11px] text-muted-foreground flex items-center justify-between gap-1">
+            {depMode === 'shares' ? '청약주수(주)' : '증거금(만원)'}
+            <button type="button" onClick={() => setDepMode(m => m === 'shares' ? 'deposit' : 'shares')}
+              className="text-[9px] font-medium text-foreground/60 hover:text-foreground">
+              {depMode === 'shares' ? '증거금으로' : '주수로'}
+            </button>
+          </span>
+          {depMode === 'shares' ? (
+            <>
+              <input type="number" className={inputCls} value={subShares} onChange={e => setSubShares(e.target.value)} placeholder="예: 2600" />
+              <span className="text-[9px] text-muted-foreground leading-tight">
+                {perShareDep ? `증거금 ${fmtDep(computedDep)}` : '공모가 확정 후 증거금 계산'}
+              </span>
+            </>
+          ) : (
+            <input type="number" className={inputCls} value={deposit} onChange={e => setDeposit(e.target.value)} placeholder="0" />
+          )}
+        </label>
         {showAlloc && <>
           <Field label="배정주(주)">
             <input type="number" className={inputCls} value={shares} onChange={e => setShares(e.target.value)} placeholder="0" />
@@ -421,8 +453,8 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
           </Field>
         </>}
         {isUnalloc && (
-          <Field label="환불액(만원)">
-            <input type="number" className={cn(inputCls, 'opacity-60')} value={deposit} disabled title="미배정 = 증거금 전액 환불" />
+          <Field label="환불액">
+            <input className={cn(inputCls, 'opacity-60')} value={fmtDep(depositWon)} disabled title="미배정 = 증거금 전액 환불" />
           </Field>
         )}
         {showRefunded && (

@@ -15,6 +15,7 @@ export interface LedgerRow {
   broker: string
   subType: '균등' | '비례'
   deposit: number          // 증거금(원)
+  appliedShares?: number   // 청약주수(청약한 주수). 증거금 = appliedShares × 공모가 × 증거금률
   allocatedShares: number  // 배정 주수 (미정 0)
   refundAmount: number     // 환불 예정/완료액
   refunded: boolean        // 환불금·배정주 회수 완료
