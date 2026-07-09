@@ -5,7 +5,7 @@
  * 월별로 묶어 청약·환불·상장일을 한눈에. 다가올/전체 토글.
  */
 import { Fragment, useMemo, useState } from 'react'
-import { Calendar, ChevronDown, ChevronLeft, ChevronRight, Calculator, ClipboardList, Table2, StickyNote, HelpCircle, type LucideIcon } from 'lucide-react'
+import { Calendar, ChevronDown, ChevronLeft, ChevronRight, Calculator, ClipboardList, Table2, StickyNote, HelpCircle, RefreshCw, type LucideIcon } from 'lucide-react'
 import { cn, formatLargeNumber } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { SubForm, EditBtn } from '@/components/ipo/entry-forms'
@@ -432,6 +432,30 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
   const [gyun, setGyun] = useState('')
   const [budget, setBudget] = useState('')   // 예산(만원)
   const [showHelp, setShowHelp] = useState(false)   // 계산식 설명 토글
+  const [loadingComp, setLoadingComp] = useState(false)   // 38 경쟁률 조회 중
+  const [compNote, setCompNote] = useState<string | null>(null)   // 기준 시각/에러 안내
+
+  // 38.co.kr에서 현 종목 청약경쟁률(비례)을 온디맨드로 가져와 입력에 채움 + 기준 시각 표기.
+  const loadCompetition = async () => {
+    if (!o.no38) return
+    setLoadingComp(true); setCompNote(null)
+    try {
+      const res = await fetch('/api/ipo/competition', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ no38: o.no38, name: o.name }),
+      })
+      const d = await res.json()
+      if (d?.competition != null) {
+        setRate(String(d.competition))
+        const t = new Date(d.asOf).toLocaleString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+        setCompNote(`38 확정 · ${t} 조회`)
+      } else {
+        setCompNote('38에 확정 경쟁률 없음 — 청약 중엔 증권사 앱 확인')
+      }
+    } catch {
+      setCompNote('38 조회 실패')
+    } finally { setLoadingComp(false) }
+  }
   const r = parseFloat(rate) || 0
   const g = parseFloat(gyun) || 0
   const price = o.ipoPrice
@@ -524,9 +548,18 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
       </label>
       <div className="grid grid-cols-2 gap-2">
         <label className="flex flex-col gap-0.5">
-          <span className="text-[10px] text-muted-foreground">현재 비례경쟁률</span>
+          <span className="text-[10px] text-muted-foreground flex items-center justify-between gap-1">
+            현재 비례경쟁률
+            {o.no38 && (
+              <button type="button" onClick={loadCompetition} disabled={loadingComp}
+                className="inline-flex items-center gap-0.5 text-[9px] font-medium text-foreground/70 hover:text-foreground disabled:opacity-50">
+                <RefreshCw className={cn('size-2.5', loadingComp && 'animate-spin')} /> 38
+              </button>
+            )}
+          </span>
           <input type="number" value={rate} onChange={e => setRate(e.target.value)} placeholder="예: 2910"
             className="rounded-md border border-border bg-card px-2 py-1 text-[13px] text-muted-foreground outline-none focus:border-foreground/30 focus:text-foreground" />
+          {compNote && <span className="text-[9px] text-muted-foreground leading-tight">{compNote}</span>}
         </label>
         <label className="flex flex-col gap-0.5">
           <span className="text-[10px] text-muted-foreground">균등 예상수량(주)</span>
