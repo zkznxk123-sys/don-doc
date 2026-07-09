@@ -47,6 +47,8 @@ export function AccountPlanner({ data }: { data: IpoData }) {
 function FamilyPool({ data }: { data: IpoData }) {
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<FamilyMember | null>(null)
+  const [dragId, setDragId] = useState<string | null>(null)   // 드래그 중인 구성원
+  const [overId, setOverId] = useState<string | null>(null)   // 드롭 대상(위 hover)
   // 기존 계좌 명의 중 아직 풀에 없는 것 — 이름 공간 불일치로 플래너가 꼬이는 주범. 가져오기로 화해.
   const orphans = useMemo(() => {
     const inPool = new Set(data.members.map(m => m.name))
@@ -80,7 +82,16 @@ function FamilyPool({ data }: { data: IpoData }) {
       {data.members.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           {data.members.map((m, idx) => (
-            <span key={m.id} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2.5 py-1 text-xs">
+            <span key={m.id}
+              draggable={data.members.length > 1}
+              onDragStart={() => setDragId(m.id)}
+              onDragOver={e => { e.preventDefault(); if (dragId && dragId !== m.id) setOverId(m.id) }}
+              onDragLeave={() => setOverId(cur => cur === m.id ? null : cur)}
+              onDrop={() => { if (dragId) data.reorderMembers(dragId, m.id); setDragId(null); setOverId(null) }}
+              onDragEnd={() => { setDragId(null); setOverId(null) }}
+              className={cn('inline-flex items-center gap-1.5 rounded-full border bg-card px-2.5 py-1 text-xs transition-colors',
+                data.members.length > 1 && 'cursor-grab active:cursor-grabbing',
+                dragId === m.id ? 'opacity-40 border-border' : overId === m.id ? 'border-foreground/50 ring-1 ring-foreground/30' : 'border-border')}>
               {data.members.length > 1 && (
                 <span className="inline-flex items-center -ml-0.5">
                   <button onClick={() => data.moveMember(m.id, 'up')} disabled={idx === 0} title="앞으로" className="text-muted-foreground/50 hover:text-foreground disabled:opacity-20"><ChevronLeft className="size-3" /></button>

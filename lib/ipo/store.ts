@@ -92,6 +92,7 @@ export interface IpoData {
   updateMember: (id: string, patch: Omit<FamilyMember, 'id'>) => void
   removeMember: (id: string) => void
   moveMember: (id: string, dir: 'up' | 'down') => void
+  reorderMembers: (fromId: string, toId: string) => void
   accounts: Account[]
   ledger: LedgerRow[]
   spacs: Spac[]
@@ -276,6 +277,20 @@ export function useIpoData(): IpoData {
     })
   }, [])
 
+  // 드래그앤드롭 재정렬 — fromId를 toId 위치로 옮김.
+  const reorderMembers = useCallback((fromId: string, toId: string) => {
+    setState(prev => {
+      if (fromId === toId) return prev
+      const arr = [...prev.members]
+      const from = arr.findIndex(m => m.id === fromId)
+      const to = arr.findIndex(m => m.id === toId)
+      if (from < 0 || to < 0) return prev
+      const [moved] = arr.splice(from, 1)
+      arr.splice(to, 0, moved)
+      return { ...prev, members: arr }
+    })
+  }, [])
+
   const addAccount = useCallback((a: Omit<Account, 'id'>) => {
     setState(prev => ({ ...prev, initialized: true, accounts: [...prev.accounts, { ...a, id: newId() }] }))
   }, [])
@@ -331,5 +346,5 @@ export function useIpoData(): IpoData {
 
   const reset = useCallback(() => setState(EMPTY), [])
 
-  return { hydrated, members, addMember, updateMember, removeMember, moveMember, accounts, ledger, spacs, addAccount, updateAccount, removeAccount, addSub, updateSub, removeSub, addSpac, updateSpac, removeSpac, memos: state.memos, setMemo, overrides: state.overrides, setOverride, importData, reset }
+  return { hydrated, members, addMember, updateMember, removeMember, moveMember, reorderMembers, accounts, ledger, spacs, addAccount, updateAccount, removeAccount, addSub, updateSub, removeSub, addSpac, updateSpac, removeSpac, memos: state.memos, setMemo, overrides: state.overrides, setOverride, importData, reset }
 }
