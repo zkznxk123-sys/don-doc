@@ -275,7 +275,7 @@ npm run dev            # 개발 서버 (localhost:3000)
 npm test               # vitest 단위 테스트
 npm run test:watch     # vitest watch 모드
 npx prisma studio      # DB GUI
-npx prisma migrate dev # 마이그레이션
+npx prisma db push     # 스키마 → DB 반영 (migrations 디렉터리 없음 — db push 워크플로우)
 npx tsx prisma/seed-categories.ts  # 카테고리 시드
 npx tsx prisma/seed-demo.ts        # 데모 가족 시드 (가명 데이터)
 ```
