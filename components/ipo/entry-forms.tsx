@@ -36,6 +36,15 @@ const STATUSES: { v: SubStatus; label: string }[] = [
 const inputCls = 'rounded-md border border-border bg-card px-2.5 py-1.5 text-sm outline-none focus:border-foreground/30'
 const won = (manwon: string) => Math.round((parseFloat(manwon) || 0) * 10_000)
 
+/**
+ * 마지막으로 입력한 명의 — 새 계좌/청약 추가 시 기본값으로 이어받음.
+ * 값을 채운 채로 두면 datalist가 현재 입력값(예: '본인')을 기준으로 후보를 필터링해
+ * 다른 명의(예: '엄마')가 안 보이는 브라우저 동작이 있어, 저장된 값이 없을 땐 빈 문자열로 시작한다.
+ */
+const LAST_PERSON_KEY = 'dondoc.ipo.lastPerson'
+const getLastPerson = () => { try { return localStorage.getItem(LAST_PERSON_KEY) ?? '' } catch { return '' } }
+const setLastPerson = (p: string) => { try { if (p) localStorage.setItem(LAST_PERSON_KEY, p) } catch {} }
+
 /** 희망공모가밴드("16,700~21,600")에서 상단가를 뽑는다. 확정공모가가 없을 때의 추정 기준. */
 const bandUpper = (band?: string) => {
   const nums = band?.replace(/,/g, '').match(/\d+/g)
@@ -255,7 +264,7 @@ export function ResetBar({ data }: { data: IpoData }) {
 }
 
 export function AccountForm({ data, onDone, initial }: { data: IpoData; onDone: () => void; initial?: Account }) {
-  const [person, setPerson] = useState(initial?.person ?? '본인')
+  const [person, setPerson] = useState(initial?.person ?? getLastPerson())
   const [broker, setBroker] = useState(initial?.broker ?? '')
   const [accountNo, setAccountNo] = useState(initial?.accountNo ?? '')
   const [bankLinked, setBankLinked] = useState(initial?.bankLinked ?? false)
@@ -266,9 +275,10 @@ export function AccountForm({ data, onDone, initial }: { data: IpoData; onDone: 
 
   const submit = () => {
     if (!broker.trim()) return
-    const values = { person: person.trim() || '본인', broker: broker.trim(), accountNo: accountNo.trim() || undefined, bankLinked, readiness }
+    const finalPerson = person.trim() || '본인'
+    const values = { person: finalPerson, broker: broker.trim(), accountNo: accountNo.trim() || undefined, bankLinked, readiness }
     if (initial) data.updateAccount(initial.id, values)
-    else data.addAccount(values)
+    else { data.addAccount(values); setLastPerson(finalPerson) }
     onDone()
   }
 
@@ -315,7 +325,7 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
   const presetO = !r0 ? OFFERINGS.find(o => o.name === (presetOffering ?? '').trim()) : undefined
   const presetDep = presetO ? minEqualDeposit(presetO) : undefined
   const [offering, setOffering] = useState(r0?.offering ?? presetOffering ?? '')
-  const [person, setPerson] = useState(r0?.person ?? personOptions[0] ?? '본인')
+  const [person, setPerson] = useState(r0?.person ?? getLastPerson())
   const [broker, setBroker] = useState(r0?.broker ?? presetO?.brokers[0] ?? '')
   const [subType, setSubType] = useState<LedgerRow['subType']>(r0?.subType ?? '균등')
   const [status, setStatus] = useState<SubStatus>(r0?.status ?? 'SUBMITTED')
@@ -340,8 +350,9 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
 
   const submit = () => {
     if (!offering.trim() || !broker.trim()) return
+    const finalPerson = person.trim() || '본인'
     const values = {
-      offering: offering.trim(), person: person.trim() || '본인', broker: broker.trim(), subType, status,
+      offering: offering.trim(), person: finalPerson, broker: broker.trim(), subType, status,
       deposit: won(deposit),
       allocatedShares: showAlloc ? (parseInt(shares) || 0) : 0,
       // 미배정은 증거금 전액 환불 → 별도 입력 없이 deposit 사용
@@ -350,7 +361,7 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
       realizedPnl: showSold ? won(pnl) : undefined,
     }
     if (initial) data.updateSub(initial.index, values)
-    else data.addSub(values)
+    else { data.addSub(values); setLastPerson(finalPerson) }
     onDone()
   }
 
