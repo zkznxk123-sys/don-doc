@@ -38,7 +38,7 @@ export function AboutPage() {
         <PageHero
           eyebrow="소개"
           title={<>복잡한 투자,<br /><Gold>단순하게.</Gold></>}
-          sub="현금흐름으로 만든 여유자금을 단단한 자산으로 꾸준히 옮기는 것 — 그게 우리가 말하는 투자입니다."
+          sub={<>현금흐름으로 만든 여유자금을 단단한 자산으로 꾸준히 옮기는 것<br />— 그게 우리가 말하는 투자입니다.</>}
           primary={{ href: '/product', label: '제품 보기' }}
           secondary={{ href: '/demo', label: '데모 체험' }}
         />
@@ -49,7 +49,7 @@ export function AboutPage() {
             <Reveal><SectionHead kicker="우리가 말하는 투자" title={<>종목 고르기가<br /><Gold>아닙니다.</Gold></>} /></Reveal>
             <Reveal delay={0.1}>
               <p className="text-lg lg:text-[20px] leading-[1.65]" style={{ color: SM_INK }}>
-                여기서 투자는 매매도, 타이밍도 아닙니다. <span style={{ color: GOLD }}>여유자금을 단단한 자산으로 꾸준히 옮기는 습관</span>입니다.
+                여기서 투자는 매매도, 타이밍도 아닙니다.<br /><span style={{ color: GOLD }}>여유자금을 단단한 자산으로 꾸준히 옮기는 습관</span>입니다.
               </p>
               <p className="text-base leading-[1.75] mt-6" style={{ color: SM_INK_DIM }}>
                 추천이 아니라 축적, 타이밍이 아니라 이동입니다. 돈독은 "무엇을 사라"고 말하지 않습니다. 흩어진 자산을 한 화면에 모아, 스스로 더 나은 판단을 하도록 복잡함을 걷어낼 뿐입니다.

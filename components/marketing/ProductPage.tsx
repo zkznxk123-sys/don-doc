@@ -20,7 +20,7 @@ import {
 const STEPS = [
   { n: '01', Icon: Wallet, t: '흐름을 본다', tag: '현금흐름 관리', d: '버는 흐름과 나가는 흐름을 한 화면에서 봅니다. 어디서 새는지 먼저 보입니다.' },
   { n: '02', Icon: PiggyBank, t: '여유를 남긴다', tag: '예산·저축률', d: '쓰고 남는 돈을 매달 만듭니다. 저축률이 스스로 목표가 됩니다.' },
-  { n: '03', Icon: Landmark, t: '단단한 자산으로', tag: '자산 관리 · 공모주', d: '남긴 돈을 질 좋은 자산으로 옮깁니다. 흩어진 자산도 한 화면으로 모읍니다.' },
+  { n: '03', Icon: Landmark, t: '단단한 자산으로', tag: '자산 관리', d: '남긴 돈을 질 좋은 자산으로 옮깁니다. 흩어진 자산도 한 화면으로 모읍니다.' },
   { n: '04', Icon: Repeat, t: '꾸준히 옮긴다', tag: '매달 10분 정리', d: '한 번 세팅하면 다음부터는 습관입니다. 매달 같은 흐름으로 마감합니다.' },
 ]
 
@@ -109,33 +109,9 @@ export function ProductPage() {
           </div>
         </section>
 
-        {/* 3. 공모주 모듈 */}
-        <section className="px-6 md:px-14 py-20 md:py-28" style={{ background: SM_PANEL, borderTop: `1px solid ${SM_HAIRLINE}` }}>
-          <div className="max-w-[1280px] mx-auto grid lg:grid-cols-[1fr_1fr] gap-12 lg:gap-20 items-center">
-            <Reveal>
-              <SectionHead kicker="단단한 자산 취득 채널" title={<>흩어진 공모주 청약을<br /><Gold>한 화면에.</Gold></>}
-                body="명의·증권사별로 흩어진 청약을 한 곳에서 봅니다. 청약·배정·환불·손익까지, 일정도 카드·캘린더로 놓치지 않게." />
-              <p className="text-xs mt-6" style={{ color: SM_INK_DIM }}>* 청약 일정·경쟁률·확약 등 공개 정보를 정리·정렬만 합니다. 특정 종목 청약 추천이 아닙니다.</p>
-            </Reveal>
-            <Reveal delay={0.1}>
-              <div className="rounded-[18px] p-6 space-y-3" style={{ background: SM_SURFACE, border: `1px solid ${SM_HAIRLINE}` }}>
-                {[
-                  { k: '청약 → 배정 → 환불', v: '상태로 흐름 추적' },
-                  { k: '명의 · 증권사별', v: '흩어진 계좌 통합' },
-                  { k: '균등 증거금', v: '자동 계산' },
-                  { k: '일정', v: '리스트 · 캘린더' },
-                ].map(r => (
-                  <div key={r.k} className="flex items-center justify-between py-2" style={{ borderBottom: `1px solid ${SM_HAIRLINE}` }}>
-                    <span className="text-sm font-medium" style={{ color: SM_INK }}>{r.k}</span>
-                    <span className="text-sm" style={{ color: GOLD }}>{r.v}</span>
-                  </div>
-                ))}
-              </div>
-            </Reveal>
-          </div>
-        </section>
+        {/* 공모주 모듈은 공개 제품 페이지에 미노출 — 초대제 웨지(특정 접근 URL)로만 안내. (2026-07-09) */}
 
-        {/* 4. 시작 흐름 3스텝 */}
+        {/* 시작 흐름 3스텝 */}
         <section className="px-6 md:px-14 py-20 md:py-28" style={{ background: SM_SURFACE }}>
           <div className="max-w-[1280px] mx-auto">
             <Reveal><SectionHead center kicker="시작은 3분" title={<>세팅은 한 번,<br /><Gold>이후엔 습관.</Gold></>} /></Reveal>

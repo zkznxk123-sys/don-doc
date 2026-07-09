@@ -162,7 +162,7 @@ export function MarketingFooter() {
 
 /** 페이지 히어로(상단) — eyebrow·H1·서브·CTA. 두 페이지 공통 골격. */
 export function PageHero({ eyebrow, title, sub, primary, secondary }: {
-  eyebrow: string; title: React.ReactNode; sub: string
+  eyebrow: string; title: React.ReactNode; sub: React.ReactNode
   primary?: { href: string; label: string }; secondary?: { href: string; label: string }
 }) {
   return (
