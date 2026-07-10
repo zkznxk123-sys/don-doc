@@ -19,6 +19,7 @@ interface WordmarkProps {
 export function Wordmark({ size = 24, ink, dim, gold = '#C9A54A', className }: WordmarkProps) {
   return (
     <span
+      role="img"
       className={cn('inline-flex items-baseline select-none', className)}
       style={{ fontFamily: 'var(--font-grotesk)', lineHeight: 1 }}
       aria-label="don Doc"

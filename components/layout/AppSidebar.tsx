@@ -267,7 +267,7 @@ function InviteCodeButton() {
   const handleCopy = async () => {
     if (!code) return
     const url = `${window.location.origin}/invite/${code}`
-    const msg = `여보, 우리 집 자산 관리를 위해 초대해요! 🏠\n돈독 앱에서 함께 가족 자산을 관리해요.\n\n링크: ${url}`
+    const msg = `여보, 우리 집 자산 관리를 위해 초대해요.\n돈독에서 함께 가족 자산을 관리해요.\n\n링크: ${url}`
     try { await navigator.clipboard.writeText(msg) } catch {
       const ta = document.createElement('textarea')
       ta.value = msg; ta.style.cssText = 'position:fixed;opacity:0'

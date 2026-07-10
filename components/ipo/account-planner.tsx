@@ -116,14 +116,17 @@ function FamilyPool({ data }: { data: IpoData }) {
       {adding && <MemberForm onDone={() => setAdding(false)} onSubmit={data.addMember} />}
       {editing && (
         <MemberForm key={editing.id} initial={editing} onDone={() => setEditing(null)}
-          onSubmit={v => data.updateMember(editing.id, v)} />
+          onSubmit={v => data.updateMember(editing.id, v)}
+          onMove={dir => data.moveMember(editing.id, dir)} />
       )}
     </div>
   )
 }
 
-function MemberForm({ onDone, onSubmit, initial }: {
+function MemberForm({ onDone, onSubmit, initial, onMove }: {
   onDone: () => void; onSubmit: (v: Omit<FamilyMember, 'id'>) => void; initial?: FamilyMember
+  /** 편집 모드 순서 변경(WCAG 2.1.1) — 그립 드래그의 비포인터 대체 경로. */
+  onMove?: (dir: 'up' | 'down') => void
 }) {
   const [name, setName] = useState(initial?.name ?? '')
   const [relation, setRelation] = useState<Relation>(initial?.relation ?? '배우자')
@@ -153,8 +156,14 @@ function MemberForm({ onDone, onSubmit, initial }: {
           </label>
         )}
       </div>
-      <div className="flex justify-end gap-2">
-        <button onClick={onDone} className="rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground">취소</button>
+      <div className="flex items-center gap-2">
+        {onMove && (
+          <div className="flex items-center gap-1 mr-auto">
+            <button type="button" onClick={() => onMove('up')} className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground">◀ 앞으로</button>
+            <button type="button" onClick={() => onMove('down')} className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground">뒤로 ▶</button>
+          </div>
+        )}
+        <button onClick={onDone} className={cn('rounded-md px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground', !onMove && 'ml-auto')}>취소</button>
         <button onClick={submit} disabled={!name.trim()} className="rounded-md bg-foreground px-3 py-1.5 text-sm font-medium text-background disabled:opacity-40">{initial ? '저장' : '추가'}</button>
       </div>
     </div>

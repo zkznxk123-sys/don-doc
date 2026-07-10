@@ -43,7 +43,7 @@ function HeroCopy() {
         className="inline-flex items-center gap-2"
         style={{ fontSize: 11.5, fontWeight: 600, letterSpacing: '0.16em', color: GOLD, marginBottom: 20 }}>
         <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: GOLD }} />
-        THE SIMPLEST WAY TO MANAGE MONEY
+        THE SIMPLEST WAY TO MANAGE YOUR ASSETS
       </motion.p>
 
       <motion.h1 custom={1} variants={fadeUp} initial="hidden" animate="visible"

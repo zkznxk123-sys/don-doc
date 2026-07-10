@@ -47,7 +47,7 @@ export default async function SignUpPage({ searchParams }: Props) {
 
       {/* 푸터 */}
       <div className="px-8 py-6 text-center border-t border-border/40">
-        <p className="text-xs text-muted-foreground/50">© 2025 돈독 · 가장 쉬운 자산 관리</p>
+        <p className="text-xs text-muted-foreground/50">© 2026 돈독 · 가장 쉬운 자산 관리</p>
       </div>
     </div>
   )
