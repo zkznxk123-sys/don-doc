@@ -14,8 +14,8 @@ import {
   SM_SURFACE, SM_RAISED, SM_INK, SM_INK_DIM, SM_HAIRLINE, GOLD,
 } from './landing/tokens'
 
+// /product는 첫 페이지·nav·푸터 어디에도 미노출 (2026-07-10 사용자 결정) — 직링크 전용.
 const NAV_LINKS = [
-  { href: '/product', label: '제품' },
   { href: '/about', label: '소개' },
   { href: '/demo', label: '데모' },
 ] as const
@@ -128,7 +128,7 @@ export function ClosingCta({ title }: { title: React.ReactNode }) {
 /** 다크 푸터 — 링크 + 카피라이트. */
 export function MarketingFooter() {
   const cols: { title: string; links: { href: string; label: string }[] }[] = [
-    { title: '제품', links: [{ href: '/product', label: '기능·사용법' }, { href: '/demo', label: '데모 체험' }, { href: '/sign-up', label: '무료 시작' }] },
+    { title: '시작하기', links: [{ href: '/demo', label: '데모 체험' }, { href: '/sign-up', label: '무료 시작' }] },
     { title: '회사', links: [{ href: '/about', label: '소개' }, { href: '/sign-in', label: '로그인' }] },
   ]
   return (

@@ -39,7 +39,7 @@ export function AboutPage() {
           eyebrow="소개"
           title={<>복잡한 투자,<br /><Gold>단순하게.</Gold></>}
           sub={<>현금흐름으로 만든 여유자금을 단단한 자산으로 꾸준히 옮기는 것<br />— 그게 우리가 말하는 투자입니다.</>}
-          primary={{ href: '/product', label: '제품 보기' }}
+          primary={{ href: '/sign-up', label: '무료로 시작하기' }}
           secondary={{ href: '/demo', label: '데모 체험' }}
         />
 
