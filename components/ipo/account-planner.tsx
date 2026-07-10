@@ -14,6 +14,7 @@ import {
   type FamilyMember, type Relation, type BrokerGap,
 } from '@/components/ipo/board-data'
 import { brokerMeta, OPEN_STRATEGY_TIPS } from '@/components/ipo/broker-meta'
+import { TERRA_CHIP } from '@/components/ipo/tones'
 import type { IpoData } from '@/lib/ipo/store'
 
 const RELATIONS: Relation[] = ['본인', '배우자', '자녀', '부모', '기타']
@@ -81,11 +82,11 @@ function FamilyPool({ data }: { data: IpoData }) {
         )}
       </div>
       {orphans.length > 0 && (
-        <div className="flex items-center justify-between gap-2 rounded-md bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-2.5 py-1.5">
-          <span className="text-[11px] text-amber-700 dark:text-amber-300 min-w-0">
+        <div className="flex items-center justify-between gap-2 rounded-md bg-warning-soft px-2.5 py-1.5">
+          <span className="text-[11px] text-warning min-w-0">
             기존 계좌 명의 <b>{orphans.join('·')}</b>가 풀에 없어요 — 안 맞으면 플래너가 계좌를 중복으로 잡습니다.
           </span>
-          <button onClick={importOrphans} className="shrink-0 rounded-md bg-amber-600 px-2 py-1 text-[11px] font-medium text-white hover:bg-amber-700">풀에 가져오기</button>
+          <button onClick={importOrphans} className="shrink-0 rounded-md bg-foreground px-2 py-1 text-[11px] font-medium text-background hover:opacity-90">풀에 가져오기</button>
         </div>
       )}
       {data.members.length === 0 && orphans.length === 0 && !adding && (
@@ -105,9 +106,9 @@ function FamilyPool({ data }: { data: IpoData }) {
               )}
               <span className="font-medium">{m.name}</span>
               <span className="text-muted-foreground">{m.relation}</span>
-              {m.minor && <Baby className="size-3 text-amber-600 dark:text-amber-400" aria-label="미성년" />}
+              {m.minor && <Baby className="size-3 text-warning" aria-label="미성년" />}
               <button onClick={() => { setEditing(m); setAdding(false) }} title="편집" className="text-muted-foreground/50 hover:text-foreground"><Pencil className="size-3" /></button>
-              <button onClick={() => data.removeMember(m.id)} title="삭제" className="text-muted-foreground/50 hover:text-rose-500"><X className="size-3" /></button>
+              <button onClick={() => data.removeMember(m.id)} title="삭제" className="text-muted-foreground/50 hover:text-[#C0553D]"><X className="size-3" /></button>
             </span>
           ))}
         </div>
@@ -186,7 +187,7 @@ function GapPlanner({ data, gaps, today }: { data: IpoData; gaps: BrokerGap[]; t
       {data.members.length === 0 ? (
         <p className="text-xs text-muted-foreground">먼저 위에서 가족 풀(구성원)을 등록하세요.</p>
       ) : gaps.length === 0 ? (
-        <p className="text-xs text-muted-foreground">다가올 IPO 주관사 계좌가 구성원 전원 준비돼 있어요. 👍</p>
+        <p className="text-xs text-muted-foreground">다가올 IPO 주관사 계좌가 구성원 전원 준비돼 있어요.</p>
       ) : (
         <div className="space-y-2">
           {gaps.map(g => {
@@ -199,7 +200,7 @@ function GapPlanner({ data, gaps, today }: { data: IpoData; gaps: BrokerGap[]; t
                     <span className="font-medium">{g.broker}</span>
                     <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">다가올 {g.upcomingCount}건</span>
                     {dd != null && dd >= 0 && (
-                      <span className={cn('shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold', dd <= 3 ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300' : 'bg-muted text-muted-foreground')}>
+                      <span className={cn('shrink-0 rounded px-1.5 py-0.5 text-[10px] font-semibold', dd <= 3 ? TERRA_CHIP : 'bg-muted text-muted-foreground')}>
                         {ddayLabel(dd)}
                       </span>
                     )}
@@ -211,13 +212,13 @@ function GapPlanner({ data, gaps, today }: { data: IpoData; gaps: BrokerGap[]; t
                     <button key={m.id} onClick={() => openAccount(m.name, g.broker)}
                       className="inline-flex items-center gap-1 rounded-full border border-dashed border-border px-2 py-0.5 text-xs hover:border-foreground/40 hover:bg-muted/50">
                       <Plus className="size-3" /> {m.name}
-                      {m.minor && <Baby className="size-3 text-amber-600 dark:text-amber-400" />}
+                      {m.minor && <Baby className="size-3 text-warning" />}
                     </button>
                   ))}
                 </div>
                 {g.missing.some(m => m.minor) && meta && (
                   <p className="mt-1.5 flex items-start gap-1 text-[10px] text-muted-foreground">
-                    <AlertTriangle className="size-3 mt-px shrink-0 text-amber-500" />
+                    <AlertTriangle className="size-3 mt-px shrink-0 text-warning" />
                     자녀(미성년) 계좌 — {g.broker} 개설방식 {meta.minorOpen === '확인' ? '확인 필요(방문/비대면)' : meta.minorOpen}. {meta.minorNote ?? ''}
                   </p>
                 )}

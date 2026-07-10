@@ -14,6 +14,7 @@ import {
   type UpcomingOffering, type SubStatus, type Account,
 } from '@/components/ipo/board-data'
 import { computeBudgetPlan, requiredShares, depositFor, expectedProportional, BUFFER_LEVELS } from '@/lib/ipo/allocation'
+import { GOLD_CHIP, SAGE_CHIP, SLATE_CHIP, TERRA_CHIP, SAGE_TEXT, TERRA_TEXT, SLATE_TEXT, GOLD_DOT, SAGE_DOT, TERRA_SOLID, SAGE_ROW, TERRA_CARD } from '@/components/ipo/tones'
 import type { IpoData } from '@/lib/ipo/store'
 
 /** 종목의 대표일(정렬·월그룹 기준): 청약 시작 → 상장 → 환불 순 우선. */
@@ -117,9 +118,9 @@ export function ScheduleView({ data, kind }: { data: IpoData; kind?: 'IPO' | 'SP
 
 /** 이벤트 종류별 칩 색 — 청약/상장/환불. */
 const EVENT_TONE: Record<string, string> = {
-  청약: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
-  상장: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300',
-  환불: 'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300',
+  청약: GOLD_CHIP,
+  상장: SAGE_CHIP,
+  환불: SLATE_CHIP,
 }
 
 type CalEvent = { name: string; type: '청약' | '상장' | '환불' }
@@ -171,7 +172,7 @@ function CalendarView({ offerings, data, today, todayISO, expanded, onToggle }: 
       {/* 요일 헤더 */}
       <div className="grid grid-cols-7 gap-px">
         {WD.map((w, i) => (
-          <div key={w} className={cn('text-center text-[10px] font-medium pb-0.5', i === 0 ? 'text-rose-500' : i === 6 ? 'text-sky-500' : 'text-muted-foreground')}>{w}</div>
+          <div key={w} className={cn('text-center text-[10px] font-medium pb-0.5', i === 0 ? TERRA_TEXT : i === 6 ? SLATE_TEXT : 'text-muted-foreground')}>{w}</div>
         ))}
       </div>
 
@@ -184,7 +185,7 @@ function CalendarView({ offerings, data, today, todayISO, expanded, onToggle }: 
             <div key={i} className={cn('min-h-[62px] sm:min-h-[76px] p-1 space-y-0.5', d ? 'bg-card' : 'bg-muted/30')}>
               {d && (
                 <div className={cn('text-[10px] tabular-nums leading-none pb-0.5',
-                  isToday ? 'inline-flex items-center justify-center size-4 rounded-full bg-rose-500 text-white font-bold' : 'text-muted-foreground')}>{d}</div>
+                  isToday ? cn('inline-flex items-center justify-center size-4 rounded-full font-bold', TERRA_SOLID) : 'text-muted-foreground')}>{d}</div>
               )}
               {evs.map((e, j) => (
                 <button key={j} onClick={() => onToggle(e.name)} title={`${e.type} · ${e.name}`}
@@ -214,7 +215,7 @@ function CalendarView({ offerings, data, today, todayISO, expanded, onToggle }: 
             <div className="flex items-center gap-2 pb-1">
               <span className="font-medium">{selected.name}</span>
               <span className={cn('shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold',
-                selected.kind === 'SPAC' ? 'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300' : 'bg-muted text-muted-foreground')}>{selected.kind}</span>
+                selected.kind === 'SPAC' ? SLATE_CHIP : 'bg-muted text-muted-foreground')}>{selected.kind}</span>
               <button onClick={() => onToggle(selected.name)} className="ml-auto text-xs text-muted-foreground hover:text-foreground">닫기</button>
             </div>
             <OfferingDetail o={selected} data={data} today={today} />
@@ -233,7 +234,7 @@ function OfferingRow({ o, todayISO, today, open, onToggle }: { o: UpcomingOfferi
         <ChevronDown className={cn('size-3.5 shrink-0 text-muted-foreground transition-transform', open && 'rotate-180')} />
         <span className="font-medium truncate">{o.name}</span>
         <span className={cn('shrink-0 rounded px-1 py-0.5 text-[9px] font-semibold',
-          o.kind === 'SPAC' ? 'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-300' : 'bg-muted text-muted-foreground')}>{o.kind}</span>
+          o.kind === 'SPAC' ? SLATE_CHIP : 'bg-muted text-muted-foreground')}>{o.kind}</span>
         {/* 주관사 — 종목명 옆 작게 상시 표기(별도 열·하단 줄 없이). */}
         {o.brokers.length > 0 && <span className="shrink-0 text-[10px] text-muted-foreground truncate max-w-[84px]">{o.brokers.join('·')}</span>}
       </span>
@@ -249,7 +250,7 @@ function OfferingRow({ o, todayISO, today, open, onToggle }: { o: UpcomingOfferi
       <span className="col-span-2 text-right">
         {next && (
           <span className={cn('whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-semibold',
-            ddays(next.date, today) <= 1 ? 'bg-rose-100 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300' : 'bg-muted text-muted-foreground')}>
+            ddays(next.date, today) <= 1 ? TERRA_CHIP : 'bg-muted text-muted-foreground')}>
             {next.label} {ddayLabel(ddays(next.date, today))}
           </span>
         )}
@@ -344,7 +345,7 @@ function ToolBtn({ active, onClick, icon: Icon, label, dot }: {
       className={cn('inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium transition-colors',
         active ? 'border-foreground/30 bg-muted text-foreground' : 'border-border text-muted-foreground hover:text-foreground')}>
       <Icon className="size-3.5" /> {label}
-      {dot && <span className="size-1.5 rounded-full bg-amber-500" />}
+      {dot && <span className={cn('size-1.5 rounded-full', GOLD_DOT)} />}
     </button>
   )
 }
@@ -419,10 +420,10 @@ function MySubs({ o, data }: { o: UpcomingOffering; data: IpoData }) {
 /** 핵심 지표 — Info보다 큰 위계. accent=마감 임박 강조. */
 function Hero({ label, value, sub, accent }: { label: string; value: string; sub?: string; accent?: boolean }) {
   return (
-    <div className={cn('rounded-md border px-3 py-2', accent ? 'border-rose-300 dark:border-rose-500/40 bg-rose-50/50 dark:bg-rose-500/5' : 'border-border bg-card')}>
+    <div className={cn('rounded-md border px-3 py-2', accent ? TERRA_CARD : 'border-border bg-card')}>
       <div className="text-[10px] text-muted-foreground">{label}</div>
       <div className="text-base sm:text-lg font-semibold tabular-nums truncate leading-snug">{value}</div>
-      {sub && <div className={cn('text-[10px] truncate', accent ? 'text-rose-600 dark:text-rose-400 font-medium' : 'text-muted-foreground')}>{sub}</div>}
+      {sub && <div className={cn('text-[10px] truncate', accent ? cn(TERRA_TEXT, 'font-medium') : 'text-muted-foreground')}>{sub}</div>}
     </div>
   )
 }
@@ -465,7 +466,7 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
   const won = (n: number) => (n >= 1e8 ? `${(n / 1e8).toFixed(2)}억` : `${Math.round(n / 1e4).toLocaleString()}만`)
   const targets = [1, 2, 3]
   // 버퍼 단계는 순수 모듈에서(안정 앵커). tone만 UI에서 매핑.
-  const LEVEL_TONE: Record<string, string> = { 안정: 'text-emerald-600 dark:text-emerald-400', 기본: '', 도전: 'text-rose-600 dark:text-rose-400' }
+  const LEVEL_TONE: Record<string, string> = { 안정: SAGE_TEXT, 기본: '', 도전: TERRA_TEXT }
 
   // ── 예산 최적 배분 — 순수 로직 computeBudgetPlan에 위임 ──
   const B = (parseFloat(budget) || 0) * 10_000
@@ -557,7 +558,7 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
                 const dep = depositFor(shares, price!, dr)
                 return (
                   <Fragment key={a.id}>
-                    <span className="truncate">{a.person} <span className="text-muted-foreground">{a.broker}</span>{issues > 0 && <span className="text-amber-600 dark:text-amber-400"> ⚠준비{issues}</span>}</span>
+                    <span className="truncate">{a.person} <span className="text-muted-foreground">{a.broker}</span>{issues > 0 && <span className="text-warning"> ⚠준비{issues}</span>}</span>
                     <span data-priv className="text-right tabular-nums">{shares.toLocaleString()}</span>
                     <span data-priv className="text-right tabular-nums">{won(dep)}</span>
                     <span data-priv className="text-right tabular-nums text-muted-foreground">{(g + expectedProportional(shares, r)).toFixed(2)}</span>
@@ -596,11 +597,11 @@ function AllocationCalc({ o, accounts }: { o: UpcomingOffering; accounts: Accoun
                       return (
                         <div key={lv.key}
                           className={cn('grid grid-cols-[3.2rem_1fr_1fr_1fr] items-center gap-x-2 px-2.5 py-2',
-                            isSafe && 'bg-emerald-50/70 dark:bg-emerald-500/[0.07]')}>
+                            isSafe && SAGE_ROW)}>
                           <span className={cn('inline-flex items-center gap-1 text-xs font-semibold', LEVEL_TONE[lv.key])}>
-                            {isSafe && <span className="size-1.5 rounded-full bg-emerald-500 shrink-0" />}{lv.key}
+                            {isSafe && <span className={cn('size-1.5 rounded-full shrink-0', SAGE_DOT)} />}{lv.key}
                           </span>
-                          <span className={cn('text-right tabular-nums text-[15px] font-semibold', over ? 'text-rose-600 dark:text-rose-400' : 'text-foreground')}>
+                          <span className={cn('text-right tabular-nums text-[15px] font-semibold', over ? TERRA_TEXT : 'text-foreground')}>
                             {shares.toLocaleString()}<span className="text-[11px] font-normal text-muted-foreground">주</span>{over && ' ⚠'}
                           </span>
                           <span className="text-right tabular-nums text-[13px] text-muted-foreground">{won(depositFor(shares, price, dr))}</span>

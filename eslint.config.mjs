@@ -32,4 +32,18 @@ export default [
       ],
     },
   },
+  {
+    // IPO 웜 정리 완료 표면 — raw 팔레트 재유입 하드 차단 (designer 7/10, 무지개 2차 재발 방지).
+    // 나머지 components/ipo/*는 웜 통일 핸드오프 완료 시 이 목록에 추가.
+    files: ['components/ipo/schedule-view.tsx', 'components/ipo/account-planner.tsx', 'components/ipo/tones.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'Literal[value=/(emerald|amber|rose|sky|violet|indigo|teal|cyan|lime|fuchsia|blue|green|red|orange|yellow|pink|purple)-[0-9]/]',
+          message: 'IPO 화면은 웜 시맨틱 톤(components/ipo/tones.ts)만 사용 — raw Tailwind 팔레트 금지 (BRAND_GUIDE §7, design 2026-07-10).',
+        },
+      ],
+    },
+  },
 ]
