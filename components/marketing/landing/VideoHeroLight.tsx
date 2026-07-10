@@ -108,11 +108,12 @@ export function VideoHeroLight() {
 
       {/* ── navbar ── */}
       <nav className="relative z-10 max-w-[1280px] mx-auto flex items-center justify-between px-5 sm:px-8 py-4 sm:py-5">
-        <div className="flex items-center gap-7">
-          <Link href="/"><Wordmark size={25} ink={SM_INK} dim={SM_INK_DIM} gold={GOLD} /></Link>
-          <div className="hidden sm:flex items-center gap-5">
-            <Link href="/product" className="text-sm font-medium transition-opacity hover:opacity-80" style={{ color: SM_INK_DIM }}>제품</Link>
-            <Link href="/about" className="text-sm font-medium transition-opacity hover:opacity-80" style={{ color: SM_INK_DIM }}>소개</Link>
+        <div className="flex items-center gap-4 sm:gap-7 min-w-0">
+          <Link href="/" className="shrink-0"><Wordmark size={25} ink={SM_INK} dim={SM_INK_DIM} gold={GOLD} /></Link>
+          {/* 모바일에도 노출 — 폰에서 /product·/about 진입 경로 0이던 문제(designer 7/10) */}
+          <div className="flex items-center gap-3.5 sm:gap-5">
+            <Link href="/product" className="text-[13px] sm:text-sm font-medium transition-opacity hover:opacity-80 whitespace-nowrap" style={{ color: SM_INK_DIM }}>제품</Link>
+            <Link href="/about" className="text-[13px] sm:text-sm font-medium transition-opacity hover:opacity-80 whitespace-nowrap" style={{ color: SM_INK_DIM }}>소개</Link>
           </div>
         </div>
         <div className="flex items-center gap-2 sm:gap-2.5">

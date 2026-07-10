@@ -5,6 +5,7 @@ import { MotionConfig } from 'framer-motion'
 import { DemoErrorBanner } from './landing/DemoErrorBanner'
 import { AnnouncementBar } from './landing/AnnouncementBar'
 import { VideoHeroLight } from './landing/VideoHeroLight'
+import { MarketingFooter } from './marketing-chrome'
 import { GOLD, SM_SURFACE, SM_INK } from './landing/tokens'
 
 /**
@@ -45,6 +46,8 @@ export function LandingPage() {
 
         <AnnouncementBar />
         <VideoHeroLight />
+        {/* 하단 진입 경로 + 컴플라이언스 라인 — 모바일 포함 (designer 7/10) */}
+        <MarketingFooter />
       </div>
     </MotionConfig>
   )
