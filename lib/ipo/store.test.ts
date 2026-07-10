@@ -4,7 +4,7 @@
  * (dev 7/1: localStorage/DB 리듀서 무테스트 지적 → 회귀 가드)
  */
 import { describe, it, expect } from 'vitest'
-import { normalize, buildRow, parseImport } from './store'
+import { normalize, buildRow, parseImport, applyUpdateMember, applyMoveMember, applyReorderMembers, type IpoState } from './store'
 
 describe('normalize — 저장본 백필', () => {
   it('null/undefined → 완전한 빈 상태', () => {
@@ -83,5 +83,72 @@ describe('parseImport — 백업 JSON 파싱', () => {
     expect(parseImport('not json')).toBeNull()
     expect(parseImport(null)).toBeNull()
     expect(parseImport(42)).toBeNull()
+  })
+})
+
+// ── 가족 풀 상태 전이 (2026-07-10 — dev 7/10: 가족 풀 로직 무테스트 지적 → 회귀 가드) ──
+
+const poolState = (): IpoState => normalize({
+  members: [
+    { id: 'm1', name: '본인', relation: '본인' },
+    { id: 'm2', name: '아내', relation: '배우자' },
+    { id: 'm3', name: '첫째', relation: '자녀', minor: true },
+  ],
+  accounts: [
+    { id: 'a1', person: '본인', broker: 'KB', readiness: { cdd: 'OK', otp: 'OK', cert: 'OK', limit: 'OK' } },
+    { id: 'a2', person: '아내', broker: 'KB', readiness: { cdd: 'OK', otp: 'OK', cert: 'OK', limit: 'OK' } },
+  ] as IpoState['accounts'],
+  ledger: [
+    { offering: '레메디', kind: 'IPO', person: '아내', broker: 'KB', subType: '균등', deposit: 103500, allocatedShares: 0, refundAmount: 0, refunded: false, status: 'SUBMITTED', subStart: '2026-07-01' },
+  ] as IpoState['ledger'],
+  initialized: true,
+})
+
+describe('applyUpdateMember — 이름 변경 전파', () => {
+  it('이름을 바꾸면 그 이름을 쓰던 계좌·청약의 person도 함께 바뀐다', () => {
+    const next = applyUpdateMember(poolState(), 'm2', { name: '배우자', relation: '배우자' })
+    expect(next.members.find(m => m.id === 'm2')!.name).toBe('배우자')
+    expect(next.accounts.find(a => a.id === 'a2')!.person).toBe('배우자')
+    expect(next.ledger[0].person).toBe('배우자')
+    // 다른 명의는 안 건드림
+    expect(next.accounts.find(a => a.id === 'a1')!.person).toBe('본인')
+  })
+
+  it('이름이 그대로면(관계만 변경) 계좌·청약은 그대로', () => {
+    const prev = poolState()
+    const next = applyUpdateMember(prev, 'm2', { name: '아내', relation: '기타' })
+    expect(next.members.find(m => m.id === 'm2')!.relation).toBe('기타')
+    expect(next.accounts).toEqual(prev.accounts)
+    expect(next.ledger).toEqual(prev.ledger)
+  })
+
+  it('없는 id면 members 외 변화 없음', () => {
+    const prev = poolState()
+    const next = applyUpdateMember(prev, 'nope', { name: 'X', relation: '기타' })
+    expect(next.members).toEqual(prev.members)
+    expect(next.accounts).toEqual(prev.accounts)
+  })
+})
+
+describe('applyMoveMember / applyReorderMembers — 순서', () => {
+  const names = (s: IpoState) => s.members.map(m => m.name)
+
+  it('up/down 스왑, 경계 밖이면 원본 그대로', () => {
+    const prev = poolState()
+    expect(names(applyMoveMember(prev, 'm2', 'up'))).toEqual(['아내', '본인', '첫째'])
+    expect(names(applyMoveMember(prev, 'm3', 'down'))).toEqual(['본인', '아내', '첫째'])   // 마지막 down = 그대로
+    expect(applyMoveMember(prev, 'm1', 'up')).toBe(prev)                                    // 첫 up = 원본
+  })
+
+  it('드래그 재정렬 — from을 to 위치로', () => {
+    const prev = poolState()
+    expect(names(applyReorderMembers(prev, 'm3', 'm1'))).toEqual(['첫째', '본인', '아내'])
+    expect(names(applyReorderMembers(prev, 'm1', 'm3'))).toEqual(['아내', '첫째', '본인'])
+  })
+
+  it('동일 id·미존재 id는 원본 그대로', () => {
+    const prev = poolState()
+    expect(applyReorderMembers(prev, 'm1', 'm1')).toBe(prev)
+    expect(applyReorderMembers(prev, 'nope', 'm1')).toEqual(prev)
   })
 })

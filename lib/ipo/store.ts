@@ -85,6 +85,44 @@ function newId(): string {
   try { return crypto.randomUUID() } catch { return `id-${Date.now()}-${Math.floor(Math.random() * 1e6)}` }
 }
 
+// ── 가족 풀 상태 전이 — 순수 함수(테스트 대상). hook은 이걸 setState에 꽂기만. ──
+
+/** 구성원 수정. 이름이 바뀌면 그 이름을 쓰던 계좌·청약의 person도 함께 갱신(유기적 연결 유지). */
+export function applyUpdateMember(prev: IpoState, id: string, patch: Omit<FamilyMember, 'id'>): IpoState {
+  const oldName = prev.members.find(m => m.id === id)?.name
+  const members = prev.members.map(m => m.id === id ? { ...patch, id } : m)
+  if (oldName && patch.name && patch.name !== oldName) {
+    return {
+      ...prev, members,
+      accounts: prev.accounts.map(a => a.person === oldName ? { ...a, person: patch.name } : a),
+      ledger: prev.ledger.map(r => r.person === oldName ? { ...r, person: patch.name } : r),
+    }
+  }
+  return { ...prev, members }
+}
+
+/** 이웃과 스왑(앞/뒤 화살표). 경계 밖이면 원본 그대로. */
+export function applyMoveMember(prev: IpoState, id: string, dir: 'up' | 'down'): IpoState {
+  const i = prev.members.findIndex(m => m.id === id)
+  const j = dir === 'up' ? i - 1 : i + 1
+  if (i < 0 || j < 0 || j >= prev.members.length) return prev
+  const members = [...prev.members]
+  ;[members[i], members[j]] = [members[j], members[i]]
+  return { ...prev, members }
+}
+
+/** 드래그앤드롭 재정렬 — fromId를 toId 위치로 옮김. 미존재/동일 id면 원본 그대로. */
+export function applyReorderMembers(prev: IpoState, fromId: string, toId: string): IpoState {
+  if (fromId === toId) return prev
+  const arr = [...prev.members]
+  const from = arr.findIndex(m => m.id === fromId)
+  const to = arr.findIndex(m => m.id === toId)
+  if (from < 0 || to < 0) return prev
+  const [moved] = arr.splice(from, 1)
+  arr.splice(to, 0, moved)
+  return { ...prev, members: arr }
+}
+
 export interface IpoData {
   hydrated: boolean
   members: FamilyMember[]
@@ -247,19 +285,7 @@ export function useIpoData(): IpoData {
   }, [])
 
   const updateMember = useCallback((id: string, patch: Omit<FamilyMember, 'id'>) => {
-    setState(prev => {
-      const oldName = prev.members.find(m => m.id === id)?.name
-      const members = prev.members.map(m => m.id === id ? { ...patch, id } : m)
-      // 이름이 바뀌면 그 이름을 쓰던 계좌·청약의 person도 함께 갱신 — 유기적 연결 유지.
-      if (oldName && patch.name && patch.name !== oldName) {
-        return {
-          ...prev, members,
-          accounts: prev.accounts.map(a => a.person === oldName ? { ...a, person: patch.name } : a),
-          ledger: prev.ledger.map(r => r.person === oldName ? { ...r, person: patch.name } : r),
-        }
-      }
-      return { ...prev, members }
-    })
+    setState(prev => applyUpdateMember(prev, id, patch))
   }, [])
 
   const removeMember = useCallback((id: string) => {
@@ -267,28 +293,11 @@ export function useIpoData(): IpoData {
   }, [])
 
   const moveMember = useCallback((id: string, dir: 'up' | 'down') => {
-    setState(prev => {
-      const i = prev.members.findIndex(m => m.id === id)
-      const j = dir === 'up' ? i - 1 : i + 1
-      if (i < 0 || j < 0 || j >= prev.members.length) return prev
-      const members = [...prev.members]
-      ;[members[i], members[j]] = [members[j], members[i]]
-      return { ...prev, members }
-    })
+    setState(prev => applyMoveMember(prev, id, dir))
   }, [])
 
-  // 드래그앤드롭 재정렬 — fromId를 toId 위치로 옮김.
   const reorderMembers = useCallback((fromId: string, toId: string) => {
-    setState(prev => {
-      if (fromId === toId) return prev
-      const arr = [...prev.members]
-      const from = arr.findIndex(m => m.id === fromId)
-      const to = arr.findIndex(m => m.id === toId)
-      if (from < 0 || to < 0) return prev
-      const [moved] = arr.splice(from, 1)
-      arr.splice(to, 0, moved)
-      return { ...prev, members: arr }
-    })
+    setState(prev => applyReorderMembers(prev, fromId, toId))
   }, [])
 
   const addAccount = useCallback((a: Omit<Account, 'id'>) => {
