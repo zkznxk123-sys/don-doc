@@ -110,9 +110,8 @@ export function VideoHeroLight() {
       <nav className="relative z-10 max-w-[1280px] mx-auto flex items-center justify-between px-5 sm:px-8 py-4 sm:py-5">
         <div className="flex items-center gap-4 sm:gap-7 min-w-0">
           <Link href="/" className="shrink-0"><Wordmark size={25} ink={SM_INK} dim={SM_INK_DIM} gold={GOLD} /></Link>
-          {/* 모바일에도 노출 — 폰에서 /product·/about 진입 경로 0이던 문제(designer 7/10) */}
+          {/* 소개만 노출 — 제품 탭은 첫 페이지에서 제거(2026-07-10 사용자 결정). /product는 푸터·직링크로만. */}
           <div className="flex items-center gap-3.5 sm:gap-5">
-            <Link href="/product" className="text-[13px] sm:text-sm font-medium transition-opacity hover:opacity-80 whitespace-nowrap" style={{ color: SM_INK_DIM }}>제품</Link>
             <Link href="/about" className="text-[13px] sm:text-sm font-medium transition-opacity hover:opacity-80 whitespace-nowrap" style={{ color: SM_INK_DIM }}>소개</Link>
           </div>
         </div>
