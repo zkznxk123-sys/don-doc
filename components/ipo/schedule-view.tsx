@@ -164,9 +164,9 @@ function CalendarView({ offerings, data, today, todayISO, expanded, onToggle }: 
     <div className="space-y-3">
       {/* 월 이동 */}
       <div className="flex items-center justify-center gap-4">
-        <button onClick={() => setCursor(new Date(y, m - 1, 1))} className="rounded-md p-1 hover:bg-muted text-muted-foreground"><ChevronLeft className="size-4" /></button>
+        <button onClick={() => setCursor(new Date(y, m - 1, 1))} aria-label="이전 달" className="rounded-md p-1 hover:bg-muted text-muted-foreground"><ChevronLeft className="size-4" /></button>
         <span className="text-sm font-medium tabular-nums">{y}년 {m + 1}월</span>
-        <button onClick={() => setCursor(new Date(y, m + 1, 1))} className="rounded-md p-1 hover:bg-muted text-muted-foreground"><ChevronRight className="size-4" /></button>
+        <button onClick={() => setCursor(new Date(y, m + 1, 1))} aria-label="다음 달" className="rounded-md p-1 hover:bg-muted text-muted-foreground"><ChevronRight className="size-4" /></button>
       </div>
 
       {/* 요일 헤더 */}
@@ -188,7 +188,7 @@ function CalendarView({ offerings, data, today, todayISO, expanded, onToggle }: 
                   isToday ? cn('inline-flex items-center justify-center size-4 rounded-full font-bold', TERRA_SOLID) : 'text-muted-foreground')}>{d}</div>
               )}
               {evs.map((e, j) => (
-                <button key={j} onClick={() => onToggle(e.name)} title={`${e.type} · ${e.name}`}
+                <button key={j} onClick={() => onToggle(e.name)} title={`${e.type} · ${e.name}`} aria-label={`${e.type} ${e.name} 상세 열기`}
                   className={cn('block w-full truncate rounded px-1 py-0.5 text-left text-[9px] font-medium leading-tight',
                     EVENT_TONE[e.type], expanded === e.name && 'ring-1 ring-foreground/40')}>
                   {/* 유형은 칩 색상(범례)로 구분 → 좁은 셀엔 종목명만 노출 */}

@@ -319,7 +319,7 @@ export function SubForm({ data, onDone, initial, presetOffering }: {
   presetOffering?: string
 }) {
   const r0 = initial?.row
-  // 명의 = 가족 풀 + 등록 계좌 명의(중복 제거), 증권사 = 선택한 종목의 청약 주관사. 둘 다 첫 값 기본.
+  // 명의 = 명의 풀 + 등록 계좌 명의(중복 제거), 증권사 = 선택한 종목의 청약 주관사. 둘 다 첫 값 기본.
   const personOptions = useMemo(
     () => [...new Set([...data.members.map(m => m.name), ...data.accounts.map(a => a.person)])],
     [data.members, data.accounts],
@@ -526,7 +526,7 @@ export function SpacForm({ data, onDone, initial }: { data: IpoData; onDone: () 
 /** 수정 버튼(작업본일 때만 노출). */
 export function EditBtn({ onClick }: { onClick: () => void }) {
   return (
-    <button onClick={onClick} title="수정" className="text-muted-foreground/50 hover:text-foreground transition-colors">
+    <button onClick={onClick} title="수정" aria-label="수정" className="text-muted-foreground/50 hover:text-foreground transition-colors">
       <Pencil className="size-3.5" />
     </button>
   )
@@ -547,7 +547,7 @@ export function IpoDatalists({ accounts }: { accounts: Account[] }) {
 /** 삭제 버튼(작업본일 때만 노출). */
 export function DeleteBtn({ onClick, label }: { onClick: () => void; label?: string }) {
   return (
-    <button onClick={onClick} title={label ?? '삭제'} className="text-muted-foreground/50 hover:text-rose-500 transition-colors">
+    <button onClick={onClick} title={label ?? '삭제'} aria-label={label ?? '삭제'} className="text-muted-foreground/50 hover:text-rose-500 transition-colors">
       <X className="size-3.5" />
     </button>
   )

@@ -86,7 +86,7 @@ describe('parseImport — 백업 JSON 파싱', () => {
   })
 })
 
-// ── 가족 풀 상태 전이 (2026-07-10 — dev 7/10: 가족 풀 로직 무테스트 지적 → 회귀 가드) ──
+// ── 명의 풀 상태 전이 (2026-07-10 — dev 7/10: 명의 풀 로직 무테스트 지적 → 회귀 가드) ──
 
 const poolState = (): IpoState => normalize({
   members: [

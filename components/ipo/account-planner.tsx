@@ -2,7 +2,7 @@
 
 /**
  * 계좌 개설 플래너 — 공모주 = 멀티계좌 게임의 준비 축.
- * ① 가족 풀(구성원) 등록 — 명의의 출처, 계좌 없어도 미리 세팅.
+ * ① 명의 풀(구성원) 등록 — 명의의 출처, 계좌 없어도 미리 세팅.
  * ② 갭 플래너 — 다가올 IPO 주관사 vs 보유 계좌 → 열어야 할 (구성원×증권사) 우선순위.
  * 갭에서 바로 계좌 스켈레톤(준비 대기)을 추가하면 계좌 보드로 이어짐.
  */
@@ -44,7 +44,7 @@ export function AccountPlanner({ data }: { data: IpoData }) {
   )
 }
 
-/** 가족 풀 — 구성원 CRUD. */
+/** 명의 풀 — 구성원 CRUD. */
 function FamilyPool({ data }: { data: IpoData }) {
   const [adding, setAdding] = useState(false)
   const [editing, setEditing] = useState<FamilyMember | null>(null)
@@ -74,7 +74,7 @@ function FamilyPool({ data }: { data: IpoData }) {
   return (
     <div className="rounded-lg border border-border p-3 space-y-2.5">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium flex items-center gap-1.5"><Users className="size-4" /> 가족 풀 · {data.members.length}명</h3>
+        <h3 className="text-sm font-medium flex items-center gap-1.5"><Users className="size-4" /> 명의 풀 · {data.members.length}명</h3>
         {!adding && (
           <button onClick={() => setAdding(true)} className="inline-flex items-center gap-1 rounded-md bg-foreground px-2 py-1 text-xs font-medium text-background hover:opacity-90">
             <UserPlus className="size-3.5" /> 구성원 추가
@@ -194,7 +194,7 @@ function GapPlanner({ data, gaps, today }: { data: IpoData; gaps: BrokerGap[]; t
       )}
 
       {data.members.length === 0 ? (
-        <p className="text-xs text-muted-foreground">먼저 위에서 가족 풀(구성원)을 등록하세요.</p>
+        <p className="text-xs text-muted-foreground">먼저 위에서 명의 풀(구성원)을 등록하세요.</p>
       ) : gaps.length === 0 ? (
         <p className="text-xs text-muted-foreground">다가올 IPO 주관사 계좌가 구성원 전원 준비돼 있어요.</p>
       ) : (

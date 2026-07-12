@@ -40,6 +40,7 @@ type NavItem = {
 }
 
 import { features, canUseIpo } from '@/lib/feature-flags'
+import { inviteMessage } from '@/lib/copy/invite'
 
 // 5/10 정체성 결정: 본질 4개 → Beta 그룹 → admin 순. Feed는 Beta로 노출(6/1 임시 복귀).
 // 6/10 제품 분리: lite 라인은 시나리오·피드 제외 (features.scenarios·familyFeed false).
@@ -265,7 +266,7 @@ function InviteCodeButton() {
   const handleCopy = async () => {
     if (!code) return
     const url = `${window.location.origin}/invite/${code}`
-    const msg = `여보, 우리 집 자산 관리를 위해 초대해요.\n돈독에서 함께 가족 자산을 관리해요.\n\n링크: ${url}`
+    const msg = inviteMessage(url)
     try { await navigator.clipboard.writeText(msg) } catch {
       const ta = document.createElement('textarea')
       ta.value = msg; ta.style.cssText = 'position:fixed;opacity:0'

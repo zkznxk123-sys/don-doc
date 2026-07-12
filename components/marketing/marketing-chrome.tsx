@@ -129,7 +129,7 @@ export function ClosingCta({ title }: { title: React.ReactNode }) {
 export function MarketingFooter() {
   const cols: { title: string; links: { href: string; label: string }[] }[] = [
     { title: '시작하기', links: [{ href: '/demo', label: '데모 체험' }, { href: '/sign-up', label: '무료 시작' }] },
-    { title: '회사', links: [{ href: '/about', label: '소개' }, { href: '/sign-in', label: '로그인' }] },
+    { title: '회사', links: [{ href: '/about', label: '소개' }, { href: '/privacy', label: '개인정보처리방침' }, { href: '/sign-in', label: '로그인' }] },
   ]
   return (
     <footer className="px-6 md:px-14 py-14" style={{ background: SM_SURFACE, borderTop: `1px solid ${SM_HAIRLINE}` }}>

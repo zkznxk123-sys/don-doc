@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils'
 import { getLatestInviteCode, getFamilyInfo, type FamilyMember } from '@/lib/actions/family'
 import { toast } from 'sonner'
 import * as Dialog from '@radix-ui/react-dialog'
+import { inviteMessage } from '@/lib/copy/invite'
 
 interface FamilyActionProps {
   userRole: 'CFO' | 'MEMBER'
@@ -41,7 +42,7 @@ export function FamilyAction({ userRole }: FamilyActionProps) {
     if (!inviteCode) return
     const origin = window.location.origin
     const inviteUrl = `${origin}/invite/${inviteCode}`
-    const message = `여보, 우리 집 자산 관리를 위해 초대해요.\n돈독에서 함께 가족 자산을 관리해요.\n\n링크: ${inviteUrl}`
+    const message = inviteMessage(inviteUrl)
     try {
       await navigator.clipboard.writeText(message)
     } catch {

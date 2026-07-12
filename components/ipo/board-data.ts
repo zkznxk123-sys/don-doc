@@ -87,7 +87,7 @@ export const OFFERING_BY_NAME: Map<string, UpcomingOffering> =
 
 export type ReadinessState = 'OK' | 'PENDING' | 'EXPIRED'
 
-/** 가족 풀 구성원 — 명의의 출처. 계좌 갭 플래너가 이 풀 × 증권사로 돈다. */
+/** 명의 풀 구성원 — 명의의 출처. 계좌 갭 플래너가 이 풀 × 증권사로 돈다. */
 export type Relation = '본인' | '배우자' | '자녀' | '부모' | '기타'
 export interface FamilyMember {
   id: string

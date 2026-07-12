@@ -5,6 +5,7 @@ import { Users, Copy, Check, Pencil, X, Crown, Loader2, RefreshCw, ChevronDown, 
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import type { AppRole } from '@/lib/roles'
+import { inviteMessage } from '@/lib/copy/invite'
 
 interface FamilyMember { id: string; name: string | null; email: string; role: AppRole }
 interface FamilyInfo { id: string; name: string; members: FamilyMember[]; inviteCode: string | null }
@@ -119,7 +120,7 @@ export default function FamilyPage() {
     }
     const origin = window.location.origin
     const inviteUrl = `${origin}/invite/${code}`
-    const message = `여보, 우리 집 자산 관리를 위해 초대해요! 🏠\n돈독 앱에서 함께 가족 자산을 관리해요.\n\n링크: ${inviteUrl}`
+    const message = inviteMessage(inviteUrl)
     try {
       await navigator.clipboard.writeText(message)
     } catch {

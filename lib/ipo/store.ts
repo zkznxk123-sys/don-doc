@@ -28,7 +28,7 @@ export interface OfferingOverride {
 }
 
 export interface IpoState {
-  members: FamilyMember[]         // 가족 풀 — 명의의 출처(계좌 없어도 미리 세팅)
+  members: FamilyMember[]         // 명의 풀 — 명의의 출처(계좌 없어도 미리 세팅)
   accounts: Account[]
   ledger: LedgerRow[]
   spacs: Spac[]
@@ -85,7 +85,7 @@ function newId(): string {
   try { return crypto.randomUUID() } catch { return `id-${Date.now()}-${Math.floor(Math.random() * 1e6)}` }
 }
 
-// ── 가족 풀 상태 전이 — 순수 함수(테스트 대상). hook은 이걸 setState에 꽂기만. ──
+// ── 명의 풀 상태 전이 — 순수 함수(테스트 대상). hook은 이걸 setState에 꽂기만. ──
 
 /** 구성원 수정. 이름이 바뀌면 그 이름을 쓰던 계좌·청약의 person도 함께 갱신(유기적 연결 유지). */
 export function applyUpdateMember(prev: IpoState, id: string, patch: Omit<FamilyMember, 'id'>): IpoState {

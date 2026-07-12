@@ -234,7 +234,7 @@ export default function IpoLedgerPage() {
           {renderLedger(true)}
         </TabsContent>
 
-        {/* C. 계좌 인프라 — 가족 풀·개설 플래너(무엇을 열지) + 계좌 보드(준비상태) */}
+        {/* C. 계좌 인프라 — 명의 풀·개설 플래너(무엇을 열지) + 계좌 보드(준비상태) */}
         <TabsContent value="accounts" className="space-y-4">
           <AccountPlanner data={data} />
           <AccountBoard accounts={accounts} ledger={ledger} data={data} />
