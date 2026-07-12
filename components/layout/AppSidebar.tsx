@@ -39,7 +39,7 @@ type NavItem = {
   group: NavGroup
 }
 
-import { features, WEDGE_ALLOWED_ROUTES } from '@/lib/feature-flags'
+import { features, canUseIpo } from '@/lib/feature-flags'
 
 // 5/10 정체성 결정: 본질 4개 → Beta 그룹 → admin 순. Feed는 Beta로 노출(6/1 임시 복귀).
 // 6/10 제품 분리: lite 라인은 시나리오·피드 제외 (features.scenarios·familyFeed false).
@@ -60,7 +60,7 @@ export const NAV_ITEMS: NavItem[] = ALL_NAV_ITEMS.filter(item => {
   if (item.href === '/dashboard/scenario' && !features.scenarios) return false
   if (item.href === '/dashboard/feed' && !features.familyFeed) return false
   if (item.href === '/dashboard/screen' && !features.stockScreen) return false
-  if (item.href === '/dashboard/ipo' && !features.ipoLedger) return false
+  // /dashboard/ipo는 빌드 필터에서 제외하지 않는다 — lite에선 cohort 해금(렌더 시 canUseIpo 판정)
   return true
 })
 
@@ -76,11 +76,9 @@ interface AppSidebarProps {
 export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
   const pathname = usePathname()
 
-  // 웨지 cohort 사용자는 허용 route(IPO·설정)만 노출 — middleware가 접근을 막고,
-  // 사이드바는 그에 맞춰 메뉴를 숨긴다(시각 정합). 일반 사용자는 전체 노출.
-  const navItems = user.cohort
-    ? NAV_ITEMS.filter(i => WEDGE_ALLOWED_ROUTES.some(p => i.href === p || i.href.startsWith(p + '/')))
-    : NAV_ITEMS
+  // 2026-07-12 해금형 통합: cohort는 lite에서 IPO를 "추가로 여는" 열쇠(구 제한형 폐기).
+  // lite + cohort 없음 → IPO 메뉴 숨김. full은 항상 노출.
+  const navItems = NAV_ITEMS.filter(i => i.href !== '/dashboard/ipo' || canUseIpo(user.cohort ?? null))
 
   const isActive = (item: NavItem) =>
     item.exact ? pathname === item.href : pathname.startsWith(item.href)
@@ -166,7 +164,7 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
               })}
 
               {/* CFO 전용: 가족 관리·초대 코드는 admin 그룹에 묶음. lite는 가족 관리 자체 제외. */}
-              {groupId === 'admin' && !user.cohort && user.role === 'CFO' && features.familyManagement && (
+              {groupId === 'admin' && user.role === 'CFO' && features.familyManagement && (
                 <>
                   <Link
                     href="/dashboard/family"

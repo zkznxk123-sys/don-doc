@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { auth, clerkClient } from '@clerk/nextjs/server'
-import { parseCohort, WEDGE_HOME } from '@/lib/feature-flags'
+import { parseCohort, IPO_HOME } from '@/lib/feature-flags'
 
 /**
  * 초대 링크 — 예: /join/ipo-spac
@@ -20,7 +20,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ cohort: 
       const client = await clerkClient()
       await client.users.updateUserMetadata(userId, { publicMetadata: { cohort } })
     } catch { /* 실패해도 이동은 진행 */ }
-    return NextResponse.redirect(new URL(WEDGE_HOME, req.url))
+    return NextResponse.redirect(new URL(IPO_HOME, req.url))
   }
 
   const res = NextResponse.redirect(new URL('/sign-up', req.url))

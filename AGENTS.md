@@ -71,7 +71,7 @@ components/
     InputGuide.tsx
 
 lib/
-  feature-flags.ts  # 제품 라인 분리 (full/lite) — 단일 진입점, features 8-flag
+  feature-flags.ts  # 제품 라인 분리 (full/lite) — 단일 진입점, features 9-flag
   actions/          # 서버 액션 ('use server')
     transactions/
       bulk.ts            # createManyTransactions·syncAccountBalancesOnly (server action)
@@ -164,8 +164,8 @@ if (isLite()) { /* lite 분기 */ }
 
 - **features 9-flag**: `scenarios`·`familyFeed`·`familyManagement`·`tradeAutoLink`·`pensionDetail`·`familyOAuth`·`visibilityRoles`·`stockScreen`·`ipoLedger`
 - **lite 라인**: 위 9개 모두 false. 가입 직후 `createFamily('내 자산')` 자동 1인 가족. 초대 UI 미노출.
-- **route 차단**: `middleware.ts`의 `LITE_BLOCKED_ROUTES`(`/dashboard/scenario`, `/family`, `/feed`, `/screen`, `/ipo`)는 lite 빌드에서 redirect.
-- **cohort 웨지(역방향 게이트)**: `feature-flags.ts`의 `Cohort`(예: `ipo-spac`)는 lite/full 위 per-user 3번째 축. cohort 사용자는 `WEDGE_ALLOWED_ROUTES`(=`/dashboard/ipo`)만 허용, 나머지 대시보드·API 차단. Clerk `publicMetadata.cohort` + session claim으로 판정(DB 조회 0), 미설정 시 null=게이트 미작동(fail-safe). `/join/[cohort]` 링크로 부여. specs/ipo-spac-wedge-v1.md.
+- **route 차단**: `middleware.ts`의 `LITE_BLOCKED_ROUTES`(`/dashboard/scenario`, `/family`, `/feed`, `/screen`)는 lite 빌드에서 redirect. `/ipo`는 전면 차단이 아니라 cohort 해금(`isIpoBlockedForUser`).
+- **cohort 해금(2026-07-12 개편)**: 구 제한형 웨지(cohort=IPO만) 폐기. `Cohort('ipo-spac')`는 이제 **lite에서 IPO를 추가로 여는 열쇠** — `canUseIpo(cohort)`=full 항상·lite는 cohort 보유 시. middleware `isIpoBlockedForUser`(lite+무cohort의 /dashboard/ipo·/api/ipo 차단) + API 진입부 `blockIpoIfNotEntitled(user.cohort)`. Clerk `publicMetadata.cohort`+session claim 판정, `/join/[cohort]` 링크로 부여(IPO_HOME 착지). 표면은 lite 하나 — 별도 IPO 전용 버전 없음.
 - **랜딩 분기**: `LandingPage.tsx`에서 `{isFull() && <ComparisonSection />}`. CoreFeatures·Closing은 양쪽 공통.
 - **lite 가드 3층**: middleware(route redirect) + API route(`blockIfLite()` — family 5종·scenario 3종·stocks/screen, `family/info` GET은 lite 1인 가족도 필요해 제외) + 서버 액션(`isLite()` 진입부 가드 — feed·scenario·oauth 전체, family는 `getLatestInviteCode`/`joinFamily`만). 과잉 가드 주의: lite도 1인 가족이 존재한다 (`7f6fc0e` budget crash 사례).
 

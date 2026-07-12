@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 
 const ENV_KEY = 'NEXT_PUBLIC_PRODUCT_LINE'
 
@@ -52,7 +52,7 @@ describe('feature-flags', () => {
     expect(isRouteBlockedInLite('/dashboard/feed')).toBe(true)
     expect(isRouteBlockedInLite('/dashboard/feed/123')).toBe(true)
     expect(isRouteBlockedInLite('/dashboard/screen')).toBe(true)
-    expect(isRouteBlockedInLite('/dashboard/ipo')).toBe(true)   // 2026-07-02 미노출 결정
+    expect(isRouteBlockedInLite('/dashboard/ipo')).toBe(false)  // 2026-07-12: 전면 차단 해제 — cohort 해금(isIpoBlockedForUser)
     expect(isRouteBlockedInLite('/dashboard/cashflow')).toBe(false)
     expect(isRouteBlockedInLite('/dashboard')).toBe(false)
   })
@@ -95,29 +95,37 @@ describe('feature-flags', () => {
     expect(parseCohort('ipo-spac')).toBeNull() // 객체 아니면 null
   })
 
-  it('isRouteBlockedForCohort — 허용 route(IPO만) 통과, 나머지 대시보드 차단', async () => {
-    const { isRouteBlockedForCohort } = await import('./feature-flags')
-    // cohort 사용자 — 공모주·스팩(IPO)만, 설정 포함 나머지 차단
-    expect(isRouteBlockedForCohort('ipo-spac', '/dashboard/ipo')).toBe(false)
-    expect(isRouteBlockedForCohort('ipo-spac', '/dashboard/ipo/detail')).toBe(false)
-    expect(isRouteBlockedForCohort('ipo-spac', '/dashboard/settings')).toBe(true)
-    expect(isRouteBlockedForCohort('ipo-spac', '/dashboard')).toBe(true)
-    expect(isRouteBlockedForCohort('ipo-spac', '/dashboard/assets')).toBe(true)
-    expect(isRouteBlockedForCohort('ipo-spac', '/dashboard/cashflow')).toBe(true)
-    // 대시보드 밖은 관여 안 함 (랜딩·인증)
-    expect(isRouteBlockedForCohort('ipo-spac', '/')).toBe(false)
-    expect(isRouteBlockedForCohort('ipo-spac', '/sign-in')).toBe(false)
-    // 일반 사용자(cohort null)는 전부 통과
-    expect(isRouteBlockedForCohort(null, '/dashboard/assets')).toBe(false)
+  it('canUseIpo — full=항상, lite=cohort 보유 시만 (2026-07-12 해금형)', async () => {
+    process.env[ENV_KEY] = 'full'
+    let m = await import('./feature-flags')
+    expect(m.canUseIpo(null)).toBe(true)
+    expect(m.canUseIpo('ipo-spac')).toBe(true)
+
+    vi.resetModules()
+    process.env[ENV_KEY] = 'lite'
+    m = await import('./feature-flags')
+    expect(m.canUseIpo(null)).toBe(false)
+    expect(m.canUseIpo('ipo-spac')).toBe(true)
   })
 
-  it('isApiBlockedForCohort — 허용 API(ipo·me·health)만 통과, 도메인 API 차단', async () => {
-    const { isApiBlockedForCohort } = await import('./feature-flags')
-    expect(isApiBlockedForCohort('ipo-spac', '/api/ipo/workspace')).toBe(false)
-    expect(isApiBlockedForCohort('ipo-spac', '/api/me')).toBe(false)
-    expect(isApiBlockedForCohort('ipo-spac', '/api/assets')).toBe(true)
-    expect(isApiBlockedForCohort('ipo-spac', '/api/family/invite')).toBe(true)
-    // 일반 사용자는 전부 통과
-    expect(isApiBlockedForCohort(null, '/api/assets')).toBe(false)
+  it('isIpoBlockedForUser — lite+cohort 없음만 IPO route/API 차단', async () => {
+    vi.resetModules()
+    process.env[ENV_KEY] = 'lite'
+    const m = await import('./feature-flags')
+    // cohort 없음 → IPO 페이지·API 차단, 나머지는 관여 안 함
+    expect(m.isIpoBlockedForUser(null, '/dashboard/ipo')).toBe(true)
+    expect(m.isIpoBlockedForUser(null, '/dashboard/ipo/detail')).toBe(true)
+    expect(m.isIpoBlockedForUser(null, '/api/ipo/workspace')).toBe(true)
+    expect(m.isIpoBlockedForUser(null, '/dashboard')).toBe(false)
+    expect(m.isIpoBlockedForUser(null, '/api/assets')).toBe(false)
+    // cohort 있으면 전부 통과 (해금)
+    expect(m.isIpoBlockedForUser('ipo-spac', '/dashboard/ipo')).toBe(false)
+    expect(m.isIpoBlockedForUser('ipo-spac', '/api/ipo/workspace')).toBe(false)
+
+    // full 빌드는 cohort 무관 통과
+    vi.resetModules()
+    process.env[ENV_KEY] = 'full'
+    const f = await import('./feature-flags')
+    expect(f.isIpoBlockedForUser(null, '/dashboard/ipo')).toBe(false)
   })
 })

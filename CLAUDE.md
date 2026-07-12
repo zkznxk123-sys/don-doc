@@ -164,7 +164,7 @@ if (isLite()) { /* lite 분기 */ }
 
 - **features 9-flag**: `scenarios`·`familyFeed`·`familyManagement`·`tradeAutoLink`·`pensionDetail`·`familyOAuth`·`visibilityRoles`·`stockScreen`·`ipoLedger`
 - **lite 라인**: 위 9개 모두 false. 가입 직후 `createFamily('내 자산')` 자동 1인 가족. 초대 UI 미노출.
-- **route 차단**: `middleware.ts`의 `LITE_BLOCKED_ROUTES`(`/dashboard/scenario`, `/family`, `/feed`, `/screen`, `/ipo`)는 lite 빌드에서 redirect.
+- **route 차단**: `middleware.ts`의 `LITE_BLOCKED_ROUTES`(`/dashboard/scenario`, `/family`, `/feed`, `/screen`)는 lite 빌드에서 redirect. `/ipo`는 cohort 해금(`isIpoBlockedForUser`, 2026-07-12).
 - **랜딩 분기**: `LandingPage.tsx`에서 `{isFull() && <ComparisonSection />}`. CoreFeatures·Closing은 양쪽 공통.
 - **lite 가드 3층**: middleware(route redirect) + API route(`blockIfLite()` — family 5종·scenario 3종·stocks/screen, `family/info` GET은 lite 1인 가족도 필요해 제외) + 서버 액션(`isLite()` 진입부 가드 — feed·scenario·oauth 전체, family는 `getLatestInviteCode`/`joinFamily`만). 과잉 가드 주의: lite도 1인 가족이 존재한다 (`7f6fc0e` budget crash 사례).
 
@@ -227,7 +227,7 @@ if (isLite()) { /* lite 분기 */ }
 
 **상태: DB 영속화 + 낙관적 잠금.** 워크스페이스(계좌·기록·스팩·메모·오버라이드)는 Prisma `IpoWorkspace`(userId PK + `data` Json)에 사용자 단위 저장, PUT은 `baseUpdatedAt` 낙관적 잠금(동시 편집 덮어쓰기 차단). localStorage는 오프라인/초기 캐시. JSON 내보내기/가져오기 백업 안전망(`entry-forms.tsx` 데이터 툴바). 기획: vault `03_personal/projects/공모주-청약{-서비스-구상,원장-데이터모델-스펙}.md`.
 
-🔒 **lite 미노출 — full 전용** (2026-07-02 결정, 별도 커뮤니티 공개 예정). 3중 게이트: `features.ipoLedger`(nav) + `LITE_BLOCKED_ROUTES`(middleware) + `blockIfLite`(api/ipo/* 3라우트). 커뮤니티 공개 준비 장치: **캡처 모드**(`data-priv` 개인값만 블러) + 시작 가이드 온보딩.
+🔓 **cohort 해금형** (2026-07-12 개편 — 구 "full 전용+웨지 별도 버전" 폐기). full=전체 노출, lite=초대 cohort(`ipo-spac`) 보유자만: nav `canUseIpo(user.cohort)` + middleware `isIpoBlockedForUser` + api/ipo/* 3라우트 `blockIpoIfNotEntitled(user.cohort)`. 초대는 `/join/ipo-spac`(공개 마케팅 표면엔 공모주 미노출 유지 — 7/9 결정). 공개 준비 장치: **캡처 모드**(`data-priv` 블러) + 시작 가이드 온보딩.
 
 - **구조**: 일정 중심 — 상단 공모주/스팩주 분기(kind), 일정에서 인라인 청약 기록(PLANNED→SUBMITTED→ALLOCATED→SOLD). "원장" 용어는 폐기(결과·종목별 내역). 데모 모드 없음(빈 상태에서 직접 입력).
 - **페이지**: `app/dashboard/ipo/page.tsx` ("공모주·스팩주").

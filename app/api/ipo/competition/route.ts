@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic'
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth'
-import { blockIfLite } from '@/lib/feature-flags'
+import { blockIpoIfNotEntitled } from '@/lib/feature-flags'
 
 const HEADERS = { Referer: 'http://www.38.co.kr/', 'User-Agent': 'Mozilla/5.0' }
 
@@ -38,10 +38,11 @@ function parseCompetition(html: string): { competition: number | null; integrate
 }
 
 export async function POST(req: NextRequest) {
-  const blocked = blockIfLite()          // IPO는 full 전용
-  if (blocked) return blocked
   const user = await getAuthUser()       // 무인증 오픈 프록시 남용 차단
   if (!user?.familyId) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
+  // lite에선 cohort(초대) 보유자만 IPO API 사용 (2026-07-12 해금형 통합)
+  const blocked = blockIpoIfNotEntitled(user.cohort)
+  if (blocked) return blocked
 
   let body: { no38?: string; name?: string }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'bad json' }, { status: 400 }) }

@@ -65,20 +65,20 @@ export const features = {
   /** 종목 검색 스크리너 (/dashboard/screen) — Beta + Yahoo 무료 API 의존, 대중 lite 부적합 */
   get stockScreen(): boolean { return isFull() },
 
-  /** 공모주·스팩 청약 원장 (/dashboard/ipo) — BETA. 대중 lite 미노출, 별도 커뮤니티 공개 예정 (2026-07-02 결정) */
+  /** 공모주·스팩 (/dashboard/ipo) — full=전체 노출, lite=cohort 해금(canUseIpo). 2026-07-12 통합 */
   get ipoLedger(): boolean { return isFull() },
 } as const
 
 /**
  * lite에서 차단되는 dashboard route prefix 목록.
  * middleware가 redirect 또는 404 처리.
+ * ※ /dashboard/ipo는 여기서 제외 — 전면 차단이 아니라 cohort 해금(isIpoBlockedForUser).
  */
 export const LITE_BLOCKED_ROUTES: readonly string[] = [
   '/dashboard/scenario',
   '/dashboard/family',
   '/dashboard/feed',
   '/dashboard/screen',
-  '/dashboard/ipo',
 ] as const
 
 export function isRouteBlockedInLite(pathname: string): boolean {
@@ -88,12 +88,13 @@ export function isRouteBlockedInLite(pathname: string): boolean {
 
 /* ────────────────────────────────────────────────────────────────────────
  * cohort 엔타이틀먼트 — lite/full 위에 얹는 per-user 3번째 축.
- * 커뮤니티 웨지(예: 공모주/스팩 cohort)는 "IPO만 켜고 나머지 대시보드를 끈다"
- * = lite/full의 역방향 게이트. specs/ipo-spac-wedge-v1.md 참조.
+ * 2026-07-12 개편: 제한형(웨지 사용자는 IPO만) → **해금형**(lite에서 cohort가
+ * 있으면 IPO가 추가로 열림). "별도 IPO 전용 버전"은 폐기 — 표면은 lite 하나,
+ * 공모주는 초대 링크(/join/ipo-spac)로 받은 사람에게만 노출(컴플라이언스 초대제 유지).
  *
  * cohort 값은 Clerk publicMetadata.cohort에 저장. middleware는 session claims로,
- * 서버 컴포넌트/클라이언트는 currentUser()/useUser() publicMetadata로 읽는다.
- * 미설정 시 null = 일반 사용자 = 게이트 미작동(fail-safe: 영향 0).
+ * 서버 컴포넌트/클라이언트는 getAuthUser().cohort로 읽는다.
+ * 미설정 시 null = 일반 사용자 = lite에선 IPO 미노출(fail-safe).
  * ──────────────────────────────────────────────────────────────────────── */
 
 export type Cohort = 'ipo-spac'
@@ -109,39 +110,25 @@ export function parseCohort(metadata: unknown): Cohort | null {
   return null
 }
 
-/** cohort 사용자가 접근 가능한 route (역방향 allowlist — 이것만 통과, 나머지 대시보드는 차단).
- *  순수 IPO 웨지 — 공모주·스팩만. 설정 제외(로그아웃=사이드바 하단 버튼, 테마=상단바로 대체). */
-export const WEDGE_ALLOWED_ROUTES: readonly string[] = [
-  '/dashboard/ipo',
-] as const
+/** 초대 합류 후 착지 지점 (/join/{cohort} redirect). */
+export const IPO_HOME = '/dashboard/ipo'
 
-/** cohort 사용자의 홈 (로그인 후 진입 지점). */
-export const WEDGE_HOME = '/dashboard/ipo'
-
-/**
- * cohort 사용자에게 이 dashboard route가 차단되는가.
- * 대시보드 밖(랜딩·인증·온보딩)은 관여하지 않는다 — dashboard 내부만 제한.
- */
-export function isRouteBlockedForCohort(cohort: Cohort | null, pathname: string): boolean {
-  if (!cohort) return false
-  if (!pathname.startsWith('/dashboard')) return false
-  return !WEDGE_ALLOWED_ROUTES.some(prefix => pathname === prefix || pathname.startsWith(prefix + '/'))
+/** 이 사용자가 공모주·스팩을 쓸 수 있는가 — full=항상, lite=cohort 보유 시. */
+export function canUseIpo(cohort: Cohort | null): boolean {
+  return isFull() || cohort != null
 }
 
-/**
- * cohort 사용자가 접근 가능한 API prefix (역방향 allowlist). 이것 밖의 도메인 API는 차단.
- * 방어심층 — UI에서 가려져도 endpoint 직접 호출을 막는다.
- */
-export const WEDGE_ALLOWED_API: readonly string[] = [
-  '/api/ipo',
-  '/api/me',
-  '/api/health',
-] as const
+/** lite에서 cohort 없는 사용자의 IPO route/API 접근 차단 판정 (middleware·가드 공용). */
+export function isIpoBlockedForUser(cohort: Cohort | null, pathname: string): boolean {
+  if (canUseIpo(cohort)) return false
+  return pathname === '/dashboard/ipo' || pathname.startsWith('/dashboard/ipo/')
+    || pathname === '/api/ipo' || pathname.startsWith('/api/ipo/')
+}
 
-export function isApiBlockedForCohort(cohort: Cohort | null, pathname: string): boolean {
-  if (!cohort) return false
-  if (!pathname.startsWith('/api')) return false
-  return !WEDGE_ALLOWED_API.some(prefix => pathname === prefix || pathname.startsWith(prefix + '/'))
+/** IPO API route 진입부 가드 — lite + cohort 없음이면 404 JSON (방어심층). */
+export function blockIpoIfNotEntitled(cohort: Cohort | null): Response | null {
+  if (canUseIpo(cohort)) return null
+  return Response.json({ success: false, error: LITE_BLOCKED_MESSAGE }, { status: 404 })
 }
 
 /**
