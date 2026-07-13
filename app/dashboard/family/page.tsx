@@ -252,7 +252,7 @@ export default function FamilyPage() {
               className={cn(
                 'flex items-center gap-1.5 px-4 py-2 rounded-xl border text-xs font-medium transition-all shrink-0',
                 copied
-                  ? 'bg-income-soft border-(--viz-emerald)/30 text-income'
+                  ? 'bg-income-soft border-(--viz-sage)/30 text-income'
                   : 'bg-muted border-border text-foreground/70 hover:text-foreground hover:border-ring'
               )}
             >

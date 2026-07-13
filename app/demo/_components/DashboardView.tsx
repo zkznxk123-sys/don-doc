@@ -48,15 +48,15 @@ export function DashboardView({ data }: { data: DemoData }) {
           <ComposedChart data={chartData}>
             <defs>
               <linearGradient id="nwGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
-                <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                <stop offset="5%" stopColor="var(--viz-gold)" stopOpacity={0.25} />
+                <stop offset="95%" stopColor="var(--viz-gold)" stopOpacity={0} />
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
             <XAxis dataKey="label" style={{ fontSize: 10 }} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" interval={2} />
             <YAxis style={{ fontSize: 10 }} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" tickFormatter={v => `${v.toFixed(0)}억`} width={34} />
             <RechartsTooltip formatter={(v) => [`${Number(v).toFixed(2)}억`, '순자산']} contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, fontSize: 12 }} />
-            <Area type="monotone" dataKey="netWorth" stroke="#10b981" strokeWidth={2} fill="url(#nwGrad)" dot={false} activeDot={{ r: 4 }} />
+            <Area type="monotone" dataKey="netWorth" stroke="var(--viz-gold)" strokeWidth={2} fill="url(#nwGrad)" dot={false} activeDot={{ r: 4 }} />
           </ComposedChart>
         </ResponsiveContainer>
       </div>
@@ -108,7 +108,7 @@ export function DashboardView({ data }: { data: DemoData }) {
                   <span>소진율</span><span>{Math.round(Math.min((budgetSpent / budget.amount) * 100, 100))}%</span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-1.5">
-                  <div className={cn('h-1.5 rounded-full', (budgetSpent / budget.amount) > 0.8 ? 'bg-(--viz-red)' : 'bg-(--viz-emerald)')}
+                  <div className={cn('h-1.5 rounded-full', (budgetSpent / budget.amount) > 0.8 ? 'bg-(--viz-terra)' : 'bg-(--viz-sage)')}
                     style={{ width: `${Math.min((budgetSpent / budget.amount) * 100, 100)}%` }} />
                 </div>
               </div>
@@ -168,7 +168,7 @@ export function DashboardView({ data }: { data: DemoData }) {
         <div className="space-y-0">
           {data.transactions.slice(0, 8).map(tx => (
             <div key={tx.id} className="flex items-center gap-3 py-2.5 border-b border-border/40 last:border-0">
-              <div className={cn('w-1.5 h-8 rounded-full shrink-0', tx.amount > 0 ? 'bg-(--viz-emerald)' : 'bg-muted')} />
+              <div className={cn('w-1.5 h-8 rounded-full shrink-0', tx.amount > 0 ? 'bg-(--viz-sage)' : 'bg-muted')} />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{tx.description}</p>
                 <p className="text-xs text-muted-foreground">{tx.userName} · {tx.category}</p>

@@ -42,7 +42,7 @@ export function AssetsView({ data }: { data: DemoData }) {
           { label: '총 부채', value: wealth.totalLiabilities, color: 'text-expense' },
           { label: '순 자산', value: wealth.netWorth, color: 'text-foreground', bold: true },
         ].map(item => (
-          <div key={item.label} className={cn('bg-card rounded-2xl border p-4', item.bold ? 'border-(--viz-emerald)/30' : 'border-border')}>
+          <div key={item.label} className={cn('bg-card rounded-2xl border p-4', item.bold ? 'border-(--viz-sage)/30' : 'border-border')}>
             <p className="text-[10px] text-muted-foreground mb-1">{item.label}</p>
             <p className={cn('text-base font-bold tabular-nums font-serif', item.color)}>{formatLargeNumber(item.value)}</p>
           </div>
@@ -58,13 +58,13 @@ export function AssetsView({ data }: { data: DemoData }) {
             <XAxis dataKey="label" style={{ fontSize: 10 }} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" interval={2} />
             <YAxis style={{ fontSize: 10 }} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" tickFormatter={v => `${v.toFixed(0)}억`} width={34} />
             <RechartsTooltip formatter={(v, name) => [`${Number(v).toFixed(2)}억`, name]} contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, fontSize: 12 }} />
-            <Area type="monotone" dataKey="자산" stroke="#10b981" strokeWidth={1.5} fill="#10b98120" dot={false} />
-            <Area type="monotone" dataKey="순자산" stroke="#6366f1" strokeWidth={2} fill="#6366f110" dot={false} />
-            <Bar dataKey="부채" fill="#f8717130" radius={[2, 2, 0, 0]} maxBarSize={16} />
+            <Area type="monotone" dataKey="자산" stroke="var(--viz-slate)" strokeWidth={1.5} fill="var(--viz-slate)" fillOpacity={0.12} dot={false} />
+            <Area type="monotone" dataKey="순자산" stroke="var(--viz-gold)" strokeWidth={2} fill="var(--viz-gold)" fillOpacity={0.06} dot={false} />
+            <Bar dataKey="부채" fill="var(--viz-terra)" fillOpacity={0.28} radius={[2, 2, 0, 0]} maxBarSize={16} />
           </ComposedChart>
         </ResponsiveContainer>
         <div className="flex gap-4 mt-3 justify-center">
-          {[['#10b981', '총자산'], ['#6366f1', '순자산'], ['#f87171', '부채']].map(([color, label]) => (
+          {[['var(--viz-slate)', '총자산'], ['var(--viz-gold)', '순자산'], ['var(--viz-terra)', '부채']].map(([color, label]) => (
             <div key={label} className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
               <span className="text-[10px] text-muted-foreground">{label}</span>

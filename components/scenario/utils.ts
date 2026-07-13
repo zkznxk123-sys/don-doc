@@ -7,14 +7,14 @@ export function feasibilityColor(v: number) {
 }
 
 export function feasibilityBg(v: number) {
-  if (v >= 70) return 'bg-(--viz-emerald)'
-  if (v >= 40) return 'bg-(--viz-amber)'
-  return 'bg-(--viz-red)'
+  if (v >= 70) return 'bg-(--viz-sage)'
+  if (v >= 40) return 'bg-(--viz-copper)'
+  return 'bg-(--viz-terra)'
 }
 
 const CATEGORY_STYLE: Record<string, string> = {
-  '부동산': 'bg-(--viz-blue)/15 text-(--viz-blue)',
-  '투자':   'bg-(--viz-violet)/15 text-(--viz-violet)',
+  '부동산': 'bg-(--viz-olive)/15 text-(--viz-olive)',
+  '투자':   'bg-(--viz-gold)/15 text-(--viz-gold)',
   '부채':   'bg-destructive/15 text-destructive',
   '현금흐름': 'bg-income-soft text-income',
   '연금/장기': 'bg-warning-soft text-warning',

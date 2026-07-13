@@ -142,7 +142,7 @@ export function ChatPanel({ open, onClose }: { open: boolean; onClose: () => voi
         {/* 헤더 */}
         <header className="flex items-center justify-between border-b px-4 py-3">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-[color:var(--viz-violet)]" />
+            <Sparkles className="h-5 w-5 text-[color:var(--color-ai-500)]" />
             <h2 className="text-sm font-semibold">가족 AI 어시스턴트</h2>
           </div>
           <button
@@ -173,7 +173,7 @@ export function ChatPanel({ open, onClose }: { open: boolean; onClose: () => voi
                     className={cn(
                       'max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed',
                       m.role === 'user'
-                        ? 'bg-[color:var(--viz-violet)] text-white whitespace-pre-wrap'
+                        ? 'bg-[color:var(--color-ai-500)] text-white whitespace-pre-wrap'
                         : 'bg-muted text-foreground',
                     )}
                   >
@@ -213,7 +213,7 @@ export function ChatPanel({ open, onClose }: { open: boolean; onClose: () => voi
               placeholder="가족 자산에 대해 물어보세요…"
               rows={1}
               disabled={isStreaming}
-              className="flex-1 resize-none rounded-xl border bg-background px-3 py-2 text-sm outline-hidden focus:ring-2 focus:ring-[color:var(--viz-violet)]/40 disabled:opacity-50"
+              className="flex-1 resize-none rounded-xl border bg-background px-3 py-2 text-sm outline-hidden focus:ring-2 focus:ring-[color:var(--color-ai-500)]/40 disabled:opacity-50"
             />
             <button
               type="submit"
@@ -221,7 +221,7 @@ export function ChatPanel({ open, onClose }: { open: boolean; onClose: () => voi
               disabled={isStreaming || !input.trim()}
               className={cn(
                 'flex h-10 w-10 items-center justify-center rounded-xl',
-                'bg-[color:var(--viz-violet)] text-white',
+                'bg-[color:var(--color-ai-500)] text-white',
                 'disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground',
               )}
             >
@@ -240,8 +240,8 @@ export function ChatPanel({ open, onClose }: { open: boolean; onClose: () => voi
 function EmptyState({ onPick }: { onPick: (text: string) => void }) {
   return (
     <div className="flex h-full flex-col items-center justify-center text-center">
-      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[color:var(--viz-violet)]/10">
-        <Sparkles className="h-6 w-6 text-[color:var(--viz-violet)]" />
+      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[color:var(--color-ai-500)]/10">
+        <Sparkles className="h-6 w-6 text-[color:var(--color-ai-500)]" />
       </div>
       <p className="text-sm font-medium">무엇을 도와드릴까요?</p>
       <p className="mt-1 text-xs text-muted-foreground">

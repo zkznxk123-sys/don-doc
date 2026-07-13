@@ -28,7 +28,7 @@ export function ProgressSummary({ scenarios }: { scenarios: ScenarioData[] }) {
               <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all"
-                  style={{ width: `${pct}%`, backgroundColor: pct === 100 ? 'var(--viz-emerald)' : 'var(--viz-blue)' }}
+                  style={{ width: `${pct}%`, backgroundColor: pct === 100 ? 'var(--viz-sage)' : 'var(--viz-gold)' }}
                 />
               </div>
               {pct === 100 && (

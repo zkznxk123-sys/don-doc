@@ -92,7 +92,7 @@ export function TradeDrawer({ isOpen, onClose, onSuccess, holding }: TradeDrawer
               <div className="flex gap-2">
                 {(['BUY', 'SELL', 'DIVIDEND'] as TradeType[]).map(t => {
                   const isActive = tradeType === t
-                  const activeColor = t === 'BUY' ? 'var(--viz-blue)' : t === 'SELL' ? 'var(--viz-red)' : 'var(--viz-emerald)'
+                  const activeColor = t === 'BUY' ? 'var(--viz-gold)' : t === 'SELL' ? 'var(--viz-terra)' : 'var(--viz-sage)'
                   return (
                     <button
                       key={t}

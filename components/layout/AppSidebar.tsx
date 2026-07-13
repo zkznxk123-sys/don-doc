@@ -225,7 +225,7 @@ export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
 
 function UserAvatar({ name }: { name: string | null }) {
   const initials = name ? name.slice(0, 1) : '?'
-  const colors = ['bg-savings', 'bg-(--viz-violet)', 'bg-income', 'bg-warning', 'bg-destructive']
+  const colors = ['bg-savings', 'bg-(--viz-slate)', 'bg-income', 'bg-warning', 'bg-destructive']
   const color = colors[(name?.charCodeAt(0) ?? 0) % colors.length]
   return (
     <div className={cn('w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold text-white', color)}>
@@ -306,7 +306,7 @@ function InviteCodeButton() {
                 className={cn(
                   'w-full h-9 rounded-xl border text-xs font-medium transition-all flex items-center justify-center gap-1.5',
                   copied
-                    ? 'bg-income-soft border-(--viz-emerald)/30 text-income'
+                    ? 'bg-income-soft border-(--viz-sage)/30 text-income'
                     : 'bg-muted border-border text-foreground/70 hover:text-foreground'
                 )}
               >

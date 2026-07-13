@@ -444,7 +444,7 @@ export default function BudgetPage() {
               const danger = data && data.familySpent / parsedFamilyBudget > 0.8
               return (
                 <div className="relative h-2 w-full overflow-hidden rounded-full bg-accent">
-                  <div className="h-full transition-all duration-300" style={{ width: `${pct}%`, backgroundColor: danger ? 'var(--viz-red)' : 'var(--viz-emerald)' }} />
+                  <div className="h-full transition-all duration-300" style={{ width: `${pct}%`, backgroundColor: danger ? 'var(--viz-terra)' : 'var(--viz-sage)' }} />
                 </div>
               )
             })()}
@@ -504,11 +504,11 @@ export default function BudgetPage() {
               : 0
 
             const MEMBER_VIZ = [
-              'var(--viz-blue)',
-              'var(--viz-violet)',
-              'var(--viz-amber)',
-              'var(--viz-pink)',
-              'var(--viz-emerald)',
+              'var(--viz-gold)',
+              'var(--viz-sage)',
+              'var(--viz-olive)',
+              'var(--viz-copper)',
+              'var(--viz-slate)',
             ]
             const indicatorColor = MEMBER_VIZ[idx % MEMBER_VIZ.length]
 
@@ -579,7 +579,7 @@ export default function BudgetPage() {
                         className="h-full transition-all duration-300"
                         style={{
                           width: `${spentPct}%`,
-                          backgroundColor: spentPct > 80 ? 'var(--viz-red)' : spentPct > 60 ? 'var(--viz-amber)' : 'var(--viz-emerald)',
+                          backgroundColor: spentPct > 80 ? 'var(--viz-terra)' : spentPct > 60 ? 'var(--viz-copper)' : 'var(--viz-sage)',
                         }}
                       />
                     </div>
@@ -601,7 +601,7 @@ export default function BudgetPage() {
               const memberBudget = parsedMemberBudgets[member.id] ?? 0
               const pct = parsedFamilyBudget > 0 ? (memberBudget / parsedFamilyBudget) * 100 : 0
               if (pct <= 0) return null
-              const VIZ = ['var(--viz-blue)', 'var(--viz-violet)', 'var(--viz-amber)', 'var(--viz-pink)', 'var(--viz-emerald)']
+              const VIZ = ['var(--viz-gold)', 'var(--viz-sage)', 'var(--viz-olive)', 'var(--viz-copper)', 'var(--viz-slate)']
               return (
                 <div
                   key={member.id}
@@ -622,7 +622,7 @@ export default function BudgetPage() {
             {(data?.members ?? []).map((member, idx) => {
               const memberBudget = parsedMemberBudgets[member.id] ?? 0
               if (memberBudget <= 0) return null
-              const VIZ = ['var(--viz-blue)', 'var(--viz-violet)', 'var(--viz-amber)', 'var(--viz-pink)', 'var(--viz-emerald)']
+              const VIZ = ['var(--viz-gold)', 'var(--viz-sage)', 'var(--viz-olive)', 'var(--viz-copper)', 'var(--viz-slate)']
               const pct = parsedFamilyBudget > 0 ? Math.round((memberBudget / parsedFamilyBudget) * 100) : 0
               return (
                 <div key={member.id} className="flex items-center gap-2">

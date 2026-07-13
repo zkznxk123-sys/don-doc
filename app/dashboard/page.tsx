@@ -254,7 +254,7 @@ export default function Dashboard() {
                     subColor="text-muted-foreground/60"
                     onClick={() => setTxFilter(f => f === 'income' ? 'all' : 'income')}
                     active={txFilter === 'income'}
-                    accentColor="#34d399"
+                    accentColor="var(--viz-sage)"
                   />
                   <KpiCard
                     delay={120}
@@ -269,7 +269,7 @@ export default function Dashboard() {
                     subColor={insights && insights.expenseVsAvgPercent > 0 ? 'text-warning' : 'text-income'}
                     onClick={() => setTxFilter(f => f === 'expense' ? 'all' : 'expense')}
                     active={txFilter === 'expense'}
-                    accentColor="#f87171"
+                    accentColor="var(--viz-terra)"
                   />
                   <KpiCard
                     delay={180}
@@ -316,9 +316,9 @@ export default function Dashboard() {
                     <div className="mb-4 flex items-center justify-between">
                       <h3 className="text-sm font-semibold text-foreground">월별 현금흐름</h3>
                       <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
-                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm inline-block" style={{ backgroundColor: 'var(--viz-emerald)' }} />수입</span>
-                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm inline-block" style={{ backgroundColor: 'var(--viz-orange)' }} />지출</span>
-                        <span className="flex items-center gap-1.5"><span className="w-2 h-0.5 inline-block" style={{ backgroundColor: 'var(--viz-blue)' }} />순저축</span>
+                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm inline-block" style={{ backgroundColor: 'var(--viz-sage)' }} />수입</span>
+                        <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-sm inline-block" style={{ backgroundColor: 'var(--viz-terra)' }} />지출</span>
+                        <span className="flex items-center gap-1.5"><span className="w-2 h-0.5 inline-block" style={{ backgroundColor: 'var(--viz-gold)' }} />순저축</span>
                       </div>
                     </div>
                     <CashflowChart months={cashflowMonths} />

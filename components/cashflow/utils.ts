@@ -80,21 +80,21 @@ export interface MonthlyGoal {
 export type DraftItem = { category: string; isExcluded: boolean; amount: number; description: string }
 
 export const CAT_COLORS: Record<string, string> = {
-  '식비': 'var(--viz-orange)',
-  '카페/간식': 'var(--viz-amber)',
-  '쇼핑': '#ec4899',
-  '교통': 'var(--viz-blue)',
-  '주거/관리비': 'var(--viz-violet)',
-  '의료/건강': 'var(--viz-emerald)',
-  '문화/여가': 'var(--viz-violet)',
-  '교육': '#06b6d4',
-  '구독/통신': '#64748b',
-  '저축/투자': 'var(--viz-sky)',
-  '기타': '#94a3b8',
-  '급여': 'var(--viz-emerald)',
-  '부업': '#84cc16',
-  '이자/배당': 'var(--viz-mint)',
-  '기타 수입': '#cbd5e1',
+  '식비': 'var(--viz-terra)',
+  '카페/간식': 'var(--viz-copper)',
+  '쇼핑': 'var(--viz-olive)',
+  '교통': 'var(--viz-slate)',
+  '주거/관리비': 'var(--viz-warmgrey)',
+  '의료/건강': 'var(--viz-sage)',
+  '문화/여가': 'var(--viz-copper)',
+  '교육': 'var(--viz-slate)',
+  '구독/통신': 'var(--viz-warmgrey)',
+  '저축/투자': 'var(--viz-gold)',
+  '기타': 'var(--viz-warmgrey)',
+  '급여': 'var(--viz-sage)',
+  '부업': 'var(--viz-olive)',
+  '이자/배당': 'var(--viz-sage)',
+  '기타 수입': 'var(--viz-warmgrey)',
 }
 
 export function toMonthParam(y: number, m: number) {

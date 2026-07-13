@@ -6,7 +6,7 @@ import {
 } from 'recharts'
 import { formatLargeNumber, cn } from '@/lib/utils'
 
-const CF_COLORS = { income: 'var(--viz-emerald)', expense: 'var(--viz-orange)', rate: 'var(--viz-blue)' }
+const CF_COLORS = { income: 'var(--viz-sage)', expense: 'var(--viz-terra)', rate: 'var(--viz-gold)' }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function CashflowTooltip({ active, payload, label }: any) {
@@ -27,7 +27,7 @@ function CashflowTooltip({ active, payload, label }: any) {
       </div>
       <div className="flex justify-between gap-4">
         <span className="text-muted-foreground">지출</span>
-        <span className="font-medium tabular-nums" style={{ color: 'var(--viz-orange)' }}>{formatLargeNumber(expense)}</span>
+        <span className="font-medium tabular-nums" style={{ color: 'var(--viz-terra)' }}>{formatLargeNumber(expense)}</span>
       </div>
       <div className="flex justify-between gap-4 border-t border-border/60 pt-1 mt-1">
         <span className="text-muted-foreground">흑자액</span>

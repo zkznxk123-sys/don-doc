@@ -46,22 +46,17 @@
   --color-card: hsl(var(--card));
   --color-card-foreground: hsl(var(--card-foreground));
 
-  --color-viz-emerald: var(--viz-emerald);
-  --color-viz-blue: var(--viz-blue);
-  --color-viz-violet: var(--viz-violet);
-  --color-viz-purple: var(--viz-purple);
-  --color-estate: var(--estate);
-  --color-viz-amber: var(--viz-amber);
-  --color-viz-orange: var(--viz-orange);
-  --color-viz-red: var(--viz-red);
-  --color-viz-rose: var(--viz-rose);
-  --color-viz-pink: var(--viz-pink);
-  --color-viz-sky: var(--viz-sky);
-  --color-viz-mint: var(--viz-mint);
   --color-viz-gold: var(--viz-gold);
+  --color-viz-sage: var(--viz-sage);
+  --color-viz-olive: var(--viz-olive);
+  --color-viz-copper: var(--viz-copper);
+  --color-viz-slate: var(--viz-slate);
+  --color-viz-terra: var(--viz-terra);
+  --color-viz-warmgrey: var(--viz-warmgrey);
+  --color-estate: var(--estate);
 
   /* AI semantic — violet 스케일 1:1 별칭. de-facto "AI/feed" 색을 의미화(ad-hoc violet-* 금지).
-     색은 violet과 동일, 이름만 ai-*. 다크/라이트 대비용 음영 보존. 차트는 별도 viz-violet 사용. */
+     웜 viz 팔레트 통일(2026-07-13) 이후에도 AI 정체성은 violet 유지 — viz-*와 분리된 독립 시맨틱. */
   --color-ai-50: #f5f3ff;
   --color-ai-100: #ede9fe;
   --color-ai-200: #ddd6fe;
@@ -73,7 +68,7 @@
   --color-ai-800: #5b21b6;
   --color-ai-900: #4c1d95;
   --color-ai-950: #2e1065;
-  --color-ai: var(--viz-violet);
+  --color-ai: var(--color-ai-500);
 
   --radius-sm: var(--radius-sm);
   --radius: var(--radius);
@@ -166,54 +161,54 @@
   box-shadow: var(--shadow-xl);
 }
 @utility text-income {
-  /* Semantic color utilities (income / expense / savings / warning) */
-  color: var(--viz-emerald);
+  /* Semantic color utilities (income / expense / savings / warning) — 웜 viz 토큰 배선 */
+  color: var(--viz-sage);
 }
 @utility text-expense {
-  color: var(--viz-red);
+  color: var(--viz-terra);
 }
 @utility text-savings {
-  color: var(--viz-blue);
+  color: var(--viz-gold);
 }
 @utility text-warning {
-  color: var(--viz-amber);
+  color: var(--viz-copper);
 }
 @utility bg-income-soft {
-  background: rgb(16 185 129 / 0.1);
+  background: color-mix(in srgb, var(--viz-sage) 12%, transparent);
 }
 @utility bg-expense-soft {
-  background: rgb(239 68 68 / 0.1);
+  background: color-mix(in srgb, var(--viz-terra) 12%, transparent);
 }
 @utility bg-savings-soft {
-  background: rgb(59 130 246 / 0.1);
+  background: color-mix(in srgb, var(--viz-gold) 12%, transparent);
 }
 @utility bg-warning-soft {
-  background: rgb(245 158 11 / 0.1);
+  background: color-mix(in srgb, var(--viz-copper) 12%, transparent);
 }
 @utility bg-income {
   /* Solid viz bg utilities — Progress bar·badge·아바타 등에서 사용 */
-  background-color: var(--viz-emerald);
+  background-color: var(--viz-sage);
 }
 @utility bg-expense {
-  background-color: var(--viz-red);
+  background-color: var(--viz-terra);
 }
 @utility bg-savings {
-  background-color: var(--viz-blue);
+  background-color: var(--viz-gold);
 }
 @utility bg-warning {
-  background-color: var(--viz-amber);
+  background-color: var(--viz-copper);
 }
 @utility border-income {
-  border-color: var(--viz-emerald);
+  border-color: var(--viz-sage);
 }
 @utility border-expense {
-  border-color: var(--viz-red);
+  border-color: var(--viz-terra);
 }
 @utility border-savings {
-  border-color: var(--viz-blue);
+  border-color: var(--viz-gold);
 }
 @utility border-warning {
-  border-color: var(--viz-amber);
+  border-color: var(--viz-copper);
 }
 @utility eyebrow {
   /* Eyebrow — uppercase label above sections */
@@ -365,20 +360,17 @@
     --font-serif: var(--font-noto-serif), 'Noto Serif KR', ui-serif, Georgia, serif;
     --font-mono:  ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
-    /* ── Data Viz Palette ────────────────────────────────────────────────── */
-    --viz-emerald: #10b981;  /* income, savings-positive, investments */
-    --viz-blue:    #3b82f6;  /* cash, links, rate-line               */
-    --viz-violet:  #8b5cf6;  /* AI, feed, STO                        */
-    --viz-purple:  #c084fc;  /* real-estate (차트 viz)                */
-    --estate:      var(--viz-purple);  /* real-estate 도메인 semantic — 컴포넌트는 estate 토큰 사용 */
-    --viz-amber:   #f59e0b;  /* warnings, crypto                     */
-    --viz-orange:  #f97316;  /* expense                              */
-    --viz-red:     #ef4444;  /* liabilities, destructive             */
-    --viz-rose:    #f43f5e;  /* credit card                          */
-    --viz-pink:    #f472b6;  /* STO alt                              */
-    --viz-sky:     #60a5fa;  /* cash-light                           */
-    --viz-mint:    #34d399;  /* investment-light                     */
-    --viz-gold:    #fbbf24;  /* crypto-light                         */
+    /* ── Data Viz Palette — 웜 통일 (lib/asset-colors.ts 정본 alias) ─────────
+       라이트 = 한 톤 진하게(페이퍼 위 대비). 다크 원본값은 .dark에서 재정의.
+       근거: dev-handoff-viz-palette-20260708 (B안 승인). */
+    --viz-gold:     #B88A2A;  /* primary/순자산/투자/저축률 라인       */
+    --viz-sage:     #4E7A5F;  /* income/현금                          */
+    --viz-olive:    #6E7C4E;  /* 부동산                                */
+    --viz-copper:   #B5762E;  /* crypto/warning                       */
+    --viz-slate:    #6C778C;  /* STO/중립/총자산 라인/info             */
+    --viz-terra:    #B34A34;  /* expense/debt                         */
+    --viz-warmgrey: #8A8574;  /* fallback/기타                        */
+    --estate:       var(--viz-olive);  /* real-estate 도메인 semantic — 컴포넌트는 estate 토큰 사용 */
   }
 
   .dark {
@@ -414,6 +406,15 @@
     --shadow-card: none;
     --shadow-float: 0 8px 40px rgba(0,0,0,0.35);
     --shadow-xl: 0 20px 60px rgba(0,0,0,0.45);
+
+    /* ── Data Viz Palette · 다크 — asset-colors.ts 원본값 ────────────────── */
+    --viz-gold:     #C9A54A;
+    --viz-sage:     #5E8A72;
+    --viz-olive:    #7C8A5A;
+    --viz-copper:   #CB8A3C;
+    --viz-slate:    #7E8AA0;
+    --viz-terra:    #C0553D;
+    --viz-warmgrey: #8A8574;
   }
 }
 

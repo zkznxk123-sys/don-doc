@@ -110,7 +110,7 @@ export function ScenarioCard({
       <div className="mx-5 mb-3 h-1 bg-muted rounded-full overflow-hidden">
         {totalActions > 0 && completedCount > 0 ? (
           <div
-            className="h-full rounded-full bg-(--viz-emerald) transition-all"
+            className="h-full rounded-full bg-(--viz-sage) transition-all"
             style={{ width: `${(completedCount / totalActions) * 100}%` }}
           />
         ) : (
@@ -190,7 +190,7 @@ export function ScenarioCard({
                     >
                       <span className={cn(
                         'w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5 transition-colors',
-                        done ? 'bg-(--viz-emerald) border-(--viz-emerald)' : 'border-muted-foreground/30',
+                        done ? 'bg-(--viz-sage) border-(--viz-sage)' : 'border-muted-foreground/30',
                       )}>
                         {done && <Check className="w-3 h-3 text-white" />}
                       </span>

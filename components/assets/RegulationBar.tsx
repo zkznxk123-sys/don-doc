@@ -4,9 +4,9 @@ import { cn } from '@/lib/utils'
 
 export function regulationStyle(pct: number, limits: [number, number]) {
   // viz var는 hex라 Tailwind opacity 안 통하니 inline style + bg 토큰 조합.
-  if (pct <= limits[0]) return { barColor: 'var(--viz-emerald)', text: 'text-income',      bgClass: 'bg-income-soft',  label: '양호' }
-  if (pct <= limits[1]) return { barColor: 'var(--viz-amber)',   text: 'text-warning',     bgClass: 'bg-warning-soft', label: '주의' }
-  return                        { barColor: 'var(--viz-red)',     text: 'text-destructive', bgClass: 'bg-expense-soft', label: '위험' }
+  if (pct <= limits[0]) return { barColor: 'var(--viz-sage)', text: 'text-income',      bgClass: 'bg-income-soft',  label: '양호' }
+  if (pct <= limits[1]) return { barColor: 'var(--viz-copper)',   text: 'text-warning',     bgClass: 'bg-warning-soft', label: '주의' }
+  return                        { barColor: 'var(--viz-terra)',     text: 'text-destructive', bgClass: 'bg-expense-soft', label: '위험' }
 }
 
 interface RegulationBarProps {

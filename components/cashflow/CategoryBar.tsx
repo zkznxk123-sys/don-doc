@@ -45,7 +45,7 @@ export function CategoryBar({
       <div className="flex h-7 rounded-xl overflow-hidden gap-px mb-3">
         {sorted.map(([cat, amt]) => {
           const pct = (amt / total) * 100
-          const color = CAT_COLORS[cat] ?? '#94a3b8'
+          const color = CAT_COLORS[cat] ?? 'var(--viz-warmgrey)'
           const isSelected = selectedCategory === cat
           const isDimmed = selectedCategory !== null && !isSelected
           return (
@@ -66,7 +66,7 @@ export function CategoryBar({
       {/* 범례 */}
       <div className="flex flex-wrap gap-x-3 gap-y-1.5">
         {sorted.map(([cat, amt]) => {
-          const color = CAT_COLORS[cat] ?? '#94a3b8'
+          const color = CAT_COLORS[cat] ?? 'var(--viz-warmgrey)'
           const isSelected = selectedCategory === cat
           const isDimmed = selectedCategory !== null && !isSelected
           return (

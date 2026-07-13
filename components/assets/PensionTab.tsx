@@ -530,7 +530,7 @@ function PensionCard({
       {showDetail && withdrawable && (
         <div className={cn('px-3 py-2.5 rounded-xl mb-2.5 text-[11px] -mt-2',
           withdrawable.canWithdraw && withdrawable.taxRate > 0.1
-            ? 'bg-expense-soft border border-(--viz-red)/20 text-expense'
+            ? 'bg-expense-soft border border-(--viz-terra)/20 text-expense'
             : 'bg-muted/40 text-muted-foreground'
         )}>
           {withdrawable.note}
@@ -552,7 +552,7 @@ function PensionCard({
           <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
             <div
               className="h-full rounded-full transition-all duration-700"
-              style={{ width: `${taxAchievement}%`, backgroundColor: taxAchievement >= 100 ? 'var(--viz-emerald)' : 'var(--viz-amber)' }}
+              style={{ width: `${taxAchievement}%`, backgroundColor: taxAchievement >= 100 ? 'var(--viz-sage)' : 'var(--viz-copper)' }}
             />
           </div>
           <p className="text-[10px] text-muted-foreground/50">

@@ -30,7 +30,7 @@ export function MemberBudgetCard({
           <div className="h-2 mb-2 w-full bg-accent rounded-full overflow-hidden">
             <div
               className="h-full transition-all duration-300"
-              style={{ width: `${pct}%`, backgroundColor: isOver || isWarning ? 'var(--viz-red)' : 'var(--viz-emerald)' }}
+              style={{ width: `${pct}%`, backgroundColor: isOver || isWarning ? 'var(--viz-terra)' : 'var(--viz-sage)' }}
             />
           </div>
           <div className="flex justify-between text-xs">

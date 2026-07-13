@@ -20,9 +20,9 @@ interface PriceHistoryChartProps {
 }
 
 // 보유 — 파란/보라 계열 solid
-const OWN_COLORS   = ['#6366f1', '#8b5cf6', '#a855f7']
+const OWN_COLORS   = ['var(--viz-gold)', 'var(--viz-sage)', 'var(--viz-olive)']
 // 목표 — 주황/빨강 계열 dashed
-const TARGET_COLORS = ['#f59e0b', '#ef4444', '#10b981', '#0ea5e9']
+const TARGET_COLORS = ['var(--viz-copper)', 'var(--viz-terra)', 'var(--viz-sage)', 'var(--viz-slate)']
 
 function formatYM(ym: string) {
   // "2023-05" → "23.05"

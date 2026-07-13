@@ -20,9 +20,9 @@ describe('feasibilityColor', () => {
 
 describe('feasibilityBg', () => {
   it('matches feasibilityColor 3-tier mapping', () => {
-    expect(feasibilityBg(70)).toBe('bg-(--viz-emerald)')
-    expect(feasibilityBg(50)).toBe('bg-(--viz-amber)')
-    expect(feasibilityBg(20)).toBe('bg-(--viz-red)')
+    expect(feasibilityBg(70)).toBe('bg-(--viz-sage)')
+    expect(feasibilityBg(50)).toBe('bg-(--viz-copper)')
+    expect(feasibilityBg(20)).toBe('bg-(--viz-terra)')
   })
 })
 
@@ -33,9 +33,9 @@ describe('categoryStyle', () => {
   })
 
   it('matches known keywords (substring)', () => {
-    expect(categoryStyle('부동산')).toContain('blue')
-    expect(categoryStyle('부동산 갈아타기')).toContain('blue')
-    expect(categoryStyle('투자')).toContain('violet')
+    expect(categoryStyle('부동산')).toContain('olive')
+    expect(categoryStyle('부동산 갈아타기')).toContain('olive')
+    expect(categoryStyle('투자')).toContain('gold')
     expect(categoryStyle('부채')).toContain('destructive')
     expect(categoryStyle('현금흐름')).toBe('bg-income-soft text-income')
     expect(categoryStyle('연금/장기')).toContain('warning')

@@ -20,7 +20,7 @@ export function CashflowView({ data }: { data: DemoData }) {
     filter === 'income' ? tx.amount > 0 : filter === 'expense' ? tx.amount < 0 : true
   )
 
-  const COLORS = ['#6366f1', '#8b5cf6', '#a78bfa', '#c4b5fd', '#ddd6fe', '#ede9fe', '#818cf8', '#4f46e5']
+  const COLORS = ['var(--viz-gold)', 'var(--viz-sage)', 'var(--viz-olive)', 'var(--viz-copper)', 'var(--viz-slate)', 'var(--viz-terra)', 'var(--viz-warmgrey)', 'var(--viz-gold)']
 
   return (
     <div className="space-y-5">
@@ -60,8 +60,8 @@ export function CashflowView({ data }: { data: DemoData }) {
               <XAxis dataKey="label" style={{ fontSize: 10 }} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" />
               <YAxis style={{ fontSize: 10 }} tickLine={false} axisLine={false} stroke="hsl(var(--muted-foreground))" tickFormatter={v => `${(v / 10000).toFixed(0)}만`} width={38} />
               <RechartsTooltip formatter={(v, name) => [formatLargeNumber(Number(v)), name === 'income' ? '수입' : '지출']} contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, fontSize: 12 }} />
-              <Bar dataKey="income" fill="#10b981" radius={[4, 4, 0, 0]} maxBarSize={24} />
-              <Bar dataKey="expense" fill="#f87171" radius={[4, 4, 0, 0]} maxBarSize={24} />
+              <Bar dataKey="income" fill="var(--viz-sage)" radius={[4, 4, 0, 0]} maxBarSize={24} />
+              <Bar dataKey="expense" fill="var(--viz-terra)" radius={[4, 4, 0, 0]} maxBarSize={24} />
             </ComposedChart>
           </ResponsiveContainer>
         </div>

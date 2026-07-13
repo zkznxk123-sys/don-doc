@@ -602,7 +602,7 @@ export function TransactionDrawer({
               />
               {autoSuggestedCategory && (
                 <p className="text-xs text-income/80 mt-1.5 pl-1 flex items-center gap-1">
-                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-(--viz-emerald)" />
+                  <span className="inline-block w-1.5 h-1.5 rounded-full bg-(--viz-sage)" />
                   &lsquo;{description}&rsquo; → <span className="font-medium">{autoSuggestedCategory}</span> 카테고리 자동 선택됨
                 </p>
               )}
@@ -702,7 +702,7 @@ export function TransactionDrawer({
             )}
 
             {isFull() && !isShared && (
-              <div className="flex items-start gap-2.5 rounded-xl px-4 py-3 bg-warning-soft/50 border border-(--viz-amber)/15">
+              <div className="flex items-start gap-2.5 rounded-xl px-4 py-3 bg-warning-soft/50 border border-(--viz-copper)/15">
                 <Lock className="w-4 h-4 text-warning mt-0.5 shrink-0" />
                 <p className="text-xs text-warning/80 leading-relaxed">
                   이 지출의 상세 내역은 가족에게 공개되지 않습니다.<br />
@@ -726,7 +726,7 @@ export function TransactionDrawer({
 
           {/* Error */}
           {error && (
-            <div className="mt-4 px-4 py-3 bg-expense-soft border border-(--viz-red)/20 rounded-xl text-sm text-expense">
+            <div className="mt-4 px-4 py-3 bg-expense-soft border border-(--viz-terra)/20 rounded-xl text-sm text-expense">
               {error}
             </div>
           )}
@@ -788,7 +788,7 @@ export function TransactionDrawer({
                 ) : (
                   <button
                     onClick={() => setShowDeleteConfirm(true)}
-                    className="w-full py-3.5 rounded-xl text-sm font-medium text-expense border border-(--viz-red)/20 bg-(--viz-red)/5 hover:bg-expense-soft hover:border-(--viz-red)/40 transition-all flex items-center justify-center gap-2"
+                    className="w-full py-3.5 rounded-xl text-sm font-medium text-expense border border-(--viz-terra)/20 bg-(--viz-terra)/5 hover:bg-expense-soft hover:border-(--viz-terra)/40 transition-all flex items-center justify-center gap-2"
                   >
                     <Trash2 className="w-4 h-4" />
                     삭제하기

@@ -23,10 +23,10 @@ const REPAYMENT_LABELS: Record<string, string> = {
 
 // LTV 단계별 viz var color (Tailwind opacity 회피 위해 var()와 inline rgba 혼용)
 function ltvStyle(ltv: number): { barColor: string; text: string; borderColor: string; bg: string } {
-  if (ltv < 40) return { barColor: 'var(--viz-emerald)', text: 'text-income',      borderColor: 'rgba(16,185,129,0.3)', bg: 'bg-income-soft' }
-  if (ltv < 60) return { barColor: 'var(--viz-amber)',   text: 'text-warning',     borderColor: 'rgba(245,158,11,0.3)', bg: 'bg-warning-soft' }
-  if (ltv < 80) return { barColor: 'var(--viz-amber)',   text: 'text-warning',     borderColor: 'rgba(245,158,11,0.4)', bg: 'bg-warning-soft' }
-  return              { barColor: 'var(--viz-red)',     text: 'text-destructive', borderColor: 'rgba(239,68,68,0.3)',  bg: 'bg-expense-soft' }
+  if (ltv < 40) return { barColor: 'var(--viz-sage)', text: 'text-income',      borderColor: 'color-mix(in srgb, var(--viz-sage) 30%, transparent)', bg: 'bg-income-soft' }
+  if (ltv < 60) return { barColor: 'var(--viz-copper)',   text: 'text-warning',     borderColor: 'color-mix(in srgb, var(--viz-copper) 30%, transparent)', bg: 'bg-warning-soft' }
+  if (ltv < 80) return { barColor: 'var(--viz-copper)',   text: 'text-warning',     borderColor: 'color-mix(in srgb, var(--viz-copper) 40%, transparent)', bg: 'bg-warning-soft' }
+  return              { barColor: 'var(--viz-terra)',     text: 'text-destructive', borderColor: 'color-mix(in srgb, var(--viz-terra) 30%, transparent)',  bg: 'bg-expense-soft' }
 }
 
 function DebtRow({ debt, onToggleLtv }: { debt: LinkedDebt; onToggleLtv: (id: string, val: boolean) => void }) {

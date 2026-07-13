@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { formatLargeNumber } from '@/lib/utils'
 import type { Transaction } from './utils'
 
-const CAT_COLORS = ['var(--viz-emerald)', 'var(--viz-blue)', 'var(--viz-amber)', 'var(--viz-violet)', 'var(--viz-red)']
+const CAT_COLORS = ['var(--viz-terra)', 'var(--viz-copper)', 'var(--viz-olive)', 'var(--viz-slate)', 'var(--viz-warmgrey)']
 
 export function TopExpenseCategories({ transactions }: { transactions: Transaction[] }) {
   const [expanded, setExpanded] = useState<string | null>(null)

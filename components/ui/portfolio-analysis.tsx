@@ -31,16 +31,16 @@ const DOMESTIC_MARKETS = new Set(['KOSPI', 'KOSDAQ', 'KONEX', 'KRX'])
 const FOREIGN_MARKETS  = new Set(['NASDAQ', 'NYSE', 'AMEX', 'US', 'TSE', 'HKEX', 'LSE'])
 
 const GROUP_COLORS: Record<string, string> = {
-  '현금/예적금': '#10b981',
-  '국내 주식':   '#6366f1',
-  '해외 주식':   '#3b82f6',
-  '가상자산':    '#f59e0b',
-  '기타':        '#94a3b8',
+  '현금/예적금': 'var(--viz-sage)',
+  '국내 주식':   'var(--viz-gold)',
+  '해외 주식':   'var(--viz-olive)',
+  '가상자산':    'var(--viz-copper)',
+  '기타':        'var(--viz-warmgrey)',
 }
 
 const HOLDING_PALETTE = [
-  '#6366f1', '#3b82f6', '#10b981', '#f59e0b',
-  '#ef4444', '#8b5cf6', '#06b6d4', '#94a3b8',
+  'var(--viz-gold)', 'var(--viz-sage)', 'var(--viz-olive)', 'var(--viz-copper)',
+  'var(--viz-slate)', 'var(--viz-terra)', 'var(--viz-warmgrey)',
 ]
 
 // ── 유틸 ─────────────────────────────────────────────────────────────────────
@@ -115,7 +115,7 @@ export function PortfolioAnalysis({ accounts, investmentSummary, usdKrwRate }: P
         key,
         label: key,
         value: Math.round(value),
-        color: GROUP_COLORS[key] ?? '#94a3b8',
+        color: GROUP_COLORS[key] ?? 'var(--viz-warmgrey)',
       }))
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accounts, investmentSummary, usdKrwRate])
@@ -168,7 +168,7 @@ export function PortfolioAnalysis({ accounts, investmentSummary, usdKrwRate }: P
         value: Math.round(restValue),
         pnl: Math.round(restPnl),
         pnlPct: restInvested > 0 ? (restPnl / restInvested) * 100 : null,
-        color: '#94a3b8',
+        color: 'var(--viz-warmgrey)',
       })
     }
 

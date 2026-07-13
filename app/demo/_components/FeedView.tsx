@@ -37,7 +37,7 @@ export function FeedView({ data }: { data: DemoData }) {
             <div className="p-4">
               {/* 헤더 */}
               <div className="flex items-center gap-2 mb-3">
-                <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: 'var(--viz-blue)' }}>
+                <div className="w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold text-white" style={{ backgroundColor: 'var(--viz-slate)' }}>
                   {(post.authorName ?? '?').charAt(0)}
                 </div>
                 <div>

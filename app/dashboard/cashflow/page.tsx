@@ -427,7 +427,7 @@ export default function CashflowPage() {
             disabled={saving || draftCount === 0}
             title="⌘+S로 저장"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-white transition-colors disabled:opacity-40"
-            style={{ backgroundColor: 'var(--viz-emerald)' }}
+            style={{ backgroundColor: 'var(--viz-sage)' }}
           >
             {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
             저장

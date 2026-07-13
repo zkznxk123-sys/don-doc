@@ -12,7 +12,7 @@ export function ScenarioView({ data }: { data: DemoData }) {
 
   const STATUS_COLOR: Record<string, string> = {
     active: 'bg-savings/10 text-blue-400 border-blue-500/20',
-    interested: 'bg-income-soft text-income border-(--viz-emerald)/20',
+    interested: 'bg-income-soft text-income border-(--viz-sage)/20',
   }
   const STATUS_LABEL: Record<string, string> = { active: '검토 중', interested: '관심' }
 
@@ -90,7 +90,7 @@ export function ScenarioView({ data }: { data: DemoData }) {
                     return (
                       <div key={i} className={cn('flex items-start gap-3 p-3 rounded-xl', done ? 'bg-income-soft' : 'bg-muted/40')}>
                         <div className={cn('w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 mt-0.5',
-                          done ? 'bg-(--viz-emerald) border-(--viz-emerald)' : 'border-border')}>
+                          done ? 'bg-(--viz-sage) border-(--viz-sage)' : 'border-border')}>
                           {done && <Check className="w-3 h-3 text-white" />}
                         </div>
                         <p className={cn('text-xs leading-relaxed', done ? 'text-muted-foreground line-through' : 'text-foreground/80')}>

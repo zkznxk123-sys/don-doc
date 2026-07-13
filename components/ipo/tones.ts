@@ -1,7 +1,7 @@
 /**
  * IPO 화면 웜 시맨틱 톤 — SaaS 무지개(amber·emerald·sky·rose) 대신 단일 출처.
  * 매핑(designer 2026-07-10): 청약=골드 · 상장=세이지 · 환불/SPAC=슬레이트블루 ·
- * 임박/초과/삭제=테라코타 · 준비경고=warning(--viz-amber 시맨틱 유틸).
+ * 임박/초과/삭제=테라코타 · 준비경고=warning(--viz-copper 시맨틱 유틸).
  * raw 팔레트 클래스는 eslint 가드(schedule-view·account-planner)로 차단 —
  * 새 색이 필요하면 여기에 시맨틱 이름으로 추가할 것.
  */

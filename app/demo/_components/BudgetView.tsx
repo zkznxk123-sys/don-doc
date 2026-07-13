@@ -42,7 +42,7 @@ export function BudgetView({ data }: { data: DemoData }) {
                 </span>
               </div>
               <div className="w-full bg-muted rounded-full h-2">
-                <div className={cn('h-2 rounded-full transition-all', (budgetSpent / budget.amount) > 0.8 ? 'bg-(--viz-red)' : 'bg-(--viz-emerald)')}
+                <div className={cn('h-2 rounded-full transition-all', (budgetSpent / budget.amount) > 0.8 ? 'bg-(--viz-terra)' : 'bg-(--viz-sage)')}
                   style={{ width: `${Math.min((budgetSpent / budget.amount) * 100, 100)}%` }} />
               </div>
             </div>
@@ -86,7 +86,7 @@ export function BudgetView({ data }: { data: DemoData }) {
         <div className="space-y-3">
           {cashflow.categoryBreakdown.slice(0, 8).map((item, i) => {
             const pct = cashflow.monthlyExpense > 0 ? (item.amount / cashflow.monthlyExpense) * 100 : 0
-            const VIZ_COLORS = ['var(--viz-blue)', 'var(--viz-violet)', 'var(--viz-emerald)', 'var(--viz-amber)', 'var(--viz-pink)', 'var(--viz-sky)', 'var(--viz-red)', 'var(--viz-blue)']
+            const VIZ_COLORS = ['var(--viz-gold)', 'var(--viz-sage)', 'var(--viz-olive)', 'var(--viz-copper)', 'var(--viz-slate)', 'var(--viz-terra)', 'var(--viz-warmgrey)', 'var(--viz-gold)']
             return (
               <div key={item.category} className="flex items-center gap-3">
                 <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: VIZ_COLORS[i % VIZ_COLORS.length] }} />
@@ -128,7 +128,7 @@ export function BudgetView({ data }: { data: DemoData }) {
                   </span>
                 </div>
                 <div className="w-full bg-muted rounded-full h-1.5">
-                  <div className={cn('h-1.5 rounded-full', good ? 'bg-(--viz-emerald)' : 'bg-(--viz-amber)')}
+                  <div className={cn('h-1.5 rounded-full', good ? 'bg-(--viz-sage)' : 'bg-(--viz-copper)')}
                     style={{ width: `${Math.min(pct, 100)}%` }} />
                 </div>
               </div>

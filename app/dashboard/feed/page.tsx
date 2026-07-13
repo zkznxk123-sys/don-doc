@@ -41,8 +41,8 @@ function authorInitial(name: string | null): string {
 }
 
 const AVATAR_COLORS = [
-  'bg-savings', 'bg-(--viz-violet)', 'bg-income',
-  'bg-warning', 'bg-(--viz-blue)', 'bg-destructive',
+  'bg-savings', 'bg-ai-500', 'bg-income',
+  'bg-warning', 'bg-(--viz-slate)', 'bg-destructive',
 ]
 function avatarColor(id: string): string {
   let hash = 0
@@ -238,8 +238,8 @@ function TxnRefCard({ txnRef }: { txnRef: TxnRefData }) {
       txnRef.isMasked
         ? 'bg-muted/30 border-border'
         : isExpense
-          ? 'bg-expense-soft border-(--viz-red)/20'
-          : 'bg-income-soft border-(--viz-emerald)/20',
+          ? 'bg-expense-soft border-(--viz-terra)/20'
+          : 'bg-income-soft border-(--viz-sage)/20',
     )}>
       <div className="px-3.5 py-2.5 flex items-center justify-between gap-3">
         <div className="min-w-0">
@@ -273,8 +273,8 @@ function TxnRefCard({ txnRef }: { txnRef: TxnRefData }) {
           className={cn(
             'flex items-center justify-center gap-1 py-1.5 text-[10px] font-medium border-t transition-colors',
             isExpense
-              ? 'border-(--viz-red)/15 text-muted-foreground hover:text-expense hover:bg-expense-soft'
-              : 'border-(--viz-emerald)/15 text-muted-foreground hover:text-income hover:bg-income-soft',
+              ? 'border-(--viz-terra)/15 text-muted-foreground hover:text-expense hover:bg-expense-soft'
+              : 'border-(--viz-sage)/15 text-muted-foreground hover:text-income hover:bg-income-soft',
           )}
         >
           현금흐름에서 확인
