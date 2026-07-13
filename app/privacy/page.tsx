@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 /**
  * 개인정보처리방침 — planner 7/12 P0(실가입자 존재 시 법적 의무).
- * ⚠️ 초안: 연락처·시행일은 운영자 확인 후 확정. 실제 데이터 흐름(Clerk·Vercel·DB·OpenAI·PostHog) 기준으로 작성.
+ * 2026-07-13 확정본: CPO 성명·직책(§7) 사용자 확정, 시행일 2026-07-12. 실제 데이터 흐름(Clerk·Vercel·DB·OpenAI·PostHog) 기준으로 작성.
  */
 
 const SECTIONS: { h: string; body: (string | string[])[] }[] = [
@@ -72,7 +72,18 @@ const SECTIONS: { h: string; body: (string | string[])[] }[] = [
     ],
   },
   {
-    h: '7. 문의처',
+    h: '7. 개인정보 보호책임자',
+    body: [
+      '개인정보 처리에 관한 업무를 총괄하고 이용자의 불만 처리·피해 구제를 담당하는 책임자를 아래와 같이 지정합니다.',
+      [
+        '성명: 한상빈',
+        '직책: 개인정보 보호책임자',
+        '연락처: zkznxk123@gmail.com',
+      ],
+    ],
+  },
+  {
+    h: '8. 문의처',
     body: [
       '개인정보 관련 문의: zkznxk123@gmail.com',
       '본 방침은 2026년 7월 12일부터 적용됩니다. 내용이 바뀌면 이 페이지에서 고지합니다.',
