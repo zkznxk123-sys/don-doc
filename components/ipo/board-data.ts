@@ -133,16 +133,25 @@ export interface AccountMoney {
   total: number         // locked+refundPending
 }
 
-export function accountMoney(acct: Account, ledger: LedgerRow[]): AccountMoney {
+/**
+ * ledger 전체의 자금 위치 집계 — 계좌 등록 여부와 무관(미귀속 청약도 포함).
+ * 자금 위치 맵·전체 요약이 이걸 쓴다. kind 필터 없음(계좌·자금은 IPO·SPAC 공용).
+ * 계좌를 아직 등록하지 않고 청약만 기록해도 증거금이 누락되지 않도록, accounts가 아닌 ledger를 직접 훑는다.
+ */
+export function ledgerMoney(ledger: LedgerRow[]): AccountMoney {
   let locked = 0, refundPending = 0, heldShares = 0
   for (const r of ledger) {
-    if (r.person !== acct.person || r.broker !== acct.broker) continue
     if (r.status === 'SUBMITTED') locked += r.deposit
     if (r.status === 'ALLOCATED') { heldShares += r.allocatedShares; if (!r.refunded) refundPending += r.refundAmount }
     // 미배정 = 배정 0 → 증거금 전액 환불. 회수 전이면 증거금 전액이 환불 대기.
     if (r.status === 'UNALLOCATED' && !r.refunded) refundPending += (r.refundAmount || r.deposit)
   }
   return { locked, refundPending, heldShares, total: locked + refundPending }
+}
+
+/** 특정 계좌(명의×증권사)에 귀속된 청약만의 자금 집계. 계좌별 카드용. */
+export function accountMoney(acct: Account, ledger: LedgerRow[]): AccountMoney {
+  return ledgerMoney(ledger.filter(r => r.person === acct.person && r.broker === acct.broker))
 }
 
 /** 계좌의 준비 미비 항목 수. 0이면 청약 가능. */

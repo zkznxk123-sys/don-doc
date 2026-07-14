@@ -6,7 +6,9 @@ export const dynamic = 'force-dynamic'
  *
  * POST { no38?: string, name?: string } → { competition, integrated, asOf, source, basis }
  *  - competition = 비례경쟁률(계산기 입력값). integrated = 통합경쟁률(참고).
- *  - 마감 후 상세(o=v)의 확정 경쟁률을 읽는다. 청약 진행 중 실시간은 다음 실 청약 때 o=r 파싱 추가 예정.
+ *  - 마감 후 상세(o=v)의 확정 경쟁률을 읽는다. 청약 진행 중엔 38이 경쟁률을 게시하지 않는다
+ *    (2026-07-14 에이치엘지노믹스 청약일 실측: o=v 상세에 청약경쟁률 값 공란, o=r엔 공모뉴스만) →
+ *    실시간 조회 소스 부재로 UI는 "청약 중엔 증권사 앱 확인" 폴백. 구 "o=r 파싱 추가 예정" 계획 폐기.
  *  - asOf = 서버가 38을 읽은 시각(ISO). 값 못 찾으면 competition=null.
  */
 import { NextRequest, NextResponse } from 'next/server'

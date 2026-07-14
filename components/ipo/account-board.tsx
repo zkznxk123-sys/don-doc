@@ -13,7 +13,7 @@ import { DeleteBtn, EditBtn, AccountForm } from '@/components/ipo/entry-forms'
 import type { IpoData } from '@/lib/ipo/store'
 import {
   READINESS_LABELS, READINESS_TONE,
-  accountMoney, readinessIssues, maskAccountNo, type Account, type LedgerRow,
+  accountMoney, ledgerMoney, readinessIssues, maskAccountNo, type Account, type LedgerRow,
 } from '@/components/ipo/board-data'
 
 const SEG = {
@@ -37,15 +37,12 @@ function MoneyBar({ locked, refund }: { locked: number; refund: number }) {
  * 자금 위치 맵 — A(잔액)·B(묶임)·C(환불대기)를 가로지르는 상시 오버레이(계층 밖).
  * 페이지 상단에 항상 노출된다.
  */
-export function MoneyMap({ accounts, ledger }: { accounts: Account[]; ledger: LedgerRow[] }) {
+export function MoneyMap({ ledger }: { ledger: LedgerRow[] }) {
+  // ledger 전체 기준 — 계좌 미등록 상태에서 청약만 기록해도 누락 없이 잡힌다(상단 KPI와 일치).
   const totals = useMemo(() => {
-    let locked = 0, refund = 0, held = 0
-    for (const a of accounts) {
-      const m = accountMoney(a, ledger)
-      locked += m.locked; refund += m.refundPending; held += m.heldShares
-    }
-    return { locked, refund, held, total: locked + refund }
-  }, [accounts, ledger])
+    const m = ledgerMoney(ledger)
+    return { locked: m.locked, refund: m.refundPending, held: m.heldShares, total: m.total }
+  }, [ledger])
 
   return (
     <Card>

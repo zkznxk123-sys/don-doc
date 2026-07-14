@@ -199,7 +199,7 @@ export default function IpoLedgerPage() {
           </div>
 
           {/* 자금 위치 맵 — 계층 밖 상시 오버레이 */}
-          <MoneyMap accounts={accounts} ledger={ledger} />
+          <MoneyMap ledger={ledger} />
         </>
       )}
 
