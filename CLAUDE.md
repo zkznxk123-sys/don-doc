@@ -238,7 +238,7 @@ if (isLite()) { /* lite 분기 */ }
   - `offerings.generated.ts`·`spac-universe.generated.ts` — 빌드 스크립트 산출(직접 수정 금지).
 - **`utils/ipo-ledger/`** — 운영자 카톡 "공모주 일정" 공지 → 이벤트 정규화(`schedule-notice.ts`). `calendar-sync.ts`는 미사용(캘린더는 별도 IPO_calander Apps Script 담당).
 - **API** `app/api/ipo/`:
-  - `quote` — 네이버 금융 실시간 시세 프록시. `competition` — 38.co.kr 비례경쟁률. **둘 다 `blockIfLite` + `getAuthUser` 가드**(무인증 오픈 프록시 남용 차단). `workspace` — GET/PUT(zod 검증·512KB 상한).
+  - `quote` — 네이버 금융 실시간 시세 프록시. `competition` — 38.co.kr 비례경쟁률. `workspace` — GET/PUT(zod 검증·512KB 상한). **셋 다 `getAuthUser` + `blockIpoIfNotEntitled(user.cohort)` 가드**(무인증 오픈 프록시 남용 차단 + lite는 cohort 해금자만 — 07-12 해금형 개편. `blockIfLite` 아님: cohort 보유 lite도 통과해야 하므로).
 - **`scripts/ipo-{schedule,offerings}-build.ts` + `ipo-schedule-cron.sh`** — 38.co.kr 라이브에서 일정·종목 유니버스 주간 재생성(launchd), sanity 게이트 통과 시 생성 파일 2개만 자동 커밋·푸시.
 
 ---
@@ -303,5 +303,5 @@ npx tsx prisma/seed-demo.ts        # 데모 가족 시드 (가명 데이터)
 - 매매 등록(`addTradeRecord`)은 `prisma.$transaction`으로 묶여 있음 — read는 트랜잭션 외부, balance 재계산은 트랜잭션 후. 추가 액션 작성 시 동일 패턴 권장
 - 자동 생성 `Transaction.visibility` 기본 `PRIVATE` (5/22~) — 가족·동업자와 공유는 사용자가 명시적으로 SHARED 토글
 - 색상은 ad-hoc Tailwind(`text-emerald-500`·`text-red-500` 등) 금지 — globals.css의 `.text-income`·`.text-expense`·`.text-warning`·`.text-savings` viz 유틸 사용
-- 랜딩 페이지(`components/marketing/LandingPage.tsx`)는 BRAND_GUIDE §7 "Landing · Light sub-palette"(warm off-white·forest)만 사용 — 2026-06-11 dark-luxury 폐기. 다른 페이지는 globals.css 토큰을 우회 금지. 히어로는 `landing/VideoHeroLight.tsx`(Solid Modern 다크 히어로 · 자체 제작 다크+골드 브랜드 영상 `public/landing/hero.mp4`, 2026-07-08 완성. docs/design/hero-explorations.md)
+- 랜딩 페이지(`components/marketing/LandingPage.tsx`)는 Solid Modern(BRAND_GUIDE §6 정체성·§14 랜딩) — 딥 포레스트 다크+골드, 2026-07-08 다크 전환(구 라이트 단일·dark-luxury 서술 모두 폐기). 다른 페이지는 globals.css 토큰 우회 금지. 히어로는 `landing/VideoHeroLight.tsx`(자체 제작 다크+골드 브랜드 영상 `public/landing/hero.mp4`, 2026-07-08 완성. docs/design/hero-explorations.md)
 - `app/api/demo/data/route.ts`는 무인증 — demo 계정 데이터(description·memo·feedPost.content)에 실명·실숫자가 섞이지 않게 시드 점검 필요

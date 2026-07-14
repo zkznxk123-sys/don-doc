@@ -43,9 +43,9 @@ CFO(관리자)는 전체 자산 흐름을 파악하고, 구성원은 개인 지�
 
 | 영역 | 기술 |
 |---|---|
-| **Framework** | Next.js 15.x (App Router, Turbo) |
+| **Framework** | Next.js 16.x (App Router, Turbopack) |
 | **Auth** | Clerk |
-| **Database** | PostgreSQL + Prisma 5 |
+| **Database** | PostgreSQL + Prisma 6 |
 | **AI** | Vercel AI SDK + OpenAI gpt-4o-mini (LLM-Mux 경유) |
 | **Styling** | Tailwind CSS + shadcn/ui (Radix UI) |
 | **차트·애니메이션** | Recharts + Framer Motion |
@@ -117,7 +117,7 @@ utils/
 
 ## 디자인 원칙
 
-- 미니멀한 라이트 단일 톤 (warm off-white·forest accent — 랜딩 2026-06 다크 폐기)
+- Solid Modern (2026-07-08~) — 랜딩·마케팅은 딥 포레스트 다크+골드 히어로, 데일리 앱은 라이트, 듀얼 모드
 - 숫자는 정보가 아니라 **경험** — 크고 명확한 Typography
 - 복잡한 표보다 시각적 그래프와 카드 위젯
 - CFO와 구성원 모드에 따른 대시보드 차별화

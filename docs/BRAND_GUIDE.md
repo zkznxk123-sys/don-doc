@@ -171,8 +171,8 @@
 ## 9. Logo & Icon
 
 ### 파일
-- `public/logo-wordmark.svg` / `-dark.svg` — 가로 워드마크(돈 + D + 골드 코인). 사이드바·헤더·랜딩 nav.
-- `public/brand-mark.svg` / `-dark.svg` — 64×64 심볼 타일. Favicon·app icon·OG.
+- `public/brand-mark.svg` / `-dark.svg` — 64×64 심볼 타일(ㄷ=D 브래킷 + 골드 코인). Favicon·app icon·OG.
+- 워드마크(가로 로고)는 별도 SVG 파일이 아니라 `components/ui/brand-mark.tsx`의 `BrandMark`/`LogoLockup` 컴포넌트가 렌더 — 사이드바·헤더·랜딩 nav에서 사용. (구 `logo-wordmark.svg` 계획은 컴포넌트 방식으로 대체·미생성)
 
 ### Solid Modern (2026-07-07 재제작)
 - 딥 포레스트 사각(`#182A24`, 라운드 14) + 웜 화이트 D 글리프 + **골드 코인**(`#C9A54A`). 다크 UI용은 raised 패널 `#26362F` + 골드 hairline.
