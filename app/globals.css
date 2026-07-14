@@ -161,17 +161,18 @@
   box-shadow: var(--shadow-xl);
 }
 @utility text-income {
-  /* Semantic color utilities (income / expense / savings / warning) — 웜 viz 토큰 배선 */
-  color: var(--viz-sage);
+  /* Semantic color utilities (income / expense / savings / warning) — 텍스트 전용 viz 토큰(WCAG AA 4.5:1).
+     차트·bar·soft bg는 --viz-* 유지, 텍스트만 --viz-*-text 분리(design-2026-07-14-v2). */
+  color: var(--viz-sage-text);
 }
 @utility text-expense {
-  color: var(--viz-terra);
+  color: var(--viz-terra-text);
 }
 @utility text-savings {
-  color: var(--viz-gold);
+  color: var(--viz-gold-text);
 }
 @utility text-warning {
-  color: var(--viz-copper);
+  color: var(--viz-copper-text);
 }
 @utility bg-income-soft {
   background: color-mix(in srgb, var(--viz-sage) 12%, transparent);
@@ -371,6 +372,14 @@
     --viz-terra:    #B34A34;  /* expense/debt                         */
     --viz-warmgrey: #8A8574;  /* fallback/기타                        */
     --estate:       var(--viz-olive);  /* real-estate 도메인 semantic — 컴포넌트는 estate 토큰 사용 */
+
+    /* 텍스트 전용 viz — 본문 크기 텍스트는 WCAG AA 4.5:1 필요(차트·bar는 3:1로 충분).
+       차트용 --viz-*는 대비 미달이라(골드 2.82·코퍼 3.38 등) 텍스트엔 이 토큰을 쓴다.
+       라이트 = 페이퍼 #F5F3EE 위 4.5:1+ 검증값. 근거: design-2026-07-14-v2, 선례 tones.ts TERRA_TEXT. */
+    --viz-gold-text:   #866219;  /* savings/저축률 텍스트 (surf 5.02) */
+    --viz-terra-text:  #B34A34;  /* expense 텍스트 (surf 4.80)        */
+    --viz-copper-text: #96601F;  /* warning 텍스트 (surf 4.75)        */
+    --viz-sage-text:   #487457;  /* income 텍스트 (surf 4.84)         */
   }
 
   .dark {
@@ -415,6 +424,13 @@
     --viz-slate:    #7E8AA0;
     --viz-terra:    #C0553D;
     --viz-warmgrey: #8A8574;
+
+    /* 텍스트 전용 viz · 다크 — 딥포레스트 #182A24 위 4.5:1+ 검증값.
+       terra·sage 차트값은 다크에서 대비 미달(3.30·3.84)이라 밝은 텍스트값으로 분리. */
+    --viz-gold-text:   #C9A54A;  /* 차트값 그대로 통과 (bg 6.42)      */
+    --viz-terra-text:  #D98A75;  /* expense 텍스트 (bg 5.62)          */
+    --viz-copper-text: #CB8A3C;  /* 차트값 그대로 통과 (bg 5.19)      */
+    --viz-sage-text:   #77A68C;  /* income 텍스트 (bg 5.46)           */
   }
 }
 
