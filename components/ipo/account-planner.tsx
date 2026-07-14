@@ -14,7 +14,7 @@ import {
   type FamilyMember, type Relation, type BrokerGap,
 } from '@/components/ipo/board-data'
 import { brokerMeta, OPEN_STRATEGY_TIPS } from '@/components/ipo/broker-meta'
-import { TERRA_CHIP } from '@/components/ipo/tones'
+import { TERRA_CHIP, TERRA_HOVER } from '@/components/ipo/tones'
 import type { IpoData } from '@/lib/ipo/store'
 
 const RELATIONS: Relation[] = ['본인', '배우자', '자녀', '부모', '기타']
@@ -107,8 +107,8 @@ function FamilyPool({ data }: { data: IpoData }) {
               <span className="font-medium">{m.name}</span>
               <span className="text-muted-foreground">{m.relation}</span>
               {m.minor && <Baby className="size-3 text-warning" aria-label="미성년" />}
-              <button onClick={() => { setEditing(m); setAdding(false) }} title="편집" className="text-muted-foreground/50 hover:text-foreground"><Pencil className="size-3" /></button>
-              <button onClick={() => data.removeMember(m.id)} title="삭제" className="text-muted-foreground/50 hover:text-[#C0553D]"><X className="size-3" /></button>
+              <button onClick={() => { setEditing(m); setAdding(false) }} title="편집" aria-label="편집" className="text-muted-foreground/50 hover:text-foreground"><Pencil className="size-3" /></button>
+              <button onClick={() => data.removeMember(m.id)} title="삭제" aria-label="삭제" className={cn('text-muted-foreground/50', TERRA_HOVER)}><X className="size-3" /></button>
             </span>
           ))}
         </div>

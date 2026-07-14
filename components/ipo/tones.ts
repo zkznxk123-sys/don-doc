@@ -13,8 +13,10 @@ export const SLATE_CHIP = 'bg-[#7E8AA0]/15 text-[#525F78] dark:text-[#A3AEC2]'
 export const TERRA_CHIP = 'bg-[#C0553D]/12 text-[#A03E28] dark:text-[#D98A75]'
 
 // 텍스트 단독
+export const GOLD_TEXT = 'text-[#C9A54A]'
 export const SAGE_TEXT = 'text-[#4A7A60] dark:text-[#8FB79F]'
 export const TERRA_TEXT = 'text-[#B24A32] dark:text-[#D98A75]'
+export const TERRA_HOVER = 'hover:text-[#C0553D] dark:hover:text-[#D98A75]'
 export const SLATE_TEXT = 'text-[#67748E] dark:text-[#A3AEC2]'
 
 // 도트·행 틴트·강조 테두리

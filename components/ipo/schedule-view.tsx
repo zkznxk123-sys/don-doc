@@ -14,7 +14,7 @@ import {
   type UpcomingOffering, type SubStatus, type Account,
 } from '@/components/ipo/board-data'
 import { computeBudgetPlan, requiredShares, depositFor, expectedProportional, BUFFER_LEVELS } from '@/lib/ipo/allocation'
-import { GOLD_CHIP, SAGE_CHIP, SLATE_CHIP, TERRA_CHIP, SAGE_TEXT, TERRA_TEXT, SLATE_TEXT, GOLD_DOT, SAGE_DOT, TERRA_SOLID, SAGE_ROW, TERRA_CARD } from '@/components/ipo/tones'
+import { GOLD_CHIP, SAGE_CHIP, SLATE_CHIP, TERRA_CHIP, GOLD_TEXT, SAGE_TEXT, TERRA_TEXT, SLATE_TEXT, GOLD_DOT, SAGE_DOT, TERRA_SOLID, SAGE_ROW, TERRA_CARD } from '@/components/ipo/tones'
 import type { IpoData } from '@/lib/ipo/store'
 
 /** 종목의 대표일(정렬·월그룹 기준): 청약 시작 → 상장 → 환불 순 우선. */
@@ -369,7 +369,7 @@ function MySubs({ o, data }: { o: UpcomingOffering; data: IpoData }) {
     <div className={cn('focus-box rounded-md p-3 space-y-2', active && 'is-active')}>
       <div className="flex items-center justify-between">
         <span className="text-xs font-semibold flex items-center gap-1.5">
-          <ClipboardList className="size-3.5 text-[#C9A54A]" /> 내 청약{mine.length > 0 && ` · ${mine.length}`}
+          <ClipboardList className={cn('size-3.5', GOLD_TEXT)} /> 내 청약{mine.length > 0 && ` · ${mine.length}`}
         </span>
         {!adding && (
           <button onClick={() => setAdding(true)}
