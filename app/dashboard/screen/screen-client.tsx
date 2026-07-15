@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { SCREEN_PRESETS, type PresetKey } from '@/lib/data/screen-presets'
 import type { ScreenInput, ScreenResult, ScreenSortKey } from '@/lib/utils/stock-screener'
 import { sectorToKorean } from '@/lib/data/sector-mapping'
+import { EtfNavCard } from '@/components/etf/etf-nav-card'
 
 const SORT_OPTIONS: { value: ScreenSortKey; label: string }[] = [
   { value: 'marketCap', label: '시가총액' },
@@ -106,6 +107,9 @@ export function ScreenClient() {
           </p>
         </div>
       </header>
+
+      {/* ETF 추정 NAV */}
+      <EtfNavCard />
 
       {/* 사전 preset 카드 */}
       <section className="space-y-2">
