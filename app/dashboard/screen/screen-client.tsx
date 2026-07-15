@@ -8,8 +8,7 @@ import { SCREEN_PRESETS, type PresetKey } from '@/lib/data/screen-presets'
 import type { ScreenInput, ScreenResult, ScreenSortKey } from '@/lib/utils/stock-screener'
 import { sectorToKorean } from '@/lib/data/sector-mapping'
 import { EtfNavCard } from '@/components/etf/etf-nav-card'
-import { StockDeepDiveCard } from '@/components/stock/stock-deep-dive-card'
-import { SAMPLE_DEEP_DIVE } from '@/lib/stock/deep-dive'
+import { StockDeepDiveSearch } from '@/components/stock/stock-deep-dive-search'
 
 const SORT_OPTIONS: { value: ScreenSortKey; label: string }[] = [
   { value: 'marketCap', label: '시가총액' },
@@ -113,13 +112,13 @@ export function ScreenClient() {
       {/* ETF 추정 NAV */}
       <EtfNavCard />
 
-      {/* 종목 깊이보기 (프로토타입 — 샘플 삼성전자, dartlab 연동 전 형태 확인용) */}
+      {/* 종목 깊이보기 (dartlab 재무 종합 · 개인 베타) */}
       <div className="space-y-1.5">
         <div className="flex items-center gap-2">
           <Sparkles className="w-3.5 h-3.5 text-warning" />
-          <h2 className="text-xs font-semibold text-foreground/80">종목 깊이보기 <span className="text-[10px] text-muted-foreground font-normal">베타 · 프로토타입(샘플)</span></h2>
+          <h2 className="text-xs font-semibold text-foreground/80">종목 깊이보기 <span className="text-[10px] text-muted-foreground font-normal">베타 · dartlab 재무 종합</span></h2>
         </div>
-        <StockDeepDiveCard data={SAMPLE_DEEP_DIVE} />
+        <StockDeepDiveSearch />
       </div>
 
       {/* 사전 preset 카드 */}
