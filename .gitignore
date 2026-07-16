@@ -46,3 +46,4 @@ scripts/fix-*.ts
 scripts/revert-*.ts
 scripts/move-*.ts
 scripts/rename-*.ts
+graphify-out/
