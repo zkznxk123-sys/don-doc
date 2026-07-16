@@ -17,12 +17,14 @@ Vercel 대시보드 → Project → Settings → Environment Variables 에서 �
 
 ---
 
-### Supabase Auth
+### Auth — Clerk (2026 전환. 구 Supabase Auth 절 폐기)
 
 | 변수명 | 설명 | 찾는 곳 |
 |--------|------|---------|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase 프로젝트 URL | Supabase 대시보드 → Project Settings → API → Project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase 익명(공개) 키. 클라이언트에 노출되어도 안전합니다. | Supabase 대시보드 → Project Settings → API → `anon` `public` 키 |
+| `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk 공개 키 | Clerk 대시보드 → API Keys |
+| `CLERK_SECRET_KEY` | Clerk 서버 키 | Clerk 대시보드 → API Keys |
+
+> `NEXT_PUBLIC_SUPABASE_URL`/`ANON_KEY`는 **DB(Supabase Postgres)용으로만 잔존**하며 Auth 용도 아님 — Auth는 Clerk 단일.
 
 ---
 
@@ -87,3 +89,14 @@ Vercel 자동 감지로 충분하지만, 명시적으로 설정하려면:
 | Build Command | `npm run build` (= `next build`) |
 | Output Directory | `.next` |
 | Install Command | `npm install` → 자동으로 `postinstall: prisma generate` 실행됨 |
+
+
+---
+
+## 🔬 종목 리서치 베타 (딥다이브·ETF NAV — 개인 비공개, 2026-07)
+
+| 변수명 | 설명 | 비고 |
+|--------|------|------|
+| `RESEARCH_BETA_EMAILS` | 딥다이브·ETF NAV 허용 계정(콤마 구분). **미설정 시 전원 차단(fail-closed)** — 프로덕션은 의도적으로 비워 안전 | 컴플라이언스: 유사투자자문 민감 출력 개인 한정 |
+| `DARTLAB_SERVICE_URL` | dartlab 재무 분석 서비스 URL (기본 `http://127.0.0.1:8420`). 프로덕션은 Tailscale 사설망이라 Vercel에서 도달 불가 — 연결 설계 미결 | `~/Developer/dartlab/service/dondoc_deep_dive.py` |
+| `KIS_REAL_APP_KEY` / `KIS_REAL_APP_SECRET` | 한국투자 실전 앱키 — ETF 구성종목(073)은 모의 미지원이라 실전 필수 | 미설정 시 국내 ETF NAV 비활성(지수근사 해외도 KIS 요약 필요) |

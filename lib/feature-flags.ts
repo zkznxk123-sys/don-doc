@@ -132,6 +132,26 @@ export function blockIpoIfNotEntitled(cohort: Cohort | null): Response | null {
 }
 
 /**
+ * 종목 리서치 베타(딥다이브·ETF NAV) per-user 게이트 — 4번째 축.
+ * 컴플라이언스 전제("개인 비공개 도구", stock-research-desk 노트 §6)를 코드로 보증:
+ * 적정가·매도시그널 등 유사투자자문 민감 출력은 RESEARCH_BETA_EMAILS(콤마 구분) 등재
+ * 계정만 접근. **미설정 시 전원 차단(fail-closed)** — 프로덕션에 env가 없으면 자동 안전.
+ * 라인 게이트(blockIfLite)와 축이 다름: full 라인에서도 본인 외엔 닫힌다.
+ */
+export function canUseResearchBeta(email: string | null | undefined): boolean {
+  const allow = (process.env.RESEARCH_BETA_EMAILS ?? '')
+    .split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
+  if (!allow.length || !email) return false
+  return allow.includes(email.toLowerCase())
+}
+
+/** 리서치 베타 API 진입부 가드 — 미허용 계정이면 404 JSON (존재 자체 미노출). */
+export function blockResearchBetaIfNotAllowed(email: string | null | undefined): Response | null {
+  if (canUseResearchBeta(email)) return null
+  return Response.json({ success: false, error: LITE_BLOCKED_MESSAGE }, { status: 404 })
+}
+
+/**
  * API route 진입부에서 lite 빌드 차단 (방어심층). middleware가 dashboard
  * 페이지만 차단하므로 API endpoint는 별도 가드 필요. lite 사용자는 가족이
  * 없어 빈 응답이 되지만, 응답 자체를 막아 정보 노출·기능 우회 차단.

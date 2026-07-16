@@ -129,3 +129,36 @@ describe('feature-flags', () => {
     expect(f.isIpoBlockedForUser(null, '/dashboard/ipo')).toBe(false)
   })
 })
+
+describe('canUseResearchBeta — 리서치 베타 per-user 게이트 (fail-closed)', () => {
+  const KEY = 'RESEARCH_BETA_EMAILS'
+  const orig = process.env[KEY]
+  afterEach(() => { if (orig === undefined) delete process.env[KEY]; else process.env[KEY] = orig })
+
+  it('env 미설정이면 전원 차단 (fail-closed)', async () => {
+    vi.resetModules()
+    delete process.env[KEY]
+    const m = await import('./feature-flags')
+    expect(m.canUseResearchBeta('anyone@example.com')).toBe(false)
+    expect(m.canUseResearchBeta(null)).toBe(false)
+  })
+
+  it('등재 계정만 허용 — 대소문자·공백 무시', async () => {
+    vi.resetModules()
+    process.env[KEY] = ' Owner@Example.com , second@example.com '
+    const m = await import('./feature-flags')
+    expect(m.canUseResearchBeta('owner@example.com')).toBe(true)
+    expect(m.canUseResearchBeta('SECOND@EXAMPLE.COM')).toBe(true)
+    expect(m.canUseResearchBeta('other@example.com')).toBe(false)
+    expect(m.canUseResearchBeta(undefined)).toBe(false)
+  })
+
+  it('미허용이면 404 JSON 차단 응답', async () => {
+    vi.resetModules()
+    process.env[KEY] = 'owner@example.com'
+    const m = await import('./feature-flags')
+    expect(m.blockResearchBetaIfNotAllowed('owner@example.com')).toBeNull()
+    const blocked = m.blockResearchBetaIfNotAllowed('other@example.com')
+    expect(blocked?.status).toBe(404)
+  })
+})

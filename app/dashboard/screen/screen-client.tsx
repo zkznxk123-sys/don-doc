@@ -30,7 +30,7 @@ const DEFAULT_INPUT: ScreenInput = {
   limit: 20,
 }
 
-export function ScreenClient() {
+export function ScreenClient({ researchBeta = false }: { researchBeta?: boolean }) {
   const [input, setInput] = useState<ScreenInput>(DEFAULT_INPUT)
   const [activePreset, setActivePreset] = useState<PresetKey | null>(null)
   const [result, setResult] = useState<ScreenResult | null>(null)
@@ -109,17 +109,20 @@ export function ScreenClient() {
         </div>
       </header>
 
-      {/* ETF 추정 NAV */}
-      <EtfNavCard />
-
-      {/* 종목 깊이보기 (dartlab 재무 종합 · 개인 베타) */}
-      <div className="space-y-1.5">
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-3.5 h-3.5 text-warning" />
-          <h2 className="text-xs font-semibold text-foreground/80">종목 깊이보기 <span className="text-[10px] text-muted-foreground font-normal">베타 · dartlab 재무 종합</span></h2>
-        </div>
-        <StockDeepDiveSearch />
-      </div>
+      {/* 리서치 베타(ETF NAV·종목 깊이보기) — 허용 계정(RESEARCH_BETA_EMAILS)에만 노출.
+          적정가·시그널 등 유사투자자문 민감 출력이라 개인 비공개 전제를 코드로 보증(fail-closed). */}
+      {researchBeta && (
+        <>
+          <EtfNavCard />
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-3.5 h-3.5 text-warning" />
+              <h2 className="text-xs font-semibold text-foreground/80">종목 깊이보기 <span className="text-[10px] text-muted-foreground font-normal">베타 · dartlab 재무 종합</span></h2>
+            </div>
+            <StockDeepDiveSearch />
+          </div>
+        </>
+      )}
 
       {/* 사전 preset 카드 */}
       <section className="space-y-2">
