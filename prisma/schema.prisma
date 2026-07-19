@@ -141,6 +141,8 @@ model User {
   oauthAccountsConnected FamilyOAuthAccount[]
   oauthSessionsStarted   FamilyOAuthSession[]
   uploadBatches          UploadBatch[]
+  /// 개인 설정 (자산 표시 임계값·기본 가시성 등) — 기기 간 동기화. 키 스키마는 lib/user-preferences.ts
+  preferences            Json?
 
   @@index([familyId])
 }

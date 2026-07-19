@@ -1,36 +1,27 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useServerPreference } from './useServerPreference'
+import { DEFAULT_THRESHOLD } from '@/lib/user-preferences'
+
+export { DEFAULT_THRESHOLD }
 
 const STORAGE_KEY = 'asset-filter-threshold'
-export const DEFAULT_THRESHOLD = 100_000
 
+/**
+ * 자산 목록 표시 임계값(원) — 2026-07-18 서버 저장(User.preferences.assetThreshold) 이전.
+ * localStorage는 즉시 페인트·오프라인 캐시, 서버 값이 우선(기기 간 동기화).
+ */
 export function useAssetThreshold() {
-  const [threshold, setThresholdState] = useState(DEFAULT_THRESHOLD)
-
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (stored) {
-      const parsed = parseInt(stored, 10)
-      if (!isNaN(parsed) && parsed >= 0) setThresholdState(parsed)
-    }
-  }, [])
-
-  const setThreshold = (value: number) => {
-    setThresholdState(value)
-    localStorage.setItem(STORAGE_KEY, String(value))
-    // 같은 탭의 다른 컴포넌트에도 알림
-    window.dispatchEvent(new CustomEvent('asset-threshold-change', { detail: value }))
-  }
-
-  // 다른 컴포넌트에서 변경한 경우 동기화
-  useEffect(() => {
-    const handler = (e: Event) => {
-      setThresholdState((e as CustomEvent).detail)
-    }
-    window.addEventListener('asset-threshold-change', handler)
-    return () => window.removeEventListener('asset-threshold-change', handler)
-  }, [])
-
+  const [threshold, setThreshold] = useServerPreference<number>({
+    prefKey: 'assetThreshold',
+    storageKey: STORAGE_KEY,
+    eventName: 'asset-threshold-change',
+    defaultValue: DEFAULT_THRESHOLD,
+    parseLocal: raw => {
+      const parsed = parseInt(raw, 10)
+      return !isNaN(parsed) && parsed >= 0 ? parsed : null
+    },
+    serializeLocal: String,
+  })
   return { threshold, setThreshold }
 }
