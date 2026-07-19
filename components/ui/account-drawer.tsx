@@ -641,7 +641,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
                   'rounded-xl p-3 -mx-1 transition-all border',
                   needsLinkedAsset ? 'bg-warning-soft' : 'bg-transparent border-transparent'
                 )}
-                style={needsLinkedAsset ? { borderColor: 'rgba(245,158,11,0.3)' } : undefined}
+                style={needsLinkedAsset ? { borderColor: 'color-mix(in srgb, var(--viz-copper) 30%, transparent)' } : undefined}
               >
                 <Label className={cn(
                   'text-xs mb-1.5 flex items-center gap-1.5',
@@ -651,7 +651,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
                   {needsLinkedAsset && (
                     <span
                       className="text-[10px] bg-warning-soft text-warning border px-1.5 py-0.5 rounded-md font-semibold"
-                      style={{ borderColor: 'rgba(245,158,11,0.4)' }}
+                      style={{ borderColor: 'color-mix(in srgb, var(--viz-copper) 40%, transparent)' }}
                     >
                       {dDebtType === 'MORTGAGE' ? '주담대 담보 자산' : '전세 대상 자산'} 연결 권장
                     </span>
@@ -662,7 +662,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
                     value={linkedAssetId}
                     onChange={e => setLinkedAssetId(e.target.value)}
                     className="w-full h-10 bg-card rounded-xl pl-4 pr-9 text-sm text-foreground outline-hidden transition-colors appearance-none border border-border focus:border-ring"
-                    style={needsLinkedAsset && !linkedAssetId ? { borderColor: 'rgba(245,158,11,0.5)' } : undefined}
+                    style={needsLinkedAsset && !linkedAssetId ? { borderColor: 'color-mix(in srgb, var(--viz-copper) 50%, transparent)' } : undefined}
                   >
                     <option value="">없음</option>
                     {(needsLinkedAsset

@@ -642,7 +642,7 @@ export default function CashflowPage() {
                       ? 'bg-income-soft text-income'
                       : 'bg-expense-soft text-expense',
                   )}
-                  style={{ borderColor: typeFilter === 'INCOME' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)' }}>
+                  style={{ borderColor: typeFilter === 'INCOME' ? 'color-mix(in srgb, var(--viz-sage) 30%, transparent)' : 'color-mix(in srgb, var(--viz-terra) 30%, transparent)' }}>
                     {typeFilter === 'INCOME' ? '수입만 보기' : '지출만 보기'}
                     <button onClick={() => toggleFilter(typeFilter)} className="hover:opacity-70 transition-opacity">
                       <X className="w-2.5 h-2.5" />

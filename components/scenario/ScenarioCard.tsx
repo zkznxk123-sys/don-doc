@@ -61,7 +61,7 @@ export function ScenarioCard({
         'bg-card border border-border rounded-2xl overflow-hidden transition-opacity',
         dismissed && 'opacity-40',
       )}
-      style={interested ? { borderColor: 'rgba(59,130,246,0.3)' } : undefined}
+      style={interested ? { borderColor: 'color-mix(in srgb, var(--viz-slate) 30%, transparent)' } : undefined}
     >
       {/* 헤더 */}
       <button
@@ -243,7 +243,7 @@ export function ScenarioCard({
             <button
               onClick={onInterested}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-savings-soft text-savings text-xs font-medium hover:bg-savings/20 transition-colors border"
-              style={{ borderColor: 'rgba(59,130,246,0.2)' }}
+              style={{ borderColor: 'color-mix(in srgb, var(--viz-slate) 20%, transparent)' }}
             >
               <BookmarkCheck className="w-3.5 h-3.5" />관심있음
             </button>

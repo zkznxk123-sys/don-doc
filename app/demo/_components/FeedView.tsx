@@ -23,12 +23,12 @@ export function FeedView({ data }: { data: DemoData }) {
           <div
             key={post.id}
             className={cn('bg-card rounded-2xl border overflow-hidden', post.isPinned ? '' : 'border-border')}
-            style={post.isPinned ? { borderColor: 'rgba(245,158,11,0.3)' } : undefined}
+            style={post.isPinned ? { borderColor: 'color-mix(in srgb, var(--viz-copper) 30%, transparent)' } : undefined}
           >
             {post.isPinned && (
               <div
                 className="flex items-center gap-1.5 px-4 py-2 bg-warning-soft border-b"
-                style={{ borderColor: 'rgba(245,158,11,0.2)' }}
+                style={{ borderColor: 'color-mix(in srgb, var(--viz-copper) 20%, transparent)' }}
               >
                 <Pin className="w-3 h-3 text-warning" />
                 <span className="text-[10px] font-medium text-warning">고정 게시물</span>
@@ -47,7 +47,7 @@ export function FeedView({ data }: { data: DemoData }) {
                 {post.type === 'txn_ref' && (
                   <span
                     className="ml-auto text-[10px] bg-warning-soft text-warning border px-1.5 py-0.5 rounded-full"
-                    style={{ borderColor: 'rgba(245,158,11,0.2)' }}
+                    style={{ borderColor: 'color-mix(in srgb, var(--viz-copper) 20%, transparent)' }}
                   >
                     거래 공유
                   </span>

@@ -130,7 +130,7 @@ function SettingsClient() {
       iconColor: 'text-warning',
       activeBg: 'bg-warning-soft',
       activeText: 'text-warning',
-      activeBorderColor: 'rgba(245,158,11,0.3)',
+      activeBorderColor: 'color-mix(in srgb, var(--viz-copper) 30%, transparent)',
       badgeBg: 'bg-warning-soft text-warning',
     },
     {
@@ -142,7 +142,7 @@ function SettingsClient() {
       iconColor: 'text-income',
       activeBg: 'bg-income-soft',
       activeText: 'text-income',
-      activeBorderColor: 'rgba(16,185,129,0.3)',
+      activeBorderColor: 'color-mix(in srgb, var(--viz-sage) 30%, transparent)',
       badgeBg: 'bg-income-soft text-income',
     },
     {
@@ -154,7 +154,7 @@ function SettingsClient() {
       iconColor: 'text-savings',
       activeBg: 'bg-savings-soft',
       activeText: 'text-savings',
-      activeBorderColor: 'rgba(59,130,246,0.3)',
+      activeBorderColor: 'color-mix(in srgb, var(--viz-slate) 30%, transparent)',
       badgeBg: 'bg-savings-soft text-savings',
     },
   ] as const
@@ -288,10 +288,10 @@ function SettingsClient() {
       <section className="rounded-2xl border border-border bg-card/30 p-5 mb-4">
         <h2 className="text-sm font-semibold text-foreground/70 mb-3">새 거래 기본 공유 범위</h2>
         <div className="px-3 py-2">
-          <p className="text-sm font-medium text-foreground mb-1">자동 생성·엑셀 업로드·수동 입력 default</p>
+          <p className="text-sm font-medium text-foreground mb-1">엑셀 업로드·수동 입력 기본값</p>
           <p className="text-xs text-muted-foreground mb-4">
-            엑셀 업로드와 새 거래 입력 시 기본 공유 범위. PRIVATE — 금액 합계만 가족과 공유. SHARED — 상세 내역까지 투명하게 공개.
-            매매 자동 생성(실현손익·배당·수수료)은 항상 PRIVATE 고정.
+            비공개 — 가족에게는 금액만 보여요. 공유 — 상세 내역까지 함께 봐요.
+            매매 자동 생성 내역(실현손익·배당·수수료)은 항상 비공개로 고정돼요.
           </p>
           <div className="flex flex-wrap gap-2">
             {(['PRIVATE', 'SHARED'] as const).map(v => (
@@ -305,7 +305,7 @@ function SettingsClient() {
                 }`}
               >
                 {v === 'PRIVATE' ? <Lock className="w-3 h-3" /> : <Globe className="w-3 h-3" />}
-                {v}
+                {v === 'PRIVATE' ? '비공개' : '공유'}
               </button>
             ))}
           </div>
@@ -584,7 +584,7 @@ function SettingsClient() {
       {/* Danger Zone */}
       <section
         className="rounded-2xl border bg-expense-soft p-6"
-        style={{ borderColor: 'rgba(239,68,68,0.2)' }}
+        style={{ borderColor: 'color-mix(in srgb, var(--viz-terra) 20%, transparent)' }}
       >
         <div className="flex items-center gap-2.5 mb-4">
           <ShieldAlert className="w-5 h-5 text-destructive" />
@@ -603,7 +603,7 @@ function SettingsClient() {
               <button
                 disabled={isLoading}
                 className="shrink-0 flex items-center gap-2 px-4 h-9 rounded-xl text-sm font-semibold bg-expense-soft text-destructive border transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-80"
-                style={{ borderColor: 'rgba(239,68,68,0.3)' }}
+                style={{ borderColor: 'color-mix(in srgb, var(--viz-terra) 30%, transparent)' }}
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 초기화

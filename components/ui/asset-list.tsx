@@ -138,7 +138,7 @@ function AssetRow({
           <Lock className="w-4 h-4 text-muted-foreground" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-muted-foreground">🔒 개인 자산</p>
+          <p className="text-sm font-medium text-muted-foreground">개인 자산</p>
           <p className="text-xs text-muted-foreground/60 mt-0.5">{meta.label} · {allocation}%</p>
         </div>
         <span className="text-sm font-semibold text-muted-foreground tabular-nums shrink-0">

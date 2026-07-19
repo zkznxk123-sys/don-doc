@@ -1,5 +1,6 @@
 'use client'
 
+import { Lock } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from '@/constants/categories'
 import { EmptyTransactions } from './EmptyTransactions'
@@ -160,7 +161,7 @@ export function TransactionFeed({
                       ? 'bg-income-soft'
                       : 'bg-muted'
                   )}>
-                    {tx.isMasked ? '🔒' : icon}
+                    {tx.isMasked ? <Lock className="w-4 h-4 text-muted-foreground" /> : icon}
                   </div>
 
                   {/* 내용 */}

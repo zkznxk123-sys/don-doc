@@ -73,7 +73,7 @@ export function DebtTab({
       {/* 상단 요약 카드 3종 */}
       {summary && (
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-expense-soft border rounded-2xl p-4" style={{ borderColor: 'rgba(239,68,68,0.3)' }}>
+          <div className="bg-expense-soft border rounded-2xl p-4" style={{ borderColor: 'color-mix(in srgb, var(--viz-terra) 30%, transparent)' }}>
             <div className="flex items-center gap-1.5 mb-2">
               <HandCoins className="w-3.5 h-3.5 text-destructive" />
               <p className="text-[11px] text-muted-foreground font-medium">총 대출 잔액</p>
@@ -300,7 +300,7 @@ function DebtCard({
           </div>
           <div
             className={cn('rounded-xl p-3', isNearMaturity ? 'bg-warning-soft border' : 'bg-muted/40')}
-            style={isNearMaturity ? { borderColor: 'rgba(245,158,11,0.3)' } : undefined}
+            style={isNearMaturity ? { borderColor: 'color-mix(in srgb, var(--viz-copper) 30%, transparent)' } : undefined}
           >
             <p className="text-[10px] text-muted-foreground/60 mb-1">만기일</p>
             <p className={cn('text-sm font-bold tabular-nums', isNearMaturity ? 'text-warning' : 'text-foreground')}>

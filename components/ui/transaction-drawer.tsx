@@ -395,7 +395,7 @@ export function TransactionDrawer({
                     ? "bg-expense-soft text-expense"
                     : "bg-muted/50 border-border text-muted-foreground hover:border-ring"
                 )}
-                style={isExpense ? { borderColor: 'rgba(239,68,68,0.3)' } : undefined}
+                style={isExpense ? { borderColor: 'color-mix(in srgb, var(--viz-terra) 30%, transparent)' } : undefined}
               >
                 <Minus className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
                 지출
@@ -408,7 +408,7 @@ export function TransactionDrawer({
                     ? "bg-income-soft text-income"
                     : "bg-muted/50 border-border text-muted-foreground hover:border-ring"
                 )}
-                style={!isExpense ? { borderColor: 'rgba(16,185,129,0.3)' } : undefined}
+                style={!isExpense ? { borderColor: 'color-mix(in srgb, var(--viz-sage) 30%, transparent)' } : undefined}
               >
                 <Plus className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5" />
                 수입
@@ -613,14 +613,14 @@ export function TransactionDrawer({
             <div
               className={cn(
                 "flex items-center justify-between rounded-xl p-4 border transition-colors",
-                isShared ? "bg-income-soft" : "bg-warning-soft"
+                isShared ? "bg-income-soft" : "bg-muted/50"
               )}
-              style={{ borderColor: isShared ? 'rgba(16,185,129,0.2)' : 'rgba(245,158,11,0.2)' }}
+              style={isShared ? { borderColor: 'color-mix(in srgb, var(--viz-sage) 20%, transparent)' } : undefined}
             >
               <div className="flex items-center gap-3">
                 <div className={cn(
                   "w-9 h-9 rounded-lg flex items-center justify-center",
-                  isShared ? "bg-income-soft text-income" : "bg-warning-soft text-warning"
+                  isShared ? "bg-income-soft text-income" : "bg-muted text-muted-foreground"
                 )}>
                   {isShared ? <Globe className="w-4.5 h-4.5" /> : <Lock className="w-4.5 h-4.5" />}
                 </div>
@@ -629,7 +629,7 @@ export function TransactionDrawer({
                   <p className="text-xs text-muted-foreground mt-0.5">
                     {isShared
                       ? '가족 모두가 상세 내용을 확인할 수 있어요'
-                      : '가족에게는 금액만 노출됩니다 🔒'}
+                      : '가족에게는 금액만 노출됩니다'}
                   </p>
                 </div>
               </div>
@@ -702,11 +702,11 @@ export function TransactionDrawer({
             )}
 
             {isFull() && !isShared && (
-              <div className="flex items-start gap-2.5 rounded-xl px-4 py-3 bg-warning-soft/50 border border-(--viz-copper)/15">
-                <Lock className="w-4 h-4 text-warning mt-0.5 shrink-0" />
-                <p className="text-xs text-warning/80 leading-relaxed">
+              <div className="flex items-start gap-2.5 rounded-xl px-4 py-3 bg-muted/50 border border-border">
+                <Lock className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
+                <p className="text-xs text-muted-foreground leading-relaxed">
                   이 지출의 상세 내역은 가족에게 공개되지 않습니다.<br />
-                  <span className="text-warning/50">가족 대시보드에는 금액과 &lsquo;🔒 개인 지출&rsquo;만 표시됩니다.</span>
+                  <span className="text-muted-foreground/70">가족 대시보드에는 금액과 &lsquo;개인 지출&rsquo;만 표시됩니다.</span>
                 </p>
               </div>
             )}

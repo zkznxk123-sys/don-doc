@@ -29,6 +29,12 @@ export default [
           selector: 'Literal[value=/\\b(text|bg|border|ring|hover:text|hover:bg|hover:border)-(emerald|red|amber|orange|rose)-(400|500|600)\\b/]',
           message: 'Use viz tokens (.text-income / .text-expense / .text-warning / .text-savings / .bg-income-soft / destructive 등) instead of ad-hoc Tailwind colors. See BRAND_GUIDE §7 and CLAUDE.md.',
         },
+        {
+          // 콜드 팔레트 rgba 리터럴 (style={{}} 인라인) — 웜 통일(5625c96)의 사각지대(design 07-19-v2).
+          // emerald 16,185,129 / amber 245,158,11 / red 239,68,68 / blue 59,130,246 / violet 139,92,246
+          selector: 'Literal[value=/rgba\\((16, ?185, ?129|245, ?158, ?11|239, ?68, ?68|59, ?130, ?246|139, ?92, ?246)/]',
+          message: '콜드 팔레트 rgba 금지 — color-mix(in srgb, var(--viz-sage|copper|terra|slate) N%, transparent) 사용. BRAND_GUIDE §7.',
+        },
       ],
     },
   },

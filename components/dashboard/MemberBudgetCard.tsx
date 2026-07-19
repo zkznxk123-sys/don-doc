@@ -18,7 +18,7 @@ export function MemberBudgetCard({
         'rounded-2xl p-5 border',
         isOver ? 'bg-expense-soft' : isWarning ? 'bg-warning-soft' : 'bg-card border-border'
       )}
-      style={isOver ? { borderColor: 'rgba(239,68,68,0.3)' } : isWarning ? { borderColor: 'rgba(245,158,11,0.3)' } : undefined}
+      style={isOver ? { borderColor: 'color-mix(in srgb, var(--viz-terra) 30%, transparent)' } : isWarning ? { borderColor: 'color-mix(in srgb, var(--viz-copper) 30%, transparent)' } : undefined}
     >
       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">{monthLabel} 남은 예산</p>
       {myBudget > 0 ? (
