@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth'
-import { blockResearchBetaIfNotAllowed } from '@/lib/feature-flags'
+import { blockIfLite, blockResearchBetaIfNotAllowed } from '@/lib/feature-flags'
 import { estimateEtfNav } from '@/lib/etf/registry'
 
 /**
@@ -11,6 +11,8 @@ import { estimateEtfNav } from '@/lib/etf/registry'
  * 개인 비공개 베타(RESEARCH_BETA_EMAILS) — fail-closed.
  */
 export async function GET(req: NextRequest) {
+  const blocked = blockIfLite()
+  if (blocked) return blocked
   const user = await getAuthUser()
   if (!user) return NextResponse.json({ success: false, error: '인증이 필요합니다.' }, { status: 401 })
   const notAllowed = blockResearchBetaIfNotAllowed(user.email)

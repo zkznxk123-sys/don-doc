@@ -73,9 +73,9 @@ export function verdictTone(verdict: string): 'over' | 'fair' | 'under' {
   return 'fair'
 }
 
-/** 목표가 시그널 → 한글 라벨. */
+/** 목표가 시그널 → 한글 라벨. 매매지시어(매도/매수) 금지 — valuation.verdict와 동일한 서술 어휘 재사용(§2·§15). */
 export const SIGNAL_LABEL: Record<string, string> = {
-  strong_sell: '적극 매도', sell: '매도', hold: '중립', buy: '매수', strong_buy: '적극 매수',
+  strong_sell: '고평가', sell: '다소 고평가', hold: '적정', buy: '다소 저평가', strong_buy: '저평가',
 }
 
 /** 프로토타입 샘플 — 삼성전자 (dartlab 실호출 2026-07-15). */

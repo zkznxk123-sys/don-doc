@@ -26,14 +26,24 @@ const VAULT_DIR = path.resolve(
 interface Config {
   family_name: string
   personal: Record<string, any>
-  real_estate: Array<{ location: string; property_type: string }>
+  real_estate: Array<{ location: string; property_type: string; name?: string; market_value_eok?: number; usage_type?: string }>
   goals: Record<string, string>
-  assets: { deposit_account_name: string }
+  assets: {
+    deposit_account_name: string
+    subscription_account_keywords: string[]
+    pension_exclude_keywords: string[]
+    pension_field_map: Record<string, string[]>
+  }
   debts: { mortgage_types: string[]; credit_loan_types: string[]; etc_types: string[]; exclude_types: string[] }
   income: Record<string, string[]>
   category_to_form: Record<string, string>
   ambiguous_categories: Record<string, { default: string; rules: Array<{ keywords: string[]; form: string }> }>
   form_expense_categories: string[]
+}
+
+/** 계정명이 keywords 중 하나라도 포함하면 true */
+function nameHasAny(name: string, keywords: string[]): boolean {
+  return keywords.some(kw => name.includes(kw))
 }
 
 const config = yaml.load(fs.readFileSync(CONFIG_PATH, 'utf8')) as Config
@@ -82,14 +92,38 @@ async function main() {
               debtDetail: { select: { debtType: true, monthlyPayment: true } } },
   })
 
+  // ── 현금자산계 ── 청약저축·보증금은 여기서 분리
   const cashAccounts = accounts.filter(a => a.type === 'CASH')
-  const depositAcct = cashAccounts.find(a => a.name === config.assets.deposit_account_name)
-  const depositBalance = depositAcct?.balance ?? 0
-  const cashSum = cashAccounts.reduce((s, a) => s + a.balance, 0) - depositBalance
+  const depositBalance = cashAccounts.find(a => a.name === config.assets.deposit_account_name)?.balance ?? 0
+  const subscriptionSum = cashAccounts
+    .filter(a => a.name !== config.assets.deposit_account_name
+              && nameHasAny(a.name, config.assets.subscription_account_keywords))
+    .reduce((s, a) => s + a.balance, 0)
+  const cashSum = cashAccounts.reduce((s, a) => s + a.balance, 0) - depositBalance - subscriptionSum
+
+  // ── 투자자산계 ── 주식/펀드류(INVESTMENT+CRYPTO) + 청약저축
   const investSum = accounts.filter(a => a.type === 'INVESTMENT').reduce((s, a) => s + a.balance, 0)
   const cryptoSum = accounts.filter(a => a.type === 'CRYPTO').reduce((s, a) => s + a.balance, 0)
-  const pensionSum = accounts.filter(a => a.type === 'PENSION').reduce((s, a) => s + a.balance, 0)
-  const financialSum = investSum + cryptoSum + pensionSum
+  const stockSum = investSum + cryptoSum
+  const investmentTotal = stockSum + subscriptionSum
+
+  // ── 은퇴자산계 ── PENSION 계정을 계정명으로 배분, 국민연금은 제외(참고)
+  const pensionAccounts = accounts.filter(a => a.type === 'PENSION')
+  const pensionFields = Object.keys(config.assets.pension_field_map)
+  const retirementBuckets: Record<string, number> = {}
+  for (const f of pensionFields) retirementBuckets[f] = 0
+  let nationalPension = 0
+  const pensionUnmapped: string[] = []
+  for (const a of pensionAccounts) {
+    if (nameHasAny(a.name, config.assets.pension_exclude_keywords)) { nationalPension += a.balance; continue }
+    const field = pensionFields.find(f => nameHasAny(a.name, config.assets.pension_field_map[f]))
+    if (field) retirementBuckets[field] += a.balance
+    else { retirementBuckets[pensionFields[pensionFields.length - 1]] += a.balance; pensionUnmapped.push(a.name) }
+  }
+  const retirementTotal = pensionFields.reduce((s, f) => s + retirementBuckets[f], 0)
+
+  // 금융자산 합계 = 현금자산계(현금+보증금) + 투자자산계 + 은퇴자산계 (국민연금 제외)
+  const financialSum = cashSum + depositBalance + investmentTotal + retirementTotal
 
   const debts = accounts.filter(a => a.type === 'DEBT' || a.type === 'CREDIT_CARD')
   let mortgage = 0, creditLoan = 0, etcDebt = 0
@@ -184,7 +218,11 @@ async function main() {
   out()
 
   out(`## 보유 부동산`)
-  config.real_estate.forEach((r, i) => out(`- 부동산 ${i + 1}: ${r.location} / ${r.property_type}`))
+  config.real_estate.forEach((r, i) => {
+    const detail = [r.name, r.property_type, r.market_value_eok ? `현재 ${r.market_value_eok}억` : null, r.usage_type]
+      .filter(Boolean).join(' / ')
+    out(`- 부동산 ${i + 1}: ${r.location} / ${detail}`)
+  })
   out()
 
   out(`## 목표설정`)
@@ -196,19 +234,27 @@ async function main() {
   if (config.goals.switch_target) out(`- 갈아타기 목표: ${config.goals.switch_target}`)
   out()
 
-  out(`## 보유자산`)
-  out(`- 현금(종잣돈): ${fmtNumOnly(cashSum).toLocaleString()}만원 (CASH 합 − 월세보증금)`)
+  out(`## 보유자산 (폼: 현금/투자/은퇴 3그룹)`)
+  out(`### 현금자산계`)
+  out(`- 현금: ${fmtNumOnly(cashSum).toLocaleString()}만원 (CASH − 보증금 − 청약저축)`)
   out(`- 거주지 전세/월세 보증금: ${fmtNumOnly(depositBalance).toLocaleString()}만원`)
-  out(`- 금융자산 (예금·주식·코인·연금): ${fmtNumOnly(financialSum).toLocaleString()}만원`)
-  out(`  - 주식+코인: ${fmtNumOnly(investSum + cryptoSum).toLocaleString()}만원`)
-  out(`  - 연금: ${fmtNumOnly(pensionSum).toLocaleString()}만원`)
-  out(`- **총 유동자산**: ${fmtNumOnly(cashSum + depositBalance + financialSum).toLocaleString()}만원`)
+  out(`- **현금자산계**: ${fmtNumOnly(cashSum + depositBalance).toLocaleString()}만원`)
+  out(`### 투자자산계`)
+  out(`- 주식: ${fmtNumOnly(stockSum).toLocaleString()}만원 (INVESTMENT+CRYPTO)`)
+  out(`- 청약저축: ${fmtNumOnly(subscriptionSum).toLocaleString()}만원 (주택청약 계정 합)`)
+  out(`- **투자자산계**: ${fmtNumOnly(investmentTotal).toLocaleString()}만원`)
+  out(`### 은퇴자산계 (국민연금 제외)`)
+  for (const f of pensionFields) out(`- ${f}: ${fmtNumOnly(retirementBuckets[f]).toLocaleString()}만원`)
+  out(`- **은퇴자산계**: ${fmtNumOnly(retirementTotal).toLocaleString()}만원`)
+  out(`- (참고) 국민연금: ${fmtNumOnly(nationalPension).toLocaleString()}만원 — 합산 미포함`)
+  if (pensionUnmapped.length) out(`  - ⚠️ 연금 계정명 미매핑(연금저축펀드로 처리): ${pensionUnmapped.join(', ')}`)
+  out(`- **금융자산 합계(현금+투자+은퇴)**: ${fmtNumOnly(financialSum).toLocaleString()}만원`)
   out()
 
   out(`## 부채`)
   out(`- 주택담보대출: ${fmtNumOnly(mortgage).toLocaleString()}만원`)
-  out(`- 신용대출: ${fmtNumOnly(creditLoan).toLocaleString()}만원`)
-  out(`- 기타대출: ${fmtNumOnly(etcDebt).toLocaleString()}만원`)
+  out(`- 마이너스 통장 대출: ${fmtNumOnly(creditLoan).toLocaleString()}만원 (OVERDRAFT)`)
+  out(`- 기타대출: ${fmtNumOnly(etcDebt).toLocaleString()}만원 (회사대출 등)`)
   out(`- **총 부채**: ${fmtNumOnly(totalDebt).toLocaleString()}만원`)
   if (excludeNames.length) out(`  - (제외: ${excludeNames.join(', ')} — 받은 보증금/폼 비대상)`)
   out()
