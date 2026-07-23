@@ -321,7 +321,10 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
   const handleSubmit = async () => {
     if (isLoading) return
     if (!name.trim()) { toast.error('이름을 입력해주세요.'); return }
-    const parsedBalance = parseFloat(balance.replace(/,/g, '')) || 0
+    const rawBalance = parseFloat(balance.replace(/,/g, '')) || 0
+    // 부채(DEBT·CREDIT_CARD)는 빚 잔액 = 양수 관례. 음수 입력 시 순자산 과대평가되므로
+    // 저장 단계에서 양수로 정규화(2026-07-23, computeNetWorth 부호 전제와 정합).
+    const parsedBalance = isLiabilityType ? Math.abs(rawBalance) : rawBalance
     const { realEstateDetail, financialAssetDetail, debtDetail, pensionDetail } = buildDetailInput()
     const ownerIdInput = familyMembers.length > 0
       ? (pOwnerId === '' || pOwnerId === '__joint__' ? null : pOwnerId)

@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
+import { aggregateMonthlyCashflow } from '@/lib/cashflow-calc'
 
 // Returns monthly income/expense aggregates for the past N months
 // GET /api/stats/cashflow?months=12
@@ -29,28 +30,7 @@ export async function GET(req: NextRequest) {
       select: { amount: true, date: true },
     })
 
-    // Aggregate per YYYY-MM
-    const map: Record<string, { income: number; expense: number }> = {}
-    for (const tx of transactions) {
-      const key = `${tx.date.getFullYear()}-${String(tx.date.getMonth() + 1).padStart(2, '0')}`
-      if (!map[key]) map[key] = { income: 0, expense: 0 }
-      if (tx.amount > 0) map[key].income += tx.amount
-      else map[key].expense += Math.abs(tx.amount)
-    }
-
-    // Build ordered list of the last `count` months (oldest → newest)
-    const months = Array.from({ length: count }, (_, i) => {
-      const d = new Date(now.getFullYear(), now.getMonth() - (count - 1 - i), 1)
-      const yy = String(d.getFullYear()).slice(2)
-      const mm = String(d.getMonth() + 1).padStart(2, '0')
-      const key = `${d.getFullYear()}-${mm}`
-      return {
-        key,
-        label: `${yy}.${mm}`,
-        income: map[key]?.income ?? 0,
-        expense: map[key]?.expense ?? 0,
-      }
-    })
+    const months = aggregateMonthlyCashflow(transactions, count, now)
 
     return NextResponse.json({ success: true, months })
   } catch (e) {

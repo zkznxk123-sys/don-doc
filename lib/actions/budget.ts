@@ -2,7 +2,8 @@
 
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
-import { isCFOLevel, type AppRole } from '@/lib/roles'
+import { isCFOLevel } from '@/lib/roles'
+import { computeBudgetSummary } from '@/lib/budget-calc'
 import { revalidatePath } from 'next/cache'
 
 export interface MemberBudgetInput {
@@ -90,23 +91,5 @@ export async function getFamilyBudgetData(familyId: string, month: string) {
     }),
   ])
 
-  const spentByUser: Record<string, number> = {}
-  for (const tx of transactions) {
-    spentByUser[tx.userId] = (spentByUser[tx.userId] || 0) + Math.abs(tx.amount)
-  }
-
-  const familyBudgetEntry = budgets.find(b => b.userId === null)
-  const familyTotalSpent = Object.values(spentByUser).reduce((s, v) => s + v, 0)
-
-  return {
-    familyBudget: familyBudgetEntry?.amount ?? 0,
-    familySpent: familyTotalSpent,
-    members: members.map(m => ({
-      id: m.id,
-      name: m.name || m.email || '이름 없음',
-      role: m.role as AppRole,
-      budget: budgets.find(b => b.userId === m.id)?.amount ?? 0,
-      spent: spentByUser[m.id] ?? 0,
-    })),
-  }
+  return computeBudgetSummary(budgets, members, transactions)
 }
