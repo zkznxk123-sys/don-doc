@@ -20,9 +20,21 @@ function fetchServerPreferences(): Promise<UserPreferences | null> {
   return serverFetch
 }
 
-/** 테스트·로그아웃 등에서 서버 캐시 무효화. */
+/** 개인 설정 localStorage 키 — 훅별 STORAGE_KEY와 동기 유지(로그아웃 정리 대상). */
+const PREFERENCE_STORAGE_KEYS = ['asset-filter-threshold', 'don-doc:default-visibility']
+
+/**
+ * 로그아웃·테스트에서 개인 설정 캐시 무효화. 서버 GET 캐시(serverFetch)를 리셋하고
+ * localStorage의 설정 잔재를 지운다 — 공유 기기에서 계정 전환 시 이전 사용자의
+ * 임계값·기본 가시성이 다음 사용자에게 새지 않게(dev 2026-07-23, 5회 이월 배선).
+ */
 export function invalidatePreferencesCache() {
   serverFetch = null
+  if (typeof window !== 'undefined') {
+    for (const k of PREFERENCE_STORAGE_KEYS) {
+      try { localStorage.removeItem(k) } catch {}
+    }
+  }
 }
 
 function putServer(patch: UserPreferences) {

@@ -260,7 +260,7 @@ export default function FamilyPage() {
               {copied ? '복사됨' : '초대 링크 복사'}
             </button>
           </div>
-          <p className="text-xs text-muted-foreground/40 mt-3">링크를 받은 사람은 앱에서 가족에 바로 합류할 수 있어요</p>
+          <p className="text-xs text-muted-foreground/60 mt-3">링크를 받은 사람은 돈Doc에서 가족에 바로 합류할 수 있어요</p>
         </div>
       </div>
 

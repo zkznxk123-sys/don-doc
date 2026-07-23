@@ -58,7 +58,7 @@ export function StockDeepDiveSearch() {
           onChange={e => setQ(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && search()}
           placeholder="종목 검색 (예: 삼성전자, SK하이닉스) — 한국 상장"
-          className="flex-1 h-10 rounded-xl border border-border bg-background px-3 text-sm outline-hidden focus:ring-2 focus:ring-warning/40"
+          className="flex-1 h-10 rounded-xl border border-border bg-background px-3 text-sm outline-hidden focus:ring-2 focus:ring-savings/40"
         />
         <button
           onClick={search}
@@ -77,7 +77,7 @@ export function StockDeepDiveSearch() {
               key={c.ticker}
               onClick={() => pick(c)}
               className={cn('text-xs px-2.5 py-1 rounded-lg border transition-colors',
-                picked === c.ticker ? 'border-warning bg-warning-soft text-warning' : 'border-border hover:border-warning/50')}
+                picked === c.ticker ? 'border-savings bg-savings-soft text-savings' : 'border-border hover:border-savings/50')}
             >
               {c.name} <span className="text-muted-foreground">{c.ticker}</span>
             </button>

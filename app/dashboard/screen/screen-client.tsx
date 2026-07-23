@@ -116,7 +116,7 @@ export function ScreenClient({ researchBeta = false }: { researchBeta?: boolean 
           <EtfNavCard />
           <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <Sparkles className="w-3.5 h-3.5 text-warning" />
+              <Sparkles className="w-3.5 h-3.5 text-savings" />
               <h2 className="text-xs font-semibold text-foreground/80">종목 깊이보기 <span className="text-[10px] text-muted-foreground font-normal">베타 · dartlab 재무 종합</span></h2>
             </div>
             <StockDeepDiveSearch />
@@ -127,7 +127,7 @@ export function ScreenClient({ researchBeta = false }: { researchBeta?: boolean 
       {/* 사전 preset 카드 */}
       <section className="space-y-2">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-3.5 h-3.5 text-warning" />
+          <Sparkles className="w-3.5 h-3.5 text-savings" />
           <h2 className="text-xs font-semibold text-foreground/80">사전 정의 전략</h2>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2">

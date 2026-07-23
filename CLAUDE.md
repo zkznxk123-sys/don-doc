@@ -8,7 +8,7 @@
 
 | 분류 | 스택 |
 |------|------|
-| 프레임워크 | Next.js 16.2.7 (App Router, Turbo dev) |
+| 프레임워크 | Next.js 16.2.x (App Router, Turbo dev) |
 | 인증 | Clerk (@clerk/nextjs) |
 | 런타임 | React 19 + TypeScript 6 |
 | DB | PostgreSQL + Prisma 6 |
@@ -173,7 +173,7 @@ if (isLite()) { /* lite 분기 */ }
 ## DB 주요 모델
 
 - **FamilyGroup** — 가족 단위 (중심)
-- **User** — clerkId 연동, role(CFO/MEMBER)
+- **User** — clerkId 연동, role(CFO/CO_CFO/MEMBER), preferences(Json — 자산 임계값·기본 가시성 등 개인 설정, 기기 간 동기화)
 - **Account** — 자산/부채 계좌 (CASH, INVESTMENT, PENSION, REAL_ESTATE, DEBT 등)
 - **Transaction** — 수입/지출, category, isExcluded, excludeFromBudget, tradeRecordId(매매 자동 연동), visibility(기본 PRIVATE)
 - **Category** — familyId=null(시스템 공통) or familyId(가족 커스텀)
@@ -254,7 +254,7 @@ DIRECT_URL=            # Prisma (direct, for migrations)
 NEXT_PUBLIC_POSTHOG_KEY=
 NEXT_PUBLIC_POSTHOG_HOST=
 # 선택
-LLM_MUX_URL=          # 기본값: http://localhost:8317
+CLI_PROXY_URL=        # 기본값: http://localhost:8317 (llm-mux 게이트웨이)
 OPENAI_API_KEY=       # LLM fallback 직접 호출 (lib/ai.ts)
 FRANKR_CLIENT_ID=     # fran.kr 세금 계산 API (보유세·취득세·양도세 등)
 FRANKR_CLIENT_SECRET=

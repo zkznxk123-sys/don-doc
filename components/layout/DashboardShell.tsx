@@ -2,6 +2,7 @@
 
 import { useState, useMemo, createContext, useContext, useCallback, useEffect } from 'react'
 import { useClerk } from '@clerk/nextjs'
+import { invalidatePreferencesCache } from '@/lib/hooks/useServerPreference'
 import { AppSidebar } from './AppSidebar'
 import { TopBar } from './TopBar'
 import { TransactionDrawer, type EditTransactionData } from '@/components/ui/transaction-drawer'
@@ -101,7 +102,7 @@ export function DashboardShell({
           open={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
           user={user}
-          onLogout={() => signOut({ redirectUrl: '/sign-in' })}
+          onLogout={() => { invalidatePreferencesCache(); signOut({ redirectUrl: '/sign-in' }) }}
         />
 
         <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
