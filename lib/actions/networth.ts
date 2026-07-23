@@ -3,15 +3,9 @@
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
 import { isCFOLevel } from '@/lib/roles'
+import { computeNetWorth, aggregateTypeBreakdown, type NetWorthTypeBreakdown } from '@/lib/networth-calc'
 
-// Prisma Json 컬럼 호환 위해 index signature 포함
-export interface NetWorthTypeBreakdown {
-  realEstate: number  // REAL_ESTATE
-  financial: number   // CASH + INVESTMENT + CRYPTO + STO
-  pension: number     // PENSION
-  debt: number        // DEBT + CREDIT_CARD (보통 음수)
-  [key: string]: number
-}
+export type { NetWorthTypeBreakdown }
 
 export interface NetWorthSnapshotData {
   yearMonth: string   // "YYYY-MM"
@@ -19,29 +13,6 @@ export interface NetWorthSnapshotData {
   totalLiabilities: number
   netWorth: number
   typeBreakdown?: NetWorthTypeBreakdown | null  // 6/10 도입 — 기존 호출자 호환성 위해 옵셔널
-}
-
-/**
- * accounts 배열 → 그룹별 합산.
- * 6/10 도입 — 차트 tooltip의 type별 delta 표시용.
- */
-function aggregateTypeBreakdown(accounts: { type: string; balance: number }[]): NetWorthTypeBreakdown {
-  const breakdown: NetWorthTypeBreakdown = { realEstate: 0, financial: 0, pension: 0, debt: 0 }
-  for (const acc of accounts) {
-    switch (acc.type) {
-      case 'REAL_ESTATE': breakdown.realEstate += acc.balance; break
-      case 'PENSION': breakdown.pension += acc.balance; break
-      case 'CASH':
-      case 'INVESTMENT':
-      case 'CRYPTO':
-      case 'STO':
-        breakdown.financial += acc.balance; break
-      case 'DEBT':
-      case 'CREDIT_CARD':
-        breakdown.debt += acc.balance; break  // balance 그대로 (보통 음수)
-    }
-  }
-  return breakdown
 }
 
 /**
@@ -219,19 +190,7 @@ export async function createSnapshotFromCurrentBalances(
     select: { type: true, balance: true },
   })
 
-  const DEBT_TYPES = new Set(['DEBT', 'CREDIT_CARD'])
-  let totalAssets = 0
-  let totalLiabilities = 0
-
-  for (const acc of accounts) {
-    if (DEBT_TYPES.has(acc.type)) {
-      totalLiabilities += acc.balance
-    } else {
-      totalAssets += acc.balance
-    }
-  }
-
-  const netWorth = totalAssets - totalLiabilities
+  const { totalAssets, totalLiabilities, netWorth } = computeNetWorth(accounts)
   const typeBreakdown = aggregateTypeBreakdown(accounts)
 
   // 빈 스냅샷 가드 — 계좌가 없거나 잔액 합이 0이면 0 크레이터를 만든다. 기록하지 않음.
