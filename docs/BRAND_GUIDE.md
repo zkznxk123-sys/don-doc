@@ -191,7 +191,7 @@
 
 ## 10. Form · Texture
 
-- **Roundness = 4px**. 단단·정밀(큰 라운드 지양).
+- **Roundness — 역할별 스케일(단단·정밀, 큰 라운드 지양)**: `--radius-sm` 4px(작은 배지·칩) · `--radius` 6px(기본) · `--radius-lg` 8px · `--radius-xl` 12px(입력·칩) · `--radius-2xl` 16px(카드·드로어) · `--radius-full`(필·아바타). 단일 4px 고정이 아니라 역할별 토큰(`globals.css`)을 따른다.
 - **Blueprint 그리드** — 다크 배경에 은은한 격자(2~4% opacity). "축적=구조".
 - **골드 오빗 아크** — 얇고 우아한 골드 궤도선 + glow. 히어로·마케팅 1개 한정. "꾸준한 축적의 궤도".
 - **글래스 3D 깊이** — 반투명 프로스트 글래스(blur·굴절·soft shadow). **히어로·마케팅 이목 요소 전용**. 데일리 앱 UI는 플랫.

@@ -325,6 +325,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
     // 부채(DEBT·CREDIT_CARD)는 빚 잔액 = 양수 관례. 음수 입력 시 순자산 과대평가되므로
     // 저장 단계에서 양수로 정규화(2026-07-23, computeNetWorth 부호 전제와 정합).
     const parsedBalance = isLiabilityType ? Math.abs(rawBalance) : rawBalance
+    const wasNegativeNormalized = isLiabilityType && rawBalance < 0
     const { realEstateDetail, financialAssetDetail, debtDetail, pensionDetail } = buildDetailInput()
     const ownerIdInput = familyMembers.length > 0
       ? (pOwnerId === '' || pOwnerId === '__joint__' ? null : pOwnerId)
@@ -342,7 +343,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
           realEstateDetail, financialAssetDetail, debtDetail, pensionDetail,
         })
         if (!result.success) { toast.error(result.error || '수정에 실패했어요.'); return }
-        toast.success(`"${name.trim()}" 계좌가 수정됐어요.`)
+        toast.success(`"${name.trim()}" 계좌가 수정됐어요.${wasNegativeNormalized ? ' 부채는 양수로 저장했어요.' : ''}`)
       } else {
         const result = await createAccount({
           name: name.trim(), type, balance: parsedBalance, shareLevel,
@@ -352,7 +353,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
           realEstateDetail, financialAssetDetail, debtDetail, pensionDetail,
         })
         if (!result.success) { toast.error(result.error || '계좌 생성에 실패했어요.'); return }
-        toast.success(`"${name.trim()}" 계좌가 추가됐어요.`)
+        toast.success(`"${name.trim()}" 계좌가 추가됐어요.${wasNegativeNormalized ? ' 부채는 양수로 저장했어요.' : ''}`)
       }
       onSuccess()
       onClose()

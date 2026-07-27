@@ -22,12 +22,14 @@ if git diff --quiet -- "${GEN_FILES[@]}"; then
   exit 0
 fi
 
-# sanity 게이트 — 생성 파일이 임포트되고 배열이 비어있지 않아야 커밋 (깨진 파싱 결과 push 방지)
+# sanity 게이트 — 생성 파일이 임포트되고 배열이 하한선 이상이어야 커밋
+# (38.co.kr HTML 구조가 바뀌어 파싱이 31건→1건 등으로 조용히 무너지는 경우, "비어있지 않음"만으로는
+# 통과해버려 무인 push까지 진행됨 — 2026-07-27 4팀 라운드 P0)
 if ! node_modules/.bin/tsx -e "
   import { GENERATED_OFFERINGS } from './components/ipo/offerings.generated'
   import { SPAC_UNIVERSE } from './components/ipo/spac-universe.generated'
-  if (!Array.isArray(GENERATED_OFFERINGS) || GENERATED_OFFERINGS.length === 0) throw new Error('offerings empty')
-  if (!Array.isArray(SPAC_UNIVERSE) || SPAC_UNIVERSE.length === 0) throw new Error('spac universe empty')
+  if (!Array.isArray(GENERATED_OFFERINGS) || GENERATED_OFFERINGS.length < 10) throw new Error('offerings too small: ' + GENERATED_OFFERINGS.length)
+  if (!Array.isArray(SPAC_UNIVERSE) || SPAC_UNIVERSE.length < 10) throw new Error('spac universe too small: ' + SPAC_UNIVERSE.length)
   console.log('sanity OK — offerings ' + GENERATED_OFFERINGS.length + ' · spacs ' + SPAC_UNIVERSE.length)
 "; then
   echo "!! sanity 게이트 실패 — 생성 파일 복구 후 push 생략"

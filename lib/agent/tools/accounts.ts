@@ -237,14 +237,14 @@ export function buildAccountTools(ctx: ToolContext) {
       description:
         '여러 계좌의 잔액을 한 번에 업데이트. ' +
         '**단일 계좌는 화면에서 직접 수정이 빠르므로 2개 이상 동시일 때 사용 권장.** ' +
-        '각 update는 부분 일치 검색어 + 새 잔액(정수, 부채는 음수). ' +
+        '각 update는 부분 일치 검색어 + 새 잔액(정수, 부채/마통도 양수로 입력 — 크기 기준이며 저장 전 자동으로 양수 정규화됨). ' +
         '권한: 본인 소유 계좌 또는 CFO + 공유 계좌만 변경 가능. ' +
         '결과는 성공/모호(여러 매칭)/못 찾음/권한 없음/변동 없음으로 분류해 반환. ' +
         '성공 항목은 단일 UploadBatch로 묶여 업로드 이력에 기록됨.',
       inputSchema: z.object({
         updates: z.array(z.object({
           accountKeyword: z.string().describe('계좌명 부분 일치 검색어 (예: "카카오", "마이너스")'),
-          newBalance: z.number().int().describe('새 잔액 (KRW 정수, 부채/마통은 음수)'),
+          newBalance: z.number().int().describe('새 잔액 (KRW 정수, 부채/마통도 양수 — 저장 전 자동 정규화됨)'),
         })).min(1),
         reason: z.string().optional().describe('변경 사유 — 업로드 이력 fileName에 기록되어 추적 가능'),
       }),
@@ -254,7 +254,7 @@ export function buildAccountTools(ctx: ToolContext) {
         type Resolved = {
           keyword: string
           newBalance: number
-          account?: { id: string; name: string; balance: number; userId: string | null; isShared: boolean }
+          account?: { id: string; name: string; balance: number; userId: string | null; isShared: boolean; type: AccountType }
           status: 'ok' | 'ambiguous' | 'not_found' | 'no_permission' | 'no_change'
           candidates?: string[]
         }
@@ -272,7 +272,7 @@ export function buildAccountTools(ctx: ToolContext) {
                 { shareLevel: { not: 'PRIVATE' } },
               ],
             },
-            select: { id: true, name: true, balance: true, userId: true, isShared: true },
+            select: { id: true, name: true, balance: true, userId: true, isShared: true, type: true },
           })
 
           if (matches.length === 0) {
@@ -290,18 +290,23 @@ export function buildAccountTools(ctx: ToolContext) {
           }
 
           const acc = matches[0]
+          // 부채(DEBT·CREDIT_CARD)는 빚 잔액 = 양수 관례. account-drawer.tsx와 동일하게
+          // AI 챗 경로도 저장 전 양수로 정규화(2026-07-27, computeNetWorth 부호 전제와 정합).
+          const normalizedBalance = (acc.type === 'DEBT' || acc.type === 'CREDIT_CARD')
+            ? Math.abs(u.newBalance)
+            : u.newBalance
           const isOwn = acc.userId === user.id
           // CFO는 가족의 모든 계좌 변경 가능 (검색 필터에서 이미 PRIVATE shareLevel 제외됨).
           // 비-CFO 비-본인은 거부.
           if (!isOwn && !isCFO) {
-            resolved.push({ keyword: u.accountKeyword, newBalance: u.newBalance, account: acc, status: 'no_permission' })
+            resolved.push({ keyword: u.accountKeyword, newBalance: normalizedBalance, account: acc, status: 'no_permission' })
             continue
           }
-          if (acc.balance === u.newBalance) {
-            resolved.push({ keyword: u.accountKeyword, newBalance: u.newBalance, account: acc, status: 'no_change' })
+          if (acc.balance === normalizedBalance) {
+            resolved.push({ keyword: u.accountKeyword, newBalance: normalizedBalance, account: acc, status: 'no_change' })
             continue
           }
-          resolved.push({ keyword: u.accountKeyword, newBalance: u.newBalance, account: acc, status: 'ok' })
+          resolved.push({ keyword: u.accountKeyword, newBalance: normalizedBalance, account: acc, status: 'ok' })
         }
 
         const ok = resolved.filter(r => r.status === 'ok')
