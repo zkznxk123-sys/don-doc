@@ -10,7 +10,7 @@ import { cn, formatLargeNumber } from '@/lib/utils'
 import { Card, CardContent } from '@/components/ui/card'
 import { SubForm, EditBtn } from '@/components/ipo/entry-forms'
 import {
-  OFFERINGS, STATUS_META, ddays, ddayLabel, readinessIssues,
+  OFFERINGS, STATUS_META, ddays, ddayLabel, readinessIssues, groupByDay,
   type UpcomingOffering, type SubStatus, type Account,
 } from '@/components/ipo/board-data'
 import { computeBudgetPlan, requiredShares, depositFor, expectedProportional, BUFFER_LEVELS } from '@/lib/ipo/allocation'
@@ -55,10 +55,11 @@ export function ScheduleView({ data, kind }: { data: IpoData; kind?: 'IPO' | 'SP
     }
     return [...map.entries()]
       .sort((a, b) => (a[0] < b[0] ? -1 : 1))
-      .map(([ym, items]) => ({ ym, items: items.sort((x, y) => (anchorOf(x) < anchorOf(y) ? -1 : 1)) }))
+      // 월 안을 앵커 날짜로 소그룹 — 밀집일(2건+)은 소헤더+신호 정렬, 단일일은 종전과 동일하게 렌더.
+      .map(([ym, items]) => ({ ym, days: groupByDay(items.map(o => ({ o, anchor: anchorOf(o) }))) }))
   }, [scope, todayISO, kind, data.ledger, today])
 
-  const total = months.reduce((n, m) => n + m.items.length, 0)
+  const total = months.reduce((n, m) => n + m.days.reduce((k, g) => k + g.items.length, 0), 0)
 
   return (
     <div className="space-y-4">
@@ -92,19 +93,28 @@ export function ScheduleView({ data, kind }: { data: IpoData; kind?: 'IPO' | 'SP
       ) : (
         <>
           {months.length === 0 && <p className="text-sm text-muted-foreground py-8 text-center">다가올 일정이 없어요.</p>}
-          {months.map(({ ym, items }) => (
+          {months.map(({ ym, days }) => (
             <div key={ym} className="space-y-1.5">
               <div className="text-xs font-medium text-muted-foreground pl-0.5">{fmtMonth(ym)}</div>
               <Card>
                 <CardContent className="pt-2 pb-2">
                   <div className="divide-y divide-border/60">
-                    {items.map(o => (
-                      <div key={o.name}>
-                        <OfferingRow o={o} todayISO={todayISO} today={today}
-                          open={expanded === o.name} onToggle={() => setExpanded(expanded === o.name ? null : o.name)} />
-                        {expanded === o.name && <OfferingDetail o={o} data={data} today={today} />}
-                      </div>
-                    ))}
+                    {days.map(g => {
+                      // 밀집일(upcoming·2건+): 날짜 소헤더로 D-day를 한 번만 노출 → per-row는 신호(경쟁률) 표기.
+                      const dense = scope === 'upcoming' && g.clustered && g.date !== '미정'
+                      return (
+                        <Fragment key={g.date}>
+                          {dense && <DaySubheader date={g.date} count={g.items.length} today={today} />}
+                          {g.items.map(o => (
+                            <div key={o.name}>
+                              <OfferingRow o={o} todayISO={todayISO} today={today} dense={dense}
+                                open={expanded === o.name} onToggle={() => setExpanded(expanded === o.name ? null : o.name)} />
+                              {expanded === o.name && <OfferingDetail o={o} data={data} today={today} />}
+                            </div>
+                          ))}
+                        </Fragment>
+                      )
+                    })}
                   </div>
                 </CardContent>
               </Card>
@@ -226,8 +236,10 @@ function CalendarView({ offerings, data, today, todayISO, expanded, onToggle }: 
   )
 }
 
-function OfferingRow({ o, todayISO, today, open, onToggle }: { o: UpcomingOffering; todayISO: string; today: Date; open: boolean; onToggle: () => void }) {
+function OfferingRow({ o, todayISO, today, open, onToggle, dense = false }: { o: UpcomingOffering; todayISO: string; today: Date; open: boolean; onToggle: () => void; dense?: boolean }) {
   const next = nextEvent(o, todayISO)
+  // 밀집일: 날짜는 소헤더가 말하므로 우측 칩을 결정 신호(기관경쟁률)로 전환. 수요예측 전(미정)이면 D-day로 폴백.
+  const showComp = dense && o.instCompetition != null
   return (
     <div className="grid grid-cols-12 items-center gap-2 py-2 text-sm cursor-pointer hover:bg-muted/30 -mx-1 px-1 rounded" onClick={onToggle}>
       <span className="col-span-5 sm:col-span-4 flex items-center gap-1.5 min-w-0">
@@ -248,13 +260,34 @@ function OfferingRow({ o, todayISO, today, open, onToggle }: { o: UpcomingOfferi
         </>}
       </span>
       <span className="col-span-2 text-right">
-        {next && (
+        {showComp ? (
+          <span className={cn('whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-semibold', GOLD_CHIP)}
+            title="기관경쟁률(수요예측)">
+            {Math.round(o.instCompetition!).toLocaleString()}:1
+          </span>
+        ) : next && (
           <span className={cn('whitespace-nowrap rounded px-1.5 py-0.5 text-[10px] font-semibold',
             ddays(next.date, today) <= 1 ? TERRA_CHIP : 'bg-muted text-muted-foreground')}>
             {next.label} {ddayLabel(ddays(next.date, today))}
           </span>
         )}
       </span>
+    </div>
+  )
+}
+
+/** 밀집일 소헤더 — 같은 날 겹친 청약을 한 묶음으로. 날짜·요일·건수·D-day를 한 번만 표기. */
+function DaySubheader({ date, count, today }: { date: string; count: number; today: Date }) {
+  const [y, m, d] = date.split('-').map(Number)
+  const wd = ['일', '월', '화', '수', '목', '금', '토'][new Date(Date.UTC(y, m - 1, d)).getUTCDay()]
+  const dd = ddays(date, today)
+  return (
+    <div className="flex items-center gap-1.5 pt-2 pb-1 text-[11px]">
+      <span className="font-semibold text-foreground">{m}/{d}</span>
+      <span className="text-muted-foreground">({wd})</span>
+      <span className="text-muted-foreground">· {count}건</span>
+      <span className={cn('ml-auto rounded px-1.5 py-0.5 font-semibold',
+        dd <= 1 ? TERRA_CHIP : 'bg-muted text-muted-foreground')}>{ddayLabel(dd)}</span>
     </div>
   )
 }

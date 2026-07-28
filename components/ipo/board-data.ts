@@ -230,6 +230,41 @@ export function ddayLabel(n: number): string {
 }
 
 // ─────────────────────────────────────────────────────────────
+// 밀집 구간 정렬·그룹핑 (2026-07-28) — 같은 날 여러 청약이 겹칠 때(예: 8/13 4건)
+// per-row 이진 임박 강조는 "다 빨갛거나 다 회색"이 되어 무의미. 날짜로 묶고(소헤더가
+// D-day를 한 번만 말함) 같은 날 안은 우선순위(기관경쟁률)로 정렬해 결정 신호를 노출.
+// feedback-log-2026-07 §밀집 구간 UX 참조.
+// ─────────────────────────────────────────────────────────────
+
+/** 같은 날 여러 청약의 우선순위 비교 — 기관경쟁률 내림차순(수요예측 전=미정은 뒤로), 동률·미정은 이름순. */
+export function compareByPriority(a: UpcomingOffering, b: UpcomingOffering): number {
+  const ca = a.instCompetition ?? -1   // 미정(수요예측 전)은 -1로 뒤로 밀기
+  const cb = b.instCompetition ?? -1
+  if (ca !== cb) return cb - ca
+  return a.name < b.name ? -1 : a.name > b.name ? 1 : 0
+}
+
+/**
+ * 월 카드 내부를 '앵커 날짜'로 묶은 소그룹 배열. 그룹은 날짜 오름차순, 그룹 안은 우선순위 정렬.
+ * clustered = 그 날짜 2건 이상(밀집) — 렌더 시 소헤더로 날짜를 한 번만 노출하고
+ * per-row 우측은 D-day 대신 신호(기관경쟁률)를 보이는 트리거.
+ */
+export function groupByDay(
+  entries: { o: UpcomingOffering; anchor: string }[],
+): { date: string; clustered: boolean; items: UpcomingOffering[] }[] {
+  const map = new Map<string, UpcomingOffering[]>()
+  for (const { o, anchor } of entries) {
+    const key = anchor.slice(0, 10) || '미정'
+    const arr = map.get(key) ?? []
+    arr.push(o)
+    map.set(key, arr)
+  }
+  return [...map.entries()]
+    .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+    .map(([date, items]) => ({ date, clustered: items.length >= 2, items: [...items].sort(compareByPriority) }))
+}
+
+// ─────────────────────────────────────────────────────────────
 // 계좌 갭 플래너 — 다가올 IPO 주관사 vs 보유 계좌 → 열어야 할 (구성원×증권사)
 // ─────────────────────────────────────────────────────────────
 
