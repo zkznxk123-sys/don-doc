@@ -13,7 +13,8 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url)
-    const familyId = authUser.familyId || searchParams.get('familyId')
+    // 인증 사용자의 familyId만 사용 — 쿼리파라미터 폴백 제거(타 가족 데이터 접근 차단, 2026-07-28).
+    const familyId = authUser.familyId
     if (!familyId) {
       return NextResponse.json({ success: false, error: '가족 그룹이 없습니다.' }, { status: 400 })
     }

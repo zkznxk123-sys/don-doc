@@ -8,7 +8,8 @@ export async function GET(req: NextRequest) {
   try {
     const authUser = await getAuthUser()
     const { searchParams } = new URL(req.url)
-    const familyId = authUser?.familyId || searchParams.get('familyId')
+    // 인증 사용자에서만 familyId 취득 — 쿼리파라미터 폴백 제거(미인증 재무 데이터 노출 차단, 2026-07-28).
+    const familyId = authUser?.familyId ?? null
     const month =
       searchParams.get('month') ||
       (() => {

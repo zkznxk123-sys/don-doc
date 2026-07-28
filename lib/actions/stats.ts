@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
+import { computeNetWorth } from '@/lib/networth-calc'
 
 export interface FinancialInsights {
   currentAssets: number
@@ -42,12 +43,12 @@ export async function getFinancialInsights(
   const currentEnd = new Date(y, m, 1)
   const twelveMonthsAgo = new Date(y, m - 13, 1) // 12개월 이전 시작
 
-  // 현재 총자산
+  // 현재 총자산 — 부채 타입 제외(networth-calc 계약) + PRIVATE 계좌 제외(트랜잭션 쿼리와 대칭).
   const accounts = await prisma.account.findMany({
-    where: { familyId },
-    select: { balance: true },
+    where: { familyId, shareLevel: { not: 'PRIVATE' } },
+    select: { type: true, balance: true },
   })
-  const currentAssets = accounts.reduce((sum, a) => sum + a.balance, 0)
+  const currentAssets = computeNetWorth(accounts).totalAssets
 
   // 최근 12개월 + 이번 달 트랜잭션 (PRIVATE 계좌 제외)
   const transactions = await prisma.transaction.findMany({
