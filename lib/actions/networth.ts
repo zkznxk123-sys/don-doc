@@ -5,7 +5,9 @@ import { getAuthUser } from '@/lib/auth'
 import { isCFOLevel } from '@/lib/roles'
 import { computeNetWorth, aggregateTypeBreakdown, type NetWorthTypeBreakdown } from '@/lib/networth-calc'
 
-export type { NetWorthTypeBreakdown }
+// ⚠️ 'use server' 파일의 export는 전부 서버 액션으로 등록된다 — 타입 re-export(`export type { X }`)를
+// 두면 액션 매니페스트가 값을 찾다 ReferenceError로 이 모듈을 쓰는 모든 POST가 500
+// (2026-08-03 현금흐름 저장 장애). 타입이 필요하면 '@/lib/networth-calc'에서 직접 import할 것.
 
 export interface NetWorthSnapshotData {
   yearMonth: string   // "YYYY-MM"
