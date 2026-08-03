@@ -9,7 +9,7 @@ import { Suspense } from "react"
 import { isLite } from "@/lib/feature-flags"
 import "./globals.css"
 
-// Serif used for numeric-display (large hero amounts) and editorial headlines
+// 마케팅 에디토리얼 헤드라인용 (BRAND_GUIDE §8) — numeric-display는 sans+tabular로 전환됨(globals.css:222-228)
 const notoSerif = Noto_Serif({
   subsets: ["latin"],
   variable: "--font-noto-serif",
@@ -31,6 +31,8 @@ const description = isLite()
   : "가장 쉬운 자산 관리 — 흩어진 자산을 한 화면에. 현금·금융·부동산·연금·부채를 통합 운영하는 자산 관리 시스템. 혼자든 가족이든 — 공유는 필요할 때만 선별적으로."
 
 export const metadata: Metadata = {
+  // lite는 lite.don-doc.com DNS 연결 전이라 vercel.app 기본값 유지 — full 앱만 커스텀 도메인 해석 (marketer 2026-08-03-v2)
+  ...(isLite() ? {} : { metadataBase: new URL("https://don-doc.com") }),
   title: "돈독 — 가장 쉬운 자산 관리",
   description,
   openGraph: {
