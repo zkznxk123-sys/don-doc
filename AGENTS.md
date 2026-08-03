@@ -294,6 +294,7 @@ npx tsx prisma/seed-demo.ts        # 데모 가족 시드 (가명 데이터)
 ## 주의사항
 
 - `lib/actions/` 파일은 반드시 `'use server'` 선언
+- **`'use server'` 파일에서 async 함수 외 export 금지** — 특히 `export type { X }` 재export를 두면 Next가 액션 매니페스트에 값으로 등록해, 그 모듈을 import하는 **모든 POST(서버 액션)가 ReferenceError 500**으로 죽는다(2026-08-03 현금흐름 저장 장애 실증, `514370a`). 타입·상수는 순수 모듈(`lib/*-calc.ts` 등)에 두고 소비자가 거기서 직접 import. `export interface`(선언문)는 허용
 - `lib/prisma.ts`는 빌드 타임 안전을 위한 lazy 싱글톤 — 직접 수정 금지
 - 카테고리는 DB에서 동적 로드 (`getFamilyCategories`) — 하드코딩 금지
 - `originalHash` 로 엑셀 중복 업로드 방지 (SHA-256)
