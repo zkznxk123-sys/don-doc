@@ -1,107 +1,11 @@
 // AUTO-GENERATED — 편집 금지. 재생성: npx tsx scripts/ipo-schedule-build.ts
 import type { UpcomingOffering } from './board-data'
 
-export const GENERATED_AT = '2026-07-27'
+export const GENERATED_AT = '2026-08-03'
 export const SOURCE = '38커뮤니케이션 (38.co.kr) 청약·상장·종목상세'
 
 /** 38.co.kr에서 추출한 공모주·스팩 일정 + 종목 기본정보(공모가·경쟁률·확약 등). */
 export const GENERATED_OFFERINGS: UpcomingOffering[] = [
-  {
-    "name": "리센스메디컬",
-    "kind": "IPO",
-    "brokers": [
-      "한국",
-      "KB"
-    ],
-    "subStart": "2026-03-19",
-    "subEnd": "2026-03-20",
-    "allotShares": 350000,
-    "depositRate": 50,
-    "minSubShares": 10,
-    "subCompetition": 4195,
-    "ipoPrice": 11000,
-    "priceBand": "9,000~11,000",
-    "offerAmountEok": 154,
-    "shares": 1400000,
-    "shareType": "신주 100%",
-    "instCompetition": 1352.63,
-    "instCount": 2261,
-    "lockupRatio": 63.92,
-    "lockupBreakdown": {
-      "d15": 25.81,
-      "m1": 13.13,
-      "m3": 14.3,
-      "m6": 10.69
-    },
-    "publicFloatRatio": 12.9,
-    "refundDate": "2026-03-24",
-    "no38": "2270",
-    "floatRatio": 31.69,
-    "floatAmountEok": 378,
-    "marketCapEok": 1194,
-    "redemptionRight": true
-  },
-  {
-    "name": "인벤테라",
-    "kind": "IPO",
-    "brokers": [
-      "NH",
-      "유진"
-    ],
-    "subStart": "2026-03-23",
-    "subEnd": "2026-03-24",
-    "listingDate": "2026-04-02",
-    "allotShares": 295000,
-    "depositRate": 50,
-    "minSubShares": 10,
-    "subCompetition": 3826,
-    "ipoPrice": 16600,
-    "priceBand": "12,100~16,600",
-    "offerAmountEok": 196,
-    "shares": 1180000,
-    "shareType": "신주 100%",
-    "instCompetition": 1328.82,
-    "instCount": 2309,
-    "lockupRatio": 43.06,
-    "lockupBreakdown": {
-      "d15": 23.98,
-      "m1": 8.42,
-      "m3": 2.84,
-      "m6": 7.82
-    },
-    "publicFloatRatio": 15,
-    "refundDate": "2026-03-26",
-    "no38": "2275"
-  },
-  {
-    "name": "교보스팩20호",
-    "kind": "SPAC",
-    "brokers": [
-      "교보"
-    ],
-    "subStart": "2026-03-23",
-    "subEnd": "2026-03-24",
-    "listingDate": "2026-04-02",
-    "allotShares": 1350000,
-    "subLimit": "66,000~80,000",
-    "depositRate": 50,
-    "minSubShares": 10,
-    "subCompetition": 1494,
-    "ipoPrice": 2000,
-    "priceBand": "2,000~2,000",
-    "offerAmountEok": 108,
-    "shares": 5400000,
-    "shareType": "신주 100%",
-    "instCompetition": 1196.99,
-    "refundDate": "2026-03-26",
-    "no38": "2279"
-  },
-  {
-    "name": "신한스팩17호",
-    "kind": "SPAC",
-    "brokers": [],
-    "listingDate": "2026-04-01"
-  },
   {
     "name": "키움히어로스팩2호",
     "kind": "SPAC",
@@ -565,13 +469,25 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     ],
     "subStart": "2026-07-30",
     "subEnd": "2026-07-31",
+    "listingDate": "2026-08-18",
+    "allotShares": 1250000,
     "subLimit": "60,000~75,000",
     "depositRate": 50,
     "minSubShares": 10,
+    "subCompetition": 6,
+    "ipoPrice": 12000,
     "priceBand": "12,000~14,500",
     "offerAmountEok": 600,
     "shares": 5000000,
     "shareType": "신주 100%",
+    "instCompetition": 50.4,
+    "instCount": 307,
+    "lockupRatio": 2.23,
+    "lockupBreakdown": {
+      "d15": 0.22,
+      "m1": 1.98,
+      "m3": 0.02
+    },
     "publicFloatRatio": 10.1,
     "refundDate": "2026-08-04",
     "no38": "2298"
@@ -584,15 +500,24 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     ],
     "subStart": "2026-08-03",
     "subEnd": "2026-08-04",
+    "listingDate": "2026-08-12",
+    "allotShares": 550000,
     "subLimit": "9,000~11,000",
     "depositRate": 50,
     "minSubShares": 10,
+    "ipoPrice": 7000,
     "priceBand": "5,000~7,000",
+    "offerAmountEok": 154,
     "shares": 2200000,
     "shareType": "신주 100%",
+    "lockupRatio": 0.1,
     "publicFloatRatio": 10.07,
     "refundDate": "2026-08-06",
-    "no38": "2302"
+    "no38": "2302",
+    "floatRatio": 36.93,
+    "floatAmountEok": 565,
+    "marketCapEok": 1530,
+    "redemptionRight": true
   },
   {
     "name": "케이앤에스아이앤씨",
@@ -606,7 +531,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "subLimit": "30,000~36,000",
     "depositRate": 50,
     "minSubShares": 10,
-    "priceBand": "9,000~9,000",
+    "priceBand": "9,000~11,000",
     "offerAmountEok": 216,
     "shares": 2400000,
     "shareType": "신주 100%",
@@ -641,6 +566,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     ],
     "subStart": "2026-08-12",
     "subEnd": "2026-08-13",
+    "listingDate": "2026-08-24",
     "subLimit": "11,000~13,000",
     "depositRate": 50,
     "minSubShares": 10,
@@ -690,25 +616,6 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "no38": "2294"
   },
   {
-    "name": "스카이랩스",
-    "kind": "IPO",
-    "brokers": [
-      "한국"
-    ],
-    "subStart": "2026-08-13",
-    "subEnd": "2026-08-14",
-    "subLimit": "8,000~10,000",
-    "depositRate": 50,
-    "minSubShares": 10,
-    "priceBand": "13,000~16,000",
-    "offerAmountEok": 260,
-    "shares": 2000000,
-    "shareType": "신주 100%",
-    "publicFloatRatio": 10.67,
-    "refundDate": "2026-08-19",
-    "no38": "2306"
-  },
-  {
     "name": "브릴스",
     "kind": "IPO",
     "brokers": [
@@ -725,6 +632,43 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "shareType": "신주 100%",
     "refundDate": "2026-08-28",
     "no38": "2307"
+  },
+  {
+    "name": "스카이랩스",
+    "kind": "IPO",
+    "brokers": [
+      "한국"
+    ],
+    "subStart": "2026-08-26",
+    "subEnd": "2026-08-27",
+    "subLimit": "8,000~10,000",
+    "depositRate": 50,
+    "minSubShares": 10,
+    "priceBand": "13,000~16,000",
+    "offerAmountEok": 260,
+    "shares": 2000000,
+    "shareType": "신주 100%",
+    "publicFloatRatio": 10.67,
+    "refundDate": "2026-08-31",
+    "no38": "2306"
+  },
+  {
+    "name": "NH스팩34호",
+    "kind": "SPAC",
+    "brokers": [
+      "NH"
+    ],
+    "subStart": "2026-09-01",
+    "subEnd": "2026-09-02",
+    "subLimit": "210,000~255,000",
+    "depositRate": 50,
+    "minSubShares": 10,
+    "priceBand": "2,000~2,000",
+    "offerAmountEok": 170,
+    "shares": 8500000,
+    "shareType": "신주 100%",
+    "refundDate": "2026-09-04",
+    "no38": "2312"
   },
   {
     "name": "네오사피엔스",
@@ -745,6 +689,24 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "no38": "2308"
   },
   {
+    "name": "와이즈플래닛컴퍼니",
+    "kind": "IPO",
+    "brokers": [
+      "대신"
+    ],
+    "subStart": "2026-09-14",
+    "subEnd": "2026-09-15",
+    "subLimit": "13,000~16,000",
+    "depositRate": 50,
+    "minSubShares": 10,
+    "priceBand": "10,000~12,000",
+    "offerAmountEok": 160,
+    "shares": 1600000,
+    "shareType": "신주 100%",
+    "refundDate": "2026-09-17",
+    "no38": "2311"
+  },
+  {
     "name": "덕산넵코어스(구.넵코어스)",
     "kind": "IPO",
     "brokers": [
@@ -752,5 +714,23 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     ],
     "subStart": "2026-09-16",
     "subEnd": "2026-09-17"
+  },
+  {
+    "name": "글로벌테크놀로지",
+    "kind": "IPO",
+    "brokers": [
+      "한국"
+    ],
+    "subStart": "2026-09-16",
+    "subEnd": "2026-09-17",
+    "subLimit": "15,000~20,000",
+    "depositRate": 50,
+    "minSubShares": 10,
+    "priceBand": "13,000~15,000",
+    "offerAmountEok": 520,
+    "shares": 4000000,
+    "shareType": "신주 100%",
+    "refundDate": "2026-09-21",
+    "no38": "2310"
   }
 ]

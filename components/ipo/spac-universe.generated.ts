@@ -3,13 +3,8 @@
 
 export interface SpacUniverseItem { name: string; code: string; market: string }
 
-export const SPAC_UNIVERSE_AT = '2026-07-27'
+export const SPAC_UNIVERSE_AT = '2026-08-03'
 export const SPAC_UNIVERSE: SpacUniverseItem[] = [
-  {
-    "name": "IBKS제23호스팩",
-    "code": "467930",
-    "market": "코스닥"
-  },
   {
     "name": "IBKS제24호스팩",
     "code": "469480",
@@ -318,11 +313,6 @@ export const SPAC_UNIVERSE: SpacUniverseItem[] = [
   {
     "name": "키움히어로제2호스팩",
     "code": "0131D0",
-    "market": "코스닥"
-  },
-  {
-    "name": "하나30호스팩",
-    "code": "469880",
     "market": "코스닥"
   },
   {
