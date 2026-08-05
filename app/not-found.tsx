@@ -2,7 +2,9 @@ import Link from "next/link"
 import { getAuthUser } from "@/lib/auth"
 
 export default async function NotFound() {
-  const user = await getAuthUser()
+  // 404 화면은 어떤 상황에도 떠야 한다 — getAuthUser가 인프라 오류를 rethrow하도록
+  // 바뀌었으므로(lib/auth.ts) 여기서만 삼켜서 비로그인 취급(홈 링크)으로 폴백.
+  const user = await getAuthUser().catch(() => null)
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 text-center">

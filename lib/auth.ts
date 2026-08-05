@@ -128,9 +128,12 @@ export async function getAuthUser(): Promise<AuthUser | null> {
       cohort,
     }
   } catch (e) {
-    if (process.env.NODE_ENV !== 'production') {
-      console.error('[getAuthUser]', e)
-    }
-    return null
+    // ⚠️ 인프라 오류를 null(미인증)로 삼키지 않는다 — 삼키면 클라이언트 Clerk(로그인됨)와
+    // 서버(미인증)가 갈려 /sign-in↔/dashboard 무한 루프가 된다(2026-08-03 Supabase pause 인시던트,
+    // feedback-log-2026-07 §인시던트). 미인증은 위에서 이미 null로 조기 반환되므로 여기 도달한
+    // 예외는 전부 비정상(DB 다운·Clerk BAPI 실패·미들웨어 미탐지) — 로그 남기고 던져서
+    // error boundary(app/error.tsx)가 "다시 시도" 화면을 보여주게 한다.
+    console.error('[getAuthUser] infra error (rethrow):', e)
+    throw e
   }
 }
