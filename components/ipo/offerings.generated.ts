@@ -1,7 +1,7 @@
 // AUTO-GENERATED — 편집 금지. 재생성: npx tsx scripts/ipo-schedule-build.ts
 import type { UpcomingOffering } from './board-data'
 
-export const GENERATED_AT = '2026-08-03'
+export const GENERATED_AT = '2026-08-05'
 export const SOURCE = '38커뮤니케이션 (38.co.kr) 청약·상장·종목상세'
 
 /** 38.co.kr에서 추출한 공모주·스팩 일정 + 종목 기본정보(공모가·경쟁률·확약 등). */
@@ -505,12 +505,20 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "subLimit": "9,000~11,000",
     "depositRate": 50,
     "minSubShares": 10,
+    "subCompetition": 21,
     "ipoPrice": 7000,
     "priceBand": "5,000~7,000",
     "offerAmountEok": 154,
     "shares": 2200000,
     "shareType": "신주 100%",
+    "instCompetition": 184.06,
+    "instCount": 441,
     "lockupRatio": 0.1,
+    "lockupBreakdown": {
+      "d15": 0.09,
+      "m1": 0,
+      "m3": 0.01
+    },
     "publicFloatRatio": 10.07,
     "refundDate": "2026-08-06",
     "no38": "2302",
@@ -528,16 +536,31 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "subStart": "2026-08-04",
     "subEnd": "2026-08-05",
     "listingDate": "2026-08-14",
+    "allotShares": 600000,
     "subLimit": "30,000~36,000",
     "depositRate": 50,
     "minSubShares": 10,
+    "ipoPrice": 11000,
     "priceBand": "9,000~11,000",
-    "offerAmountEok": 216,
+    "offerAmountEok": 264,
     "shares": 2400000,
     "shareType": "신주 100%",
+    "instCompetition": 938.24,
+    "instCount": 2024,
+    "lockupRatio": 0.78,
+    "lockupBreakdown": {
+      "d15": 0.3,
+      "m1": 0.03,
+      "m3": 0.01,
+      "m6": 0.44
+    },
     "publicFloatRatio": 23.39,
     "refundDate": "2026-08-07",
-    "no38": "2299"
+    "no38": "2299",
+    "floatRatio": 30,
+    "floatAmountEok": 339,
+    "marketCapEok": 1129,
+    "redemptionRight": false
   },
   {
     "name": "기도산업",
@@ -598,42 +621,6 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "no38": "2304"
   },
   {
-    "name": "빅웨이브로보틱스",
-    "kind": "IPO",
-    "brokers": [
-      "유진",
-      "미래"
-    ],
-    "subStart": "2026-08-13",
-    "subEnd": "2026-08-14",
-    "depositRate": 50,
-    "minSubShares": 10,
-    "priceBand": "20,000~24,000",
-    "offerAmountEok": 400,
-    "shares": 2000000,
-    "shareType": "신주 95%",
-    "refundDate": "2026-08-19",
-    "no38": "2294"
-  },
-  {
-    "name": "브릴스",
-    "kind": "IPO",
-    "brokers": [
-      "IBK"
-    ],
-    "subStart": "2026-08-25",
-    "subEnd": "2026-08-26",
-    "subLimit": "15,000~18,000",
-    "depositRate": 50,
-    "minSubShares": 10,
-    "priceBand": "16,500~19,500",
-    "offerAmountEok": 198,
-    "shares": 1200000,
-    "shareType": "신주 100%",
-    "refundDate": "2026-08-28",
-    "no38": "2307"
-  },
-  {
     "name": "스카이랩스",
     "kind": "IPO",
     "brokers": [
@@ -671,6 +658,24 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "no38": "2312"
   },
   {
+    "name": "브릴스",
+    "kind": "IPO",
+    "brokers": [
+      "IBK"
+    ],
+    "subStart": "2026-09-08",
+    "subEnd": "2026-09-09",
+    "subLimit": "15,000~18,000",
+    "depositRate": 50,
+    "minSubShares": 10,
+    "priceBand": "16,500~19,500",
+    "offerAmountEok": 198,
+    "shares": 1200000,
+    "shareType": "신주 100%",
+    "refundDate": "2026-09-11",
+    "no38": "2307"
+  },
+  {
     "name": "네오사피엔스",
     "kind": "IPO",
     "brokers": [
@@ -705,6 +710,24 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "shareType": "신주 100%",
     "refundDate": "2026-09-17",
     "no38": "2311"
+  },
+  {
+    "name": "빅웨이브로보틱스",
+    "kind": "IPO",
+    "brokers": [
+      "유진",
+      "미래"
+    ],
+    "subStart": "2026-09-16",
+    "subEnd": "2026-09-17",
+    "depositRate": 50,
+    "minSubShares": 10,
+    "priceBand": "20,000~24,000",
+    "offerAmountEok": 400,
+    "shares": 2000000,
+    "shareType": "신주 95%",
+    "refundDate": "2026-09-21",
+    "no38": "2294"
   },
   {
     "name": "덕산넵코어스(구.넵코어스)",
