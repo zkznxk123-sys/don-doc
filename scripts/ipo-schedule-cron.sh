@@ -1,10 +1,13 @@
 #!/bin/bash
-# 공모주 일정 + 스팩 유니버스 주간 자동 재생성 — launchd가 호출.
+# 공모주 일정 + 스팩 유니버스 자동 재생성 — launchd가 호출.
+# 2026-08-05: 주1회(월)→매일로 전환 — 38 수요예측 결과(기관경쟁률·확정공모가)는 청약 직전
+# 발표라 주간 스냅샷이 창을 놓침(딜리셔스 8/3 실증: 184.06:1이 페이지엔 있었으나 미반영).
+# 무변경 시 커밋 스킵이라 매일 돌아도 실변경 있는 날만 [cron] 커밋.
 # 38.co.kr → offerings.generated.ts, KRX → spac-universe.generated.ts. IPO_calander(월 09:00)와 같은 리듬.
 #
 # 2026-07-02: 생성 후 auto-push 추가 (planner 7/2 — 로컬만 갱신돼 prod 일정이 낡던 문제).
 # 안전장치: ①생성 파일 2개만 커밋(작업 중 다른 변경 미포함) ②sanity 게이트(임포트 + 비어있지 않음)
-# 통과 시에만 ③pull --rebase --autostash 후 push, 실패 시 로컬 커밋 유지(다음 주 재시도).
+# 통과 시에만 ③pull --rebase --autostash 후 push, 실패 시 로컬 커밋 유지(다음 실행 때 재시도).
 set -u
 export PATH="/opt/homebrew/opt/node@22/bin:/usr/bin:/bin:$PATH"
 cd /Users/sangbinhan/Developer/don-doc || exit 1
@@ -39,7 +42,7 @@ fi
 
 # 생성 파일 2개만 커밋 — 같은 repo에서 작업 중인 다른 변경은 건드리지 않음
 git add "${GEN_FILES[@]}"
-git commit -m "chore(ipo): 주간 일정·스팩 유니버스 자동 갱신 [cron]
+git commit -m "chore(ipo): 일정·스팩 유니버스 자동 갱신 [cron]
 
 Co-Authored-By: ipo-schedule-cron <noreply@local>" || { echo "!! commit 실패"; exit 1; }
 
