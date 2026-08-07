@@ -1,7 +1,7 @@
 // AUTO-GENERATED — 편집 금지. 재생성: npx tsx scripts/ipo-schedule-build.ts
 import type { UpcomingOffering } from './board-data'
 
-export const GENERATED_AT = '2026-08-06'
+export const GENERATED_AT = '2026-08-07'
 export const SOURCE = '38커뮤니케이션 (38.co.kr) 청약·상장·종목상세'
 
 /** 38.co.kr에서 추출한 공모주·스팩 일정 + 종목 기본정보(공모가·경쟁률·확약 등). */
@@ -14,7 +14,6 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     ],
     "subStart": "2026-04-14",
     "subEnd": "2026-04-15",
-    "listingDate": "2026-04-23",
     "allotShares": 1500000,
     "subLimit": "100,000~120,000",
     "depositRate": 50,
@@ -39,8 +38,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
       "하나"
     ],
     "subStart": "2026-04-20",
-    "subEnd": "2026-04-21",
-    "listingDate": "2026-04-29"
+    "subEnd": "2026-04-21"
   },
   {
     "name": "신한스팩18호",
@@ -572,6 +570,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     ],
     "subStart": "2026-08-11",
     "subEnd": "2026-08-12",
+    "listingDate": "2026-08-21",
     "depositRate": 50,
     "minSubShares": 10,
     "priceBand": "24,800~28,400",
@@ -610,6 +609,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     ],
     "subStart": "2026-08-12",
     "subEnd": "2026-08-13",
+    "listingDate": "2026-08-25",
     "subLimit": "25,000~30,000",
     "depositRate": 50,
     "minSubShares": 10,
