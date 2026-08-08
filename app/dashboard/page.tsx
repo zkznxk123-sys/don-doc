@@ -56,6 +56,10 @@ export default function Dashboard() {
   // monthLoading: 거래/예산/인사이트 (월별) — Tier1 카드2-4, Tier3 Right, Tier4
   const [baseLoading, setBaseLoading] = useState(true)
   const [monthLoading, setMonthLoading] = useState(true)
+  // 로드 실패 표면화 — 과거엔 실패 시 조용히 0을 유지해 "데이터가 다 사라진 것처럼" 보였다
+  // (2026-08-08: 로그인 직후 handshake 전 /api/dashboard가 일시 401 → 무한 0). 재시도 후에도
+  // 실패하면 배너로 알린다.
+  const [loadFailed, setLoadFailed] = useState(false)
 
   // ── 자산 상태 (월 무관) ─────────────────────────────────────────────────────
   const [totalNetWorth, setTotalNetWorth] = useState(0)
@@ -96,9 +100,21 @@ export default function Dashboard() {
     setBaseLoading(true)
     setMonthLoading(true)
     try {
-      const res = await fetch(`/api/dashboard?month=${month}&cashflowMonths=12`)
-      const json = await res.json()
-      if (!json.success) return
+      // 로그인 직후 Clerk 세션 handshake가 끝나기 전이면 401이 날 수 있다 — 조용히 0으로
+      // 굳지 말고 짧게 재시도(최대 3회, 지수 백오프). 그래도 실패하면 배너로 노출.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let json: any = null
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          const res = await fetch(`/api/dashboard?month=${month}&cashflowMonths=12`)
+          json = await res.json()
+          if (res.ok && json?.success) break
+        } catch { /* 네트워크 순단 — 재시도 */ }
+        json = null
+        await new Promise(r => setTimeout(r, 600 * (attempt + 1)))
+      }
+      if (!json?.success) { setLoadFailed(true); return }
+      setLoadFailed(false)
 
       // wealth
       const w = json.wealth
@@ -199,6 +215,19 @@ export default function Dashboard() {
         )}
         <MonthPicker value={selectedMonth} onChange={setSelectedMonth} />
       </div>
+
+      {/* 로드 실패 배너 — 조용히 0을 보여주지 않는다(데이터 유실 오인 방지, 2026-08-08) */}
+      {loadFailed && !baseLoading && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm">
+          <span className="text-foreground">데이터를 불러오지 못했어요. 데이터는 안전하니 다시 시도해 주세요.</span>
+          <button
+            onClick={() => loadDashboard(selectedMonth, currentUserId)}
+            className="shrink-0 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-1.5 text-xs font-medium transition-colors"
+          >
+            다시 불러오기
+          </button>
+        </div>
+      )}
 
       {/* 피드 알림 배너 — 항상 최상단 (lite는 피드 자체 없음 → 숨김) */}
       {features.familyFeed && <FeedNewBanner />}
