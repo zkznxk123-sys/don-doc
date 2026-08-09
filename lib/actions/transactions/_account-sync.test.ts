@@ -40,6 +40,7 @@ function setupAccounts(accounts: Array<{
   name: string
   type?: string
   balance?: number
+  userId?: string | null
   holdings?: Array<{ name: string }>
   subAccounts?: Array<{ id: string; name: string; balance: number }>
 }>) {
@@ -49,6 +50,7 @@ function setupAccounts(accounts: Array<{
       name: a.name,
       type: a.type ?? 'CASH',
       balance: a.balance ?? 0,
+      userId: a.userId ?? null,
       holdings: a.holdings ?? [],
       subAccounts: a.subAccounts ?? [],
     }))
@@ -320,5 +322,40 @@ describe('resolveAccountSyncPlan — 분기 검증', () => {
     expect(result.pendings).toEqual([
       { accountId: 'acc_new', oldBalance: 0, newBalance: 200_000 },
     ])
+  })
+
+  // ─── 동명 계좌 방어 (2026-08-10 부부 '카카오뱅크 마이너스 통장' 사고 회귀) ───
+
+  it('동명 계좌 2개 + 명의로도 안 갈림 → 자동 반영 안 함(skip), 조용한 덮어쓰기 없음', async () => {
+    setupAccounts([
+      { id: 'acc_wife', name: '카카오뱅크 마이너스 통장', balance: 52_341_705, userId: 'user_wife', type: 'DEBT' },
+      { id: 'acc_other', name: '카카오뱅크 마이너스 통장', balance: 92_929_060, userId: 'user_other', type: 'DEBT' },
+    ])
+
+    const result = await resolveAccountSyncPlan({
+      familyId: fam, userId: uid, // 업로더는 둘 중 어느 것도 소유 안 함
+      accountBalances: [{ name: '카카오뱅크 마이너스 통장', balance: 94_431_236, type: 'DEBT' }],
+    })
+
+    expect(result.pendings).toEqual([])          // 어느 계좌도 덮어쓰지 않음
+    expect(result.skipped[0]).toContain('동명 계좌')
+    expect(result.mappingsToUpsert).toEqual([])  // 애매하면 자동 매핑도 안 남김
+  })
+
+  it('동명 계좌 2개 + 업로더 명의로 유일하게 좁혀지면 → 그 계좌에만 반영', async () => {
+    setupAccounts([
+      { id: 'acc_spouse', name: '카카오뱅크 마이너스 통장', balance: 52_341_705, userId: 'user_spouse', type: 'DEBT' },
+      { id: 'acc_mine', name: '카카오뱅크 마이너스 통장', balance: 92_929_060, userId: uid, type: 'DEBT' },
+    ])
+
+    const result = await resolveAccountSyncPlan({
+      familyId: fam, userId: uid,
+      accountBalances: [{ name: '카카오뱅크 마이너스 통장', balance: 94_431_236, type: 'DEBT' }],
+    })
+
+    expect(result.pendings).toEqual([
+      { accountId: 'acc_mine', oldBalance: 92_929_060, newBalance: 94_431_236 },
+    ])
+    expect(result.skipped).toEqual([])
   })
 })

@@ -38,6 +38,29 @@ import {
   type DbAccountWithHoldings,
 } from './excel-upload-drawer/preview-components'
 
+/**
+ * 잔액 sync skip 사유를 두 종류로 갈라 안내한다 (2026-08-10 동명계좌 사고 후속).
+ * - 동명 계좌 중복: 엑셀이 이름만 보고 계좌를 못 가린 것 → 별도 경고 토스트로 계좌명 노출,
+ *   "직접 수정" 안내(계좌 추가는 오히려 악화라 안내 안 함).
+ * - 미매칭: 기존대로 "계좌 추가 후 재업로드" 안내 문자열로 반환(성공 토스트에 합류).
+ * @returns 미매칭 안내 문구(없으면 '')
+ */
+function reportSyncSkips(skipped: string[] | undefined): string {
+  if (!skipped?.length) return ''
+  const ambiguous = skipped.filter(s => s.includes('동명 계좌'))
+  const noMatch = skipped.filter(s => !s.includes('동명 계좌'))
+  if (ambiguous.length > 0) {
+    const names = ambiguous.map(s => s.split(' (')[0]).join(', ')
+    toast.warning(`같은 이름 계좌가 여러 개라 ${ambiguous.length}건은 자동 반영하지 않았어요`, {
+      description: `${names} — 자산 관리에서 해당 계좌 잔액을 직접 수정해 주세요. (엑셀은 이름만으로 계좌를 구분하지 못해요)`,
+      duration: 12000,
+    })
+  }
+  return noMatch.length > 0
+    ? ` 계좌를 찾지 못한 ${noMatch.length}건은 건너뛰었어요. 자산 관리에서 계좌를 추가한 뒤 다시 업로드해 주세요.`
+    : ''
+}
+
 // ━━ 메인 컴포넌트 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 interface ExcelUploadDrawerProps {
@@ -542,9 +565,10 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
           }
 
           const histDesc = historyCount > 0 ? ` · 순자산 추이 ${historyCount}개월 등록` : ''
-          if (skipCount > 0) {
+          const noMatchDesc = reportSyncSkips(result.skipped)
+          if (noMatchDesc) {
             toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료${histDesc}`, {
-              description: `계좌를 찾지 못한 ${skipCount}건은 건너뛰었어요. 자산 페이지에서 계좌를 추가한 뒤 다시 업로드해 주세요.`,
+              description: noMatchDesc.trim(),
             })
           } else {
             toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료${histDesc}`)
@@ -571,15 +595,13 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         if (uploadMode === 'both' && filteredBalances.length > 0) {
           const result = await syncAccountBalancesOnly(familyId, userId, filteredBalances, { fileName: fileName ?? undefined })
           if (result.success) {
-            const skipCount = result.skipped?.length ?? 0
-            const baseDesc = '새로 등록할 거래 내역이 없습니다.'
-            const desc = skipCount > 0 ? `${baseDesc} 계좌를 찾지 못한 ${skipCount}건은 건너뛰었어요. 자산 페이지에서 계좌를 추가한 뒤 다시 업로드해 주세요.` : baseDesc
+            const desc = `새로 등록할 거래 내역이 없습니다.${reportSyncSkips(result.skipped)}`
             toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료`, { description: desc })
             track('excel_upload_completed', {
               upload_mode: 'both_assets_only',
               row_count: 0,
               account_count: result.syncedCount ?? 0,
-              skipped_sync_count: skipCount,
+              skipped_sync_count: result.skipped?.length ?? 0,
               duration_ms: Date.now() - startedAt,
               // person property — 최초 1회만 기록 (is_first_upload 판정, spec posthog-metrics)
               $set_once: { first_upload_at: new Date().toISOString() },
@@ -621,9 +643,9 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         const dupDesc = skipped > 0
           ? `총 ${total}건 중 ${skipped}건은 이미 존재하여 무시됨`
           : null
-        const syncSkipDesc = skippedSyncCount > 0
-          ? `매칭 안 된 계좌 ${skippedSyncCount}개는 신규 자동 생성 차단 — 자산 페이지에서 직접 추가 후 다시 업로드하세요.`
-          : null
+        // 동명 계좌 중복은 reportSyncSkips가 별도 경고 토스트로 처리, 미매칭만 문구 반환
+        const noMatchDesc = reportSyncSkips(result.skippedSync)
+        const syncSkipDesc = noMatchDesc ? noMatchDesc.trim() : null
 
         if (saved === 0) {
           const desc = [dupDesc, syncSkipDesc].filter(Boolean).join(' · ') || undefined

@@ -125,7 +125,7 @@ export async function resolveAccountSyncPlan(args: {
   const allFamilyAccounts = await prisma.account.findMany({
     where: { familyId },
     select: {
-      id: true, name: true, type: true, balance: true,
+      id: true, name: true, type: true, balance: true, userId: true,
       holdings: { select: { name: true } },
       subAccounts: { select: { id: true, name: true, balance: true } },
     },
@@ -175,11 +175,26 @@ export async function resolveAccountSyncPlan(args: {
     }
 
     // 1. fuzzy account match
+    // ⚠️ 동명 계좌가 2개+면 조용히 첫 번째를 고르지 않는다 — 부부가 같은 이름 계좌를
+    //    각자 가진 경우(예: '카카오뱅크 마이너스 통장' 부부 각 1개) 엉뚱한 계좌에 잔액이
+    //    적용돼 서로 덮어쓰던 사고 방지(2026-08-10). 명의로도 안 갈리면 자동 반영 없이
+    //    skip → 사용자가 수동 매핑/수정하게 표시. (ExcelMapping은 이름 기준이라 두 파일을
+    //    구분 못 하므로 자동 매핑도 안 남긴다.)
     const abNorm = normalize(ab.name)
-    const accountHit = allFamilyAccounts.find(a => {
+    const accountMatches = allFamilyAccounts.filter(a => {
       const aNorm = normalize(a.name)
       return aNorm.includes(abNorm) || abNorm.includes(aNorm)
     })
+    let accountHit = accountMatches[0]
+    if (accountMatches.length > 1) {
+      const ownedMatches = accountMatches.filter(a => a.userId === userId)
+      if (ownedMatches.length === 1) {
+        accountHit = ownedMatches[0]   // 업로더 명의로 유일하게 좁혀지면 그 계좌
+      } else {
+        skipped.push(`${ab.name} (동명 계좌 ${accountMatches.length}개 — 자동 반영 안 함, 수동 확인 필요)`)
+        continue
+      }
+    }
 
     // 2. cash-sub: account 매칭됐는데 holdings 있는 증권계좌 → 자식 '예수금'
     if (accountHit && accountHit.holdings.length > 0) {
