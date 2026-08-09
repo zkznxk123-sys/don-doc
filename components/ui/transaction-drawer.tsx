@@ -16,6 +16,34 @@ import { useDefaultVisibility } from '@/lib/hooks/useDefaultVisibility'
 import { suggestCategory, QUICK_AMOUNTS } from './transaction-drawer/keywords'
 import { isFull } from '@/lib/feature-flags'
 
+/**
+ * 저장 요청 헬퍼 — 중복 방지가 핵심 (2026-08-09 stale 세션 "Failed to fetch" 인시던트).
+ * - 네트워크 순단(fetch throw)일 때만 1회 재시도: 요청이 서버에 도달하지 못했으므로 중복 위험 없음.
+ * - 서버 응답을 받은 경우(성공/실패 무관)엔 절대 재시도하지 않는다 → 중복 저장 차단.
+ * - 401은 raw "Failed to fetch"가 아니라 세션 만료 안내로 변환.
+ */
+async function saveRequest(
+  input: string,
+  init: RequestInit,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(input, init)
+      if (res.status === 401) {
+        return { ok: false, error: '세션이 만료됐어요. 새로고침(⌘/Ctrl+Shift+R) 후 다시 시도해 주세요. (입력값은 그대로 있어요)' }
+      }
+      const result = await res.json().catch(() => null)
+      if (res.ok && result?.success) return { ok: true }
+      return { ok: false, error: result?.error || '저장에 실패했어요. 잠시 후 다시 시도해 주세요.' }
+    } catch {
+      // fetch 자체 실패(Failed to fetch) = 서버 미도달 → 중복 위험 없이 1회만 재시도
+      if (attempt === 0) { await new Promise(r => setTimeout(r, 700)); continue }
+      return { ok: false, error: '네트워크 연결이 불안정해요. 연결을 확인하고 다시 시도해 주세요. (입력값은 그대로 있어요)' }
+    }
+  }
+  return { ok: false, error: '알 수 없는 오류가 발생했어요.' }
+}
+
 export interface EditTransactionData {
   id: string
   amount: number
@@ -273,7 +301,7 @@ export function TransactionDrawer({
 
       if (isEditMode && editTransaction) {
         // 수정 모드 — accountId는 서버에서 기존 값 유지
-        const res = await fetch(`/api/transactions/${editTransaction.id}`, {
+        const r = await saveRequest(`/api/transactions/${editTransaction.id}`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -286,14 +314,10 @@ export function TransactionDrawer({
             excludeFromBudget,
           }),
         })
-        const result = await res.json()
-        if (!result.success) {
-          setError(result.error || '수정에 실패했습니다.')
-          return
-        }
+        if (!r.ok) { setError(r.error); return }
       } else {
         // 신규 모드 — 계좌는 서버에서 자동 할당
-        const res = await fetch('/api/transactions', {
+        const r = await saveRequest('/api/transactions', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -304,11 +328,7 @@ export function TransactionDrawer({
             visibility: isShared ? 'SHARED' : 'PRIVATE',
           }),
         })
-        const result = await res.json()
-        if (!result.success) {
-          setError(result.error || '저장에 실패했습니다.')
-          return
-        }
+        if (!r.ok) { setError(r.error); return }
       }
 
       onSuccess()
@@ -326,10 +346,9 @@ export function TransactionDrawer({
     setIsDeleting(true)
     setError('')
     try {
-      const res = await fetch(`/api/transactions/${editTransaction.id}`, { method: 'DELETE' })
-      const result = await res.json()
-      if (!result.success) {
-        setError(result.error || '삭제에 실패했습니다.')
+      const r = await saveRequest(`/api/transactions/${editTransaction.id}`, { method: 'DELETE' })
+      if (!r.ok) {
+        setError(r.error)
         setShowDeleteConfirm(false)
         return
       }
