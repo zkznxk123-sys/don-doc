@@ -5,6 +5,7 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { type AppRole } from '@/lib/roles'
 import { canManageTransaction } from './transactions/permissions'
+import { upsertCategoryPreference } from './preferences'
 
 // ━━ 추출된 모듈 (외부 import 경로 변경 필요) ━━
 // - bulk operations(`createManyTransactions`·`syncAccountBalancesOnly`·`checkTransactionDuplicates`·`BulkTransactionRow`·`MonthStat`)
@@ -249,6 +250,7 @@ export async function deleteTransaction(
 export interface BulkUpdateItem {
   id: string
   category?: string
+  categoryId?: string   // 편집모드에서 카테고리 변경 시 함께 전달 → 학습(가맹점→카테고리) 저장
   isExcluded?: boolean
   excludeFromBudget?: boolean
   description?: string
@@ -273,23 +275,35 @@ export async function bulkUpdateTransactions(
     const ids = updates.map(u => u.id)
     const txRecords = await prisma.transaction.findMany({
       where: { id: { in: ids } },
-      select: { id: true, userId: true, account: { select: { isShared: true } } },
+      select: { id: true, userId: true, description: true, account: { select: { isShared: true } } },
     })
     const txMap = new Map(txRecords.map(t => [t.id, t]))
 
+    const eligible = updates.filter(u => {
+      const record = txMap.get(u.id)
+      return record && canManageTransaction(userId, userRole, record.userId, record.account.isShared)
+    })
+
     await prisma.$transaction(
-      updates
-        .filter(u => {
-          const record = txMap.get(u.id)
-          return record && canManageTransaction(userId, userRole, record.userId, record.account.isShared)
-        })
+      eligible.map(u => {
+        const data: Record<string, unknown> = {}
+        if (u.category    !== undefined) data.category    = u.category
+        if (u.categoryId  !== undefined) data.categoryId  = u.categoryId ?? null
+        if (u.isExcluded  !== undefined) data.isExcluded  = u.isExcluded
+        if (u.description !== undefined) data.description = u.description
+        if (u.amount      !== undefined) data.amount      = u.amount
+        return prisma.transaction.update({ where: { id: u.id }, data })
+      })
+    )
+
+    // 학습 저장 — 편집모드 일괄 카테고리 변경도 (가맹점→카테고리) 기억 (2026-08-10, 주 경로).
+    // 편집자 명의로 저장. 설명은 서버가 보유한 원본 사용.
+    await Promise.all(
+      eligible
+        .filter(u => u.categoryId)
         .map(u => {
-          const data: Record<string, unknown> = {}
-          if (u.category   !== undefined) data.category   = u.category
-          if (u.isExcluded !== undefined) data.isExcluded = u.isExcluded
-          if (u.description !== undefined) data.description = u.description
-          if (u.amount     !== undefined) data.amount     = u.amount
-          return prisma.transaction.update({ where: { id: u.id }, data })
+          const desc = u.description ?? txMap.get(u.id)?.description ?? ''
+          return upsertCategoryPreference(userId, desc, u.categoryId!).catch(() => {})
         })
     )
 

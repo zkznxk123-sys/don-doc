@@ -353,9 +353,16 @@ export default function CashflowPage() {
       const updates = Object.entries(drafts).flatMap(([id, d]) => {
         const orig = transactions.find(t => t.id === id)
         if (!orig) return []
+        // 카테고리 변경 시 categoryId 해석 → 서버가 학습(가맹점→카테고리) 저장 (2026-08-10)
+        const catType = orig.amount > 0 ? 'INCOME' : 'EXPENSE'
+        const categoryChanged = d.category !== orig.category
+        const categoryId = categoryChanged
+          ? allCategories.find(c => c.name === d.category && c.type === catType)?.id
+          : undefined
         return [{
           id,
           category: d.category,
+          ...(categoryId ? { categoryId } : {}),
           isExcluded: d.isExcluded,
           ...(d.description !== orig.description ? { description: d.description } : {}),
           ...(d.amount !== orig.amount ? { amount: d.amount } : {}),
@@ -381,7 +388,7 @@ export default function CashflowPage() {
     } finally {
       setSaving(false)
     }
-  }, [draftCount, shellUser, drafts, transactions, year, month, fetchData])
+  }, [draftCount, shellUser, drafts, transactions, allCategories, year, month, fetchData])
 
   // 편집 모드 키보드 단축키: Cmd/Ctrl+S 저장, Esc 취소
   useEffect(() => {
