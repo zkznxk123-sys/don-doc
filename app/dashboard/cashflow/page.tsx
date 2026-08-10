@@ -38,8 +38,12 @@ export default function CashflowPage() {
   const searchParams = useSearchParams()
   const typeFilter = (searchParams.get('type') as TypeFilter | null)
 
-  const [year, setYear] = useState(now.getFullYear())
-  const [month, setMonth] = useState(now.getMonth() + 1)
+  // 조회 월을 URL(ym=YYYY-MM)에서 초기화 — 저장 시 서버액션 revalidatePath가 리마운트를
+  // 유발해도 월이 현재월(기본값)로 튀지 않게 함 (2026-08-10: 7월 편집 저장 후 8월로 리셋 버그).
+  const ymParam = searchParams.get('ym')
+  const ymInit = ymParam && /^\d{4}-\d{2}$/.test(ymParam) ? ymParam.split('-').map(Number) : null
+  const [year, setYear] = useState(ymInit ? ymInit[0] : now.getFullYear())
+  const [month, setMonth] = useState(ymInit ? ymInit[1] : now.getMonth() + 1)
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [summary, setSummary] = useState<Summary | null>(null)
   const [loading, setLoading] = useState(true)
@@ -106,6 +110,15 @@ export default function CashflowPage() {
     fetchGoal(year, month)
     getFamilyCategories().then(setAllCategories).catch(() => {})
   }, [year, month, fetchData, fetchGoal, refreshKey])
+
+  // 조회 월을 URL(ym)에 동기화 — 리마운트 시 초기값으로 복원되게 (월 리셋 버그 방지)
+  useEffect(() => {
+    const ym = `${year}-${String(month).padStart(2, '0')}`
+    if (searchParams.get('ym') === ym) return
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('ym', ym)
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+  }, [year, month]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ?txn= 파라미터로 진입 시 해당 거래의 드로어 자동 오픈
   const txnParam = searchParams.get('txn')
