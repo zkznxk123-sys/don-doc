@@ -113,23 +113,10 @@ export function parseCohort(metadata: unknown): Cohort | null {
 /** 초대 합류 후 착지 지점 (/join/{cohort} redirect). */
 export const IPO_HOME = '/dashboard/ipo'
 
-/** 이 사용자가 공모주·스팩을 쓸 수 있는가 — full=항상, lite=cohort 보유 시. */
-export function canUseIpo(cohort: Cohort | null): boolean {
-  return isFull() || cohort != null
-}
-
-/** lite에서 cohort 없는 사용자의 IPO route/API 접근 차단 판정 (middleware·가드 공용). */
-export function isIpoBlockedForUser(cohort: Cohort | null, pathname: string): boolean {
-  if (canUseIpo(cohort)) return false
-  return pathname === '/dashboard/ipo' || pathname.startsWith('/dashboard/ipo/')
-    || pathname === '/api/ipo' || pathname.startsWith('/api/ipo/')
-}
-
-/** IPO API route 진입부 가드 — lite + cohort 없음이면 404 JSON (방어심층). */
-export function blockIpoIfNotEntitled(cohort: Cohort | null): Response | null {
-  if (canUseIpo(cohort)) return null
-  return Response.json({ success: false, error: LITE_BLOCKED_MESSAGE }, { status: 404 })
-}
+// 2026-08-10 전략 전환: 공모주 IPO를 독립 앱으로 분리 결정 → cohort 해금 게이트 제거.
+// canUseIpo·isIpoBlockedForUser·blockIpoIfNotEntitled 삭제(IPO는 전원 접근, 화면·데이터는
+// 독립 앱 이관까지 존치). parseCohort는 존치 — getAuthUser가 읽는 8/5 가드레일 계약.
+// (참고: [[project_dondoc_community_wedge]] 폐기)
 
 /**
  * 종목 리서치 베타(딥다이브·ETF NAV) per-user 게이트 — 4번째 축.

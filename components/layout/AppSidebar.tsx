@@ -39,7 +39,7 @@ type NavItem = {
   group: NavGroup
 }
 
-import { features, canUseIpo } from '@/lib/feature-flags'
+import { features } from '@/lib/feature-flags'
 import { inviteMessage } from '@/lib/copy/invite'
 
 // 5/10 정체성 결정: 본질 4개 → Beta 그룹 → admin 순. Feed는 Beta로 노출(6/1 임시 복귀).
@@ -77,9 +77,8 @@ interface AppSidebarProps {
 export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
   const pathname = usePathname()
 
-  // 2026-07-12 해금형 통합: cohort는 lite에서 IPO를 "추가로 여는" 열쇠(구 제한형 폐기).
-  // lite + cohort 없음 → IPO 메뉴 숨김. full은 항상 노출.
-  const navItems = NAV_ITEMS.filter(i => i.href !== '/dashboard/ipo' || canUseIpo(user.cohort ?? null))
+  // 2026-08-10 전략 전환: IPO cohort 게이트 제거 → IPO 메뉴 전원 노출(독립 앱 이관까지 존치).
+  const navItems = NAV_ITEMS
 
   const isActive = (item: NavItem) =>
     item.exact ? pathname === item.href : pathname.startsWith(item.href)

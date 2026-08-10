@@ -10,7 +10,6 @@ export const dynamic = 'force-dynamic'
  */
 import { NextRequest, NextResponse } from 'next/server'
 import { getAuthUser } from '@/lib/auth'
-import { blockIpoIfNotEntitled } from '@/lib/feature-flags'
 
 const NAVER_HEADERS = { Referer: 'https://finance.naver.com', 'User-Agent': 'Mozilla/5.0' }
 
@@ -49,9 +48,6 @@ export async function POST(req: NextRequest) {
   // 무인증 오픈 프록시 남용 차단 — 외부(네이버) 호출 전에 인증 확인
   const user = await getAuthUser()
   if (!user?.familyId) return NextResponse.json({ error: '인증 필요' }, { status: 401 })
-  // lite에선 cohort(초대) 보유자만 IPO API 사용 (2026-07-12 해금형 통합)
-  const blocked = blockIpoIfNotEntitled(user.cohort)
-  if (blocked) return blocked
 
   let body: { items?: { name: string; code?: string }[] }
   try { body = await req.json() } catch { return NextResponse.json({ error: 'bad json' }, { status: 400 }) }

@@ -95,39 +95,8 @@ describe('feature-flags', () => {
     expect(parseCohort('ipo-spac')).toBeNull() // 객체 아니면 null
   })
 
-  it('canUseIpo — full=항상, lite=cohort 보유 시만 (2026-07-12 해금형)', async () => {
-    process.env[ENV_KEY] = 'full'
-    let m = await import('./feature-flags')
-    expect(m.canUseIpo(null)).toBe(true)
-    expect(m.canUseIpo('ipo-spac')).toBe(true)
-
-    vi.resetModules()
-    process.env[ENV_KEY] = 'lite'
-    m = await import('./feature-flags')
-    expect(m.canUseIpo(null)).toBe(false)
-    expect(m.canUseIpo('ipo-spac')).toBe(true)
-  })
-
-  it('isIpoBlockedForUser — lite+cohort 없음만 IPO route/API 차단', async () => {
-    vi.resetModules()
-    process.env[ENV_KEY] = 'lite'
-    const m = await import('./feature-flags')
-    // cohort 없음 → IPO 페이지·API 차단, 나머지는 관여 안 함
-    expect(m.isIpoBlockedForUser(null, '/dashboard/ipo')).toBe(true)
-    expect(m.isIpoBlockedForUser(null, '/dashboard/ipo/detail')).toBe(true)
-    expect(m.isIpoBlockedForUser(null, '/api/ipo/workspace')).toBe(true)
-    expect(m.isIpoBlockedForUser(null, '/dashboard')).toBe(false)
-    expect(m.isIpoBlockedForUser(null, '/api/assets')).toBe(false)
-    // cohort 있으면 전부 통과 (해금)
-    expect(m.isIpoBlockedForUser('ipo-spac', '/dashboard/ipo')).toBe(false)
-    expect(m.isIpoBlockedForUser('ipo-spac', '/api/ipo/workspace')).toBe(false)
-
-    // full 빌드는 cohort 무관 통과
-    vi.resetModules()
-    process.env[ENV_KEY] = 'full'
-    const f = await import('./feature-flags')
-    expect(f.isIpoBlockedForUser(null, '/dashboard/ipo')).toBe(false)
-  })
+  // 2026-08-10 전략 전환: IPO cohort 게이트(canUseIpo·isIpoBlockedForUser·blockIpoIfNotEntitled)
+  // 제거 → 관련 테스트 삭제. parseCohort는 존치(아래 별도 검증 유지).
 })
 
 describe('canUseResearchBeta — 리서치 베타 per-user 게이트 (fail-closed)', () => {
