@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { toast } from 'sonner'
 import { Minus, Plus, Globe, Lock, Trash2, Sparkles, Loader2, PlusCircle, X } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
 import { isCFOLevel, type AppRole } from '@/lib/roles'
@@ -282,6 +283,36 @@ export function TransactionDrawer({
     }
   }
 
+  /** 저장 후 같은 가맹점 다른 거래 발견 시 "전부 정리?" 토스트 (소급 적용, 2026-08-10). */
+  const offerMerchantApply = async (desc: string, categoryId: string | null, categoryName: string) => {
+    if (!categoryId || !desc) return
+    try {
+      const res = await fetch('/api/transactions/apply-merchant-category', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: desc, categoryId, category: categoryName, dryRun: true }),
+      })
+      const j = await res.json()
+      if (!j.success || !j.count) return
+      toast(`'${j.merchant}' 같은 가맹점 ${j.count}건도 [${categoryName}]로 정리할까요?`, {
+        duration: 12000,
+        action: {
+          label: '전부 정리',
+          onClick: async () => {
+            try {
+              const ar = await fetch('/api/transactions/apply-merchant-category', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ description: desc, categoryId, category: categoryName }),
+              })
+              const aj = await ar.json()
+              if (aj.success) { toast.success(`${aj.updated}건을 [${categoryName}]로 정리했어요.`); onSuccess() }
+              else toast.error('정리에 실패했어요.')
+            } catch { toast.error('정리 중 오류가 발생했어요.') }
+          },
+        },
+      })
+    } catch { /* 제안 실패는 조용히 무시 */ }
+  }
+
   const handleSubmit = async () => {
     if (isSubmitting) return
     if (!amount || !category) {
@@ -298,6 +329,10 @@ export function TransactionDrawer({
     setIsSubmitting(true)
     try {
       const numAmount = isExpense ? -Math.abs(numericAmount) : Math.abs(numericAmount)
+      // 학습·소급에 쓸 categoryId 해석 (이름만 보내면 학습이 안 됐던 원인 — 2026-08-10)
+      const catType = isExpense ? 'EXPENSE' : 'INCOME'
+      const selectedCategoryId = allCategories.find(c => c.name === category && c.type === catType)?.id ?? null
+      const finalDesc = description || category
 
       if (isEditMode && editTransaction) {
         // 수정 모드 — accountId는 서버에서 기존 값 유지
@@ -308,7 +343,8 @@ export function TransactionDrawer({
             amount: numAmount,
             date,
             category,
-            description: description || category,
+            categoryId: selectedCategoryId,
+            description: finalDesc,
             visibility: isShared ? 'SHARED' : 'PRIVATE',
             isExcluded,
             excludeFromBudget,
@@ -324,7 +360,8 @@ export function TransactionDrawer({
             amount: numAmount,
             date,
             category,
-            description: description || category,
+            categoryId: selectedCategoryId,
+            description: finalDesc,
             visibility: isShared ? 'SHARED' : 'PRIVATE',
           }),
         })
@@ -334,6 +371,8 @@ export function TransactionDrawer({
       onSuccess()
       resetForm()
       onClose()
+      // 저장 후: 같은 가맹점 다른 거래가 있으면 "전부 정리?" 제안 (쓸수록 개선 ④)
+      void offerMerchantApply(finalDesc, selectedCategoryId, category)
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e) || '알 수 없는 오류')
     } finally {

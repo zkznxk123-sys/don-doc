@@ -5,6 +5,7 @@ import { z } from 'zod'
 import { getFamilyCategories } from '@/lib/actions/categories'
 import { chatJSON } from '@/lib/ai'
 import { getAuthUser } from '@/lib/auth'
+import { getUserCategoryPrefIndex, lookupPref } from '@/lib/actions/preferences'
 
 const resultSchema = z.object({
   category: z.string(),
@@ -20,13 +21,22 @@ export async function POST(req: Request) {
 
     const cats = await getFamilyCategories()
     const currentType = amount !== undefined && Number(amount) > 0 ? 'INCOME' : 'EXPENSE'
-    const categoryNames = cats
-      .filter(c => c.type === currentType)
-      .map(c => c.name)
-      .join(', ')
+    const typeCats = cats.filter(c => c.type === currentType)
+    const categoryNames = typeCats.map(c => c.name).join(', ')
 
     const user = await getAuthUser()
 
+    // ① 학습 우선 — 사용자가 이 가맹점을 전에 분류했으면 LLM 없이 그대로 (쓸수록 개선의 핵심)
+    if (user) {
+      const idx = await getUserCategoryPrefIndex(user.id)
+      const learnedId = lookupPref(description, idx)
+      if (learnedId) {
+        const learned = typeCats.find(c => c.id === learnedId) ?? cats.find(c => c.id === learnedId)
+        if (learned) return NextResponse.json({ category: learned.name, source: 'learned' })
+      }
+    }
+
+    // ② 학습에 없으면 LLM
     const result = await chatJSON(
       [
         {

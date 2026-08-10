@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthUser } from '@/lib/auth'
 import { getCategories } from '@/lib/actions/categories'
-import { getUserCategoryPreferences } from '@/lib/actions/preferences'
+import { getUserCategoryPrefIndex, lookupPref } from '@/lib/actions/preferences'
 import { prisma } from '@/lib/prisma'
 import { chatJSON, type AiMode } from '@/lib/ai'
 
@@ -106,7 +106,7 @@ export async function POST(req: Request) {
         orderBy: { date: 'desc' },
       }),
       getCategories(user.familyId),
-      getUserCategoryPreferences(user.id),
+      getUserCategoryPrefIndex(user.id),
     ])
 
     if (categories.length === 0) {
@@ -121,8 +121,7 @@ export async function POST(req: Request) {
     const needsAiTxs: typeof txs = []
 
     for (const tx of txs) {
-      const keyword = tx.description.toLowerCase().trim()
-      const prefCategoryId = prefMap.get(keyword)
+      const prefCategoryId = lookupPref(tx.description, prefMap)
       if (prefCategoryId && catById.has(prefCategoryId)) {
         prefMappingMap.set(tx.description, prefCategoryId)
       } else {

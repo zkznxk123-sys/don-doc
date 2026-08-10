@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { getAuthUser } from '@/lib/auth'
 import { getCategories } from '@/lib/actions/categories'
-import { getUserCategoryPreferences } from '@/lib/actions/preferences'
+import { getUserCategoryPrefIndex, lookupPref } from '@/lib/actions/preferences'
 import { chatJSON, type AiMode } from '@/lib/ai'
 
 export interface MappingItem {
@@ -90,7 +90,7 @@ export async function POST(req: Request) {
 
     const [categories, prefMap] = await Promise.all([
       getCategories(user.familyId),
-      getUserCategoryPreferences(user.id),
+      getUserCategoryPrefIndex(user.id),
     ])
     if (categories.length === 0) {
       return NextResponse.json({ mappings: [], warning: '카테고리가 없습니다.' })
@@ -104,8 +104,7 @@ export async function POST(req: Request) {
     const needsAi: MappingItem[] = []
 
     for (const item of items) {
-      const keyword = item.description.toLowerCase().trim()
-      const prefCategoryId = prefMap.get(keyword)
+      const prefCategoryId = lookupPref(item.description, prefMap)
       const cat = prefCategoryId ? catById.get(prefCategoryId) : undefined
       if (cat) {
         prefMatched.push({

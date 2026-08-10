@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
+import { upsertCategoryPreference } from '@/lib/actions/preferences'
 
 /**
  * 수기 내역용 "현금" 가상 계좌를 찾거나 생성한다.
@@ -65,6 +66,11 @@ export async function POST(req: NextRequest) {
         ...(categoryId ? { categoryId } : {}),
       },
     })
+
+    // 학습 저장 — 사용자가 직접 입력한 (가맹점→카테고리)를 정규화 키로 기억 (categoryId 있을 때만)
+    if (categoryId && description) {
+      await upsertCategoryPreference(authUser.id, description, categoryId).catch(() => {})
+    }
 
     return NextResponse.json({ success: true, id: transaction.id })
   } catch (e) {
