@@ -127,7 +127,7 @@ export async function createManyTransactions(
       ? await resolveAccountSyncPlan({ familyId, userId, accountBalances: options.accountBalances })
       : { pendings: [], mappingsToUpsert: [], skipped: [], cashSubCreated: [] }
     if (balancePlan.mappingsToUpsert.length > 0) {
-      await upsertMappings(familyId, balancePlan.mappingsToUpsert)
+      await upsertMappings(familyId, userId, balancePlan.mappingsToUpsert)
     }
 
     // ── 6. UploadBatch 생성 (count들은 마지막에 업데이트) ──
@@ -251,7 +251,7 @@ export async function syncAccountBalancesOnly(
     if (plan.cashSubCreated.length > 0) console.log('[syncAccountBalancesOnly] created cash sub-accounts:', plan.cashSubCreated)
 
     // 1.5. ExcelMapping 자동 등록 — 다음 업로드부터 같은 결정 재적용
-    if (plan.mappingsToUpsert.length > 0) await upsertMappings(familyId, plan.mappingsToUpsert)
+    if (plan.mappingsToUpsert.length > 0) await upsertMappings(familyId, userId, plan.mappingsToUpsert)
 
     // 2. dedup — 같은 accountId 중복 push 합치기 (회귀 차단)
     const { deduped: dedupedPending, duplicates: duplicateCount } = dedupPendings(plan.pendings)

@@ -613,13 +613,14 @@ model ExcelMapping {
   id              String           @id @default(cuid())
   familyId        String
   family          FamilyGroup      @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  userId          String? // 업로더(매핑 주인) — 부부 동명 계좌 구분 축 (2026-08-10). null=레거시 공용
   excelName       String // 정규화된 엑셀 표기명
   mappingType    ExcelMappingType
   targetAccountId String? // account 매칭 또는 cash-sub 부모
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
-  @@unique([familyId, excelName])
+  @@unique([familyId, userId, excelName])
   @@index([familyId])
 }
 

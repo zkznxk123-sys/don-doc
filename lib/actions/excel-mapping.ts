@@ -25,6 +25,18 @@ async function getCurrentFamilyId(): Promise<string | null> {
   return user?.familyId ?? null
 }
 
+// familyId + 내부 userId 동시 필요할 때(매핑 저장은 업로더 축을 기록). 2026-08-10.
+async function getCurrentUserFamily(): Promise<{ userId: string; familyId: string } | null> {
+  const { userId: clerkId } = await auth()
+  if (!clerkId) return null
+  const user = await prisma.user.findUnique({
+    where: { clerkId },
+    select: { id: true, familyId: true },
+  })
+  if (!user?.familyId) return null
+  return { userId: user.id, familyId: user.familyId }
+}
+
 export interface AccountSummary {
   id: string
   name: string
@@ -84,8 +96,9 @@ export async function upsertExcelMapping(input: {
   mappingType: ExcelMappingType
   targetAccountId?: string | null
 }): Promise<{ success: true; data: ExcelMappingData } | { success: false; error: string }> {
-  const familyId = await getCurrentFamilyId()
-  if (!familyId) return { success: false, error: '가족 정보를 찾을 수 없습니다' }
+  const uf = await getCurrentUserFamily()
+  if (!uf) return { success: false, error: '가족 정보를 찾을 수 없습니다' }
+  const { userId, familyId } = uf
 
   const excelName = input.excelName.trim()
   if (!excelName) return { success: false, error: '엑셀 표기명이 비어있습니다' }
@@ -106,9 +119,10 @@ export async function upsertExcelMapping(input: {
   }
 
   const row = await prisma.excelMapping.upsert({
-    where: { familyId_excelName: { familyId, excelName } },
+    where: { familyId_userId_excelName: { familyId, userId, excelName } },
     create: {
       familyId,
+      userId,
       excelName,
       mappingType: input.mappingType,
       targetAccountId: input.targetAccountId ?? null,
@@ -168,14 +182,24 @@ export async function deleteExcelMapping(id: string): Promise<{ success: boolean
  */
 export async function findExcelMapping(
   familyId: string,
+  userId: string | null,
   excelName: string,
 ): Promise<{ mappingType: ExcelMappingType; targetAccountId: string | null } | null> {
   const normalized = excelName.trim()
   if (!normalized) return null
 
-  const row = await prisma.excelMapping.findUnique({
-    where: { familyId_excelName: { familyId, excelName: normalized } },
+  // 업로더(userId) 본인 매핑 우선 — 부부 동명 계좌 구분(2026-08-10).
+  if (userId) {
+    const own = await prisma.excelMapping.findUnique({
+      where: { familyId_userId_excelName: { familyId, userId, excelName: normalized } },
+      select: { mappingType: true, targetAccountId: true },
+    })
+    if (own) return own
+  }
+  // 폴백: 레거시 공용 매핑(userId=null). 축 도입 전 저장분 계속 유효.
+  const legacy = await prisma.excelMapping.findFirst({
+    where: { familyId, userId: null, excelName: normalized },
     select: { mappingType: true, targetAccountId: true },
   })
-  return row ?? null
+  return legacy ?? null
 }

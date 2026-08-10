@@ -133,7 +133,7 @@ export async function resolveAccountSyncPlan(args: {
 
   for (const ab of accountBalances) {
     // 0. ExcelMapping 우선 lookup
-    const mapping = await findExcelMapping(familyId, ab.name)
+    const mapping = await findExcelMapping(familyId, userId, ab.name)
     if (mapping) {
       if (mapping.mappingType === 'IGNORE' || mapping.mappingType === 'HOLDING_SKIP') {
         skipped.push(`${ab.name} (mapping:${mapping.mappingType})`)
@@ -267,11 +267,12 @@ export async function resolveAccountSyncPlan(args: {
  * ExcelMapping 자동 upsert — mappingsToUpsert를 DB에 반영.
  * 다음 업로드부터 같은 row가 동일 결정으로 자동 분기.
  */
-export async function upsertMappings(familyId: string, mappings: MappingToUpsert[]): Promise<void> {
+export async function upsertMappings(familyId: string, userId: string, mappings: MappingToUpsert[]): Promise<void> {
   for (const m of mappings) {
+    // 새 매핑은 항상 업로더(userId)를 축으로 저장 — 부부 동명 계좌 구분(2026-08-10).
     await prisma.excelMapping.upsert({
-      where: { familyId_excelName: { familyId, excelName: m.excelName } },
-      create: { familyId, excelName: m.excelName, mappingType: m.mappingType, targetAccountId: m.targetAccountId },
+      where: { familyId_userId_excelName: { familyId, userId, excelName: m.excelName } },
+      create: { familyId, userId, excelName: m.excelName, mappingType: m.mappingType, targetAccountId: m.targetAccountId },
       update: { mappingType: m.mappingType, targetAccountId: m.targetAccountId },
     })
   }

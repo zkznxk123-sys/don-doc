@@ -72,6 +72,15 @@ describe('resolveAccountSyncPlan — 분기 검증', () => {
 
   // ─── 0. ExcelMapping 분기 ───────────────────────────
 
+  it('findExcelMapping은 업로더 userId 축과 함께 조회한다 (부부 동명 계좌 구분, 2026-08-10)', async () => {
+    setupAccounts([])
+    await resolveAccountSyncPlan({
+      familyId: fam, userId: uid,
+      accountBalances: [{ name: '카카오뱅크', balance: 100 }],
+    })
+    expect(findExcelMapping).toHaveBeenCalledWith(fam, uid, '카카오뱅크')
+  })
+
   it('IGNORE mapping → skipped, pendings 없음', async () => {
     setupAccounts([])
     ;(findExcelMapping as ReturnType<typeof vi.fn>).mockResolvedValue({
