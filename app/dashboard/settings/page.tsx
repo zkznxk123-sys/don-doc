@@ -360,7 +360,7 @@ function SettingsClient() {
           </div>
           <div className="flex-1 text-left">
             <p className="text-sm font-medium text-foreground">앱 기본 AI</p>
-            <p className="text-xs text-muted-foreground mt-0.5">GPT-4o-mini · 빠르고 안정적</p>
+            <p className="text-xs text-muted-foreground mt-0.5">빠르고 안정적</p>
           </div>
           {aiMode === 'api' && (
             <span className="text-xs font-medium text-foreground/50 shrink-0">사용 중</span>

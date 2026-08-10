@@ -52,8 +52,9 @@ function reportSyncSkips(skipped: string[] | undefined): string {
   if (ambiguous.length > 0) {
     const names = ambiguous.map(s => s.split(' (')[0]).join(', ')
     toast.warning(`같은 이름 계좌가 여러 개라 ${ambiguous.length}건은 자동 반영하지 않았어요`, {
-      description: `${names} — 자산 관리에서 해당 계좌 잔액을 직접 수정해 주세요. (엑셀은 이름만으로 계좌를 구분하지 못해요)`,
-      duration: 12000,
+      description: `${names} — 자산 관리에서 해당 계좌 잔액을 직접 수정해 주세요.`,
+      duration: Infinity,
+      action: { label: '자산 관리로', onClick: () => { window.location.href = '/dashboard/assets' } },
     })
   }
   return noMatch.length > 0
@@ -595,7 +596,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         if (uploadMode === 'both' && filteredBalances.length > 0) {
           const result = await syncAccountBalancesOnly(familyId, userId, filteredBalances, { fileName: fileName ?? undefined })
           if (result.success) {
-            const desc = `새로 등록할 거래 내역이 없습니다.${reportSyncSkips(result.skipped)}`
+            const desc = `새로 등록할 거래 내역이 없어요.${reportSyncSkips(result.skipped)}`
             toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료`, { description: desc })
             track('excel_upload_completed', {
               upload_mode: 'both_assets_only',

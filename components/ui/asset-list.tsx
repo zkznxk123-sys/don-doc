@@ -154,8 +154,16 @@ function AssetRow({
         <MetaIcon className="w-5 h-5 sm:w-4 sm:h-4" style={{ color: meta.color }} />
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <p className="text-sm font-medium text-foreground truncate">{account.name}</p>
+          {account.isJoint ? (
+            <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md text-savings bg-savings/10">공동</span>
+          ) : (() => {
+            const name = account.ownerName ?? (account.userId === currentUserId ? '나' : null)
+            return name
+              ? <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md text-muted-foreground bg-muted">{name}</span>
+              : null
+          })()}
           {account.shareLevel === 'PUBLIC'
             ? <Users className="w-3 h-3 text-muted-foreground/60 shrink-0" />
             : account.shareLevel === 'BALANCE_ONLY'
@@ -165,12 +173,6 @@ function AssetRow({
         </div>
         <div className="flex items-center gap-2 mt-0.5">
           <p className="text-xs text-muted-foreground">
-            {(() => {
-              if (account.isJoint) return <span className="text-muted-foreground/50">공동 · </span>
-              const name = account.ownerName ?? (account.userId === currentUserId ? '나' : null)
-              if (name) return <span className="text-muted-foreground/50">{name} · </span>
-              return null
-            })()}
             {meta.label} · {allocation}%
           </p>
           {hasLinkedDebts && netEquity != null && (

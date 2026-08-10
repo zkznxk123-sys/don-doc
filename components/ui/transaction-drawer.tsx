@@ -31,7 +31,7 @@ async function saveRequest(
     try {
       const res = await fetch(input, init)
       if (res.status === 401) {
-        return { ok: false, error: '세션이 만료됐어요. 새로고침(⌘/Ctrl+Shift+R) 후 다시 시도해 주세요. (입력값은 그대로 있어요)' }
+        return { ok: false, error: '세션이 만료됐어요. 새로고침한 뒤 다시 저장해 주세요.' }
       }
       const result = await res.json().catch(() => null)
       if (res.ok && result?.success) return { ok: true }
@@ -42,7 +42,7 @@ async function saveRequest(
       return { ok: false, error: '네트워크 연결이 불안정해요. 연결을 확인하고 다시 시도해 주세요. (입력값은 그대로 있어요)' }
     }
   }
-  return { ok: false, error: '알 수 없는 오류가 발생했어요.' }
+  return { ok: false, error: '저장하지 못했어요. 잠시 후 다시 시도해 주세요.' }
 }
 
 export interface EditTransactionData {
@@ -782,18 +782,17 @@ export function TransactionDrawer({
             )}
           </div>
 
-          {/* Error */}
-          {error && (
-            <div className="mt-4 px-4 py-3 bg-expense-soft border border-(--viz-terra)/20 rounded-xl text-sm text-expense">
-              {error}
-            </div>
-          )}
-
           {/* Footer — sticky at bottom (모바일 키보드 보정) */}
           <DrawerFooter
             className="sticky bottom-0 pt-3 pb-6 border-t border-border bg-card -mx-4 sm:-mx-6 px-4 sm:px-6"
             style={keyboardOffset > 0 ? { paddingBottom: `calc(1.5rem + ${keyboardOffset}px)` } : undefined}
           >
+            {/* Error — 스크롤 위치와 무관하게 항상 보이도록 sticky 푸터 안에 고정 */}
+            {error && (
+              <div role="alert" className="mb-3 px-4 py-3 bg-expense-soft border border-(--viz-terra)/20 rounded-xl text-sm text-expense">
+                {error}
+              </div>
+            )}
             <button
               onClick={handleSubmit}
               disabled={!amount || !category || isSubmitting}

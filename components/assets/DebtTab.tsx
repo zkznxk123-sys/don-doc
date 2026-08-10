@@ -268,9 +268,12 @@ function DebtCard({
               {formatCurrency(debt.balance)}
             </p>
             {(debt.ownerName || debt.isJoint) && (
-              <p className="text-[11px] text-muted-foreground/60 mt-0.5">
-                명의: {debt.isJoint ? '공동' : debt.ownerName ?? '나'}
-              </p>
+              <span className={cn(
+                'inline-block text-[10px] font-medium px-1.5 py-0.5 rounded-md mt-1',
+                debt.isJoint ? 'text-savings bg-savings/10' : 'text-muted-foreground bg-muted'
+              )}>
+                {debt.isJoint ? '공동' : debt.ownerName ?? '나'}
+              </span>
             )}
           </div>
           {debt.monthlyPayment != null ? (

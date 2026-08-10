@@ -22,16 +22,16 @@ export function FeedNewBanner() {
   return (
     <Link
       href="/dashboard/feed"
-      className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-savings/8 border border-blue-500/20 hover:bg-savings/12 transition-colors"
+      className="flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-ai-50 dark:bg-ai-950/40 border border-ai-200/30 hover:bg-ai-100 dark:hover:bg-ai-950/60 transition-colors"
     >
       <span className="relative shrink-0">
-        <MessageSquare className="w-4 h-4 text-blue-400" />
-        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-blue-400" />
+        <MessageSquare className="w-4 h-4 text-ai-700 dark:text-ai-300" />
+        <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-ai-700 dark:bg-ai-300" />
       </span>
-      <p className="text-sm text-blue-300 flex-1">
-        가족 피드에 새 글이 <span className="font-semibold text-blue-200">{newCount}개</span> 올라왔어요
+      <p className="text-sm text-ai-700 dark:text-ai-300 flex-1">
+        가족 피드에 새 글이 <span className="font-semibold">{newCount}개</span> 올라왔어요
       </p>
-      <span className="text-xs text-blue-400/60 shrink-0">보러가기 →</span>
+      <span className="text-xs text-ai-700/60 dark:text-ai-300/60 shrink-0">보러가기 →</span>
     </Link>
   )
 }
