@@ -16,6 +16,8 @@ import { detectAutoExcludeItems, type DetectedGroup } from '@/lib/actions/transa
 import { InputGuide } from '@/components/dashboard/InputGuide'
 import { getFamilyCategories, type CategoryOption } from '@/lib/actions/categories'
 import { AutoCleanupDialog } from '@/components/ui/auto-cleanup-dialog'
+import { LoadErrorBanner } from '@/components/ui/load-error-banner'
+import { fetchJsonWithRetry } from '@/lib/resilient-fetch'
 
 // 신규 추출된 sub-components
 import {
@@ -47,6 +49,7 @@ export default function CashflowPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [summary, setSummary] = useState<Summary | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadFailed, setLoadFailed] = useState(false)
 
   // ── Batch edit state ──
   const [isEditing, setIsEditing] = useState(false)
@@ -83,12 +86,12 @@ export default function CashflowPage() {
   const fetchData = useCallback(async (y: number, m: number) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/transactions/list?month=${toMonthParam(y, m)}`)
-      const data = await res.json()
-      if (data.success) {
-        setTransactions(data.transactions)
-        setSummary(data.summary)
-      }
+      const data = await fetchJsonWithRetry(`/api/transactions/list?month=${toMonthParam(y, m)}`)
+      setTransactions(data.transactions)
+      setSummary(data.summary)
+      setLoadFailed(false)
+    } catch {
+      setLoadFailed(true)   // 조용한 0 대신 배너 (2026-08-10)
     } finally {
       setLoading(false)
     }
@@ -530,6 +533,11 @@ export default function CashflowPage() {
 
   return (
     <div className="max-w-3xl mx-auto">
+      {loadFailed && !loading && (
+        <div className="mb-4">
+          <LoadErrorBanner onRetry={() => { fetchData(year, month); fetchGoal(year, month) }} />
+        </div>
+      )}
       {aiModal && (
         <RecategorizeProgressModal
           state={aiModal}

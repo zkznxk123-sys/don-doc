@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import {
   Wallet, PiggyBank, ArrowUpRight, ArrowDownRight,
@@ -60,6 +60,7 @@ export default function Dashboard() {
   // (2026-08-08: 로그인 직후 handshake 전 /api/dashboard가 일시 401 → 무한 0). 재시도 후에도
   // 실패하면 배너로 알린다.
   const [loadFailed, setLoadFailed] = useState(false)
+  const loadSeqRef = useRef(0)   // loadDashboard 요청 시퀀스 — 늦게 온 응답 폐기용
 
   // ── 자산 상태 (월 무관) ─────────────────────────────────────────────────────
   const [totalNetWorth, setTotalNetWorth] = useState(0)
@@ -97,6 +98,9 @@ export default function Dashboard() {
 
   // ── 통합 대시보드 데이터 로드 (단일 API 호출) ─────────────────────────────────
   const loadDashboard = useCallback(async (month: string, uid: string) => {
+    // 요청 시퀀스 가드 — 재시도로 실패 창이 최대 3.6s까지 열려, 월 전환 시 늦게 끝난
+    // 이전 달 응답이 새 달을 덮어쓰던 경쟁 조건 방지 (2026-08-10 dev agent 지적).
+    const seq = ++loadSeqRef.current
     setBaseLoading(true)
     setMonthLoading(true)
     try {
@@ -111,8 +115,9 @@ export default function Dashboard() {
           if (res.ok && json?.success) break
         } catch { /* 네트워크 순단 — 재시도 */ }
         json = null
-        await new Promise(r => setTimeout(r, 600 * (attempt + 1)))
+        if (attempt < 2) await new Promise(r => setTimeout(r, 600 * (attempt + 1)))  // 마지막 시도 후엔 대기 안 함
       }
+      if (seq !== loadSeqRef.current) return   // 더 최신 로드가 시작됨 → 이 응답은 폐기(덮어쓰기 방지)
       if (!json?.success) { setLoadFailed(true); return }
       setLoadFailed(false)
 
@@ -159,8 +164,11 @@ export default function Dashboard() {
       // insights
       if (json.insights?.success) setInsights(json.insights)
     } finally {
-      setBaseLoading(false)
-      setMonthLoading(false)
+      // 최신 로드일 때만 로딩 해제 (뒤늦은 이전 로드가 스피너를 끄지 않게)
+      if (seq === loadSeqRef.current) {
+        setBaseLoading(false)
+        setMonthLoading(false)
+      }
     }
   }, [])
 

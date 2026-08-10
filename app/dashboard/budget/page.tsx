@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import Link from 'next/link'
 import { formatCurrency, cn } from '@/lib/utils'
 import { useDashboardActions } from '@/components/layout/DashboardShell'
+import { LoadErrorBanner } from '@/components/ui/load-error-banner'
 
 import type { AppRole } from '@/lib/roles'
 
@@ -48,6 +49,7 @@ export default function BudgetPage() {
 
   const [data, setData] = useState<BudgetPageData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [loadFailed, setLoadFailed] = useState(false)
   const isCFO = shellUser?.role === 'CFO' || shellUser?.role === 'CO_CFO'
 
   // 예산 입력 (지출 한도 배분)
@@ -65,6 +67,7 @@ export default function BudgetPage() {
   const loadData = useCallback(async () => {
     if (!shellUser) return
     setIsLoading(true)
+    setLoadFailed(false)
     setSaveStatus('idle')
     try {
       const budgetParams = new URLSearchParams({ month })
@@ -134,6 +137,7 @@ export default function BudgetPage() {
       }
     } catch (e) {
       console.error('예산 페이지 로드 오류:', e)
+      setLoadFailed(true)   // 조용한 빈값 대신 배너 (2026-08-10)
     } finally {
       setIsLoading(false)
     }
@@ -277,6 +281,9 @@ export default function BudgetPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
+      {loadFailed && (
+        <div className="mb-4"><LoadErrorBanner onRetry={() => loadData()} /></div>
+      )}
       {/* 헤더 */}
       <div className="flex items-center gap-3 mb-8">
         <Link

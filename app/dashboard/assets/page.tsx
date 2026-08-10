@@ -40,6 +40,8 @@ import {
   type InvestmentAccountSummary,
 } from '@/lib/actions/investments'
 import { RecentBalanceChanges } from '@/components/ui/recent-balance-changes'
+import { LoadErrorBanner } from '@/components/ui/load-error-banner'
+import { fetchJsonWithRetry } from '@/lib/resilient-fetch'
 import { TargetPropertyDrawer } from '@/components/ui/target-property-drawer'
 import {
   getPriceHistory,
@@ -80,6 +82,7 @@ export default function AssetsPage() {
   const animatedNetWorth = useCountUp(totalNetWorth)
   const [, setTotalNetEquity] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [loadFailed, setLoadFailed] = useState(false)
   const [selectedAccount, setSelectedAccount] = useState<AccountInitialData | undefined>()
   const [reSummary, setReSummary] = useState<RealEstateSummaryData | null>(null)
   const [pensionSummary, setPensionSummary] = useState<PensionSummaryData | null>(null)
@@ -110,8 +113,7 @@ export default function AssetsPage() {
 
 
   const loadAccounts = async () => {
-    const res = await fetch('/api/wealth')
-    const data = await res.json()
+    const data = await fetchJsonWithRetry('/api/wealth')  // 실패 시 throw → loadData가 배너 표시
     if (data.success) {
       setTotalAssets(data.totalAssets)
       setTotalLiabilities(data.totalLiabilities ?? 0)
@@ -168,9 +170,10 @@ export default function AssetsPage() {
 
   const loadData = useCallback(async () => {
     setLoading(true)
+    setLoadFailed(false)
     try {
       await Promise.all([
-        loadAccounts().catch(e => console.error('[loadAccounts]', e)),
+        loadAccounts().catch(e => { console.error('[loadAccounts]', e); setLoadFailed(true) }),
         loadNetWorthHistory().catch(e => console.error('[loadNetWorthHistory]', e)),
         checkSnapshot().catch(e => console.error('[checkSnapshot]', e)),
         getFamilyRealEstateSummary().then(d => setReSummary(d)).catch(e => console.error('[getRealEstate]', e)),
@@ -256,6 +259,7 @@ export default function AssetsPage() {
 
   return (
     <div className="max-w-5xl mx-auto space-y-5">
+      {loadFailed && !loading && <LoadErrorBanner onRetry={() => loadData()} />}
       {/* 로딩 지연 시 표시되는 프롬프트 (3초 후) */}
       <LoadingPrompt
         isLoading={loading}
