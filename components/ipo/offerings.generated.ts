@@ -1,7 +1,7 @@
 // AUTO-GENERATED — 편집 금지. 재생성: npx tsx scripts/ipo-schedule-build.ts
 import type { UpcomingOffering } from './board-data'
 
-export const GENERATED_AT = '2026-08-10'
+export const GENERATED_AT = '2026-08-11'
 export const SOURCE = '38커뮤니케이션 (38.co.kr) 청약·상장·종목상세'
 
 /** 38.co.kr에서 추출한 공모주·스팩 일정 + 종목 기본정보(공모가·경쟁률·확약 등). */
@@ -533,7 +533,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     ],
     "subStart": "2026-08-04",
     "subEnd": "2026-08-05",
-    "listingDate": "2026-08-14",
+    "listingDate": "2026-08-13",
     "allotShares": 600000,
     "subLimit": "30,000~36,000",
     "depositRate": 50,
@@ -571,15 +571,23 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "subStart": "2026-08-11",
     "subEnd": "2026-08-12",
     "listingDate": "2026-08-21",
+    "allotShares": 425000,
     "depositRate": 50,
     "minSubShares": 10,
+    "ipoPrice": 28400,
     "priceBand": "24,800~28,400",
-    "offerAmountEok": 422,
+    "offerAmountEok": 483,
     "shares": 1700000,
     "shareType": "신주 100%",
+    "instCompetition": 213.31,
+    "instCount": 637,
+    "lockupBreakdown": {
+      "d15": 0
+    },
     "publicFloatRatio": 29.09,
     "refundDate": "2026-08-14",
-    "no38": "2305"
+    "no38": "2305",
+    "redemptionRight": false
   },
   {
     "name": "니어스랩",
@@ -610,16 +618,29 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "subStart": "2026-08-12",
     "subEnd": "2026-08-13",
     "listingDate": "2026-08-25",
+    "allotShares": 250000,
     "subLimit": "25,000~30,000",
     "depositRate": 50,
     "minSubShares": 10,
+    "ipoPrice": 23000,
     "priceBand": "23,000~28,000",
     "offerAmountEok": 230,
     "shares": 1000000,
     "shareType": "신주 100%",
+    "instCompetition": 101.91,
+    "instCount": 321,
+    "lockupRatio": 15.08,
+    "lockupBreakdown": {
+      "d15": 15.07,
+      "m3": 0.01
+    },
     "publicFloatRatio": 18.13,
     "refundDate": "2026-08-18",
-    "no38": "2304"
+    "no38": "2304",
+    "floatRatio": 38.42,
+    "floatAmountEok": 487,
+    "marketCapEok": 1269,
+    "redemptionRight": true
   },
   {
     "name": "스카이랩스",
