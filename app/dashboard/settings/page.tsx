@@ -186,7 +186,7 @@ function SettingsClient() {
   const handleSwitchToApi = async () => {
     await setAiMode('api')
     setAiModeState('api')
-    toast.success('앱 기본 AI로 전환됐어요.')
+    toast.success('기본 AI로 전환됐어요.')
   }
 
   const handleSaveName = async () => {
@@ -344,7 +344,7 @@ function SettingsClient() {
       <section className="rounded-2xl border border-border bg-card/30 p-5 mb-4">
         <h2 className="text-sm font-semibold text-foreground/70 mb-3">AI 설정</h2>
 
-        {/* 앱 기본 AI */}
+        {/* 기본 AI */}
         <button
           onClick={aiMode === 'api' ? undefined : handleSwitchToApi}
           className={`w-full flex items-center gap-3 p-3 rounded-xl border transition-all mb-2 ${
@@ -359,7 +359,7 @@ function SettingsClient() {
             <Zap className={`w-4 h-4 ${aiMode === 'api' ? 'text-foreground' : 'text-muted-foreground'}`} />
           </div>
           <div className="flex-1 text-left">
-            <p className="text-sm font-medium text-foreground">앱 기본 AI</p>
+            <p className="text-sm font-medium text-foreground">기본 AI</p>
             <p className="text-xs text-muted-foreground mt-0.5">빠르고 안정적</p>
           </div>
           {aiMode === 'api' && (

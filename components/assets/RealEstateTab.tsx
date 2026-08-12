@@ -215,7 +215,7 @@ export function RealEstateTab({
                           toast.warning(`'${target.name}' 목표 단지를 삭제할까요?`, {
                             action: { label: '삭제', onClick: () => onDeleteTarget(target.id) },
                             cancel: { label: '취소', onClick: () => {} },
-                            duration: 8000,
+                            duration: 10000,
                           })
                         }}
                         className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"

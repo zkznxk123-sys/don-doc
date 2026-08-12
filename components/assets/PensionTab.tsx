@@ -349,7 +349,7 @@ function PensionCard({
               </span>
               {(() => {
                 if (account.isJoint) return (
-                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md text-savings bg-savings/10">
+                  <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md text-savings bg-savings-soft">
                     공동
                   </span>
                 )

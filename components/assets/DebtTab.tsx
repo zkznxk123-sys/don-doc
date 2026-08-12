@@ -270,7 +270,7 @@ function DebtCard({
             {(debt.ownerName || debt.isJoint) && (
               <span className={cn(
                 'inline-block text-[10px] font-medium px-1.5 py-0.5 rounded-md mt-1',
-                debt.isJoint ? 'text-savings bg-savings/10' : 'text-muted-foreground bg-muted'
+                debt.isJoint ? 'text-savings bg-savings-soft' : 'text-muted-foreground bg-muted'
               )}>
                 {debt.isJoint ? '공동' : debt.ownerName ?? '나'}
               </span>

@@ -31,7 +31,7 @@ export function FeedNewBanner() {
       <p className="text-sm text-ai-700 dark:text-ai-300 flex-1">
         가족 피드에 새 글이 <span className="font-semibold">{newCount}개</span> 올라왔어요
       </p>
-      <span className="text-xs text-ai-700/60 dark:text-ai-300/60 shrink-0">보러가기 →</span>
+      <span className="text-xs text-ai-700 dark:text-ai-300 shrink-0">보러가기 →</span>
     </Link>
   )
 }

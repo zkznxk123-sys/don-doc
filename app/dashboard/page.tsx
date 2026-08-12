@@ -11,6 +11,7 @@ import { AssetDonutChart, type AssetTypeData } from '@/components/ui/asset-donut
 import { NetWorthChart } from '@/components/ui/networth-chart'
 import { AccountDrawer } from '@/components/ui/account-drawer'
 import { LoadingPrompt } from '@/components/ui/loading-prompt'
+import { LoadErrorBanner } from '@/components/ui/load-error-banner'
 import {
   KpiCardSkeleton, NetWorthChartSkeleton, CashflowChartSkeleton,
   DonutChartSkeleton, BudgetCategorySkeleton, TransactionFeedSkeleton,
@@ -226,15 +227,7 @@ export default function Dashboard() {
 
       {/* 로드 실패 배너 — 조용히 0을 보여주지 않는다(데이터 유실 오인 방지, 2026-08-08) */}
       {loadFailed && !baseLoading && (
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm">
-          <span className="text-foreground">데이터를 불러오지 못했어요. 데이터는 안전하니 다시 시도해 주세요.</span>
-          <button
-            onClick={() => loadDashboard(selectedMonth, currentUserId)}
-            className="shrink-0 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground px-3 py-1.5 text-xs font-medium transition-colors"
-          >
-            다시 불러오기
-          </button>
-        </div>
+        <LoadErrorBanner onRetry={() => loadDashboard(selectedMonth, currentUserId)} />
       )}
 
       {/* 피드 알림 배너 — 항상 최상단 (lite는 피드 자체 없음 → 숨김) */}
