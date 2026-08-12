@@ -64,10 +64,8 @@ export const features = {
 
   /** 종목 검색 스크리너 (/dashboard/screen) — Beta + Yahoo 무료 API 의존, 대중 lite 부적합 */
   get stockScreen(): boolean { return isFull() },
-
-  /** 공모주·스팩 (/dashboard/ipo) — full=전체 노출, lite=cohort 해금(canUseIpo). 2026-07-12 통합 */
-  get ipoLedger(): boolean { return isFull() },
 } as const
+// (구 ipoLedger flag 삭제 — IPO는 독립 앱 분리 결정(2026-08-10)으로 nav 미노출, 화면은 직접 URL 존치)
 
 /**
  * lite에서 차단되는 dashboard route prefix 목록.
@@ -88,13 +86,11 @@ export function isRouteBlockedInLite(pathname: string): boolean {
 
 /* ────────────────────────────────────────────────────────────────────────
  * cohort 엔타이틀먼트 — lite/full 위에 얹는 per-user 3번째 축.
- * 2026-07-12 개편: 제한형(웨지 사용자는 IPO만) → **해금형**(lite에서 cohort가
- * 있으면 IPO가 추가로 열림). "별도 IPO 전용 버전"은 폐기 — 표면은 lite 하나,
- * 공모주는 초대 링크(/join/ipo-spac)로 받은 사람에게만 노출(컴플라이언스 초대제 유지).
+ * ※ 2026-08-10 IPO 독립 앱 분리 결정으로 해금 게이트·초대 라우트는 제거됨.
+ * parseCohort만 잔존 — getAuthUser가 기존 사용자 metadata를 계속 읽는 가드레일 계약.
  *
- * cohort 값은 Clerk publicMetadata.cohort에 저장. middleware는 session claims로,
- * 서버 컴포넌트/클라이언트는 getAuthUser().cohort로 읽는다.
- * 미설정 시 null = 일반 사용자 = lite에선 IPO 미노출(fail-safe).
+ * cohort 값은 Clerk publicMetadata.cohort에 저장. 서버 컴포넌트/클라이언트는
+ * getAuthUser().cohort로 읽는다. 미설정 시 null.
  * ──────────────────────────────────────────────────────────────────────── */
 
 export type Cohort = 'ipo-spac'
@@ -110,12 +106,10 @@ export function parseCohort(metadata: unknown): Cohort | null {
   return null
 }
 
-/** 초대 합류 후 착지 지점 (/join/{cohort} redirect). */
-export const IPO_HOME = '/dashboard/ipo'
-
 // 2026-08-10 전략 전환: 공모주 IPO를 독립 앱으로 분리 결정 → cohort 해금 게이트 제거.
-// canUseIpo·isIpoBlockedForUser·blockIpoIfNotEntitled 삭제(IPO는 전원 접근, 화면·데이터는
-// 독립 앱 이관까지 존치). parseCohort는 존치 — getAuthUser가 읽는 8/5 가드레일 계약.
+// canUseIpo·isIpoBlockedForUser·blockIpoIfNotEntitled 삭제. 2026-08-13 후속: nav 미노출
+// (AppSidebar 빌드 필터) + 초대 라우트 /join/[cohort]·IPO_HOME 제거. 화면·데이터는 독립 앱
+// 이관까지 직접 URL로 존치. parseCohort는 존치 — getAuthUser가 읽는 8/5 가드레일 계약.
 // (참고: [[project_dondoc_community_wedge]] 폐기)
 
 /**

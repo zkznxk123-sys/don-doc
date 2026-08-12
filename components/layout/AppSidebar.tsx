@@ -61,7 +61,8 @@ export const NAV_ITEMS: NavItem[] = ALL_NAV_ITEMS.filter(item => {
   if (item.href === '/dashboard/scenario' && !features.scenarios) return false
   if (item.href === '/dashboard/feed' && !features.familyFeed) return false
   if (item.href === '/dashboard/screen' && !features.stockScreen) return false
-  // /dashboard/ipo는 빌드 필터에서 제외하지 않는다 — lite에선 cohort 해금(렌더 시 canUseIpo 판정)
+  // /dashboard/ipo — 독립 앱 분리(2026-08-10)까지 nav 미노출. 화면·데이터는 직접 URL로 존치.
+  if (item.href === '/dashboard/ipo') return false
   return true
 })
 
