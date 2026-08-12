@@ -1,11 +1,19 @@
 "use client"
 
+import { useEffect } from "react"
+
 export default function Error({
+  error,
   reset,
 }: {
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  // 전역 에러 화면이 원인 없이 뜨면 디버깅 불가 — 콘솔에 남긴다 (2026-08-13)
+  useEffect(() => {
+    console.error("[app/error.tsx]", error.digest ?? "", error)
+  }, [error])
+
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 text-center">
       <h1 className="text-2xl font-bold tracking-tight text-foreground mb-2">

@@ -40,8 +40,10 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const now = new Date()
     const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-    const month = searchParams.get('month') || defaultMonth
-    const cashflowMonths = Math.min(parseInt(searchParams.get('cashflowMonths') ?? '12', 10), 24)
+    // month 형식 검증 — 비정형 입력이면 Invalid Date 전파 대신 현재월 폴백 (2026-08-13)
+    const rawMonth = searchParams.get('month')
+    const month = rawMonth && /^\d{4}-(0[1-9]|1[0-2])$/.test(rawMonth) ? rawMonth : defaultMonth
+    const cashflowMonths = Math.min(Math.max(parseInt(searchParams.get('cashflowMonths') ?? '12', 10) || 12, 1), 24)
 
     const { familyId, id: userId, role } = authUser
     const [y, m] = month.split('-').map(Number)

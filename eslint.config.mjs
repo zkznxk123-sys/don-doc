@@ -39,6 +39,31 @@ export default [
     },
   },
   {
+    // 'use server' 파일 재export 하드 가드 (2026-08-13, AGENTS.md 규칙의 코드화).
+    // export type { X } 재export를 두면 Next가 액션 매니페스트에 값으로 등록해 그 모듈을
+    // import하는 모든 서버 액션 POST가 ReferenceError 500 (2026-08-03 장애, 514370a).
+    // _*.ts 헬퍼(no 'use server')는 제외. 선언문(export interface/type alias/async function)은 허용.
+    files: ['lib/actions/**/*.ts'],
+    ignores: ['lib/actions/**/*.test.ts'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "Program:has(> ExpressionStatement[directive='use server']) > ExportAllDeclaration",
+          message: "'use server' 파일에서 export * 금지 — 액션 매니페스트 오염(2026-08-03 장애). 타입·상수는 순수 모듈에 두고 소비자가 직접 import.",
+        },
+        {
+          selector: "Program:has(> ExpressionStatement[directive='use server']) > ExportNamedDeclaration[source]",
+          message: "'use server' 파일에서 재export(export { X } from / export type { X } from) 금지 — 액션 매니페스트 오염(2026-08-03 장애). 타입·상수는 순수 모듈에 두고 소비자가 직접 import.",
+        },
+        {
+          selector: "Program:has(> ExpressionStatement[directive='use server']) > ExportNamedDeclaration > VariableDeclaration",
+          message: "'use server' 파일에서 값 export 금지 — async 함수만 export 가능. 상수는 순수 모듈(lib/*-calc.ts 등)로.",
+        },
+      ],
+    },
+  },
+  {
     // IPO 소비 표면 — raw 팔레트 재유입 하드 차단 (designer 7/10, 무지개 2차 재발 방지).
     // 두 축을 한 규칙에 배열로 둔다: ① 팔레트명(emerald-500 류) ② 브라켓 임의값·style raw hex.
     // ②는 기존 팔레트명 정규식이 못 잡던 사각지대(dev/designer 2026-07-13 라운드2 발견:
