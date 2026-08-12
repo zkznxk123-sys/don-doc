@@ -240,15 +240,18 @@ export function buildAccountTools(ctx: ToolContext) {
         '각 update는 부분 일치 검색어 + 새 잔액(정수, 부채/마통도 양수로 입력 — 크기 기준이며 저장 전 자동으로 양수 정규화됨). ' +
         '권한: 본인 소유 계좌 또는 CFO + 공유 계좌만 변경 가능. ' +
         '결과는 성공/모호(여러 매칭)/못 찾음/권한 없음/변동 없음으로 분류해 반환. ' +
-        '성공 항목은 단일 UploadBatch로 묶여 업로드 이력에 기록됨.',
+        '성공 항목은 단일 UploadBatch로 묶여 업로드 이력에 기록됨. ' +
+        '**기본이 dryRun=true(미리보기)** — 어느 계좌가 얼마에서 얼마로 바뀌는지 사용자에게 보여주고 ' +
+        '확인을 받은 뒤에만 dryRun=false로 실제 실행. 실행 후에는 batchId로 revertBalanceBatch 되돌리기 가능.',
       inputSchema: z.object({
         updates: z.array(z.object({
           accountKeyword: z.string().describe('계좌명 부분 일치 검색어 (예: "카카오", "마이너스")'),
           newBalance: z.number().int().describe('새 잔액 (KRW 정수, 부채/마통도 양수 — 저장 전 자동 정규화됨)'),
         })).min(1),
         reason: z.string().optional().describe('변경 사유 — 업로드 이력 fileName에 기록되어 추적 가능'),
+        dryRun: z.boolean().default(true).describe('기본 true — 실제 변경 없이 매칭 계좌·변경 예정 잔액만 반환. 사용자 확인 후 dryRun=false로 실행.'),
       }),
-      execute: async ({ updates, reason }) => {
+      execute: async ({ updates, reason, dryRun }) => {
         const isCFO = isCFOLevel(user.role)
 
         type Resolved = {
@@ -311,6 +314,31 @@ export function buildAccountTools(ctx: ToolContext) {
 
         const ok = resolved.filter(r => r.status === 'ok')
 
+        // 미리보기(기본) — 실제 쓰기 전에 변경 예정 내역을 사용자에게 확인받는다 (2026-08-13).
+        if (dryRun) {
+          return {
+            dryRun: true,
+            wouldUpdateCount: ok.length,
+            ambiguousCount: resolved.filter(r => r.status === 'ambiguous').length,
+            notFoundCount: resolved.filter(r => r.status === 'not_found').length,
+            noPermissionCount: resolved.filter(r => r.status === 'no_permission').length,
+            noChangeCount: resolved.filter(r => r.status === 'no_change').length,
+            details: resolved.map(r => r.status === 'ok'
+              ? {
+                  keyword: r.keyword,
+                  status: r.status,
+                  accountName: r.account!.name,
+                  oldBalance: won(r.account!.balance),
+                  newBalance: won(r.newBalance),
+                  delta: won(r.newBalance - r.account!.balance),
+                }
+              : r.status === 'ambiguous'
+                ? { keyword: r.keyword, status: r.status, candidates: r.candidates }
+                : { keyword: r.keyword, status: r.status, accountName: r.account?.name }),
+            message: '아직 변경되지 않았습니다. 사용자 확인 후 dryRun=false로 다시 호출하세요.',
+          }
+        }
+
         let batchId: string | null = null
         if (ok.length > 0) {
           const fileName = reason ? `AI 어시스턴트: ${reason}` : 'AI 어시스턴트 잔액 업데이트'
@@ -372,6 +400,55 @@ export function buildAccountTools(ctx: ToolContext) {
             }
             return { keyword: r.keyword, status: r.status }
           }),
+        }
+      },
+    }),
+
+    revertBalanceBatch: tool({
+      description:
+        'updateAccountBalances 실행 결과(batchId)를 되돌린다. BalanceChangeLog의 oldBalance로 복원. ' +
+        '현재 잔액이 그때 기록한 newBalance와 다르면(이후 다른 변경이 있었으면) 해당 계좌는 건너뛰고 skipped로 보고. ' +
+        '되돌리기 자체도 새 UploadBatch(chat-ai-revert)로 기록되어 추적 가능.',
+      inputSchema: z.object({
+        batchId: z.string().describe('updateAccountBalances가 반환한 batchId'),
+      }),
+      execute: async ({ batchId }) => {
+        const batch = await prisma.uploadBatch.findFirst({
+          where: { id: batchId, familyId, source: 'chat-ai' },
+          include: { balanceChanges: { include: { account: { select: { id: true, name: true, balance: true } } } } },
+        })
+        if (!batch) return { success: false, error: '해당 batchId의 챗 잔액 변경 이력을 찾을 수 없습니다.' }
+        if (batch.balanceChanges.length === 0) return { success: false, error: '이 배치에는 되돌릴 잔액 변경이 없습니다.' }
+
+        const revertible = batch.balanceChanges.filter(log => log.account.balance === log.newBalance)
+        const skipped = batch.balanceChanges.filter(log => log.account.balance !== log.newBalance)
+
+        if (revertible.length > 0) {
+          const revertBatch = await prisma.uploadBatch.create({
+            data: { familyId, userId: user.id, fileName: `AI 어시스턴트 되돌리기 (원본 ${batchId})`, source: 'chat-ai-revert' },
+          })
+          await Promise.all(revertible.map(log =>
+            prisma.account.update({ where: { id: log.accountId }, data: { balance: log.oldBalance } })
+          ))
+          await prisma.balanceChangeLog.createMany({
+            data: revertible.map(log => ({
+              accountId: log.accountId,
+              oldBalance: log.newBalance,
+              newBalance: log.oldBalance,
+              delta: log.oldBalance - log.newBalance,
+              source: 'chat-ai-revert',
+              uploadBatchId: revertBatch.id,
+            })),
+          })
+          await prisma.uploadBatch.update({ where: { id: revertBatch.id }, data: { syncedAccounts: revertible.length } })
+        }
+
+        return {
+          success: true,
+          revertedCount: revertible.length,
+          skippedCount: skipped.length,
+          reverted: revertible.map(log => ({ accountName: log.account.name, restoredBalance: won(log.oldBalance) })),
+          skipped: skipped.map(log => ({ accountName: log.account.name, reason: '이후 다른 변경이 있어 건너뜀' })),
         }
       },
     }),

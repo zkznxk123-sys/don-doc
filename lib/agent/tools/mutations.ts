@@ -30,7 +30,7 @@ export function buildMutationTools(ctx: ToolContext) {
         categoryEquals: z.string().optional().describe('카테고리명 정확 매칭'),
         from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe('기간 시작 (YYYY-MM-DD)'),
         to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().describe('기간 종료 (YYYY-MM-DD, 포함)'),
-        dryRun: z.boolean().default(false),
+        dryRun: z.boolean().default(true).describe('기본 true — 실제 변경 없이 매칭 미리보기만 반환. 사용자가 미리보기를 확인한 뒤에만 dryRun=false로 실행.'),
       }),
       execute: async (params) => {
         const isCFO = isCFOLevel(user.role)
@@ -203,8 +203,7 @@ export function buildMutationTools(ctx: ToolContext) {
       description:
         '거래 검색 조건(기간/현재 카테고리/키워드/유형)에 매칭되는 거래들의 카테고리를 일괄 변경. ' +
         '권한: 본인 거래 또는 CFO + 공유 계좌 거래만 변경 가능. ' +
-        '**dryRun=true 권장 패턴**: 매칭 건수가 많거나 사용자 의도가 모호하면 먼저 미리보기로 매칭 건수·샘플 확인 후, ' +
-        '사용자 확인을 받고 dryRun=false 로 실제 실행. 명확한 좁은 범위면 바로 실행도 OK.',
+        '**기본이 dryRun=true(미리보기)** — 매칭 건수·샘플을 사용자에게 보여주고 확인을 받은 뒤에만 dryRun=false로 실제 실행 (2026-08-13 확인 우선 전환).',
       inputSchema: z.object({
         from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe('시작 날짜 YYYY-MM-DD'),
         to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe('종료 날짜 YYYY-MM-DD (포함)'),
@@ -212,7 +211,7 @@ export function buildMutationTools(ctx: ToolContext) {
         keyword: z.string().optional().describe('내역(description) 부분일치'),
         type: z.enum(['expense', 'income', 'all']).default('all'),
         newCategory: z.string().describe('변경할 새 카테고리명 (정확한 이름 — listCategories로 사전 확인 권장)'),
-        dryRun: z.boolean().default(false).describe('true면 실제 변경 없이 매칭 건수와 샘플만 반환'),
+        dryRun: z.boolean().default(true).describe('기본 true — 실제 변경 없이 매칭 건수와 샘플만 반환. 사용자 확인 후 dryRun=false로 실행.'),
       }),
       execute: async ({ from, to, currentCategory, keyword, type, newCategory, dryRun }) => {
         const range = dateRange(from, to)
@@ -328,7 +327,7 @@ export function buildMutationTools(ctx: ToolContext) {
         type: z.enum(['expense', 'income', 'all']).default('all'),
         currentlyExcluded: z.boolean().optional().describe('현재 isExcluded 상태로 추가 필터 (되돌리기 시 유용)'),
         target: z.enum(['exclude_from_stats', 'include_in_stats', 'exclude_from_budget', 'include_in_budget']),
-        dryRun: z.boolean().default(false),
+        dryRun: z.boolean().default(true).describe('기본 true — 실제 변경 없이 매칭 미리보기만 반환. 사용자가 미리보기를 확인한 뒤에만 dryRun=false로 실행.'),
       }),
       execute: async ({ from, to, currentCategory, keyword, type, currentlyExcluded, target, dryRun }) => {
         const range = dateRange(from, to)
