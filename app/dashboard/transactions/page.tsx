@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { cn, formatCurrency } from '@/lib/utils'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { LoadingPrompt } from '@/components/ui/loading-prompt'
+import { LoadErrorBanner } from '@/components/ui/load-error-banner'
+import { fetchJsonWithRetry } from '@/lib/resilient-fetch'
 
 interface Transaction {
   id: string
@@ -40,16 +42,17 @@ export default function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([])
   const [summary, setSummary] = useState<Summary | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadFailed, setLoadFailed] = useState(false)
 
   const fetchData = useCallback(async (y: number, m: number) => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/transactions/list?month=${toMonthParam(y, m)}`)
-      const data = await res.json()
-      if (data.success) {
-        setTransactions(data.transactions)
-        setSummary(data.summary)
-      }
+      const data = await fetchJsonWithRetry(`/api/transactions/list?month=${toMonthParam(y, m)}`)
+      setTransactions(data.transactions)
+      setSummary(data.summary)
+      setLoadFailed(false)
+    } catch {
+      setLoadFailed(true)   // 조용한 0 대신 배너 (2026-08-13, 침묵-0 4/4 마지막 페이지)
     } finally {
       setLoading(false)
     }
@@ -81,6 +84,8 @@ export default function TransactionsPage() {
             <p className="text-xs text-muted-foreground mt-0.5">수입·지출 전체 조회</p>
           </div>
         </div>
+
+        {loadFailed && !loading && <LoadErrorBanner onRetry={() => fetchData(year, month)} />}
 
         {/* 월 컨트롤러 */}
         <div className="flex items-center justify-between mb-6">
