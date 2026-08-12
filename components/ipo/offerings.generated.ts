@@ -1,7 +1,7 @@
 // AUTO-GENERATED — 편집 금지. 재생성: npx tsx scripts/ipo-schedule-build.ts
 import type { UpcomingOffering } from './board-data'
 
-export const GENERATED_AT = '2026-08-11'
+export const GENERATED_AT = '2026-08-12'
 export const SOURCE = '38커뮤니케이션 (38.co.kr) 청약·상장·종목상세'
 
 /** 38.co.kr에서 추출한 공모주·스팩 일정 + 종목 기본정보(공모가·경쟁률·확약 등). */
@@ -578,7 +578,7 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "priceBand": "24,800~28,400",
     "offerAmountEok": 483,
     "shares": 1700000,
-    "shareType": "신주 100%",
+    "shareType": "신주 79.41%",
     "instCompetition": 213.31,
     "instCount": 637,
     "lockupBreakdown": {
@@ -598,16 +598,28 @@ export const GENERATED_OFFERINGS: UpcomingOffering[] = [
     "subStart": "2026-08-12",
     "subEnd": "2026-08-13",
     "listingDate": "2026-08-24",
+    "allotShares": 227500,
     "subLimit": "11,000~13,000",
     "depositRate": 50,
     "minSubShares": 10,
+    "ipoPrice": 41200,
     "priceBand": "30,000~41,200",
-    "offerAmountEok": 273,
+    "offerAmountEok": 375,
     "shares": 910000,
     "shareType": "신주 100%",
+    "instCompetition": 743.49,
+    "instCount": 1795,
+    "lockupRatio": 1.26,
+    "lockupBreakdown": {
+      "d15": 0.79,
+      "m1": 0.15,
+      "m3": 0.3,
+      "m6": 0.01
+    },
     "publicFloatRatio": 15.77,
     "refundDate": "2026-08-18",
-    "no38": "2303"
+    "no38": "2303",
+    "redemptionRight": true
   },
   {
     "name": "해치텍",
