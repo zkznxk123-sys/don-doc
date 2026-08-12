@@ -71,7 +71,7 @@ components/
     InputGuide.tsx
 
 lib/
-  feature-flags.ts  # 제품 라인 분리 (full/lite) — 단일 진입점, features 9-flag
+  feature-flags.ts  # 제품 라인 분리 (full/lite) — 단일 진입점, features 8-flag
   actions/          # 서버 액션 ('use server')
     transactions/
       bulk.ts            # createManyTransactions·syncAccountBalancesOnly (server action)
@@ -162,10 +162,10 @@ if (features.familyManagement) { /* full 전용 */ }
 if (isLite()) { /* lite 분기 */ }
 ```
 
-- **features 9-flag**: `scenarios`·`familyFeed`·`familyManagement`·`tradeAutoLink`·`pensionDetail`·`familyOAuth`·`visibilityRoles`·`stockScreen`·`ipoLedger`
-- **lite 라인**: 위 9개 모두 false. 가입 직후 `createFamily('내 자산')` 자동 1인 가족. 초대 UI 미노출.
-- **route 차단**: `middleware.ts`의 `LITE_BLOCKED_ROUTES`(`/dashboard/scenario`, `/dashboard/family`, `/dashboard/feed`, `/dashboard/screen`)는 lite 빌드에서 redirect. `/dashboard/ipo`는 전면 차단이 아니라 cohort 해금(`isIpoBlockedForUser`).
-- **cohort 해금(2026-07-12 개편)**: 구 제한형 웨지(cohort=IPO만) 폐기. `Cohort('ipo-spac')`는 이제 **lite에서 IPO를 추가로 여는 열쇠** — `canUseIpo(cohort)`=full 항상·lite는 cohort 보유 시. middleware `isIpoBlockedForUser`(lite+무cohort의 /dashboard/ipo·/api/ipo 차단) + API 진입부 `blockIpoIfNotEntitled(user.cohort)`. Clerk `publicMetadata.cohort`+session claim 판정, `/join/[cohort]` 링크로 부여(IPO_HOME 착지). 표면은 lite 하나 — 별도 IPO 전용 버전 없음.
+- **features 8-flag**: `scenarios`·`familyFeed`·`familyManagement`·`tradeAutoLink`·`pensionDetail`·`familyOAuth`·`visibilityRoles`·`stockScreen` (구 `ipoLedger`는 2026-08-10 IPO 독립 앱 분리로 삭제)
+- **lite 라인**: 위 8개 모두 false. 가입 직후 `createFamily('내 자산')` 자동 1인 가족. 초대 UI 미노출.
+- **route 차단**: `middleware.ts`의 `LITE_BLOCKED_ROUTES`(`/dashboard/scenario`, `/dashboard/family`, `/dashboard/feed`, `/dashboard/screen`)는 lite 빌드에서 redirect. `/dashboard/ipo`는 nav 미노출·직접 URL만(2026-08-13) — 구 cohort 해금 게이트는 삭제.
+- **IPO 독립 앱 분리(2026-08-10 전략 전환)**: 구 cohort 해금형(07-12) 폐기. `canUseIpo`·`isIpoBlockedForUser`·`blockIpoIfNotEntitled` 삭제(`40c348e`), `/join/[cohort]` 라우트·`IPO_HOME` 제거 + nav 미노출(08-13). 화면·데이터는 독립 앱 이관까지 직접 URL로만. `parseCohort`는 getAuthUser 가드레일로 존치.
 - **랜딩 분기**: `LandingPage.tsx`에서 `{isFull() && <ComparisonSection />}`. CoreFeatures·Closing은 양쪽 공통.
 - **lite 가드 3층**: middleware(route redirect) + API route(`blockIfLite()` — family 5종·scenario 3종·stocks/screen, `family/info` GET은 lite 1인 가족도 필요해 제외) + 서버 액션(`isLite()` 진입부 가드 — feed·scenario·oauth 전체, family는 `getLatestInviteCode`/`joinFamily`만). 과잉 가드 주의: lite도 1인 가족이 존재한다 (`7f6fc0e` budget crash 사례).
 
@@ -236,9 +236,9 @@ if (isLite()) { /* lite 분기 */ }
   - `offerings.generated.ts`·`spac-universe.generated.ts` — 빌드 스크립트 산출(직접 수정 금지).
 - **`utils/ipo-ledger/`** — 운영자 카톡 "공모주 일정" 공지 → 이벤트 정규화(`schedule-notice.ts`). `calendar-sync.ts`는 미사용(캘린더는 별도 IPO_calander Apps Script 담당).
 - **API** `app/api/ipo/`:
-  - `quote`(네이버 시세)·`competition`(38.co.kr 비례경쟁률)·`workspace`(GET/PUT). **셋 다 `getAuthUser` + `blockIpoIfNotEntitled(cohort)` 가드**(무인증 남용 차단 + lite는 cohort 해금자만, 07-12).
-- **접근(07-12 해금형)**: lite는 cohort(초대) 없으면 IPO 라우트·API·메뉴 숨김, cohort 있으면 lite 위에 IPO 추가 해제(`canUseIpo`·`isIpoBlockedForUser`, 구 "역방향 게이트=IPO만 노출"은 폐기). `AppSidebar`는 cohort 시 lite 메뉴 전체 + IPO 추가.
-- **`scripts/ipo-{schedule,offerings}-build.ts` + `ipo-schedule-cron.sh`** — 38.co.kr 라이브에서 일정·종목 유니버스 주간 재생성(launchd).
+  - `quote`(네이버 시세)·`competition`(38.co.kr 비례경쟁률)·`workspace`(GET/PUT). **셋 다 `getAuthUser` 가드**(무인증 남용 차단. 구 cohort 가드는 08-10 게이트 제거로 삭제).
+- **접근(08-10 분리 전환)**: 게이트 없음 — nav 미노출, `/dashboard/ipo` 직접 URL로만 접근(로그인 필수). 독립 앱 이관 전 임시 상태.
+- **`scripts/ipo-{schedule,offerings}-build.ts` + `ipo-schedule-cron.sh`** — 38.co.kr 라이브 재생성 스크립트. ⏸️ launchd cron은 2026-08-13 중지(`com.dondoc.ipo-schedule` bootout, plist `.disabled-20260813` 보존) — 독립 앱 이관 시 재가동.
 
 ---
 

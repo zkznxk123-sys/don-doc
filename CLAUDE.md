@@ -71,7 +71,7 @@ components/
     InputGuide.tsx
 
 lib/
-  feature-flags.ts  # 제품 라인 분리 (full/lite) — 단일 진입점, features 9-flag
+  feature-flags.ts  # 제품 라인 분리 (full/lite) — 단일 진입점, features 8-flag
   actions/          # 서버 액션 ('use server')
     transactions/
       bulk.ts            # createManyTransactions·syncAccountBalancesOnly (server action)
@@ -162,9 +162,9 @@ if (features.familyManagement) { /* full 전용 */ }
 if (isLite()) { /* lite 분기 */ }
 ```
 
-- **features 9-flag**: `scenarios`·`familyFeed`·`familyManagement`·`tradeAutoLink`·`pensionDetail`·`familyOAuth`·`visibilityRoles`·`stockScreen`·`ipoLedger`
-- **lite 라인**: 위 9개 모두 false. 가입 직후 `createFamily('내 자산')` 자동 1인 가족. 초대 UI 미노출.
-- **route 차단**: `middleware.ts`의 `LITE_BLOCKED_ROUTES`(`/dashboard/scenario`, `/dashboard/family`, `/dashboard/feed`, `/dashboard/screen`)는 lite 빌드에서 redirect. `/ipo`는 cohort 해금(`isIpoBlockedForUser`, 2026-07-12).
+- **features 8-flag**: `scenarios`·`familyFeed`·`familyManagement`·`tradeAutoLink`·`pensionDetail`·`familyOAuth`·`visibilityRoles`·`stockScreen` (구 `ipoLedger`는 2026-08-10 IPO 독립 앱 분리로 삭제)
+- **lite 라인**: 위 8개 모두 false. 가입 직후 `createFamily('내 자산')` 자동 1인 가족. 초대 UI 미노출.
+- **route 차단**: `middleware.ts`의 `LITE_BLOCKED_ROUTES`(`/dashboard/scenario`, `/dashboard/family`, `/dashboard/feed`, `/dashboard/screen`)는 lite 빌드에서 redirect. `/dashboard/ipo`는 nav 미노출(직접 URL만, 2026-08-13) — 구 cohort 해금 게이트는 삭제됨.
 - **랜딩 분기**: `LandingPage.tsx`에서 `{isFull() && <ComparisonSection />}`. CoreFeatures·Closing은 양쪽 공통.
 - **lite 가드 3층**: middleware(route redirect) + API route(`blockIfLite()` — family 5종·scenario 3종·stocks/screen, `family/info` GET은 lite 1인 가족도 필요해 제외) + 서버 액션(`isLite()` 진입부 가드 — feed·scenario·oauth 전체, family는 `getLatestInviteCode`/`joinFamily`만). 과잉 가드 주의: lite도 1인 가족이 존재한다 (`7f6fc0e` budget crash 사례).
 
@@ -227,7 +227,7 @@ if (isLite()) { /* lite 분기 */ }
 
 **상태: DB 영속화 + 낙관적 잠금.** 워크스페이스(계좌·기록·스팩·메모·오버라이드)는 Prisma `IpoWorkspace`(userId PK + `data` Json)에 사용자 단위 저장, PUT은 `baseUpdatedAt` 낙관적 잠금(동시 편집 덮어쓰기 차단). localStorage는 오프라인/초기 캐시. JSON 내보내기/가져오기 백업 안전망(`entry-forms.tsx` 데이터 툴바). 기획: vault `03_personal/projects/공모주-청약{-서비스-구상,원장-데이터모델-스펙}.md`.
 
-🔓 **cohort 해금형** (2026-07-12 개편 — 구 "full 전용+웨지 별도 버전" 폐기). full=전체 노출, lite=초대 cohort(`ipo-spac`) 보유자만: nav `canUseIpo(user.cohort)` + middleware `isIpoBlockedForUser` + api/ipo/* 3라우트 `blockIpoIfNotEntitled(user.cohort)`. 초대는 `/join/ipo-spac`(공개 마케팅 표면엔 공모주 미노출 유지 — 7/9 결정). 공개 준비 장치: **캡처 모드**(`data-priv` 블러) + 시작 가이드 온보딩.
+🔀 **독립 앱 분리 예정** (2026-08-10 전략 전환 — 구 cohort 해금형(07-12) 폐기). `canUseIpo`·`isIpoBlockedForUser`·`blockIpoIfNotEntitled` 삭제(`40c348e`), 초대 라우트 `/join/[cohort]`·`IPO_HOME` 제거 및 nav 미노출(2026-08-13). 화면·데이터는 독립 앱 이관까지 직접 URL(`/dashboard/ipo`)로만 접근. `parseCohort`는 getAuthUser 가드레일로 존치. 공개 준비 장치: **캡처 모드**(`data-priv` 블러) + 시작 가이드 온보딩.
 
 - **구조**: 일정 중심 — 상단 공모주/스팩주 분기(kind), 일정에서 인라인 청약 기록(PLANNED→SUBMITTED→ALLOCATED→SOLD). "원장" 용어는 폐기(결과·종목별 내역). 데모 모드 없음(빈 상태에서 직접 입력).
 - **페이지**: `app/dashboard/ipo/page.tsx` ("공모주·스팩주").
@@ -238,8 +238,8 @@ if (isLite()) { /* lite 분기 */ }
   - `offerings.generated.ts`·`spac-universe.generated.ts` — 빌드 스크립트 산출(직접 수정 금지).
 - **`utils/ipo-ledger/`** — 운영자 카톡 "공모주 일정" 공지 → 이벤트 정규화(`schedule-notice.ts`). `calendar-sync.ts`는 미사용(캘린더는 별도 IPO_calander Apps Script 담당).
 - **API** `app/api/ipo/`:
-  - `quote` — 네이버 금융 실시간 시세 프록시. `competition` — 38.co.kr 비례경쟁률. `workspace` — GET/PUT(zod 검증·512KB 상한). **셋 다 `getAuthUser` + `blockIpoIfNotEntitled(user.cohort)` 가드**(무인증 오픈 프록시 남용 차단 + lite는 cohort 해금자만 — 07-12 해금형 개편. `blockIfLite` 아님: cohort 보유 lite도 통과해야 하므로).
-- **`scripts/ipo-{schedule,offerings}-build.ts` + `ipo-schedule-cron.sh`** — 38.co.kr 라이브에서 일정·종목 유니버스 주간 재생성(launchd), sanity 게이트 통과 시 생성 파일 2개만 자동 커밋·푸시.
+  - `quote` — 네이버 금융 실시간 시세 프록시. `competition` — 38.co.kr 비례경쟁률. `workspace` — GET/PUT(zod 검증·512KB 상한). **셋 다 `getAuthUser` 가드**(무인증 오픈 프록시 남용 차단. 구 `blockIpoIfNotEntitled` cohort 가드는 08-10 게이트 제거로 삭제).
+- **`scripts/ipo-{schedule,offerings}-build.ts` + `ipo-schedule-cron.sh`** — 38.co.kr 라이브에서 일정·종목 유니버스 재생성 스크립트. ⏸️ **launchd cron은 2026-08-13 중지**(`com.dondoc.ipo-schedule` bootout, plist는 `.disabled-20260813`로 보존) — 독립 앱 이관 시 재가동. 스크립트·생성 파일은 이관용으로 존치.
 
 ---
 
@@ -296,6 +296,7 @@ npx tsx prisma/seed-demo.ts        # 데모 가족 시드 (가명 데이터)
 ## 주의사항
 
 - `lib/actions/` 파일은 반드시 `'use server'` 선언
+- **`'use server'` 파일에서 async 함수 외 export 금지** — 특히 `export type { X }` 재export를 두면 Next가 액션 매니페스트에 값으로 등록해, 그 모듈을 import하는 모든 POST(서버 액션)가 ReferenceError 500으로 죽는다(2026-08-03 현금흐름 저장 장애, `514370a`). 타입·상수는 순수 모듈(`lib/*-calc.ts` 등)에 두고 소비자가 거기서 직접 import. `export interface`(선언문)는 허용
 - `lib/prisma.ts`는 빌드 타임 안전을 위한 lazy 싱글톤 — 직접 수정 금지
 - 카테고리는 DB에서 동적 로드 (`getFamilyCategories`) — 하드코딩 금지
 - `originalHash` 로 엑셀 중복 업로드 방지 (SHA-256)
