@@ -26,9 +26,11 @@ export async function POST(req: NextRequest) {
     if (!merchant || !categoryId) return NextResponse.json({ success: false, error: '가맹점 또는 카테고리 누락' }, { status: 400 })
 
     // 같은 가맹점 후보를 넓게 긁고(설명 contains 첫토큰) 정규화로 정밀 필터 → 카테고리 다른 것만
+    // 스코프는 본인 거래만(2026-08-13) — familyId 전체로 돌리면 배우자 PRIVATE 거래까지
+    // undo 없이 바뀐다(골드 룰 위반). 학습(upsertCategoryPreference)도 per-user라 축이 일치.
     const candidates = await prisma.transaction.findMany({
       where: {
-        user: { familyId: authUser.familyId },
+        userId: authUser.id,
         parentId: null,
         description: { contains: merchant.slice(0, Math.min(merchant.length, 4)), mode: 'insensitive' },
         NOT: { categoryId },
@@ -54,6 +56,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, updated: targets.length, merchant })
   } catch (e) {
     console.error('[apply-merchant-category] ERROR:', e)
-    return NextResponse.json({ success: false, error: String(e) }, { status: 500 })
+    return NextResponse.json({ success: false, error: '일괄 정리에 실패했어요. 잠시 후 다시 시도해 주세요.' }, { status: 500 })
   }
 }

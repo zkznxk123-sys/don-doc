@@ -293,8 +293,8 @@ export function TransactionDrawer({
       })
       const j = await res.json()
       if (!j.success || !j.count) return
-      toast(`'${j.merchant}' 같은 가맹점 ${j.count}건도 [${categoryName}]로 정리할까요?`, {
-        duration: 12000,
+      toast(`'${j.merchant}' 같은 가맹점 ${j.count}건도 '${categoryName}' 카테고리로 정리할까요?`, {
+        duration: 10000,
         action: {
           label: '전부 정리',
           onClick: async () => {
@@ -304,7 +304,7 @@ export function TransactionDrawer({
                 body: JSON.stringify({ description: desc, categoryId, category: categoryName }),
               })
               const aj = await ar.json()
-              if (aj.success) { toast.success(`${aj.updated}건을 [${categoryName}]로 정리했어요.`); onSuccess() }
+              if (aj.success) { toast.success(`'${j.merchant}' ${aj.updated}건을 '${categoryName}' 카테고리로 정리했어요.`); onSuccess() }
               else toast.error('정리에 실패했어요.')
             } catch { toast.error('정리 중 오류가 발생했어요.') }
           },
