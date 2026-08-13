@@ -227,7 +227,7 @@ if (isLite()) { /* lite 분기 */ }
 
 **상태: DB 영속화 + 낙관적 잠금.** 워크스페이스(계좌·기록·스팩·메모·오버라이드)는 Prisma `IpoWorkspace`(userId PK + `data` Json)에 사용자 단위 저장, PUT은 `baseUpdatedAt` 낙관적 잠금(동시 편집 덮어쓰기 차단). localStorage는 오프라인/초기 캐시. JSON 내보내기/가져오기 백업 안전망(`entry-forms.tsx` 데이터 툴바). 기획: vault `03_personal/projects/공모주-청약{-서비스-구상,원장-데이터모델-스펙}.md`.
 
-🔀 **독립 앱 분리 예정** (2026-08-10 전략 전환 — 구 cohort 해금형(07-12) 폐기). `canUseIpo`·`isIpoBlockedForUser`·`blockIpoIfNotEntitled` 삭제(`40c348e`), 초대 라우트 `/join/[cohort]`·`IPO_HOME` 제거 및 nav 미노출(2026-08-13). 화면·데이터는 독립 앱 이관까지 직접 URL(`/dashboard/ipo`)로만 접근. `parseCohort`는 getAuthUser 가드레일로 존치. 공개 준비 장치: **캡처 모드**(`data-priv` 블러) + 시작 가이드 온보딩.
+🔀 **독립 앱 분리 예정 — 데이터 경로 (A) 완전 분리 확정(08-13)**: 브릿지 없음, 독립 앱은 돈독 DB·계정과 무관 설계(함께 쓰기는 추후 재검토). (2026-08-10 전략 전환 — 구 cohort 해금형(07-12) 폐기). `canUseIpo`·`isIpoBlockedForUser`·`blockIpoIfNotEntitled` 삭제(`40c348e`), 초대 라우트 `/join/[cohort]`·`IPO_HOME` 제거 및 nav 미노출(2026-08-13). 화면·데이터는 독립 앱 이관까지 직접 URL(`/dashboard/ipo`)로만 접근. `parseCohort`는 getAuthUser 가드레일로 존치. 공개 준비 장치: **캡처 모드**(`data-priv` 블러) + 시작 가이드 온보딩.
 
 - **구조**: 일정 중심 — 상단 공모주/스팩주 분기(kind), 일정에서 인라인 청약 기록(PLANNED→SUBMITTED→ALLOCATED→SOLD). "원장" 용어는 폐기(결과·종목별 내역). 데모 모드 없음(빈 상태에서 직접 입력).
 - **페이지**: `app/dashboard/ipo/page.tsx` ("공모주·스팩주").

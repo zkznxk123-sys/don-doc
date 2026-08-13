@@ -165,7 +165,7 @@ if (isLite()) { /* lite 분기 */ }
 - **features 8-flag**: `scenarios`·`familyFeed`·`familyManagement`·`tradeAutoLink`·`pensionDetail`·`familyOAuth`·`visibilityRoles`·`stockScreen` (구 `ipoLedger`는 2026-08-10 IPO 독립 앱 분리로 삭제)
 - **lite 라인**: 위 8개 모두 false. 가입 직후 `createFamily('내 자산')` 자동 1인 가족. 초대 UI 미노출.
 - **route 차단**: `middleware.ts`의 `LITE_BLOCKED_ROUTES`(`/dashboard/scenario`, `/dashboard/family`, `/dashboard/feed`, `/dashboard/screen`)는 lite 빌드에서 redirect. `/dashboard/ipo`는 nav 미노출·직접 URL만(2026-08-13) — 구 cohort 해금 게이트는 삭제.
-- **IPO 독립 앱 분리(2026-08-10 전략 전환)**: 구 cohort 해금형(07-12) 폐기. `canUseIpo`·`isIpoBlockedForUser`·`blockIpoIfNotEntitled` 삭제(`40c348e`), `/join/[cohort]` 라우트·`IPO_HOME` 제거 + nav 미노출(08-13). 화면·데이터는 독립 앱 이관까지 직접 URL로만. `parseCohort`는 getAuthUser 가드레일로 존치.
+- **IPO 독립 앱 분리(2026-08-10 전략 전환)**: 구 cohort 해금형(07-12) 폐기. `canUseIpo`·`isIpoBlockedForUser`·`blockIpoIfNotEntitled` 삭제(`40c348e`), `/join/[cohort]` 라우트·`IPO_HOME` 제거 + nav 미노출(08-13). 화면·데이터는 독립 앱 이관까지 직접 URL로만. `parseCohort`는 getAuthUser 가드레일로 존치. **데이터 경로는 (A) 완전 분리 확정(08-13)** — 브릿지 없음, 독립 앱은 돈독 DB·계정 무관 설계(함께 쓰기는 추후 재검토).
 - **랜딩 분기**: `LandingPage.tsx`에서 `{isFull() && <ComparisonSection />}`. CoreFeatures·Closing은 양쪽 공통.
 - **lite 가드 3층**: middleware(route redirect) + API route(`blockIfLite()` — family 5종·scenario 3종·stocks/screen, `family/info` GET은 lite 1인 가족도 필요해 제외) + 서버 액션(`isLite()` 진입부 가드 — feed·scenario·oauth 전체, family는 `getLatestInviteCode`/`joinFamily`만). 과잉 가드 주의: lite도 1인 가족이 존재한다 (`7f6fc0e` budget crash 사례).
 
