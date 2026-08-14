@@ -232,7 +232,7 @@ if (isLite()) { /* lite 분기 */ }
 - **구조**: 일정 중심 — 상단 공모주/스팩주 분기(kind), 일정에서 인라인 청약 기록(PLANNED→SUBMITTED→ALLOCATED→SOLD). "원장" 용어는 폐기(결과·종목별 내역). 데모 모드 없음(빈 상태에서 직접 입력).
 - **페이지**: `app/dashboard/ipo/page.tsx` ("공모주·스팩주").
 - **`components/ipo/`** (~3,000줄):
-  - `board-data.ts` — 뷰 타입(`Account`·`Offering`)·`readinessIssues`·`computeAllocation`·`maskAccountNo` (순수·테스트됨).
+  - `board-data.ts` — 뷰 타입(`Account`·`Offering`)·`ledgerMoney`·`accountMoney`·`readinessIssues`·`maskAccountNo` (순수·테스트됨).
   - `schedule-view.tsx` — 일정 + **배정 계산기**(목표 N주 × 도전/기본/안정) + **예산 최적 배분**(명의별 청약주수 자동 산출). ⚠️ **사실 산술만 — 종목 추천·비례 유불리 예측 금지**(컴플라이언스).
   - `account-board.tsx` — 자금 위치 맵 + 명의별 밀집 계좌표(계좌번호 기본 마스킹·보기 토글, 비번 미저장). `entry-forms.tsx` — 검색형 피커(종목·증권사)·기본 증거금 자동 채움·데이터 툴바. `spac-{list,universe,panel,holdings}`.
   - `offerings.generated.ts`·`spac-universe.generated.ts` — 빌드 스크립트 산출(직접 수정 금지).

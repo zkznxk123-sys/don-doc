@@ -78,7 +78,6 @@ interface AppSidebarProps {
 export function AppSidebar({ open, onClose, user, onLogout }: AppSidebarProps) {
   const pathname = usePathname()
 
-  // 2026-08-10 전략 전환: IPO cohort 게이트 제거 → IPO 메뉴 전원 노출(독립 앱 이관까지 존치).
   const navItems = NAV_ITEMS
 
   const isActive = (item: NavItem) =>
