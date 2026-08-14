@@ -563,7 +563,7 @@ function SettingsClient() {
                   <AlertDialogTitle>0원 계좌 일괄 삭제</AlertDialogTitle>
                   <AlertDialogDescription className="space-y-1.5">
                     <span className="block">잔액이 ₩0이고 <strong className="text-foreground">거래 내역이 없는</strong> 계좌를 모두 삭제합니다.</span>
-                    <span className="block text-warning/80">거래 내역이 있는 계좌는 건너뜁니다. 삭제된 계좌는 복구할 수 없습니다.</span>
+                    <span className="block text-warning">거래 내역이 있는 계좌는 건너뜁니다. 삭제된 계좌는 복구할 수 없습니다.</span>
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

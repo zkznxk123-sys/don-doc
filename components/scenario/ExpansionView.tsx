@@ -63,7 +63,7 @@ export function ExpansionView({ expansion }: { expansion: ScenarioExpansion }) {
           <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider mb-1.5">리스크 & 대응</p>
           <div className="space-y-1.5">
             {expansion.risks.map((r, i) => (
-              <div key={i} className="bg-warning-soft border border-warning/20 rounded-xl px-3 py-2">
+              <div key={i} className="bg-warning-soft border border-warning rounded-xl px-3 py-2">
                 <p className="text-xs font-medium text-warning flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3 shrink-0" />{r.risk}
                 </p>

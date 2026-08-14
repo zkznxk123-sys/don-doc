@@ -476,7 +476,7 @@ export function TransactionDrawer({
             <div className="flex items-baseline justify-center gap-1 max-w-full overflow-hidden">
               <span className={cn(
                 "text-3xl font-light shrink-0",
-                isExpense ? "text-expense/60" : "text-income/60"
+                isExpense ? "text-expense" : "text-income"
               )}>
                 ₩
               </span>
@@ -659,7 +659,7 @@ export function TransactionDrawer({
                 className="w-full h-11 bg-muted rounded-xl px-4 border border-border text-sm text-foreground placeholder-muted-foreground/40 outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background transition-all"
               />
               {autoSuggestedCategory && (
-                <p className="text-xs text-income/80 mt-1.5 pl-1 flex items-center gap-1">
+                <p className="text-xs text-income mt-1.5 pl-1 flex items-center gap-1">
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-(--viz-sage)" />
                   &lsquo;{description}&rsquo; → <span className="font-medium">{autoSuggestedCategory}</span> 카테고리 자동 선택됨
                 </p>

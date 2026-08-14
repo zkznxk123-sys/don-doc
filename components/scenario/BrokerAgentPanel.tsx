@@ -111,7 +111,7 @@ export function BrokerAgentPanel({
           <div className="flex items-center gap-2">
             <Bot className="w-4 h-4 text-ai-400" />
             <span className="text-sm font-semibold">AI 에이전트 실행</span>
-            <span className="text-[10px] bg-warning-soft text-warning border border-warning/20 px-1.5 py-0.5 rounded-full">
+            <span className="text-[10px] bg-warning-soft text-warning border border-warning px-1.5 py-0.5 rounded-full">
               {process.env.NEXT_PUBLIC_KIS_IS_MOCK !== 'false' ? '모의투자' : '실계좌'}
             </span>
           </div>
@@ -202,7 +202,7 @@ export function BrokerAgentPanel({
                 return (
                   <div key={key} className={cn(
                     'border rounded-xl overflow-hidden',
-                    isDone ? 'border-income/30 bg-income-soft' : 'border-border bg-muted/30',
+                    isDone ? 'border-income bg-income-soft' : 'border-border bg-muted/30',
                   )}>
                     <div className="px-4 py-3">
                       <div className="flex items-start justify-between gap-2">
@@ -237,7 +237,7 @@ export function BrokerAgentPanel({
                       <p className="text-[11px] text-muted-foreground/70 mt-2 leading-relaxed">{order.reason}</p>
                     </div>
                     {isDone && (
-                      <div className="px-4 py-2 border-t border-income/20 bg-income/5">
+                      <div className="px-4 py-2 border-t border-income bg-income-soft">
                         <p className="text-[10px] text-income">주문번호 {done[key].orderId} {done[key].isMock && '(모의)'}</p>
                       </div>
                     )}

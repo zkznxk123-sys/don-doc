@@ -104,7 +104,7 @@ export function EtfNavCard() {
               onClick={() => pick(c)}
               className={cn(
                 'text-xs px-2.5 py-1 rounded-lg border transition-colors',
-                picked === c.ticker ? 'border-savings bg-savings-soft text-savings' : 'border-border hover:border-savings/50',
+                picked === c.ticker ? 'border-savings bg-savings-soft text-savings' : 'border-border hover:border-savings',
               )}
             >
               {c.name} <span className="text-muted-foreground">{c.ticker}</span>

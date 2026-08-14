@@ -204,7 +204,7 @@ export function ScenarioCard({
                   )
                 })}
                 {allDone && (
-                  <div className="rounded-xl bg-income-soft border border-income/20 px-4 py-3 text-center">
+                  <div className="rounded-xl bg-income-soft border border-income px-4 py-3 text-center">
                     <p className="text-xs text-income font-semibold mb-1">모든 액션 완료!</p>
                     <p className="text-[11px] text-muted-foreground">실행 계획 탭에서 다음 단계를 확인하거나 AI 상담으로 심화 질문하세요.</p>
                   </div>
@@ -242,7 +242,7 @@ export function ScenarioCard({
           {!interested ? (
             <button
               onClick={onInterested}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-savings-soft text-savings text-xs font-medium hover:bg-savings/20 transition-colors border"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-savings-soft text-savings text-xs font-medium hover:brightness-95 transition-[filter] border"
               style={{ borderColor: 'color-mix(in srgb, var(--viz-slate) 20%, transparent)' }}
             >
               <BookmarkCheck className="w-3.5 h-3.5" />관심있음

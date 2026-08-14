@@ -7,7 +7,7 @@ export function ProgressSummary({ scenarios }: { scenarios: ScenarioData[] }) {
   if (interested.length === 0) return null
 
   return (
-    <div className="bg-savings-soft border border-savings/20 rounded-2xl p-4">
+    <div className="bg-savings-soft border border-savings rounded-2xl p-4">
       <div className="flex items-center gap-2 mb-3">
         <Target className="w-4 h-4 text-savings" />
         <span className="text-sm font-semibold text-foreground">진행 중인 시나리오</span>

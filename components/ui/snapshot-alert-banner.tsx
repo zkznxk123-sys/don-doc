@@ -46,7 +46,7 @@ export function SnapshotAlertBanner({ yearMonth, kind = 'last', onSaved, onDismi
             ? `${formatYearMonth(yearMonth)} 마무리 — 순자산 스냅샷을 남기세요`
             : `${formatYearMonth(yearMonth)} 자산 스냅샷이 아직 없어요`}
         </p>
-        <p className="text-xs text-warning/80 mt-0.5">
+        <p className="text-xs text-warning mt-0.5">
           {kind === 'current'
             ? '월말이에요. 현재 잔액으로 이번 달 기록을 남겨두면 추이가 끊기지 않아요.'
             : '현재 잔액으로 지난달 순자산을 기록할 수 있어요.'}
@@ -59,7 +59,7 @@ export function SnapshotAlertBanner({ yearMonth, kind = 'last', onSaved, onDismi
         <button
           onClick={handleSave}
           disabled={saving}
-          className="inline-flex items-center gap-1.5 mt-2.5 text-xs font-semibold text-background bg-warning hover:bg-warning/80 disabled:opacity-60 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition-colors"
+          className="inline-flex items-center gap-1.5 mt-2.5 text-xs font-semibold text-background bg-warning hover:brightness-95 disabled:opacity-60 disabled:cursor-not-allowed px-3 py-1.5 rounded-lg transition-colors"
         >
           <Camera className="w-3.5 h-3.5" />
           {saving ? '저장 중...' : '현재 잔액으로 기록'}

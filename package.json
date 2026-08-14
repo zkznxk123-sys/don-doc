@@ -4,10 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbo",
-    "build": "node scripts/check-tone.mjs && prisma generate && next build",
+    "build": "node scripts/check-tone.mjs && node scripts/check-css-tokens.mjs && prisma generate && next build",
     "start": "next start",
     "lint": "eslint .",
     "check:tone": "node scripts/check-tone.mjs",
+    "check:css-tokens": "node scripts/check-css-tokens.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "seed": "npx tsx prisma/seed.ts",

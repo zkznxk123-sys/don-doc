@@ -106,7 +106,7 @@ export function FamilyAction({ userRole }: FamilyActionProps) {
                         className={cn(
                           'w-full flex items-center justify-center gap-2 h-10 rounded-xl border text-sm font-medium transition-all',
                           copied
-                            ? 'bg-income-soft border-income/30 text-income'
+                            ? 'bg-income-soft border-income text-income'
                             : 'bg-muted border-border text-muted-foreground hover:text-foreground hover:border-ring'
                         )}
                       >

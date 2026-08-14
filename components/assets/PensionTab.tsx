@@ -68,7 +68,7 @@ export function PensionTab({
           </p>
           <p className="text-[10px] text-muted-foreground/50 mt-1">{accounts.length}개 계좌</p>
         </div>
-        <div className="bg-income-soft border border-income/20 rounded-2xl p-4">
+        <div className="bg-income-soft border border-income rounded-2xl p-4">
           <div className="flex items-center gap-1.5 mb-2">
             <PiggyBank className="w-3.5 h-3.5 text-income" />
             <p className="text-[11px] text-muted-foreground font-medium">
@@ -84,7 +84,7 @@ export function PensionTab({
                 </p>
               </div>
               {hasEstimatedPension && totalCurrentMonthly > 0 && totalCurrentMonthly !== totalProjectedMonthly && (
-                <div className="border-l border-income/20 pl-3 pb-0.5">
+                <div className="border-l border-income pl-3 pb-0.5">
                   <p className="text-[9px] text-muted-foreground/50 mb-0.5">현재 기준</p>
                   <p className="text-sm font-bold tabular-nums text-muted-foreground/70">
                     ~{formatLargeNumber(totalCurrentMonthly)}
@@ -389,7 +389,7 @@ function PensionCard({
 
         {/* 예상 월 수령 — 납입 유지 / 현재 기준 두 줄 표시 */}
         <div className={cn('rounded-xl p-2.5 col-span-2', displayMonthlyPension
-          ? 'bg-income-soft border border-income/20'
+          ? 'bg-income-soft border border-income'
           : 'bg-muted/40')}>
           <p className="text-[10px] text-muted-foreground/60 mb-1">
             예상 월 수령{isEstimated && <span className="text-warning ml-1">추정</span>}
@@ -423,16 +423,16 @@ function PensionCard({
                   <p className="text-[9px] text-muted-foreground/40 mt-0.5">직접 입력 필요</p>
                 )
                 if (account.pensionType === 'PUBLIC_PENSION' && !account.monthlyPayment) return (
-                  <p className="text-[9px] text-warning/70 mt-0.5">월 납입액 필요</p>
+                  <p className="text-[9px] text-warning mt-0.5">월 납입액 필요</p>
                 )
                 if (!account.ownerBirthYear && !account.pensionStartAge) return (
-                  <p className="text-[9px] text-warning/70 mt-0.5">출생연도·개시나이 필요</p>
+                  <p className="text-[9px] text-warning mt-0.5">출생연도·개시나이 필요</p>
                 )
                 if (!account.ownerBirthYear) return (
-                  <p className="text-[9px] text-warning/70 mt-0.5">출생연도 필요</p>
+                  <p className="text-[9px] text-warning mt-0.5">출생연도 필요</p>
                 )
                 if (!account.pensionStartAge) return (
-                  <p className="text-[9px] text-warning/70 mt-0.5">연금 개시나이 필요</p>
+                  <p className="text-[9px] text-warning mt-0.5">연금 개시나이 필요</p>
                 )
                 return null
               })()}

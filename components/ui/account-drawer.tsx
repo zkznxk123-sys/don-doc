@@ -681,7 +681,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
                 {(needsLinkedAsset ? linkableAssets.filter(a => a.type === 'REAL_ESTATE') : linkableAssets).length === 0 ? (
                   <p className="text-xs text-muted-foreground/60 mt-1">{needsLinkedAsset ? '등록된 부동산이 없습니다.' : '등록된 자산이 없습니다.'}</p>
                 ) : needsLinkedAsset && !linkedAssetId ? (
-                  <p className="text-xs text-warning/80 mt-1">LTV 분석을 위해 연결 자산을 선택하면 좋아요.</p>
+                  <p className="text-xs text-warning mt-1">LTV 분석을 위해 연결 자산을 선택하면 좋아요.</p>
                 ) : null}
               </div>
 

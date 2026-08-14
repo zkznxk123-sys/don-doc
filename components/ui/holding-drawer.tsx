@@ -201,7 +201,7 @@ export function HoldingDrawer({ isOpen, onClose, onSuccess, accountId, accountNa
                           'bg-muted text-muted-foreground'
                         }`}>{r.market}</span>
                         {r.currency === 'USD' && (
-                          <span className="text-[10px] text-warning/80">$</span>
+                          <span className="text-[10px] text-warning">$</span>
                         )}
                       </div>
                     </button>

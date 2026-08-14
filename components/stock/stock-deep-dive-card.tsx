@@ -63,7 +63,7 @@ export function StockDeepDiveCard({ data }: { data: StockDeepDive }) {
         </div>
         <div className="flex items-end gap-0.5 h-8 pt-1">
           {[...data.performance.revenueSeries].reverse().map(s => (
-            <div key={s.period} className="flex-1 bg-savings/40 rounded-sm" style={{ height: `${(s.value / maxRev) * 100}%` }} title={`${s.period} ${s.value}조`} />
+            <div key={s.period} className="flex-1 bg-savings-soft rounded-sm" style={{ height: `${(s.value / maxRev) * 100}%` }} title={`${s.period} ${s.value}조`} />
           ))}
         </div>
       </Section>
@@ -76,7 +76,7 @@ export function StockDeepDiveCard({ data }: { data: StockDeepDive }) {
         </div>
         {/* 적정가 범위 바 + 현재가 커서 */}
         <div className="relative h-2 rounded-full bg-muted mt-1">
-          <div className="absolute inset-y-0 left-0 rounded-full bg-savings/30" style={{ width: '100%' }} />
+          <div className="absolute inset-y-0 left-0 rounded-full bg-savings-soft" style={{ width: '100%' }} />
           <div className="absolute -top-0.5 w-1 h-3 rounded-full bg-foreground" style={{ left: `calc(${cursor * 100}% - 2px)` }} title={`현재가 ${won(data.currentPrice)}`} />
         </div>
         <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground pt-1">

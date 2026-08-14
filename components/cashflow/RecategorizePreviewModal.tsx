@@ -143,7 +143,7 @@ export function RecategorizePreviewModal({
 
         {/* 잔여 항목 알림 */}
         {state.remaining > 0 && (
-          <div className="px-5 py-2 shrink-0 bg-warning-soft border-t border-warning/20">
+          <div className="px-5 py-2 shrink-0 bg-warning-soft border-t border-warning">
             <p className="text-[11px] text-warning">
               150건 초과로 나머지 {state.remaining}건은 적용 후 다시 실행하세요
             </p>
