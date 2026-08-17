@@ -253,7 +253,7 @@ DIRECT_URL=            # Prisma (direct, for migrations)
 NEXT_PUBLIC_POSTHOG_KEY=
 NEXT_PUBLIC_POSTHOG_HOST=
 # 선택
-LLM_MUX_URL=          # 기본값: http://localhost:8317
+CLI_PROXY_URL=        # 기본값: http://localhost:8317
 OPENAI_API_KEY=       # LLM fallback 직접 호출 (lib/ai.ts)
 FRANKR_CLIENT_ID=     # fran.kr 세금 계산 API (보유세·취득세·양도세 등)
 FRANKR_CLIENT_SECRET=

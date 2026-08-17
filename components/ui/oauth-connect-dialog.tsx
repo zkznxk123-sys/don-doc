@@ -92,7 +92,7 @@ export function OAuthConnectDialog({ open, provider, providerLabel, onClose, onD
               본인의 {providerLabel} 구독 계정을 연결합니다.
               아래 버튼을 누르면 새 탭에서 로그인 페이지가 열립니다.
             </p>
-            <div className="rounded-xl bg-warning-soft border border-warning p-3 text-xs text-amber-300/90 space-y-1">
+            <div className="rounded-xl bg-warning-soft border border-warning p-3 text-xs text-warning space-y-1">
               <p className="font-semibold flex items-center gap-1.5">
                 <AlertTriangle className="w-3.5 h-3.5" />
                 이 흐름은 좀 특이합니다

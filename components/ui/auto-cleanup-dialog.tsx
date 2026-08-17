@@ -16,7 +16,7 @@ interface Props {
 const TYPE_META: Record<DetectedGroupType, { label: string; icon: typeof GitMerge; color: string; bg: string; desc: string }> = {
   transfer:     { label: '이체',         icon: GitMerge,   color: 'text-savings',   bg: 'bg-savings-soft border-blue-500/20',   desc: '가족 간 이체로 수입·지출 상쇄' },
   cancellation: { label: '결제 취소',    icon: RotateCcw,  color: 'text-warning',  bg: 'bg-warning-soft border-warning', desc: '결제 후 취소된 내역' },
-  duplicate:    { label: '공용 카드 중복', icon: Copy,      color: 'text-purple-500', bg: 'bg-purple-500/10 border-purple-500/20', desc: '구성원이 동일 내역을 중복 등록' },
+  duplicate:    { label: '공용 카드 중복', icon: Copy,      color: 'text-expense', bg: 'bg-expense-soft border-expense', desc: '구성원이 동일 내역을 중복 등록' },
 }
 
 function formatKSTDate(date: Date) {
