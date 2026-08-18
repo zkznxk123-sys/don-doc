@@ -39,6 +39,20 @@ export async function POST(req: NextRequest) {
   const system = buildSystemPrompt({ user, pathname: body.pathname, today: new Date() })
   const tools = buildAgentTools(user)
 
+  // 잔액 실변경(batchId 발급) 감지 — 스트림 말미 [[BALANCE_BATCH:id]] 센티널로 전달해
+  // ChatPanel이 말풍선 하단 되돌리기 칩을 그린다 (팀 결정 2026-08-17: 텍스트 칩).
+  let executedBatchId: string | null = null
+  if ('updateAccountBalances' in tools) {
+    const balanceTool = tools.updateAccountBalances
+    const origExecute = balanceTool.execute.bind(balanceTool)
+    balanceTool.execute = (async (input, options) => {
+      const out = await origExecute(input, options)
+      const b = (out as { batchId?: string | null }).batchId
+      if (b) executedBatchId = b
+      return out
+    }) as typeof balanceTool.execute
+  }
+
   // chat agent는 OpenAI 직통('api', gpt-4o) 강제.
   // 사유: CLIProxy 경유 Claude/Gemini는 tool calling multi-turn에서 tool_use ↔ tool_result
   //      매핑이 깨짐 (Vercel AI SDK ↔ Anthropic format 변환 문제).
@@ -60,7 +74,26 @@ export async function POST(req: NextRequest) {
         console.error('[streamText onError]', error)
       },
     })
-    return result.toTextStreamResponse()
+    const encoder = new TextEncoder()
+    const stream = new ReadableStream<Uint8Array>({
+      async start(controller) {
+        try {
+          for await (const chunk of result.textStream) {
+            controller.enqueue(encoder.encode(chunk))
+          }
+          if (executedBatchId) {
+            controller.enqueue(encoder.encode(`\n[[BALANCE_BATCH:${executedBatchId}]]`))
+          }
+        } catch (e) {
+          console.error('[POST /api/ai/chat] stream error:', e)
+        } finally {
+          controller.close()
+        }
+      },
+    })
+    return new Response(stream, {
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    })
   } catch (e) {
     console.error('[POST /api/ai/chat] streamText error:', e)
     return new Response('AI 응답 중 오류가 발생했습니다.', { status: 500 })
