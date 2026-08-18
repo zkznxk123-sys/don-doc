@@ -2,6 +2,13 @@
 
 import { prisma } from '@/lib/prisma'
 import { computeNetWorth } from '@/lib/networth-calc'
+import {
+  aggregateMonthlyFlows,
+  computeMonthSavings,
+  computeMonthlyAverages,
+  computeVsAverage,
+  computeAssetChange,
+} from '@/lib/stats-calc'
 
 export interface FinancialInsights {
   currentAssets: number
@@ -60,58 +67,30 @@ export async function getFinancialInsights(
     select: { amount: true, date: true },
   })
 
-  // 월별 집계
-  const monthlyMap = new Map<string, { income: number; expense: number }>()
-  for (const tx of transactions) {
-    const d = new Date(tx.date)
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-    if (!monthlyMap.has(key)) monthlyMap.set(key, { income: 0, expense: 0 })
-    const entry = monthlyMap.get(key)!
-    if (tx.amount > 0) entry.income += tx.amount
-    else entry.expense += Math.abs(tx.amount)
-  }
+  // 월별 집계 → 순수 계산은 lib/stats-calc.ts
+  const monthlyMap = aggregateMonthlyFlows(transactions)
 
   const currentKey = `${y}-${String(m).padStart(2, '0')}`
   const current = monthlyMap.get(currentKey) ?? { income: 0, expense: 0 }
   const currentMonthExpense = current.expense
   const currentMonthIncome = current.income
-  const currentMonthSavings = currentMonthIncome - currentMonthExpense
-  const currentMonthSavingsRate =
-    currentMonthIncome > 0 ? (currentMonthSavings / currentMonthIncome) * 100 : 0
+  const { savings: currentMonthSavings, savingsRate: currentMonthSavingsRate } =
+    computeMonthSavings(current)
 
   // 과거 12개월 (이번 달 제외)
-  const historical = Array.from(monthlyMap.entries()).filter(([k]) => k !== currentKey)
+  const historical = Array.from(monthlyMap.entries())
+    .filter(([k]) => k !== currentKey)
+    .map(([, v]) => v)
 
-  const avgMonthlyExpense =
-    historical.length > 0
-      ? historical.reduce((s, [, v]) => s + v.expense, 0) / historical.length
-      : 0
+  const { avgMonthlyExpense, avgMonthlySavings, avgMonthlySavingsRate } =
+    computeMonthlyAverages(historical)
 
-  const avgMonthlySavings =
-    historical.length > 0
-      ? historical.reduce((s, [, v]) => s + (v.income - v.expense), 0) / historical.length
-      : 0
+  const { expenseVsAvgPercent, savingsRateVsAvgPercent } = computeVsAverage(
+    { expense: currentMonthExpense, savingsRate: currentMonthSavingsRate },
+    { expense: avgMonthlyExpense, savingsRate: avgMonthlySavingsRate }
+  )
 
-  const avgMonthlySavingsRate =
-    historical.length > 0
-      ? historical.reduce((s, [, v]) => {
-          const rate = v.income > 0 ? ((v.income - v.expense) / v.income) * 100 : 0
-          return s + rate
-        }, 0) / historical.length
-      : 0
-
-  // 연평균 대비 비율
-  const expenseVsAvgPercent =
-    avgMonthlyExpense > 0
-      ? ((currentMonthExpense - avgMonthlyExpense) / avgMonthlyExpense) * 100
-      : 0
-
-  const savingsRateVsAvgPercent = currentMonthSavingsRate - avgMonthlySavingsRate
-
-  // 자산 증감 = 이달 순현금흐름 (잔액 히스토리 없으므로 근사)
-  const assetChange = currentMonthSavings
-  const prevAssets = Math.max(currentAssets - assetChange, 1)
-  const assetChangePercent = (assetChange / prevAssets) * 100
+  const { assetChange, assetChangePercent } = computeAssetChange(currentAssets, currentMonthSavings)
 
   return {
     currentAssets,
