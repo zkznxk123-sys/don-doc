@@ -41,6 +41,10 @@ app/
     realestate/     # complexes · price · search (getAuthUser 가드 적용 — 외부 API 키 보호)
     stats/          # cashflow · insights
     frankr/         # fran.kr 세금 계산 API 프록시 (보유세·취득세·양도세·증여세·상속세)
+    ipo/            # quote · competition · workspace (공모주 — 아래 전용 섹션 참고)
+    user/           # preferences (User.preferences 저장 — sanitizePreferences 검증)
+    health/         # DB keep-alive — Supabase 무료 티어 auto-pause 방지.
+                    # vercel.json cron 1일 1회. 미호출 시 로그인 /sign-in↔/dashboard 루프(8/2 장애)
   dashboard/        # 보호된 페이지
     cashflow/       # 현금흐름 관리
     assets/         # 자산 관리
@@ -96,11 +100,21 @@ lib/
     stock-universe.ts
     screen-presets.ts
     sector-mapping.ts
+  ipo/              # 공모주 순수 로직 — allocation.ts(배정·예산배분 계산)·store.ts(DB+localStorage 이중 영속)
+  etf/              # ETF 추정 NAV — nav.ts(순수 계산)·registry.ts·sources/
+  stock/            # deep-dive.ts (종목 심층 분석)
+  frankr/           # fran.kr 세금 API 클라이언트 (client.ts·types.ts)
+  hooks/            # useAssetThreshold·useDefaultVisibility·useServerPreference (User.preferences 소비)
+  copy/             # invite.ts — 초대 문구
   utils/
     dart-fundamental.ts
     yahoo-fundamental.ts
     yahoo-momentum.ts
     stock-screener.ts
+    historical-fx.ts        # 과거 일자 USD-KRW lookup
+    original-hash.ts        # 엑셀 원본 SHA-256 (중복 업로드 차단)
+    transaction-hash.ts     # 거래 fingerprint (date+amount+description+accountId)
+    account-type-labels.ts
   auth.ts           # getAuthUser() — 모든 서버 액션/API 진입점
   prisma.ts         # Prisma 싱글톤 (빌드 안전)
   ai.ts             # LLM-Mux 추상화
@@ -237,10 +251,11 @@ if (isLite()) { /* lite 분기 */ }
 - **페이지**: `app/dashboard/ipo/page.tsx` ("공모주·스팩주").
 - **`components/ipo/`** (~2,500줄, 생성물 제외):
   - `board-data.ts` — 뷰 타입(`Account`·`LedgerRow`·`UpcomingOffering`·`Spac`)·자금 집계(`ledgerMoney`·`accountMoney`)·`readinessIssues`·`maskAccountNo`·`ddays` (순수·테스트됨). 구 `computeAllocation`·데모 데이터는 자금배분 탭 폐지와 함께 삭제(2026-07-02).
-  - `schedule-view.tsx` — 일정 + **배정 계산기**(목표 N주 × 도전/기본/안정) + **예산 최적 배분**(명의별 청약주수 자동 산출). ⚠️ **사실 산술만 — 종목 추천·비례 유불리 예측 금지**(컴플라이언스).
+  - `schedule-view.tsx` — 일정 + **배정 계산기**(목표 N주 × 도전/기본/안정) + **예산 최적 배분**(명의별 청약주수 자동 산출). 계산 자체는 `lib/ipo/allocation.ts` 순수 함수(테스트됨), 여기선 조합·표시만. ⚠️ **사실 산술만 — 종목 추천·비례 유불리 예측 금지**(컴플라이언스).
   - `account-board.tsx` — 자금 위치 맵 + 명의별 밀집 계좌표(계좌번호 기본 마스킹·보기 토글, 비번 미저장). `account-planner.tsx` — 명의 풀. `entry-forms.tsx` — 검색형 피커(종목·증권사)·기본 증거금 자동 채움·데이터 툴바. `spac-{list,universe,panel,holdings}` — 스팩.
   - `tones.ts`·`broker-meta.ts` — 색 토큰·증권사 메타.
   - `offerings.generated.ts`·`spac-universe.generated.ts` — 빌드 스크립트 산출(직접 수정 금지).
+- **`lib/ipo/`** — `allocation.ts`(배정·예산배분 순수 계산)·`store.ts`(DB+localStorage 이중 영속, debounce PUT·최초 로드 시 로컬→DB 자동 마이그레이션).
 - **`utils/ipo-ledger/`** — 운영자 카톡 "공모주 일정" 공지 → 이벤트 정규화(`schedule-notice.ts`). `calendar-sync.ts`는 미사용(캘린더는 별도 IPO_calander Apps Script 담당).
 - **API** `app/api/ipo/`:
   - `quote` — 네이버 금융 실시간 시세 프록시. `competition` — 38.co.kr 비례경쟁률. `workspace` — GET/PUT(zod 검증·512KB 상한). **셋 다 `getAuthUser` 가드**(무인증 오픈 프록시 남용 차단. 구 `blockIpoIfNotEntitled` cohort 가드는 08-10 게이트 제거로 삭제).
