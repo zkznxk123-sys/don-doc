@@ -70,7 +70,7 @@ export const features = {
 /**
  * lite에서 차단되는 dashboard route prefix 목록.
  * middleware가 redirect 또는 404 처리.
- * ※ /dashboard/ipo는 여기서 제외 — 전면 차단이 아니라 cohort 해금(isIpoBlockedForUser).
+ * ※ /dashboard/ipo는 여기서 제외 — 독립 앱 분리(2026-08-10)로 게이트 없이 nav 미노출·직접 URL 존치.
  */
 export const LITE_BLOCKED_ROUTES: readonly string[] = [
   '/dashboard/scenario',

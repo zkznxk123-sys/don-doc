@@ -52,7 +52,7 @@ describe('feature-flags', () => {
     expect(isRouteBlockedInLite('/dashboard/feed')).toBe(true)
     expect(isRouteBlockedInLite('/dashboard/feed/123')).toBe(true)
     expect(isRouteBlockedInLite('/dashboard/screen')).toBe(true)
-    expect(isRouteBlockedInLite('/dashboard/ipo')).toBe(false)  // 2026-07-12: 전면 차단 해제 — cohort 해금(isIpoBlockedForUser)
+    expect(isRouteBlockedInLite('/dashboard/ipo')).toBe(false)  // 2026-08-10 독립 앱 분리: 게이트 없이 nav 미노출·직접 URL 존치
     expect(isRouteBlockedInLite('/dashboard/cashflow')).toBe(false)
     expect(isRouteBlockedInLite('/dashboard')).toBe(false)
   })
