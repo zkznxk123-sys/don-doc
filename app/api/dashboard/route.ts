@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
 import { isCFOLevel } from '@/lib/roles'
 import { getFinancialInsights } from '@/lib/actions/stats'
+import { aggregateMonthlyCashflow } from '@/lib/cashflow-calc'
 
 const TYPE_LABELS: Record<string, string> = {
   CASH:        '현금 · 예적금',
@@ -276,20 +277,7 @@ export async function GET(req: NextRequest) {
     }).filter(Boolean)
 
     // ━━━ 현금흐름 집계 (stats/cashflow 로직) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    const cfMap: Record<string, { income: number; expense: number }> = {}
-    for (const tx of cashflowTransactions) {
-      const key = `${tx.date.getFullYear()}-${String(tx.date.getMonth() + 1).padStart(2, '0')}`
-      if (!cfMap[key]) cfMap[key] = { income: 0, expense: 0 }
-      if (tx.amount > 0) cfMap[key].income += tx.amount
-      else cfMap[key].expense += Math.abs(tx.amount)
-    }
-    const cashflowData = Array.from({ length: cashflowMonths }, (_, i) => {
-      const d = new Date(now.getFullYear(), now.getMonth() - (cashflowMonths - 1 - i), 1)
-      const yy = String(d.getFullYear()).slice(2)
-      const mm = String(d.getMonth() + 1).padStart(2, '0')
-      const key = `${d.getFullYear()}-${mm}`
-      return { key, label: `${yy}.${mm}`, income: cfMap[key]?.income ?? 0, expense: cfMap[key]?.expense ?? 0 }
-    })
+    const cashflowData = aggregateMonthlyCashflow(cashflowTransactions, cashflowMonths, now)
 
     // ━━━ 예산 (budget 로직) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     const spentByUser: Record<string, number> = {}

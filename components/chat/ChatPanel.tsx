@@ -234,7 +234,7 @@ export function ChatPanel({ open, onClose }: { open: boolean; onClose: () => voi
                         onClick={() => requestRevert(m.batchId!)}
                         disabled={isStreaming || revertRequested.has(m.batchId)}
                         className={cn(
-                          'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs text-muted-foreground',
+                          'inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground',
                           'hover:bg-muted hover:text-foreground transition-colors',
                           'focus-visible:outline-2 focus-visible:outline-[color:var(--color-ai-500)]',
                           'disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-transparent',
