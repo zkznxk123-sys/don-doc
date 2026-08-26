@@ -65,7 +65,9 @@ export async function saveFamilyBudgets(
 }
 
 /**
- * 특정 월의 가족 예산 데이터 조회 (Server Component용)
+ * 특정 월의 가족 예산 데이터 조회 (Server Component용).
+ * 집계는 `computeBudgetSummary` 단일 경로 — `/api/budget`·`/api/dashboard`와 같은 결과여야 하므로
+ * where 조건·select를 바꿀 때는 그 두 라우트와 함께 고친다.
  */
 export async function getFamilyBudgetData(familyId: string, month: string) {
   const [budgets, members, transactions] = await Promise.all([
@@ -86,8 +88,17 @@ export async function getFamilyBudgetData(familyId: string, month: string) {
           })(),
         },
         amount: { lt: 0 },
+        // 아래 3개는 /api/budget·/api/dashboard와 동일해야 한다 —
+        // 빠져 있으면 제외 처리한 거래·분할 자식이 이중으로 잡힌다.
+        isExcluded: false,
+        excludeFromBudget: false,
+        parentId: null,
       },
-      select: { userId: true, amount: true },
+      select: {
+        userId: true,
+        amount: true,
+        subItems: { select: { amount: true, isExcluded: true, excludeFromBudget: true } },
+      },
     }),
   ])
 

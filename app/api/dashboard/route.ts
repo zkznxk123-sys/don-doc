@@ -6,6 +6,7 @@ import { getAuthUser } from '@/lib/auth'
 import { isCFOLevel } from '@/lib/roles'
 import { getFinancialInsights } from '@/lib/actions/stats'
 import { aggregateMonthlyCashflow } from '@/lib/cashflow-calc'
+import { computeBudgetSummary } from '@/lib/budget-calc'
 
 const TYPE_LABELS: Record<string, string> = {
   CASH:        '현금 · 예적금',
@@ -280,16 +281,7 @@ export async function GET(req: NextRequest) {
     const cashflowData = aggregateMonthlyCashflow(cashflowTransactions, cashflowMonths, now)
 
     // ━━━ 예산 (budget 로직) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    const spentByUser: Record<string, number> = {}
-    for (const tx of budgetTransactions) {
-      const activeSubItems = (tx.subItems ?? []).filter(s => !s.isExcluded && !s.excludeFromBudget && s.amount < 0)
-      const amt = activeSubItems.length > 0
-        ? activeSubItems.reduce((s, i) => s + Math.abs(i.amount), 0)
-        : Math.abs(tx.amount)
-      spentByUser[tx.userId] = (spentByUser[tx.userId] || 0) + amt
-    }
-    const familyBudgetEntry = budgets.find(b => b.userId === null)
-    const familyTotalSpent = Object.values(spentByUser).reduce((sum, v) => sum + v, 0)
+    const budgetSummary = computeBudgetSummary(budgets, members, budgetTransactions)
 
     // ━━━ 응답 조립 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     return NextResponse.json({
@@ -326,18 +318,7 @@ export async function GET(req: NextRequest) {
       cashflow: { months: cashflowData },
 
       // budget
-      budget: {
-        month,
-        familyBudget: familyBudgetEntry?.amount ?? 0,
-        familySpent: familyTotalSpent,
-        members: members.map(mem => ({
-          id: mem.id,
-          name: mem.name || mem.email,
-          role: mem.role,
-          budget: budgets.find(b => b.userId === mem.id)?.amount ?? 0,
-          spent: spentByUser[mem.id] ?? 0,
-        })),
-      },
+      budget: { month, ...budgetSummary },
 
       // insights
       insights: { success: true, ...insights },

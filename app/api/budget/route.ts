@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
 import { isCFOLevel } from '@/lib/roles'
+import { computeBudgetSummary } from '@/lib/budget-calc'
 
 export async function GET(req: NextRequest) {
   try {
@@ -44,32 +45,10 @@ export async function GET(req: NextRequest) {
       }),
     ])
 
-    // 멤버별 이번 달 지출 합산 (sub-items 있으면 sub-items 기준)
-    const spentByUser: Record<string, number> = {}
-    for (const tx of transactions) {
-      const activeSubItems = (tx.subItems ?? []).filter(s => !s.isExcluded && !s.excludeFromBudget && s.amount < 0)
-      const amt = activeSubItems.length > 0
-        ? activeSubItems.reduce((s, i) => s + Math.abs(i.amount), 0)
-        : Math.abs(tx.amount)
-      spentByUser[tx.userId] = (spentByUser[tx.userId] || 0) + amt
-    }
+    // 멤버별 이번 달 지출 합산 (sub-items 있으면 sub-items 기준) — lib/budget-calc.ts 공용
+    const summary = computeBudgetSummary(budgets, members, transactions)
 
-    const familyBudgetEntry = budgets.find(b => b.userId === null)
-    const familyTotalSpent = Object.values(spentByUser).reduce((sum, v) => sum + v, 0)
-
-    return NextResponse.json({
-      success: true,
-      month,
-      familyBudget: familyBudgetEntry?.amount ?? 0,
-      familySpent: familyTotalSpent,
-      members: members.map(m => ({
-        id: m.id,
-        name: m.name || m.email,
-        role: m.role,
-        budget: budgets.find(b => b.userId === m.id)?.amount ?? 0,
-        spent: spentByUser[m.id] ?? 0,
-      })),
-    })
+    return NextResponse.json({ success: true, month, ...summary })
   } catch (e) {
     console.error('[GET /api/budget] ERROR:', e)
     return NextResponse.json({ success: false, error: String(e) }, { status: 500 })
