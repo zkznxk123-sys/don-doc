@@ -400,7 +400,8 @@ export default function CashflowPage() {
         toast.error(result.error || '저장 실패')
       }
     } catch (e) {
-      toast.error('저장 중 오류가 발생했어요: ' + String(e))
+      console.error('[cashflow save] ERROR:', e)
+      toast.error('저장 중 오류가 발생했어요. 다시 시도해주세요.')
     } finally {
       setSaving(false)
     }

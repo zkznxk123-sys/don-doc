@@ -258,9 +258,10 @@ export default function BudgetPage() {
       await loadData()
       setTimeout(() => setSaveStatus('idle'), 3000)
     } catch (e) {
+      console.error('[budget save] ERROR:', e)
       toast.error('오류가 발생했어요. 다시 시도해주세요.')
       setSaveStatus('error')
-      setSaveError(String(e))
+      setSaveError('저장하지 못했어요. 잠시 후 다시 시도해주세요.')
     } finally {
       setIsSaving(false)
     }

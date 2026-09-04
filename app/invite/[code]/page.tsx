@@ -49,7 +49,7 @@ export default function InvitePage() {
   }
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm text-center">
         {/* Icon */}
         <div className={cn(
@@ -65,20 +65,20 @@ export default function InvitePage() {
           ) : status === 'error' ? (
             <XCircle className="w-7 h-7 text-destructive" />
           ) : (
-            <Users className="w-7 h-7 text-zinc-400" />
+            <Users className="w-7 h-7 text-muted-foreground" />
           )}
         </div>
 
         {/* Success state */}
         {status === 'success' && (
           <>
-            <h1 className="text-2xl font-bold text-white mb-2">합류 완료!</h1>
-            <p className="text-sm text-zinc-400 mb-8">
-              <span className="text-white font-medium">{familyName}</span> 가족 그룹에 합류했습니다.
+            <h1 className="text-2xl font-bold text-foreground mb-2">합류 완료!</h1>
+            <p className="text-sm text-muted-foreground mb-8">
+              <span className="text-foreground font-medium">{familyName}</span> 가족 그룹에 합류했습니다.
             </p>
             <button
               onClick={() => router.push('/dashboard')}
-              className="w-full h-12 rounded-xl bg-white text-black text-sm font-semibold hover:bg-zinc-200 transition-all"
+              className="w-full h-12 rounded-xl bg-foreground text-background text-sm font-semibold hover:bg-foreground/90 transition-all"
             >
               대시보드로 이동
             </button>
@@ -88,11 +88,11 @@ export default function InvitePage() {
         {/* Error state */}
         {status === 'error' && (
           <>
-            <h1 className="text-2xl font-bold text-white mb-2">합류 실패</h1>
+            <h1 className="text-2xl font-bold text-foreground mb-2">합류 실패</h1>
             <p className="text-sm text-destructive mb-8">{error}</p>
             <Link
               href="/dashboard"
-              className="inline-flex items-center px-6 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-sm text-zinc-300 hover:text-white hover:border-zinc-600 transition-all"
+              className="inline-flex items-center px-6 py-3 rounded-xl bg-card border border-border text-sm text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-all"
             >
               돌아가기
             </Link>
@@ -102,22 +102,22 @@ export default function InvitePage() {
         {/* Ready / Checking state */}
         {(status === 'checking' || status === 'ready' || status === 'joining') && (
           <>
-            <h1 className="text-2xl font-bold text-white mb-2">가족 초대</h1>
-            <p className="text-sm text-zinc-400 mb-2">초대 코드</p>
-            <p className="text-2xl font-mono font-bold text-white tracking-widest mb-8">{code}</p>
+            <h1 className="text-2xl font-bold text-foreground mb-2">가족 초대</h1>
+            <p className="text-sm text-muted-foreground mb-2">초대 코드</p>
+            <p className="text-2xl font-mono font-bold text-foreground tracking-widest mb-8">{code}</p>
 
             {!isLoggedIn ? (
               <>
-                <p className="text-sm text-zinc-500 mb-4">계정을 만들고 가족에 합류하세요</p>
+                <p className="text-sm text-muted-foreground mb-4">계정을 만들고 가족에 합류하세요</p>
                 <Link
                   href={`/signup?inviteCode=${code}`}
-                  className="block w-full h-12 rounded-xl bg-white text-black text-sm font-semibold hover:bg-zinc-200 transition-all flex items-center justify-center"
+                  className="block w-full h-12 rounded-xl bg-foreground text-background text-sm font-semibold hover:bg-foreground/90 transition-all flex items-center justify-center"
                 >
                   새 계정 만들고 합류하기
                 </Link>
                 <Link
                   href={`/login?redirectTo=/invite/${code}`}
-                  className="block w-full h-12 rounded-xl border border-zinc-800 text-sm font-medium text-zinc-400 hover:text-white hover:border-zinc-600 transition-all flex items-center justify-center mt-3"
+                  className="block w-full h-12 rounded-xl border border-border text-sm font-medium text-muted-foreground hover:text-foreground hover:border-foreground/30 transition-all flex items-center justify-center mt-3"
                 >
                   이미 계정이 있나요? 로그인
                 </Link>
@@ -129,8 +129,8 @@ export default function InvitePage() {
                 className={cn(
                   "w-full h-12 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2",
                   status === 'joining'
-                    ? "bg-zinc-800 text-zinc-500 cursor-not-allowed"
-                    : "bg-white text-black hover:bg-zinc-200 active:scale-[0.98]"
+                    ? "bg-muted text-muted-foreground cursor-not-allowed"
+                    : "bg-foreground text-background hover:bg-foreground/90 active:scale-[0.98]"
                 )}
               >
                 {status === 'joining' ? (
@@ -147,7 +147,7 @@ export default function InvitePage() {
         )}
       </div>
 
-      <p className="mt-10 text-xs text-zinc-700">
+      <p className="mt-10 text-xs text-muted-foreground/50">
         가족의 사생활은 존중하면서, 자산은 투명하게.
       </p>
     </div>
