@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
 import { blockIfLite } from '@/lib/feature-flags'
+import { resolveJoinMigrationWhere } from '@/lib/actions/family/_join-migration'
 
 /**
  * POST /api/family/join — 초대 코드로 가족 합류
@@ -65,8 +66,11 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // 유저의 familyId를 초대된 가족으로 변경 + 초대 코드 사용 처리
-    await prisma.$transaction([
+    // 기존 계좌 자동 이관 (2026-09-04 정책 확정, 안 a — 상세는 _join-migration.ts)
+    const accountWhere = await resolveJoinMigrationWhere(user.id, user.familyId)
+
+    // 유저의 familyId를 초대된 가족으로 변경 + 초대 코드 사용 처리 + 계좌 이관
+    const results = await prisma.$transaction([
       prisma.user.update({
         where: { id: user.id },
         data: { familyId: invite.familyId, role: 'MEMBER' },
@@ -75,12 +79,26 @@ export async function POST(req: NextRequest) {
         where: { id: invite.id },
         data: { usedBy: user.email, usedAt: new Date() },
       }),
+      ...(accountWhere
+        ? [
+            prisma.account.updateMany({
+              where: accountWhere,
+              data: { familyId: invite.familyId },
+            }),
+          ]
+        : []),
     ])
+
+    const migratedAccounts =
+      accountWhere && results.length > 2
+        ? (results[2] as { count: number }).count
+        : 0
 
     return NextResponse.json({
       success: true,
       familyName: invite.family.name,
       familyId: invite.familyId,
+      migratedAccounts,
     })
   } catch (e) {
     console.error('[POST /api/family/join] ERROR:', e)

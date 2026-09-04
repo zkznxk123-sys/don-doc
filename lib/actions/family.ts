@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
 import { isLite, LITE_BLOCKED_MESSAGE } from '@/lib/feature-flags'
 import { isCFOLevel, type AppRole } from '@/lib/roles'
+import { resolveJoinMigrationWhere } from '@/lib/actions/family/_join-migration'
 
 function generateInviteCode(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'
@@ -217,6 +218,9 @@ export async function joinFamily(inviteCode: string): Promise<{ error?: string }
   if (invite.usedBy) return { error: '이미 사용된 초대 코드입니다.' }
   if (user.familyId === invite.familyId) return { error: '이미 해당 가족 그룹의 구성원입니다.' }
 
+  // 기존 계좌 자동 이관 (2026-09-04 정책 확정, 안 a — 상세는 family/_join-migration.ts)
+  const accountWhere = await resolveJoinMigrationWhere(user.id, user.familyId)
+
   await prisma.$transaction([
     prisma.user.update({
       where: { id: user.id },
@@ -226,6 +230,14 @@ export async function joinFamily(inviteCode: string): Promise<{ error?: string }
       where: { id: invite.id },
       data: { usedBy: user.email, usedAt: new Date() },
     }),
+    ...(accountWhere
+      ? [
+          prisma.account.updateMany({
+            where: accountWhere,
+            data: { familyId: invite.familyId },
+          }),
+        ]
+      : []),
   ])
 
   return {}
