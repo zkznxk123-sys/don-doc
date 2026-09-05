@@ -3,28 +3,10 @@ export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
-import { isCFOLevel } from '@/lib/roles'
 import { getFinancialInsights } from '@/lib/actions/stats'
 import { aggregateMonthlyCashflow } from '@/lib/cashflow-calc'
 import { computeBudgetSummary } from '@/lib/budget-calc'
-
-const TYPE_LABELS: Record<string, string> = {
-  CASH:        '현금 · 예적금',
-  INVESTMENT:  '주식 · 펀드',
-  PENSION:     '연금',
-  CRYPTO:      '가상자산',
-  REAL_ESTATE: '부동산',
-  STO:         '토큰증권',
-  DEBT:        '대출 (미연결)',
-  CREDIT_CARD: '신용카드 (미연결)',
-}
-
-const LIABILITY_TYPES = new Set(['DEBT', 'CREDIT_CARD'])
-
-const CATEGORY_ORDER: Record<string, number> = {
-  CASH: 0, INVESTMENT: 1, PENSION: 2, REAL_ESTATE: 3,
-  CRYPTO: 4, STO: 5, DEBT: 10, CREDIT_CARD: 11,
-}
+import { computeWealthSummary } from '@/lib/networth-calc'
 
 /**
  * GET /api/dashboard?month=YYYY-MM
@@ -143,100 +125,13 @@ export async function GET(req: NextRequest) {
       getFinancialInsights(familyId, month),
     ])
 
-    // ━━━ 자산 가공 (wealth 로직) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    type AccountSummary = {
-      id: string; name: string; balance: number; netEquity: number
-      type: string; isShared: boolean; shareLevel: string; isMasked: boolean
-      linkedDebtTotal: number
-      linkedDebts: { id: string; name: string; balance: number }[]
-      linkedAssetId: string | null
-      userId: string | null; isJoint: boolean; ownerName: string | null
-      subAccounts: { id: string; name: string; balance: number; type: string }[]
-      cashBalance: number
-    }
-
-    const accountSummary: AccountSummary[] = []
-    for (const acc of accounts) {
-      const isOwn = acc.userId === userId
-      // 자산 표시 잔액 계산:
-      //   - holdings 보유 (증권계좌): 부모.balance(시가평가액 합) + cashBalance(예수금, 2026-09-07) + 자식 CASH sub(수동 구조)
-      //   - holdings 없음 + sub-account 있음: 옛 sub-account 모델 — 자식 합만 (부모.balance 0)
-      //   - 둘 다 없음: 부모.balance 단독 (현금·예적금·부동산 등)
-      const hasHoldings = acc._count.holdings > 0
-      const subTotal = acc.subAccounts.reduce((s, c) => s + c.balance, 0)
-      const balance = hasHoldings
-        ? acc.balance + acc.cashBalance + acc.subAccounts.filter(s => s.type === 'CASH').reduce((s, c) => s + c.balance, 0)
-        : acc.subAccounts.length > 0 ? subTotal : acc.balance
-      const linkedDebtTotal = acc.linkedDebts.reduce((s, d) => s + d.balance, 0)
-      const netEquity = balance - linkedDebtTotal
-
-      const base: AccountSummary = {
-        id: acc.id, name: acc.name,
-        balance, netEquity, linkedDebtTotal,
-        type: acc.type, isShared: acc.isShared,
-        shareLevel: acc.shareLevel, isMasked: false,
-        linkedDebts: acc.linkedDebts.map(d => ({ id: d.id, name: d.name, balance: d.balance })),
-        linkedAssetId: acc.linkedAssetId,
-        userId: acc.userId, isJoint: acc.isJoint,
-        ownerName: acc.user?.name ?? null,
-        subAccounts: acc.subAccounts,
-        cashBalance: acc.cashBalance,
-      }
-
-      if (isCFOLevel(role) || isOwn) {
-        accountSummary.push(base)
-      } else if (acc.shareLevel === 'PRIVATE') {
-        // 제외
-      } else if (acc.shareLevel === 'BALANCE_ONLY') {
-        accountSummary.push({ ...base, name: '🔒 개인 보안 자산', isMasked: true })
-      } else {
-        accountSummary.push(base)
-      }
-    }
-
-    const assetAccounts = accountSummary.filter(acc => !LIABILITY_TYPES.has(acc.type))
-    const liabilityAccounts = accountSummary.filter(acc => LIABILITY_TYPES.has(acc.type))
-    const unlinkedLiabilities = liabilityAccounts.filter(acc => !acc.linkedAssetId)
-    const unlinkedLiabilityTotal = unlinkedLiabilities.reduce((s, a) => s + a.balance, 0)
-
-    const totalAssets = assetAccounts.reduce((s, a) => s + a.balance, 0)
-    const totalLiabilities = liabilityAccounts.reduce((s, a) => s + a.balance, 0)
-    const totalNetWorth = totalAssets - totalLiabilities
-
-    const sortedAssets = [...assetAccounts].sort((a, b) => {
-      const oA = CATEGORY_ORDER[a.type] ?? 99, oB = CATEGORY_ORDER[b.type] ?? 99
-      return oA !== oB ? oA - oB : b.balance - a.balance
-    })
-    const sortedLiabilities = [...liabilityAccounts].sort((a, b) => b.balance - a.balance)
-
-    // 도넛 차트
-    const typeMap: Record<string, { label: string; value: number; isLiability: boolean; accounts: AccountSummary[] }> = {}
-    for (const acc of assetAccounts) {
-      if (!typeMap[acc.type]) typeMap[acc.type] = { label: TYPE_LABELS[acc.type] || acc.type, value: 0, isLiability: false, accounts: [] }
-      typeMap[acc.type].value += acc.netEquity
-      typeMap[acc.type].accounts.push(acc)
-    }
-    for (const acc of unlinkedLiabilities) {
-      if (!typeMap[acc.type]) typeMap[acc.type] = { label: TYPE_LABELS[acc.type] || acc.type, value: 0, isLiability: true, accounts: [] }
-      typeMap[acc.type].value += acc.balance
-      typeMap[acc.type].accounts.push(acc)
-    }
-    const totalNetEquity = Object.values(typeMap).filter(v => !v.isLiability).reduce((s, v) => s + Math.max(v.value, 0), 0)
-    const totalPieBase = totalNetEquity + unlinkedLiabilityTotal
-
-    const assetsByType = Object.entries(typeMap)
-      .filter(([, data]) => Math.abs(data.value) > 0)
-      .map(([type, data]) => ({
-        type, label: data.label, balance: data.value,
-        percentage: totalPieBase > 0 ? Math.round((Math.abs(data.value) / totalPieBase) * 10000) / 100 : 0,
-        isLiability: data.isLiability,
-        accounts: data.accounts.sort((a, b) => b.balance - a.balance)
-          .map(a => ({ id: a.id, name: a.name, balance: a.balance, type: a.type, isShared: a.isShared })),
-      }))
-      .sort((a, b) => {
-        const oA = CATEGORY_ORDER[a.type] ?? 99, oB = CATEGORY_ORDER[b.type] ?? 99
-        return oA !== oB ? oA - oB : Math.abs(b.balance) - Math.abs(a.balance)
-      })
+    // ━━━ 자산 가공 (wealth 로직 — lib/networth-calc.ts computeWealthSummary와 공유) ━━━
+    // dashboard 계좌 쿼리는 realEstateDetail을 select하지 않으므로 summary 상의 해당 필드는
+    // 항상 null — 아래 응답 조립에서 그 필드를 제외해 JSON shape을 기존과 동일하게 유지한다.
+    const wealthSummary = computeWealthSummary(accounts, { userId, role })
+    const { totalAssets, totalLiabilities, totalNetWorth, totalNetEquity, unlinkedLiabilityTotal, assetsByType } = wealthSummary
+    const sortedAssets = wealthSummary.sortedAssets.map(({ realEstateDetail: _realEstateDetail, ...rest }) => rest)
+    const sortedLiabilities = wealthSummary.sortedLiabilities.map(({ realEstateDetail: _realEstateDetail, ...rest }) => rest)
 
     // ━━━ 거래 내역 마스킹 (transactions/list 로직) ━━━━━━━━━━━━━━━━━━━━━━━━━━━
     let txTotalIncome = 0
