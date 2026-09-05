@@ -198,6 +198,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, updated: updateOps.length, remaining: totalCount - txs.length })
   } catch (e) {
     console.error('[recategorize] error:', e)
-    return NextResponse.json({ error: String(e) }, { status: 500 })
+    return NextResponse.json({ error: 'AI 재분류에 실패했어요.' }, { status: 500 })
   }
 }

@@ -50,6 +50,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, updated: validMappings.length })
   } catch (e) {
     console.error('[recategorize/apply] error:', e)
-    return NextResponse.json({ error: String(e) }, { status: 500 })
+    return NextResponse.json({ error: '재분류 적용에 실패했어요.' }, { status: 500 })
   }
 }

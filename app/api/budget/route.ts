@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, month, ...summary })
   } catch (e) {
     console.error('[GET /api/budget] ERROR:', e)
-    return NextResponse.json({ success: false, error: String(e) }, { status: 500 })
+    return NextResponse.json({ success: false, error: '예산 정보를 불러오지 못했어요.' }, { status: 500 })
   }
 }
 
@@ -89,6 +89,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (e) {
     console.error('[POST /api/budget] ERROR:', e)
-    return NextResponse.json({ success: false, error: String(e) }, { status: 500 })
+    return NextResponse.json({ success: false, error: '예산을 저장하지 못했어요.' }, { status: 500 })
   }
 }

@@ -52,7 +52,7 @@ export async function GET() {
     })
   } catch (e) {
     console.error('[GET /api/family/info] ERROR:', e)
-    return NextResponse.json({ success: false, error: String(e) }, { status: 500 })
+    return NextResponse.json({ success: false, error: '가족 정보를 불러오지 못했어요.' }, { status: 500 })
   }
 }
 
@@ -73,6 +73,6 @@ export async function PATCH(req: Request) {
     return NextResponse.json({ success: true })
   } catch (e) {
     console.error('[PATCH /api/family/info] ERROR:', e)
-    return NextResponse.json({ success: false, error: String(e) }, { status: 500 })
+    return NextResponse.json({ success: false, error: '가족 정보를 수정하지 못했어요.' }, { status: 500 })
   }
 }

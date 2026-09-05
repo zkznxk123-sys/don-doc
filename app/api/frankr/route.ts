@@ -100,6 +100,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, data, basis })
   } catch (e) {
     console.error('[POST /api/frankr] ERROR:', e)
-    return NextResponse.json({ success: false, error: String(e) }, { status: 500 })
+    return NextResponse.json({ success: false, error: '세금 계산에 실패했어요.' }, { status: 500 })
   }
 }

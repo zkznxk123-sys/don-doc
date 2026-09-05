@@ -25,7 +25,8 @@ export async function GET(
     const isMasked = tx.visibility === 'PRIVATE' && tx.userId !== authUser.id
     return NextResponse.json({ success: true, transaction: { ...tx, isMasked } })
   } catch (e) {
-    return NextResponse.json({ success: false, error: String(e) }, { status: 500 })
+    console.error('[GET /api/transactions/[id]] ERROR:', e)
+    return NextResponse.json({ success: false, error: '내역을 불러오지 못했어요.' }, { status: 500 })
   }
 }
 
@@ -69,7 +70,7 @@ export async function PATCH(
     return NextResponse.json({ success: true, transaction: updated })
   } catch (e) {
     console.error('[PATCH /api/transactions/[id]] ERROR:', e)
-    return NextResponse.json({ success: false, error: String(e) }, { status: 500 })
+    return NextResponse.json({ success: false, error: '내역을 수정하지 못했어요.' }, { status: 500 })
   }
 }
 
@@ -89,6 +90,6 @@ export async function DELETE(
     return NextResponse.json(result, { status: result.success ? 200 : 403 })
   } catch (e) {
     console.error('[DELETE /api/transactions/[id]] ERROR:', e)
-    return NextResponse.json({ success: false, error: String(e) }, { status: 500 })
+    return NextResponse.json({ success: false, error: '내역을 삭제하지 못했어요.' }, { status: 500 })
   }
 }

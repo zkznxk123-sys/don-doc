@@ -222,6 +222,6 @@ export async function GET(req: NextRequest) {
     })
   } catch (e) {
     console.error('[GET /api/dashboard] ERROR:', e)
-    return NextResponse.json({ success: false, error: String(e) }, { status: 500 })
+    return NextResponse.json({ success: false, error: '대시보드 데이터를 불러오지 못했어요.' }, { status: 500 })
   }
 }

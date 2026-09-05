@@ -149,7 +149,7 @@ export async function POST(req: Request) {
   } catch (e) {
     console.error('[POST /api/auth/sync-user] ERROR:', e)
     return NextResponse.json(
-      { success: false, error: String(e) },
+      { success: false, error: '계정 동기화에 실패했어요.' },
       { status: 500 }
     )
   }

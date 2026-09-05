@@ -35,6 +35,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ success: true, months })
   } catch (e) {
     console.error('[GET /api/stats/cashflow] ERROR:', e)
-    return NextResponse.json({ success: false, error: String(e) }, { status: 500 })
+    return NextResponse.json({ success: false, error: '현금흐름 통계를 불러오지 못했어요.' }, { status: 500 })
   }
 }
