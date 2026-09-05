@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 
 // Clerk handles sign-out on the client via <SignOutButton /> or useClerk().signOut()
 // This route remains for backward compatibility but just redirects
+// 의도된 무인증 — 로그아웃은 인증 여부와 무관하게 동작해야 하고 DB 조회·데이터 노출도 없음.
 export async function POST() {
   return NextResponse.json({ success: true })
 }
