@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import * as XLSX from 'xlsx'
 import { toast } from 'sonner'
 import {
-  Upload, X, FileSpreadsheet, Loader2, AlertCircle,
+  Upload, X, FileSpreadsheet, Loader2, AlertCircle, Maximize2,
 } from 'lucide-react'
+import { SYNC_LINK_HANDOFF_KEY, type SyncLinkHandoff } from './excel-upload-drawer/sync-link-handoff'
 import { cn } from '@/lib/utils'
 import {
   Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerFooter, DrawerClose,
@@ -74,6 +76,7 @@ interface ExcelUploadDrawerProps {
 const PREVIEW_LIMIT = 50
 
 export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId }: ExcelUploadDrawerProps) {
+  const router = useRouter()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const aiAbortRef   = useRef<AbortController | null>(null)
   const [isDragging, setIsDragging] = useState(false)
@@ -955,6 +958,24 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                   <header className="flex items-center gap-2 px-3 py-2 bg-muted/40 border-b border-border">
                     <span className="text-base">🏦</span>
                     <span className="text-xs font-semibold text-foreground/80">자산 — 계좌 잔액 변경</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        // 연결 보드 페이지로 현재 상태를 넘긴다 — 파일은 다시 올리지 않아도 됨
+                        const handoff: SyncLinkHandoff = {
+                          fileName, accountBalances, ownerUserId: sourceOwnerId,
+                          excludedNames: Array.from(excludedAccountNames), decisions: syncDecisions,
+                          autoCreate: !!assetTemplate, savedAt: Date.now(),
+                        }
+                        try { sessionStorage.setItem(SYNC_LINK_HANDOFF_KEY, JSON.stringify(handoff)) } catch {}
+                        handleClose()
+                        router.push('/dashboard/assets/link')
+                      }}
+                      className="ml-auto flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                      title="엑셀 행과 계좌를 선으로 잇고 끌어서 옮기는 큰 화면"
+                    >
+                      <Maximize2 className="w-3 h-3" /> 연결 보드에서 크게 보기
+                    </button>
                   </header>
                   <div className="p-3">
                     <AccountBalanceDiff

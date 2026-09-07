@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 import { ChevronDown, ChevronRight, FileSpreadsheet, History, TrendingUp, TrendingDown, Loader2, Undo2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn, formatCurrency } from '@/lib/utils'
@@ -58,10 +59,13 @@ export default function UploadsPage() {
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/10">
           <History className="h-5 w-5 text-indigo-500" />
         </div>
-        <div>
+        <div className="flex-1">
           <h1 className="text-xl font-bold">업로드 이력</h1>
           <p className="text-sm text-muted-foreground">최근 90일 엑셀 업로드 / 잔액 동기화 내역</p>
         </div>
+        <Link href="/dashboard/assets/link" className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline">
+          자산 연결 보드 →
+        </Link>
       </header>
 
       {loading ? (
