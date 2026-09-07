@@ -106,10 +106,23 @@ export function SyncLinkBoard({
 
   const rows = useMemo(() => plan?.rows ?? [], [plan])
 
-  // 오른쪽 열 그룹: 명의자 본인 → 명의 없음 → 다른 구성원
-  const groups = useMemo(() => {
+  const [filter, setFilter] = useState('')
+
+  // 오른쪽 열 순서: (1) 연결된 계좌를 왼쪽 행 순서대로 — 선이 짧고 평행하게 보이도록
+  //                (2) 나머지 계좌는 명의자 본인 → 명의 없음 → 다른 구성원, 필터 가능
+  const { linked, groups } = useMemo(() => {
+    const byId = new Map(accounts.map(a => [a.accountId, a]))
+    const linkedIds: string[] = []
+    for (const r of rows) {
+      const t = targetOf(r)
+      if (t && byId.has(t) && !linkedIds.includes(t)) linkedIds.push(t)
+    }
+    const linked = linkedIds.map(id => byId.get(id)!)
+    const rest = accounts.filter(a => !linkedIds.includes(a.accountId))
+    const q = filter.trim().toLowerCase().replace(/\s+/g, '')
+    const filtered = q ? rest.filter(a => a.accountName.toLowerCase().replace(/\s+/g, '').includes(q)) : rest
     const byOwner = new Map<string, SyncCandidate[]>()
-    for (const a of accounts) {
+    for (const a of filtered) {
       const k = a.ownerName ?? ''
       byOwner.set(k, [...(byOwner.get(k) ?? []), a])
     }
@@ -118,14 +131,15 @@ export function SyncLinkBoard({
       '',
       ...Array.from(byOwner.keys()).filter(k => k !== '' && k !== ownerName).sort(),
     ]
-    return order
+    const groups = order
       .filter(k => byOwner.has(k))
       .map(k => ({
         key: k,
         label: k === '' ? '명의 없음 · 공동' : k === ownerName ? `${k} 명의 (이 파일)` : `${k} 명의`,
         accounts: (byOwner.get(k) ?? []).slice().sort((a, b) => a.accountName.localeCompare(b.accountName, 'ko')),
       }))
-  }, [accounts, ownerName])
+    return { linked, groups }
+  }, [accounts, ownerName, rows, filter])
 
   // 연결 수 (오른쪽 행 배지용)
   const inbound = useMemo(() => {
@@ -215,6 +229,39 @@ export function SyncLinkBoard({
     if (target) decideTarget(excelName, target, at)
   }
 
+  // 오른쪽 계좌 행 — 한 줄(이름 · 잔액), 연결 수 배지, 드롭 대상
+  const AccountRow = ({ a }: { a: SyncCandidate }) => {
+    const n = inbound.get(a.accountId) ?? 0
+    const hot = hoverTarget === a.accountId
+    return (
+      <div
+        ref={el => { if (el) rightRefs.current.set(a.accountId, el); else rightRefs.current.delete(a.accountId) }}
+        data-sync-target={a.accountId}
+        onMouseEnter={() => !drag && setHoverTarget(a.accountId)}
+        onMouseLeave={() => !drag && setHoverTarget(null)}
+        className={cn(
+          'flex items-center gap-2 px-2.5 py-1.5 border-t border-border/40 transition-colors',
+          hot && 'bg-muted/60 ring-1 ring-inset ring-ring',
+          n > 1 && 'bg-destructive/5',
+        )}
+        title={a.hasHoldings ? `잔액 ${formatCurrency(a.balance)} · 예수금 ${formatCurrency(a.cashBalance)}` : formatCurrency(a.balance)}
+      >
+        <p className="text-xs text-foreground truncate flex-1 min-w-0">
+          {a.accountName}
+          {a.hasHoldings && <span className="ml-1 text-[10px] text-savings">종목</span>}
+        </p>
+        <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
+          {formatCurrency(a.hasHoldings ? a.cashBalance : a.balance)}{a.hasHoldings && <span className="text-savings"> 예수금</span>}
+        </span>
+        {n > 0 && (
+          <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full shrink-0', n > 1 ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground')}>
+            {n > 1 ? `${n}행 충돌` : '연결'}
+          </span>
+        )}
+      </div>
+    )
+  }
+
   const pathFor = (from: Pt, to: Pt) => {
     const dx = Math.max(24, (to.x - from.x) / 2)
     return `M ${from.x} ${from.y} C ${from.x + dx} ${from.y}, ${to.x - dx} ${to.y}, ${to.x} ${to.y}`
@@ -227,7 +274,7 @@ export function SyncLinkBoard({
     <div className="space-y-2">
       <div
         ref={containerRef}
-        className={cn('relative max-h-[420px] overflow-auto rounded-lg border border-border bg-background', loading && 'opacity-70')}
+        className={cn('relative rounded-lg border border-border bg-background', loading && 'opacity-70')}
       >
         {/* 선 레이어 — 콘텐츠 좌표계 */}
         <svg className="absolute left-0 top-0 pointer-events-none" width={size.w} height={size.h} aria-hidden>
@@ -259,10 +306,10 @@ export function SyncLinkBoard({
           )}
         </svg>
 
-        <div className="grid grid-cols-[minmax(0,1fr)_48px_minmax(0,1fr)] items-start">
+        <div className="grid grid-cols-[minmax(0,1fr)_40px_minmax(0,1fr)] md:grid-cols-[minmax(220px,300px)_minmax(120px,1fr)_minmax(240px,320px)] items-start">
           {/* ── 왼쪽: 엑셀 행 ── */}
           <div>
-            <div className="sticky top-0 z-10 bg-muted/60 backdrop-blur px-2.5 py-1.5 border-b border-border text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+            <div className="bg-muted/60 px-2.5 py-1.5 border-b border-border text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
               엑셀 · {rows.filter(r => !excludedNames.has(r.excelName)).length}/{rows.length}행
             </div>
             <div className="divide-y divide-border/60">
@@ -278,7 +325,7 @@ export function SyncLinkBoard({
                     onMouseEnter={() => setHoverRow(r.excelName)}
                     onMouseLeave={() => setHoverRow(null)}
                     className={cn(
-                      'relative grid grid-cols-[24px_minmax(0,1fr)] gap-x-1.5 items-start pl-2 pr-6 py-2',
+                      'relative grid grid-cols-[20px_minmax(0,1fr)] gap-x-1 items-start pl-2 pr-4 py-1.5',
                       excluded && 'opacity-40',
                       st.needsInput && !excluded && 'bg-warning-soft/40',
                       hoverRow === r.excelName && 'bg-muted/40',
@@ -345,59 +392,22 @@ export function SyncLinkBoard({
 
           {/* ── 오른쪽: 서버 계좌 ── */}
           <div className="border-l border-border/60">
-            <div className="sticky top-0 z-10 bg-muted/60 backdrop-blur px-2.5 py-1.5 border-b border-border text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
+            <div className="bg-muted/60 px-2.5 py-1.5 border-b border-border text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">
               돈독 계좌 · {accounts.length}개
             </div>
-            {groups.map(g => (
-              <div key={g.key}>
-                <div className="px-2.5 pt-2 pb-1 text-[10px] text-muted-foreground/70">{g.label}</div>
-                {g.accounts.map(a => {
-                  const n = inbound.get(a.accountId) ?? 0
-                  const hot = hoverTarget === a.accountId
-                  return (
-                    <div
-                      key={a.accountId}
-                      ref={el => { if (el) rightRefs.current.set(a.accountId, el); else rightRefs.current.delete(a.accountId) }}
-                      data-sync-target={a.accountId}
-                      onMouseEnter={() => !drag && setHoverTarget(a.accountId)}
-                      onMouseLeave={() => !drag && setHoverTarget(null)}
-                      className={cn(
-                        'flex items-center gap-2 px-2.5 py-1.5 border-t border-border/40 transition-colors',
-                        hot && 'bg-muted/60 ring-1 ring-inset ring-ring',
-                        n > 1 && 'bg-destructive/5',
-                      )}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs text-foreground truncate">{a.accountName}</p>
-                        <p className="text-[10px] text-muted-foreground tabular-nums truncate">
-                          {formatCurrency(a.balance)}
-                          {a.hasHoldings && <> · 예수금 {formatCurrency(a.cashBalance)} <span className="text-savings">종목 보유</span></>}
-                        </p>
-                      </div>
-                      {n > 0 && (
-                        <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full shrink-0', n > 1 ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground')}>
-                          {n > 1 ? `${n}행 충돌` : '연결'}
-                        </span>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            ))}
-            {/* 가상 대상: 신규 · 무시 */}
+            {linked.length > 0 && <div className="px-2.5 pt-2 pb-1 text-[10px] text-muted-foreground/70">연결된 계좌 · {linked.length}</div>}
+            {linked.map(a => <AccountRow key={a.accountId} a={a} />)}
+            {/* 가상 대상: 신규 · 무시 — 연결된 계좌 바로 아래(끌어다 놓기 가까이) */}
             <div className="px-2.5 pt-2 pb-1 text-[10px] text-muted-foreground/70">기타</div>
             <div
               ref={el => { if (el) rightRefs.current.set(NEW_TARGET, el); else rightRefs.current.delete(NEW_TARGET) }}
               data-sync-target={NEW_TARGET}
               onMouseEnter={() => !drag && setHoverTarget(NEW_TARGET)}
               onMouseLeave={() => !drag && setHoverTarget(null)}
-              className={cn('flex items-center gap-2 px-2.5 py-2 border-t border-border/40 border-dashed text-ai-400', hoverTarget === NEW_TARGET && 'bg-muted/60 ring-1 ring-inset ring-ring')}
+              className={cn('flex items-center gap-2 px-2.5 py-1.5 border-t border-border/40 border-dashed text-ai-400', hoverTarget === NEW_TARGET && 'bg-muted/60 ring-1 ring-inset ring-ring')}
             >
               <Plus className="w-3.5 h-3.5 shrink-0" />
-              <div className="min-w-0 flex-1">
-                <p className="text-xs">신규 계좌로 만들기</p>
-                <p className="text-[10px] text-muted-foreground">엑셀 이름·유형 그대로 계좌 생성</p>
-              </div>
+              <p className="text-xs flex-1 min-w-0 truncate">신규 계좌로 만들기</p>
               {(inbound.get(NEW_TARGET) ?? 0) > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{inbound.get(NEW_TARGET)}</span>}
             </div>
             <div
@@ -405,15 +415,27 @@ export function SyncLinkBoard({
               data-sync-target={IGNORE_TARGET}
               onMouseEnter={() => !drag && setHoverTarget(IGNORE_TARGET)}
               onMouseLeave={() => !drag && setHoverTarget(null)}
-              className={cn('flex items-center gap-2 px-2.5 py-2 border-t border-border/40 border-dashed text-muted-foreground', hoverTarget === IGNORE_TARGET && 'bg-muted/60 ring-1 ring-inset ring-ring')}
+              className={cn('flex items-center gap-2 px-2.5 py-1.5 border-t border-border/40 border-dashed text-muted-foreground', hoverTarget === IGNORE_TARGET && 'bg-muted/60 ring-1 ring-inset ring-ring')}
             >
               <Ban className="w-3.5 h-3.5 shrink-0" />
-              <div className="min-w-0 flex-1">
-                <p className="text-xs">무시</p>
-                <p className="text-[10px]">이 행은 앞으로도 동기화하지 않음</p>
-              </div>
+              <p className="text-xs flex-1 min-w-0 truncate">무시 (앞으로도 동기화 안 함)</p>
               {(inbound.get(IGNORE_TARGET) ?? 0) > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{inbound.get(IGNORE_TARGET)}</span>}
             </div>
+            <div className="px-2.5 pt-3 pb-1 flex items-center gap-2">
+              <span className="text-[10px] text-muted-foreground/70 shrink-0">다른 계좌 · {accounts.length - linked.length}</span>
+              <input
+                value={filter}
+                onChange={e => setFilter(e.target.value)}
+                placeholder="계좌명 검색"
+                className="flex-1 min-w-0 text-[11px] px-2 py-0.5 rounded-md border border-border bg-background text-foreground outline-hidden placeholder:text-muted-foreground/50"
+              />
+            </div>
+            {groups.map(g => (
+              <div key={g.key}>
+                <div className="px-2.5 pt-2 pb-1 text-[10px] text-muted-foreground/70">{g.label}</div>
+                {g.accounts.map(a => <AccountRow key={a.accountId} a={a} />)}
+              </div>
+            ))}
           </div>
         </div>
 
