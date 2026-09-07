@@ -7,8 +7,9 @@
  * 표현 계층만 담당한다. 어디에 연결되는지의 진실은 서버 계획(planBalanceSync)이고,
  * 이 보드는 결정(decisions)을 바꿔 재계획을 유도할 뿐이다.
  *
- * 좌표: 선은 스크롤 컨테이너의 콘텐츠 좌표계로 그린 SVG(absolute)에 얹는다.
- *       SVG가 콘텐츠와 함께 스크롤되므로 스크롤 때 재계산이 필요 없다.
+ * 레이아웃: 내부 스크롤 없이 페이지가 스크롤된다(선이 잘리지 않게). 좌우 열은 좁게, 가운데를
+ *       넓게 두고, 오른쪽 열은 연결된 계좌를 왼쪽 행 순서로 먼저 놓아 선이 짧고 평행하게 보인다.
+ *       선은 컨테이너 콘텐츠 좌표계의 SVG(absolute)에 그린다.
  */
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
@@ -178,7 +179,7 @@ export function SyncLinkBoard({
     setSize({ w: c.scrollWidth, h: c.scrollHeight })
   }, [rows, excludedNames])
 
-  useLayoutEffect(() => { measure() }, [measure, decisions, accounts])
+  useLayoutEffect(() => { measure() }, [measure, decisions, accounts, filter])
   useEffect(() => {
     const c = containerRef.current
     if (!c) return
@@ -230,11 +231,12 @@ export function SyncLinkBoard({
   }
 
   // 오른쪽 계좌 행 — 한 줄(이름 · 잔액), 연결 수 배지, 드롭 대상
-  const AccountRow = ({ a }: { a: SyncCandidate }) => {
+  const renderAccountRow = (a: SyncCandidate) => {
     const n = inbound.get(a.accountId) ?? 0
     const hot = hoverTarget === a.accountId
     return (
       <div
+        key={a.accountId}
         ref={el => { if (el) rightRefs.current.set(a.accountId, el); else rightRefs.current.delete(a.accountId) }}
         data-sync-target={a.accountId}
         onMouseEnter={() => !drag && setHoverTarget(a.accountId)}
@@ -396,7 +398,7 @@ export function SyncLinkBoard({
               돈독 계좌 · {accounts.length}개
             </div>
             {linked.length > 0 && <div className="px-2.5 pt-2 pb-1 text-[10px] text-muted-foreground/70">연결된 계좌 · {linked.length}</div>}
-            {linked.map(a => <AccountRow key={a.accountId} a={a} />)}
+            {linked.map(renderAccountRow)}
             {/* 가상 대상: 신규 · 무시 — 연결된 계좌 바로 아래(끌어다 놓기 가까이) */}
             <div className="px-2.5 pt-2 pb-1 text-[10px] text-muted-foreground/70">기타</div>
             <div
@@ -433,7 +435,7 @@ export function SyncLinkBoard({
             {groups.map(g => (
               <div key={g.key}>
                 <div className="px-2.5 pt-2 pb-1 text-[10px] text-muted-foreground/70">{g.label}</div>
-                {g.accounts.map(a => <AccountRow key={a.accountId} a={a} />)}
+                {g.accounts.map(renderAccountRow)}
               </div>
             ))}
           </div>
