@@ -80,7 +80,12 @@ function statusOf(row: PlannedRow): { text: string; tone: string; needsInput: bo
 }
 
 type Pt = { x: number; y: number }
-type Line = { key: string; from: Pt; to: Pt | null; style: LineStyle; excluded: boolean; targetId: string | null }
+type Line = { key: string; from: Pt; to: Pt | null; style: LineStyle; excluded: boolean; targetId: string | null; kind: PlannedRow['decision']['kind'] }
+
+/** 의미색(충돌·확인 필요)은 선택돼도 유지, 나머지는 선택 시 브랜드 골드(--secondary)로 */
+const KEEP_SEMANTIC_WHEN_ACTIVE = new Set<PlannedRow['decision']['kind']>(['CONFLICT', 'UNRESOLVED'])
+const activeClass = (kind: PlannedRow['decision']['kind'], base: string) =>
+  KEEP_SEMANTIC_WHEN_ACTIVE.has(kind) ? base : 'text-secondary'
 
 export function SyncLinkBoard({
   plan, loading, accounts, ownerName, excludedNames, decisions, onToggle, onDecide,
@@ -174,7 +179,7 @@ export function SyncLinkBoard({
       next.push({
         key: r.excelName, from,
         to: tel ? toContent(tel.getBoundingClientRect(), 'left') : null,
-        style: lineStyle(r), excluded: excludedNames.has(r.excelName), targetId: t,
+        style: lineStyle(r), excluded: excludedNames.has(r.excelName), targetId: t, kind: r.decision.kind,
       })
     }
     setLines(next)
@@ -251,7 +256,7 @@ export function SyncLinkBoard({
         )}
         title={a.hasHoldings ? `잔액 ${formatCurrency(a.balance)} · 예수금 ${formatCurrency(a.cashBalance)}` : formatCurrency(a.balance)}
       >
-        <p className="text-xs text-foreground truncate flex-1 min-w-0">
+        <p className={cn('text-xs truncate flex-1 min-w-0', activeTargets.has(a.accountId) ? 'text-secondary font-medium' : 'text-foreground')}>
           {a.accountName}
           {a.hasHoldings && <span className="ml-1 text-[10px] text-savings">종목</span>}
         </p>
@@ -308,7 +313,7 @@ export function SyncLinkBoard({
               // 미연결: 짧은 스텁 + 물음표
               const d = `M ${l.from.x} ${l.from.y} h 22`
               return (
-                <g key={l.key} className={l.style.className} opacity={opacity}>
+                <g key={l.key} className={isActive ? activeClass(l.kind, l.style.className) : l.style.className} opacity={opacity}>
                   {isActive && <path d={d} stroke="currentColor" strokeWidth={width + 6} opacity={0.18} fill="none" strokeLinecap="round" />}
                   <path d={d} stroke="currentColor" strokeWidth={width} strokeDasharray={l.style.dash} fill="none" />
                   <circle cx={l.from.x + 30} cy={l.from.y} r={isActive ? 8 : 7} fill="none" stroke="currentColor" strokeWidth={isActive ? 2 : 1.25} />
@@ -319,7 +324,7 @@ export function SyncLinkBoard({
             }
             const d = pathFor(l.from, l.to)
             return (
-              <g key={l.key} className={l.style.className} opacity={opacity}>
+              <g key={l.key} className={isActive ? activeClass(l.kind, l.style.className) : l.style.className} opacity={opacity}>
                 {isActive && <path d={d} stroke="currentColor" strokeWidth={width + 6} opacity={0.18} fill="none" strokeLinecap="round" />}
                 <path d={d} stroke="currentColor" strokeWidth={width} strokeDasharray={l.style.dash} fill="none" />
                 <circle cx={l.to.x} cy={l.to.y} r={isActive ? 4.5 : 3} fill="currentColor" />
@@ -329,7 +334,7 @@ export function SyncLinkBoard({
             )
           })}
           {drag && (
-            <g className="text-foreground" opacity={0.9}>
+            <g className="text-secondary" opacity={0.95}>
               <path d={pathFor(drag.from, drag.to)} stroke="currentColor" strokeWidth={2} strokeDasharray="5 4" fill="none" />
               <circle cx={drag.to.x} cy={drag.to.y} r={4} fill="currentColor" />
             </g>
@@ -406,8 +411,9 @@ export function SyncLinkBoard({
                         onPointerUp={onHandleUp}
                         onPointerCancel={() => { setDrag(null); setHoverTarget(null) }}
                         className={cn(
-                          'absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-4 h-4 rounded-full border-2 bg-background cursor-grab active:cursor-grabbing touch-none',
-                          'border-current', ls.className,
+                          'absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-4 h-4 rounded-full border-2 bg-background cursor-grab active:cursor-grabbing touch-none transition-colors',
+                          'border-current', activeKeys.has(r.excelName) ? activeClass(r.decision.kind, ls.className) : ls.className,
+                          activeKeys.has(r.excelName) && 'scale-125',
                           st.needsInput && 'animate-pulse',
                         )}
                         title="끌어서 연결 대상 바꾸기"
@@ -508,6 +514,7 @@ export function SyncLinkBoard({
         <span><span className="inline-block w-4 border-t-2 border-foreground align-middle mr-1" />계좌 잔액</span>
         <span><span className="inline-block w-4 border-t-2 border-dashed border-current text-savings align-middle mr-1" />예수금</span>
         <span><span className="inline-block w-4 border-t-2 border-dotted border-current align-middle mr-1" />종목·무시 (잔액 안 씀)</span>
+        <span className="text-secondary"><span className="inline-block w-4 border-t-[3px] border-current align-middle mr-1" />선택됨</span>
         <span className="ml-auto">선이나 행을 누르면 고정 선택 · 행 끝의 ○ 를 끌어 오른쪽 계좌에 놓으면 연결이 바뀌어요</span>
       </div>
 
