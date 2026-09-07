@@ -221,64 +221,58 @@ export function SyncLinkBoard({
     return null
   }
 
-  // 선의 계좌 쪽 끝점·선 자체에서 시작하는 드래그. 6px 미만 이동은 클릭(고정 선택 토글)으로 취급.
+  // 드래그는 포인터 캡처 없이 window 리스너로 추적한다 — 캡처는 요소 재마운트·pointer-events 변화에
+  // 약해 pointerup을 잃고 굳는 사례가 있었다. 6px 미만 이동은 클릭(고정 선택 토글).
+  const dragRef = useRef(drag)
+  useEffect(() => { dragRef.current = drag }, [drag])
   const onGrabDown = (excelName: string) => (e: React.PointerEvent<Element>) => {
-    if (excludedNames.has(excelName)) return
+    if (excludedNames.has(excelName) || e.button !== 0) return
     e.preventDefault(); e.stopPropagation()
-    e.currentTarget.setPointerCapture(e.pointerId)
     const line = lines.find(l => l.key === excelName)
-    const from = line?.from ?? contentPoint(e)
     const p = contentPoint(e)
     setChooser(null)
-    setDrag({ excelName, from, to: p, start: p, moved: false })
+    setDrag({ excelName, from: line?.from ?? p, to: p, start: p, moved: false })
   }
-  const onGrabMove = (e: React.PointerEvent<Element>) => {
-    if (!drag) return
-    const p = contentPoint(e)
-    const moved = drag.moved || Math.hypot(p.x - drag.start.x, p.y - drag.start.y) > 6
-    setDrag(d => d && { ...d, to: p, moved })
-    if (moved) setHoverTarget(targetUnder(e.clientX, e.clientY))
-  }
-  const onGrabUp = (e: React.PointerEvent<Element>) => {
-    if (!drag) return
-    // 짧게 누름 = 고정 선택 토글. 이동한 드래그의 드롭 처리는 window pointerup 리스너가 맡는다(중복 방지).
-    if (!drag.moved) {
-      const { excelName } = drag
-      setDrag(null); setHoverTarget(null)
-      setSelected(prev => (prev === excelName ? null : excelName))
-    }
-    try { e.currentTarget.releasePointerCapture(e.pointerId) } catch {}
-  }
-  // 안전망: 포인터 캡처를 잃어(요소 재마운트 등) pointerup이 안 오면 window에서 드래그를 끝낸다. Esc로 취소.
+  const grabHandlers = (excelName: string) => ({ onPointerDown: onGrabDown(excelName) })
+
   useEffect(() => {
     if (!drag) return
-    const end = (e: PointerEvent) => {
-      const { excelName, moved } = drag
-      const target = moved ? targetUnder(e.clientX, e.clientY) : null
-      const c = containerRef.current
-      const cr = c?.getBoundingClientRect()
+    const c = containerRef.current
+    const toContent = (e: PointerEvent): Pt => {
+      const cr = c!.getBoundingClientRect()
+      return { x: e.clientX - cr.left + c!.scrollLeft, y: e.clientY - cr.top + c!.scrollTop }
+    }
+    const move = (e: PointerEvent) => {
+      const d = dragRef.current
+      if (!d || !c) return
+      const p = toContent(e)
+      const moved = d.moved || Math.hypot(p.x - d.start.x, p.y - d.start.y) > 6
+      setDrag({ ...d, to: p, moved })
+      setHoverTarget(moved ? targetUnder(e.clientX, e.clientY) : null)
+      if (moved) e.preventDefault()
+    }
+    const up = (e: PointerEvent) => {
+      const d = dragRef.current
       setDrag(null); setHoverTarget(null)
-      if (moved && target && cr && c) decideTarget(excelName, target, { x: e.clientX - cr.left + c.scrollLeft, y: e.clientY - cr.top + c.scrollTop })
+      if (!d || !c) return
+      if (!d.moved) { setSelected(prev => (prev === d.excelName ? null : d.excelName)); return }
+      const target = targetUnder(e.clientX, e.clientY)
+      if (target) decideTarget(d.excelName, target, toContent(e))
     }
     const cancel = (e: KeyboardEvent) => { if (e.key === 'Escape') { setDrag(null); setHoverTarget(null) } }
-    window.addEventListener('pointerup', end)
-    window.addEventListener('pointercancel', end)
+    window.addEventListener('pointermove', move, { passive: false })
+    window.addEventListener('pointerup', up)
+    window.addEventListener('pointercancel', up)
     window.addEventListener('keydown', cancel)
     return () => {
-      window.removeEventListener('pointerup', end)
-      window.removeEventListener('pointercancel', end)
+      window.removeEventListener('pointermove', move)
+      window.removeEventListener('pointerup', up)
+      window.removeEventListener('pointercancel', up)
       window.removeEventListener('keydown', cancel)
     }
-    // decideTarget·targetUnder는 렌더마다 새로 만들어지는 클로저 — drag가 바뀔 때만 다시 걸면 충분
+    // 리스너는 드래그 시작/종료 시에만 갈아끼운다. 최신 상태는 dragRef로 읽는다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [drag])
-
-  const grabHandlers = (excelName: string) => ({
-    onPointerDown: onGrabDown(excelName),
-    onPointerMove: onGrabMove,
-    onPointerUp: onGrabUp,
-    onPointerCancel: () => { setDrag(null); setHoverTarget(null) },
-  })
+  }, [!!drag])
 
   // 오른쪽 계좌 행 — 한 줄(이름 · 잔액), 연결 수 배지, 드롭 대상
   const renderAccountRow = (a: SyncCandidate) => {
