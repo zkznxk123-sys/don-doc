@@ -102,6 +102,8 @@ export function SyncLinkBoard({
   const [size, setSize] = useState({ w: 0, h: 0 })
   const [hoverRow, setHoverRow] = useState<string | null>(null)
   const [hoverTarget, setHoverTarget] = useState<string | null>(null)
+  // 클릭으로 고정 선택한 선(행). hover보다 오래 남아 양 끝을 확인하기 쉽다.
+  const [selected, setSelected] = useState<string | null>(null)
   const [drag, setDrag] = useState<{ excelName: string; from: Pt; to: Pt } | null>(null)
   const [chooser, setChooser] = useState<{ excelName: string; account: SyncCandidate; at: Pt } | null>(null)
 
@@ -243,8 +245,9 @@ export function SyncLinkBoard({
         onMouseLeave={() => !drag && setHoverTarget(null)}
         className={cn(
           'flex items-center gap-2 px-2.5 py-1.5 border-t border-border/40 transition-colors',
-          hot && 'bg-muted/60 ring-1 ring-inset ring-ring',
+          (hot || activeTargets.has(a.accountId)) && 'bg-muted/60 ring-1 ring-inset ring-ring',
           n > 1 && 'bg-destructive/5',
+          anyActive && !hot && !activeTargets.has(a.accountId) && 'opacity-50',
         )}
         title={a.hasHoldings ? `잔액 ${formatCurrency(a.balance)} · 예수금 ${formatCurrency(a.cashBalance)}` : formatCurrency(a.balance)}
       >
@@ -272,31 +275,56 @@ export function SyncLinkBoard({
   if (!plan && !loading) return null
   const blockingCount = plan?.blocking.length ?? 0
 
+  // 강조할 선: 드래그 중인 행 > hover 행 > 고정 선택 행, 그리고 hover 중인 대상으로 들어오는 선 전부
+  const activeKeys = new Set<string>()
+  const focusRow = drag?.excelName ?? hoverRow ?? selected
+  if (focusRow) activeKeys.add(focusRow)
+  if (hoverTarget) for (const l of lines) if (l.targetId === hoverTarget) activeKeys.add(l.key)
+  const anyActive = activeKeys.size > 0
+  // 강조 선을 마지막에 그려 다른 선 위로 올린다
+  const orderedLines = [...lines.filter(l => !activeKeys.has(l.key)), ...lines.filter(l => activeKeys.has(l.key))]
+  const activeTargets = new Set(lines.filter(l => activeKeys.has(l.key) && l.targetId).map(l => l.targetId as string))
+
   return (
     <div className="space-y-2">
       <div
         ref={containerRef}
         className={cn('relative rounded-lg border border-border bg-background', loading && 'opacity-70')}
       >
-        {/* 선 레이어 — 콘텐츠 좌표계 */}
+        {/* 선 레이어 — 콘텐츠 좌표계. 선 자체(가운데)도 hover·클릭으로 선택 가능 */}
         <svg className="absolute left-0 top-0 pointer-events-none" width={size.w} height={size.h} aria-hidden>
-          {lines.map(l => {
-            const emphasized = hoverRow === l.key || (l.targetId && hoverTarget === l.targetId)
-            const opacity = l.excluded ? 0.15 : emphasized ? 1 : 0.55
+          {orderedLines.map(l => {
+            const isActive = activeKeys.has(l.key)
+            const opacity = l.excluded ? (isActive ? 0.6 : 0.1) : anyActive ? (isActive ? 1 : 0.12) : 0.55
+            const width = isActive ? l.style.width + 1.5 : l.style.width
+            const hit = {
+              className: 'pointer-events-auto cursor-pointer',
+              stroke: 'transparent', strokeWidth: 16, fill: 'none',
+              onMouseEnter: () => setHoverRow(l.key),
+              onMouseLeave: () => setHoverRow(null),
+              onClick: () => setSelected(prev => (prev === l.key ? null : l.key)),
+            }
             if (!l.to) {
               // 미연결: 짧은 스텁 + 물음표
+              const d = `M ${l.from.x} ${l.from.y} h 22`
               return (
                 <g key={l.key} className={l.style.className} opacity={opacity}>
-                  <path d={`M ${l.from.x} ${l.from.y} h 22`} stroke="currentColor" strokeWidth={l.style.width} strokeDasharray={l.style.dash} fill="none" />
-                  <circle cx={l.from.x + 30} cy={l.from.y} r={7} fill="none" stroke="currentColor" strokeWidth={1.25} />
+                  {isActive && <path d={d} stroke="currentColor" strokeWidth={width + 6} opacity={0.18} fill="none" strokeLinecap="round" />}
+                  <path d={d} stroke="currentColor" strokeWidth={width} strokeDasharray={l.style.dash} fill="none" />
+                  <circle cx={l.from.x + 30} cy={l.from.y} r={isActive ? 8 : 7} fill="none" stroke="currentColor" strokeWidth={isActive ? 2 : 1.25} />
                   <text x={l.from.x + 30} y={l.from.y + 3.5} textAnchor="middle" fontSize={10} fill="currentColor">?</text>
+                  <path d={`M ${l.from.x} ${l.from.y} h 40`} {...hit} />
                 </g>
               )
             }
+            const d = pathFor(l.from, l.to)
             return (
               <g key={l.key} className={l.style.className} opacity={opacity}>
-                <path d={pathFor(l.from, l.to)} stroke="currentColor" strokeWidth={emphasized ? l.style.width + 1 : l.style.width} strokeDasharray={l.style.dash} fill="none" />
-                <circle cx={l.to.x} cy={l.to.y} r={3} fill="currentColor" />
+                {isActive && <path d={d} stroke="currentColor" strokeWidth={width + 6} opacity={0.18} fill="none" strokeLinecap="round" />}
+                <path d={d} stroke="currentColor" strokeWidth={width} strokeDasharray={l.style.dash} fill="none" />
+                <circle cx={l.to.x} cy={l.to.y} r={isActive ? 4.5 : 3} fill="currentColor" />
+                {isActive && <circle cx={l.from.x} cy={l.from.y} r={4.5} fill="currentColor" />}
+                <path d={d} {...hit} />
               </g>
             )
           })}
@@ -326,11 +354,17 @@ export function SyncLinkBoard({
                     ref={el => { if (el) leftRefs.current.set(r.excelName, el); else leftRefs.current.delete(r.excelName) }}
                     onMouseEnter={() => setHoverRow(r.excelName)}
                     onMouseLeave={() => setHoverRow(null)}
+                    onClick={e => {
+                      // 체크박스·핸들·버튼 클릭은 제외 — 행 자체를 눌렀을 때만 고정 선택 토글
+                      if ((e.target as HTMLElement).closest('input,button')) return
+                      setSelected(prev => (prev === r.excelName ? null : r.excelName))
+                    }}
                     className={cn(
-                      'relative grid grid-cols-[20px_minmax(0,1fr)] gap-x-1 items-start pl-2 pr-4 py-1.5',
+                      'relative grid grid-cols-[20px_minmax(0,1fr)] gap-x-1 items-start pl-2 pr-4 py-1.5 cursor-pointer transition-colors',
                       excluded && 'opacity-40',
                       st.needsInput && !excluded && 'bg-warning-soft/40',
-                      hoverRow === r.excelName && 'bg-muted/40',
+                      activeKeys.has(r.excelName) ? 'bg-muted/70 ring-1 ring-inset ring-ring' : hoverRow === r.excelName && 'bg-muted/40',
+                      anyActive && !activeKeys.has(r.excelName) && 'opacity-50',
                     )}
                   >
                     <input
@@ -406,7 +440,7 @@ export function SyncLinkBoard({
               data-sync-target={NEW_TARGET}
               onMouseEnter={() => !drag && setHoverTarget(NEW_TARGET)}
               onMouseLeave={() => !drag && setHoverTarget(null)}
-              className={cn('flex items-center gap-2 px-2.5 py-1.5 border-t border-border/40 border-dashed text-ai-400', hoverTarget === NEW_TARGET && 'bg-muted/60 ring-1 ring-inset ring-ring')}
+              className={cn('flex items-center gap-2 px-2.5 py-1.5 border-t border-border/40 border-dashed text-ai-400 transition-colors', (hoverTarget === NEW_TARGET || activeTargets.has(NEW_TARGET)) && 'bg-muted/60 ring-1 ring-inset ring-ring', anyActive && hoverTarget !== NEW_TARGET && !activeTargets.has(NEW_TARGET) && 'opacity-50')}
             >
               <Plus className="w-3.5 h-3.5 shrink-0" />
               <p className="text-xs flex-1 min-w-0 truncate">신규 계좌로 만들기</p>
@@ -417,7 +451,7 @@ export function SyncLinkBoard({
               data-sync-target={IGNORE_TARGET}
               onMouseEnter={() => !drag && setHoverTarget(IGNORE_TARGET)}
               onMouseLeave={() => !drag && setHoverTarget(null)}
-              className={cn('flex items-center gap-2 px-2.5 py-1.5 border-t border-border/40 border-dashed text-muted-foreground', hoverTarget === IGNORE_TARGET && 'bg-muted/60 ring-1 ring-inset ring-ring')}
+              className={cn('flex items-center gap-2 px-2.5 py-1.5 border-t border-border/40 border-dashed text-muted-foreground transition-colors', (hoverTarget === IGNORE_TARGET || activeTargets.has(IGNORE_TARGET)) && 'bg-muted/60 ring-1 ring-inset ring-ring', anyActive && hoverTarget !== IGNORE_TARGET && !activeTargets.has(IGNORE_TARGET) && 'opacity-50')}
             >
               <Ban className="w-3.5 h-3.5 shrink-0" />
               <p className="text-xs flex-1 min-w-0 truncate">무시 (앞으로도 동기화 안 함)</p>
@@ -474,7 +508,7 @@ export function SyncLinkBoard({
         <span><span className="inline-block w-4 border-t-2 border-foreground align-middle mr-1" />계좌 잔액</span>
         <span><span className="inline-block w-4 border-t-2 border-dashed border-current text-savings align-middle mr-1" />예수금</span>
         <span><span className="inline-block w-4 border-t-2 border-dotted border-current align-middle mr-1" />종목·무시 (잔액 안 씀)</span>
-        <span className="ml-auto">행 끝의 ○ 를 끌어 오른쪽 계좌에 놓으면 연결이 바뀌어요</span>
+        <span className="ml-auto">선이나 행을 누르면 고정 선택 · 행 끝의 ○ 를 끌어 오른쪽 계좌에 놓으면 연결이 바뀌어요</span>
       </div>
 
       {blockingCount > 0 && (
