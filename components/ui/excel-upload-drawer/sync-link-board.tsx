@@ -74,7 +74,7 @@ function statusOf(row: PlannedRow): { text: string; tone: string; needsInput: bo
     case 'NEW_ACCOUNT': return { text: `신규 계좌로 만들어요 (${row.type}) · ${SOURCE_LABEL[d.source]}`, tone: 'text-ai-400', needsInput: false }
     case 'IGNORE': return { text: '무시 · 앞으로도 동기화 안 함', tone: 'text-muted-foreground', needsInput: false }
     case 'EXCLUDED': return { text: '이번 업로드에서 제외', tone: 'text-muted-foreground', needsInput: false }
-    case 'UNRESOLVED': return { text: `확인 필요 · ${REASON_LABEL[d.reason]} — 핸들을 끌어 연결하세요`, tone: 'text-warning', needsInput: true }
+    case 'UNRESOLVED': return { text: `확인 필요 · ${REASON_LABEL[d.reason]} — ? 를 끌어 계좌에 놓으세요`, tone: 'text-warning', needsInput: true }
     case 'CONFLICT': return { text: `충돌 · '${d.withExcelNames.join(', ')}'와 같은 대상 — 하나를 옮기거나 체크 해제`, tone: 'text-destructive', needsInput: true }
   }
 }
@@ -109,7 +109,7 @@ export function SyncLinkBoard({
   const [hoverTarget, setHoverTarget] = useState<string | null>(null)
   // 클릭으로 고정 선택한 선(행). hover보다 오래 남아 양 끝을 확인하기 쉽다.
   const [selected, setSelected] = useState<string | null>(null)
-  const [drag, setDrag] = useState<{ excelName: string; from: Pt; to: Pt } | null>(null)
+  const [drag, setDrag] = useState<{ excelName: string; from: Pt; to: Pt; start: Pt; moved: boolean } | null>(null)
   const [chooser, setChooser] = useState<{ excelName: string; account: SyncCandidate; at: Pt } | null>(null)
 
   const rows = useMemo(() => plan?.rows ?? [], [plan])
@@ -212,30 +212,48 @@ export function SyncLinkBoard({
     onDecide(excelName, { kind: 'ACCOUNT', targetAccountId: acc.accountId })
   }
 
-  const onHandleDown = (excelName: string) => (e: React.PointerEvent<HTMLButtonElement>) => {
+  /** 포인터 아래의 드롭 대상 — SVG 히트 영역이 위에 있어도 그 아래 계좌 행을 찾는다 */
+  const targetUnder = (clientX: number, clientY: number): string | null => {
+    for (const el of document.elementsFromPoint(clientX, clientY)) {
+      const t = (el as HTMLElement).closest?.<HTMLElement>('[data-sync-target]')
+      if (t) return t.dataset.syncTarget ?? null
+    }
+    return null
+  }
+
+  // 선의 계좌 쪽 끝점·선 자체에서 시작하는 드래그. 6px 미만 이동은 클릭(고정 선택 토글)으로 취급.
+  const onGrabDown = (excelName: string) => (e: React.PointerEvent<Element>) => {
     if (excludedNames.has(excelName)) return
-    e.preventDefault()
+    e.preventDefault(); e.stopPropagation()
     e.currentTarget.setPointerCapture(e.pointerId)
     const line = lines.find(l => l.key === excelName)
     const from = line?.from ?? contentPoint(e)
+    const p = contentPoint(e)
     setChooser(null)
-    setDrag({ excelName, from, to: contentPoint(e) })
+    setDrag({ excelName, from, to: p, start: p, moved: false })
   }
-  const onHandleMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+  const onGrabMove = (e: React.PointerEvent<Element>) => {
     if (!drag) return
-    setDrag(d => d && { ...d, to: contentPoint(e) })
-    const el = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-sync-target]')
-    setHoverTarget(el?.dataset.syncTarget ?? null)
+    const p = contentPoint(e)
+    const moved = drag.moved || Math.hypot(p.x - drag.start.x, p.y - drag.start.y) > 6
+    setDrag(d => d && { ...d, to: p, moved })
+    if (moved) setHoverTarget(targetUnder(e.clientX, e.clientY))
   }
-  const onHandleUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+  const onGrabUp = (e: React.PointerEvent<Element>) => {
     if (!drag) return
-    const el = document.elementFromPoint(e.clientX, e.clientY)?.closest<HTMLElement>('[data-sync-target]')
-    const target = el?.dataset.syncTarget
-    const { excelName } = drag
+    const { excelName, moved } = drag
     const at = contentPoint(e)
+    const target = moved ? targetUnder(e.clientX, e.clientY) : null
     setDrag(null); setHoverTarget(null)
+    if (!moved) { setSelected(prev => (prev === excelName ? null : excelName)); return }
     if (target) decideTarget(excelName, target, at)
   }
+  const grabHandlers = (excelName: string) => ({
+    onPointerDown: onGrabDown(excelName),
+    onPointerMove: onGrabMove,
+    onPointerUp: onGrabUp,
+    onPointerCancel: () => { setDrag(null); setHoverTarget(null) },
+  })
 
   // 오른쪽 계좌 행 — 한 줄(이름 · 잔액), 연결 수 배지, 드롭 대상
   const renderAccountRow = (a: SyncCandidate) => {
@@ -300,15 +318,28 @@ export function SyncLinkBoard({
         <svg className="absolute left-0 top-0 pointer-events-none" width={size.w} height={size.h} aria-hidden>
           {orderedLines.map(l => {
             const isActive = activeKeys.has(l.key)
-            const opacity = l.excluded ? (isActive ? 0.6 : 0.1) : anyActive ? (isActive ? 1 : 0.12) : 0.55
+            const dragging = drag?.excelName === l.key
+            const opacity = dragging ? 0.15 : l.excluded ? (isActive ? 0.6 : 0.1) : anyActive ? (isActive ? 1 : 0.12) : 0.55
             const width = isActive ? l.style.width + 1.5 : l.style.width
+            // 선 자체 — hover로 강조, 누른 채 끌면 연결 이동, 짧게 누르면 고정 선택
             const hit = {
-              className: 'pointer-events-auto cursor-pointer',
+              className: cn('cursor-grab active:cursor-grabbing touch-none', drag ? 'pointer-events-none' : 'pointer-events-auto'),
               stroke: 'transparent', strokeWidth: 16, fill: 'none',
-              onMouseEnter: () => setHoverRow(l.key),
-              onMouseLeave: () => setHoverRow(null),
-              onClick: () => setSelected(prev => (prev === l.key ? null : l.key)),
+              onMouseEnter: () => !drag && setHoverRow(l.key),
+              onMouseLeave: () => !drag && setHoverRow(null),
+              ...(l.excluded ? {} : grabHandlers(l.key)),
             }
+            // 계좌 쪽 끝점(●) — 끌어서 다른 계좌·신규·무시에 놓는다
+            const knob = (cx: number, cy: number) => (
+              <circle
+                cx={cx} cy={cy} r={isActive ? 7 : 5}
+                fill="currentColor"
+                className={cn('cursor-grab active:cursor-grabbing touch-none', drag ? 'pointer-events-none' : 'pointer-events-auto')}
+                onMouseEnter={() => !drag && setHoverRow(l.key)}
+                onMouseLeave={() => !drag && setHoverRow(null)}
+                {...(l.excluded ? {} : grabHandlers(l.key))}
+              />
+            )
             if (!l.to) {
               // 미연결: 짧은 스텁 + 물음표
               const d = `M ${l.from.x} ${l.from.y} h 22`
@@ -316,9 +347,17 @@ export function SyncLinkBoard({
                 <g key={l.key} className={isActive ? activeClass(l.kind, l.style.className) : l.style.className} opacity={opacity}>
                   {isActive && <path d={d} stroke="currentColor" strokeWidth={width + 6} opacity={0.18} fill="none" strokeLinecap="round" />}
                   <path d={d} stroke="currentColor" strokeWidth={width} strokeDasharray={l.style.dash} fill="none" />
-                  <circle cx={l.from.x + 30} cy={l.from.y} r={isActive ? 8 : 7} fill="none" stroke="currentColor" strokeWidth={isActive ? 2 : 1.25} />
-                  <text x={l.from.x + 30} y={l.from.y + 3.5} textAnchor="middle" fontSize={10} fill="currentColor">?</text>
+                  <circle cx={l.from.x + 30} cy={l.from.y} r={isActive ? 9 : 8} fill="none" stroke="currentColor" strokeWidth={isActive ? 2 : 1.25} />
+                  <text x={l.from.x + 30} y={l.from.y + 3.5} textAnchor="middle" fontSize={10} fill="currentColor" className="pointer-events-none select-none">?</text>
                   <path d={`M ${l.from.x} ${l.from.y} h 40`} {...hit} />
+                  {/* 미연결 행은 ? 원 자체가 손잡이 */}
+                  <circle
+                    cx={l.from.x + 30} cy={l.from.y} r={9} fill="transparent"
+                    className={cn('cursor-grab active:cursor-grabbing touch-none', drag ? 'pointer-events-none' : 'pointer-events-auto')}
+                    onMouseEnter={() => !drag && setHoverRow(l.key)}
+                    onMouseLeave={() => !drag && setHoverRow(null)}
+                    {...(l.excluded ? {} : grabHandlers(l.key))}
+                  />
                 </g>
               )
             }
@@ -327,9 +366,9 @@ export function SyncLinkBoard({
               <g key={l.key} className={isActive ? activeClass(l.kind, l.style.className) : l.style.className} opacity={opacity}>
                 {isActive && <path d={d} stroke="currentColor" strokeWidth={width + 6} opacity={0.18} fill="none" strokeLinecap="round" />}
                 <path d={d} stroke="currentColor" strokeWidth={width} strokeDasharray={l.style.dash} fill="none" />
-                <circle cx={l.to.x} cy={l.to.y} r={isActive ? 4.5 : 3} fill="currentColor" />
-                {isActive && <circle cx={l.from.x} cy={l.from.y} r={4.5} fill="currentColor" />}
+                {isActive && <circle cx={l.from.x} cy={l.from.y} r={3.5} fill="currentColor" />}
                 <path d={d} {...hit} />
+                {knob(l.to.x, l.to.y)}
               </g>
             )
           })}
@@ -402,24 +441,15 @@ export function SyncLinkBoard({
                         )}
                       </p>
                     </div>
-                    {/* 핸들 — 끌어서 오른쪽 계좌에 놓기 */}
-                    {!excluded && (
-                      <button
-                        type="button"
-                        onPointerDown={onHandleDown(r.excelName)}
-                        onPointerMove={onHandleMove}
-                        onPointerUp={onHandleUp}
-                        onPointerCancel={() => { setDrag(null); setHoverTarget(null) }}
-                        className={cn(
-                          'absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-4 h-4 rounded-full border-2 bg-background cursor-grab active:cursor-grabbing touch-none transition-colors',
-                          'border-current', activeKeys.has(r.excelName) ? activeClass(r.decision.kind, ls.className) : ls.className,
-                          activeKeys.has(r.excelName) && 'scale-125',
-                          st.needsInput && 'animate-pulse',
-                        )}
-                        title="끌어서 연결 대상 바꾸기"
-                        aria-label={`${r.excelName} 연결 대상 바꾸기`}
-                      />
-                    )}
+                    {/* 선 시작점 — 표시만. 연결 변경은 선이나 계좌 쪽 끝점(●)을 끌어서 */}
+                    <span
+                      aria-hidden
+                      className={cn(
+                        'absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 w-2 h-2 rounded-full bg-current',
+                        activeKeys.has(r.excelName) ? activeClass(r.decision.kind, ls.className) : ls.className,
+                        excluded && 'opacity-30',
+                      )}
+                    />
                   </div>
                 )
               })}
@@ -515,13 +545,13 @@ export function SyncLinkBoard({
         <span><span className="inline-block w-4 border-t-2 border-dashed border-current text-savings align-middle mr-1" />예수금</span>
         <span><span className="inline-block w-4 border-t-2 border-dotted border-current align-middle mr-1" />종목·무시 (잔액 안 씀)</span>
         <span className="text-secondary"><span className="inline-block w-4 border-t-[3px] border-current align-middle mr-1" />선택됨</span>
-        <span className="ml-auto">선이나 행을 누르면 고정 선택 · 행 끝의 ○ 를 끌어 오른쪽 계좌에 놓으면 연결이 바뀌어요</span>
+        <span className="ml-auto">선이나 계좌 쪽 끝점(●)을 끌어 다른 계좌에 놓으면 연결이 바뀌어요 · 짧게 누르면 고정 선택</span>
       </div>
 
       {blockingCount > 0 && (
         <p className="text-[11px] text-warning flex items-center gap-1 px-0.5">
           <AlertCircle className="w-3 h-3 shrink-0" />
-          연결이 필요한 행 {blockingCount}개 — 끌어서 연결하거나 체크를 해제하면 등록할 수 있어요.
+          연결이 필요한 행 {blockingCount}개 — ? 를 끌어 계좌에 놓거나 체크를 해제하면 등록할 수 있어요.
         </p>
       )}
     </div>
