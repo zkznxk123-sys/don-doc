@@ -152,19 +152,20 @@ export async function GET(req: NextRequest) {
       linkedAssetId: string | null
       userId: string | null; isJoint: boolean; ownerName: string | null
       subAccounts: { id: string; name: string; balance: number; type: string }[]
+      cashBalance: number
     }
 
     const accountSummary: AccountSummary[] = []
     for (const acc of accounts) {
       const isOwn = acc.userId === userId
       // 자산 표시 잔액 계산:
-      //   - holdings 보유 (증권계좌): 부모.balance(시가평가액 합) + 자식 cash sub-account(예수금)
+      //   - holdings 보유 (증권계좌): 부모.balance(시가평가액 합) + cashBalance(예수금, 2026-09-07) + 자식 CASH sub(수동 구조)
       //   - holdings 없음 + sub-account 있음: 옛 sub-account 모델 — 자식 합만 (부모.balance 0)
       //   - 둘 다 없음: 부모.balance 단독 (현금·예적금·부동산 등)
       const hasHoldings = acc._count.holdings > 0
       const subTotal = acc.subAccounts.reduce((s, c) => s + c.balance, 0)
       const balance = hasHoldings
-        ? acc.balance + acc.subAccounts.filter(s => s.type === 'CASH').reduce((s, c) => s + c.balance, 0)
+        ? acc.balance + acc.cashBalance + acc.subAccounts.filter(s => s.type === 'CASH').reduce((s, c) => s + c.balance, 0)
         : acc.subAccounts.length > 0 ? subTotal : acc.balance
       const linkedDebtTotal = acc.linkedDebts.reduce((s, d) => s + d.balance, 0)
       const netEquity = balance - linkedDebtTotal
@@ -179,6 +180,7 @@ export async function GET(req: NextRequest) {
         userId: acc.userId, isJoint: acc.isJoint,
         ownerName: acc.user?.name ?? null,
         subAccounts: acc.subAccounts,
+        cashBalance: acc.cashBalance,
       }
 
       if (isCFOLevel(role) || isOwn) {

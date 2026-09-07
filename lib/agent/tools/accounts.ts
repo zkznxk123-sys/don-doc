@@ -98,10 +98,10 @@ export function buildAccountTools(ctx: ToolContext) {
           const isOwn = acc.userId === user.id
           if (!isCFO && !isOwn && acc.shareLevel === 'PRIVATE') continue
           const masked = !isCFO && !isOwn && acc.shareLevel === 'BALANCE_ONLY'
-          // 자식 계좌가 있으면 합산
-          const balance = acc.subAccounts.length > 0
+          // 자식 계좌가 있으면 합산. 보유 종목 계좌의 예수금(cashBalance)은 항상 포함.
+          const balance = (acc.subAccounts.length > 0
             ? acc.subAccounts.reduce((s, c) => s + c.balance, 0)
-            : acc.balance
+            : acc.balance) + acc.cashBalance
           visible.push({
             name: masked ? '🔒 개인 보안 자산' : acc.name,
             type: acc.type,

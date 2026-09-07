@@ -117,13 +117,12 @@ function AssetRow({
 }) {
   const meta = TYPE_META[account.type] ?? TYPE_META['CASH']
   const MetaIcon = meta.Icon
-  // holdings 보유 증권계좌의 경우, 자식 CASH sub-account (예수금)는 계좌 자산에 합산.
-  // 부모 account.balance는 holdings 시가평가액 합 (recalcAccountBalanceFromHoldings).
-  // 사용자가 뱅크샐러드 동기화로 만든 "예수금" 자식이 있으면 그 잔액을 부모 표시 잔액에 포함.
+  // holdings 보유 증권계좌: 부모 account.balance는 holdings 시가평가액 합(recalcAccountBalanceFromHoldings),
+  // 예수금은 cashBalance 필드(2026-09-07 — 엑셀 동기화가 쓰는 곳). 수동으로 둔 CASH 자식도 합산.
   const cashSubTotal = (account.subAccounts ?? [])
     .filter(s => s.type === 'CASH')
     .reduce((sum, s) => sum + (s.balance ?? 0), 0)
-  const displayBalance = account.balance + cashSubTotal
+  const displayBalance = account.balance + (account.cashBalance ?? 0) + cashSubTotal
   const allocation = totalAssets > 0 ? Math.round((displayBalance / totalAssets) * 100) : 0
   const hasLinkedDebts = (account.linkedDebts?.length ?? 0) > 0
   const netEquity = account.netEquity
@@ -521,6 +520,14 @@ export function AssetList({
                         }}
                       />
                     ))}
+                    {/* 예수금(cashBalance) — 보유 종목 계좌의 현금. 엑셀 동기화가 쓰는 필드 (2026-09-07) */}
+                    {holdings.length > 0 && (account.cashBalance ?? 0) !== 0 && (
+                      <div className="flex items-center gap-2 pl-[52px] pr-5 py-2 border-t border-border/40 bg-background/30 text-left">
+                        <CornerDownRight className="w-3 h-3 text-border shrink-0" />
+                        <span className="text-xs text-muted-foreground flex-1">예수금</span>
+                        <span className="text-xs tabular-nums text-foreground/80">{formatCurrency(account.cashBalance ?? 0)}</span>
+                      </div>
+                    )}
                     {/* 하위 계좌 인라인.
                         - holdings 없으면 모든 sub-account 표시 (상품·예수금 등)
                         - holdings 있으면 cash sub-account만 (예수금) 표시 — 종목과 같이 부모 자산 합산에 포함 */}

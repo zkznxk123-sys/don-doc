@@ -180,6 +180,9 @@ model Account {
   name         String // 예: "생활비 통장", "개인 비상금"
   type         AccountType   @default(CASH)
   balance      Float         @default(0)
+  // 예수금(현금) — 보유 종목(holdings) 계좌 전용. 표시 잔액 = balance(Σ종목 평가액) + cashBalance.
+  // 2026-09-07 자산 동기화 재설계: 매직 이름 "예수금" 자식 계좌 모델을 폐지하고 필드로 대체.
+  cashBalance  Float         @default(0)
   isShared     Boolean       @default(true) // 공동 자산 여부 (shareLevel에서 파생)
   shareLevel   ShareLevel    @default(PUBLIC) // 공유 수준
   familyId     String
@@ -254,11 +257,12 @@ model UploadBatch {
   userId         String
   user           User               @relation(fields: [userId], references: [id])
   fileName       String?
-  source         String             @default("excel") // 'excel' | 'banksalad' | 'manual-sync'
+  source         String             @default("excel") // 'excel' | 'manual-sync' | 'excel-revert' | 'manual-repair' | 'chat-ai*'
   txAdded        Int                @default(0)
   txSkipped      Int                @default(0)
   syncedAccounts Int                @default(0)
   uploadedAt     DateTime           @default(now())
+  revertedAt     DateTime? // revertUploadBatch로 되돌린 시각 — 중복 되돌리기 차단
   transactions   Transaction[]
   balanceChanges BalanceChangeLog[]
 
@@ -274,7 +278,8 @@ model BalanceChangeLog {
   oldBalance    Float
   newBalance    Float
   delta         Float // newBalance - oldBalance
-  source        String       @default("excel") // 'excel' | 'manual' | 'auto'
+  field         String       @default("balance") // 'balance' | 'cashBalance' — 어느 필드가 바뀌었는지
+  source        String       @default("excel") // 'excel' | 'manual' | 'auto' | 'excel-revert' | 'migration'
   uploadBatchId String?
   uploadBatch   UploadBatch? @relation(fields: [uploadBatchId], references: [id], onDelete: SetNull)
   changedAt     DateTime     @default(now())
@@ -599,12 +604,12 @@ model FamilyOAuthSession {
   @@index([familyId, provider])
 }
 
-// 엑셀 일괄 등록 시 사용자가 한 번 확정한 매핑을 재사용.
-// 뱅크샐러드 표기명(예: "종합매매") → dondoc 계좌·holding·cash-sub·신규·무시
+// 엑셀 일괄 등록 시 사용자가 한 번 확정한 바인딩을 재사용.
+// 소스 행(명의자 + 표기명) → dondoc 계좌 잔액·예수금·종목·신규·무시
 enum ExcelMappingType {
-  ACCOUNT // 일반 잔액 동기화 대상 — targetAccountId
-  CASH_SUB // 부모 account의 자식 "예수금"으로 — targetAccountId (parent)
-  HOLDING_SKIP // 종목 row가 부모 account에 holding으로 등록됨 — 잔액 동기화 skip
+  ACCOUNT // 행 금액 = 계좌 잔액(balance) — targetAccountId
+  ACCOUNT_CASH // 행 금액 = 보유 종목 계좌의 예수금(cashBalance) — targetAccountId
+  HOLDING_SKIP // 종목 row가 계좌에 holding으로 등록됨 — 잔액 동기화 skip
   NEW_ACCOUNT // 신규 account 생성 대상
   IGNORE // 동기화 영구 제외 (사용자가 등록 안 함)
 }
@@ -613,7 +618,9 @@ model ExcelMapping {
   id              String           @id @default(cuid())
   familyId        String
   family          FamilyGroup      @relation(fields: [familyId], references: [id], onDelete: Cascade)
-  userId          String? // 업로더(매핑 주인) — 부부 동명 계좌 구분 축 (2026-08-10). null=레거시 공용
+  // 명의자 축 — "이 엑셀 파일이 누구 명의의 자산인가"(업로더와 다를 수 있음: 배우자 파일 대리 업로드).
+  // 2026-09-07 재설계: null(레거시 공용) 행은 조회하지 않는다 — 배우자 계좌 덮어쓰기 경로였음.
+  userId          String?
   excelName       String // 정규화된 엑셀 표기명
   mappingType    ExcelMappingType
   targetAccountId String? // account 매칭 또는 cash-sub 부모

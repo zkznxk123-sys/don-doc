@@ -51,6 +51,8 @@ export async function GET(req: NextRequest) {
         type: acc.type,
         typeLabel: TYPE_LABELS[acc.type] || acc.type,
         balance: acc.balance,
+        cashBalance: acc.cashBalance,
+        userId: acc.userId,
         isShared: acc.isShared,
         holdingNames: acc.holdings.map(h => h.name),
       })),

@@ -187,10 +187,12 @@ export async function createSnapshotFromCurrentBalances(
     return { success: false, error: '잘못된 연월 형식입니다. (YYYY-MM)' }
   }
 
-  const accounts = await prisma.account.findMany({
+  const rawAccounts = await prisma.account.findMany({
     where: { familyId: authUser.familyId },
-    select: { type: true, balance: true },
+    select: { type: true, balance: true, cashBalance: true },
   })
+  // 보유 종목 계좌의 예수금(cashBalance)은 잔액에 합산 (2026-09-07)
+  const accounts = rawAccounts.map(a => ({ type: a.type, balance: a.balance + a.cashBalance }))
 
   const { totalAssets, totalLiabilities, netWorth } = computeNetWorth(accounts)
   const typeBreakdown = aggregateTypeBreakdown(accounts)

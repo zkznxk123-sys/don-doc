@@ -70,16 +70,17 @@ export async function GET(req: NextRequest) {
       isJoint: boolean
       ownerName: string | null
       subAccounts: { id: string; name: string; balance: number; type: string }[]
+      cashBalance: number
       realEstateDetail: { complexName: string | null; bjdCode: string | null; area: number | null; floor: number | null; propertyType: string | null } | null
     }
 
     const accountSummary: AccountSummary[] = []
     for (const acc of accounts) {
       const isOwn = acc.userId === userId
-      // 잔액 계산: holdings 보유 시 부모.balance(시가평가액) + cash sub. holdings 없으면 옛 sub-account 모델.
+      // 잔액 계산: holdings 보유 시 부모.balance(시가평가액) + cashBalance(예수금) + CASH sub. holdings 없으면 옛 sub-account 모델.
       const hasHoldings = acc._count.holdings > 0
       const balance = hasHoldings
-        ? acc.balance + acc.subAccounts.filter(s => s.type === 'CASH').reduce((s, c) => s + c.balance, 0)
+        ? acc.balance + acc.cashBalance + acc.subAccounts.filter(s => s.type === 'CASH').reduce((s, c) => s + c.balance, 0)
         : acc.subAccounts.length > 0
           ? acc.subAccounts.reduce((s, c) => s + c.balance, 0)
           : acc.balance
@@ -97,6 +98,7 @@ export async function GET(req: NextRequest) {
         isJoint: acc.isJoint,
         ownerName: acc.user?.name ?? null,
         subAccounts: acc.subAccounts,
+        cashBalance: acc.cashBalance,
         realEstateDetail: acc.realEstateDetail ?? null,
       }
 

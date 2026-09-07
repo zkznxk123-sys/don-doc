@@ -30,6 +30,8 @@ export interface AccountInitialData {
   isJoint?: boolean
   parentAccountId?: string | null
   subAccounts?: { id: string; name: string; balance: number; type: string }[]
+  /** 예수금 — 보유 종목 계좌 전용 (표시 잔액 = balance + cashBalance) */
+  cashBalance?: number
   realEstateDetail?: {
     complexName: string | null
     bjdCode: string | null
@@ -79,6 +81,8 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
   const [name, setName]           = useState('')
   const [type, setType]           = useState<AccountType>('CASH')
   const [balance, setBalance]     = useState('')
+  // 예수금(cashBalance) — 보유 종목 계좌 편집 시에만 노출. 엑셀 동기화가 쓰는 필드와 동일.
+  const [cashBalance, setCashBalance] = useState('')
   const [shareLevel, setShareLevel] = useState<ShareLevel>('PUBLIC')
   const [isLoading, setIsLoading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -129,6 +133,8 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
   const needsLinkedAsset = DEBT_TYPES_NEEDING_ASSET.includes(dDebtType)
 
   const isLiabilityType = type === 'DEBT' || type === 'CREDIT_CARD'
+  // 예수금 필드 — 보유 종목이 있을 수 있는 타입의 기존 계좌 편집 시에만 (신규 생성 시엔 종목이 없다)
+  const showCashBalance = isEditMode && (type === 'INVESTMENT' || type === 'PENSION' || type === 'CRYPTO')
   const isFinancialType  = FINANCIAL_TYPES.includes(type)
   const isRealEstate     = type === 'REAL_ESTATE'
   const isDebt           = type === 'DEBT'
@@ -151,6 +157,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
       setName(initialData.name ?? '')
       setType(initialData.type)
       setBalance(initialData.balance > 0 ? initialData.balance.toLocaleString() : '')
+      setCashBalance((initialData.cashBalance ?? 0) !== 0 ? (initialData.cashBalance ?? 0).toLocaleString() : '')
       setShareLevel(initialData.shareLevel ?? (initialData.isShared ? 'PUBLIC' : 'PRIVATE'))
       setPOwnerId(initialData.isJoint ? '__joint__' : (initialData.userId ?? ''))
       setParentAccountId(initialData.parentAccountId ?? '')
@@ -337,6 +344,7 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
       if (isEditMode) {
         const result = await updateAccount(initialData.id, {
           name: name.trim(), type, balance: parsedBalance, shareLevel,
+          ...(showCashBalance ? { cashBalance: parseFloat(cashBalance.replace(/,/g, '')) || 0 } : {}),
           ownerId: ownerIdInput, isJoint: isJointInput,
           parentAccountId: parentAccountId || null,
           linkedAssetId: isDebt ? (linkedAssetId || null) : null,
@@ -490,6 +498,25 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
               {parentAccountId && (
                 <p className="text-xs text-muted-foreground/60 mt-1">이 계좌의 잔액은 상위 계좌에 자동 합산됩니다.</p>
               )}
+            </div>
+          )}
+
+          {/* 예수금 — 보유 종목 계좌(편집)만. 잔액은 종목 시세 합산이라 별도 입력 */}
+          {showCashBalance && (
+            <div>
+              <Label className="text-muted-foreground text-xs mb-2 block">예수금 (현금)</Label>
+              <div className="relative">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={cashBalance}
+                  onChange={e => setCashBalance(fmtNum(e.target.value))}
+                  placeholder="0"
+                  className="w-full h-11 bg-card border border-border rounded-xl pl-4 pr-10 text-sm text-foreground placeholder-muted-foreground/40 outline-hidden focus:border-ring transition-colors tabular-nums"
+                />
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">원</span>
+              </div>
+              <p className="text-[11px] text-muted-foreground/50 mt-1.5">표시 잔액 = 종목 평가액 + 예수금. 엑셀 업로드의 예수금 동기화가 이 값을 갱신해요.</p>
             </div>
           )}
 
