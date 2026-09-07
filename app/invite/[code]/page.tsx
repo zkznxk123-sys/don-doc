@@ -16,6 +16,7 @@ export default function InvitePage() {
   const [status, setStatus] = useState<'checking' | 'ready' | 'joining' | 'success' | 'error'>('checking')
   const [error, setError] = useState('')
   const [familyName, setFamilyName] = useState('')
+  const [migratedAccounts, setMigratedAccounts] = useState(0)
   const isLoggedIn = !!isSignedIn
 
   useEffect(() => {
@@ -41,6 +42,7 @@ export default function InvitePage() {
       }
 
       setFamilyName(data.familyName)
+      setMigratedAccounts(data.migratedAccounts || 0)
       setStatus('success')
     } catch {
       setError('오류가 발생했습니다.')
@@ -76,6 +78,11 @@ export default function InvitePage() {
             <p className="text-sm text-muted-foreground mb-8">
               <span className="text-foreground font-medium">{familyName}</span> 가족 그룹에 합류했습니다.
             </p>
+            {migratedAccounts > 0 && (
+              <p className="text-xs text-muted-foreground/70 -mt-6 mb-8">
+                기존에 쓰던 계좌 {migratedAccounts}개도 이 가족으로 함께 넘어왔어요.
+              </p>
+            )}
             <button
               onClick={() => router.push('/dashboard')}
               className="w-full h-12 rounded-xl bg-foreground text-background text-sm font-semibold hover:bg-foreground/90 transition-all"

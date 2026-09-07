@@ -12,5 +12,7 @@ export async function POST() {
 export async function GET(req: Request) {
   const url = new URL(req.url)
   const redirectTo = url.searchParams.get('redirect') || '/sign-in'
-  return NextResponse.redirect(new URL(redirectTo, req.url))
+  // 내부 상대경로만 허용 — 절대 URL·프로토콜 상대 URL(//evil.com)로의 open redirect 차단
+  const safeRedirectTo = redirectTo.startsWith('/') && !redirectTo.startsWith('//') ? redirectTo : '/sign-in'
+  return NextResponse.redirect(new URL(safeRedirectTo, req.url))
 }
