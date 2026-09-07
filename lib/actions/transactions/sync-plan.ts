@@ -7,6 +7,7 @@ import {
   planBalanceSync,
   type AccountBalanceInput,
   type BalanceSyncPlan,
+  type SyncCandidate,
   type SyncDecisionInput,
 } from './_account-sync'
 
@@ -28,7 +29,7 @@ export async function planAccountSync(input: {
   excludedNames?: string[]
   autoCreate?: boolean
 }): Promise<
-  | { success: true; plan: BalanceSyncPlan; ownerUserId: string; owners: SyncOwnerOption[] }
+  | { success: true; plan: BalanceSyncPlan; ownerUserId: string; owners: SyncOwnerOption[]; accounts: SyncCandidate[] }
   | { success: false; error: string }
 > {
   const user = await getAuthUser()
@@ -58,5 +59,10 @@ export async function planAccountSync(input: {
     plan,
     ownerUserId,
     owners: members.map(m => ({ id: m.id, name: m.name ?? m.email, isSelf: m.id === user.id })),
+    // 연결 보드의 오른쪽 열 — 가족 계좌 전체 (명의·보유 종목 여부 포함)
+    accounts: snapshot.accounts.map(a => ({
+      accountId: a.id, accountName: a.name, ownerName: a.ownerName,
+      hasHoldings: a.holdingNames.length > 0, balance: a.balance, cashBalance: a.cashBalance,
+    })),
   }
 }

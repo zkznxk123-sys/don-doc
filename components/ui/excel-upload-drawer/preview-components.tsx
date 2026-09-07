@@ -5,15 +5,12 @@
  * 본체 ExcelUploadDrawer에서 분리 — 단순 props 입력·UI 출력만.
  */
 
-import { useState } from 'react'
 import { AlertCircle, CheckCircle2, Loader2, Wand2, Sparkles, SkipForward, X, Image as ImageIcon } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
 import type { ParsedRow, AiStatus } from './parsers'
-import type {
-  BalanceSyncPlan, PlannedRow, SyncCandidate, SyncDecisionInput, SyncDecisionKind,
-  DecisionSource, UnresolvedReason,
-} from '@/lib/actions/transactions/_account-sync'
+import type { BalanceSyncPlan, SyncCandidate, SyncDecisionInput } from '@/lib/actions/transactions/_account-sync'
 import type { SyncOwnerOption } from '@/lib/actions/transactions/sync-plan'
+import { SyncLinkBoard } from './sync-link-board'
 
 // ━━ AI 매핑 상태 카드 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -148,83 +145,7 @@ export function GenericPreviewRow({ row, aiStatus }: { row: ParsedRow; aiStatus:
   )
 }
 
-// ━━ 자산 잔액 동기화 미리보기 (서버 계획 기반, 2026-09-07 재설계) ━━━━━━━━━━━━━
-
-const KIND_LABEL: Record<string, { label: string; tone: string }> = {
-  ACCOUNT:      { label: '계좌 잔액', tone: 'text-muted-foreground' },
-  ACCOUNT_CASH: { label: '예수금',    tone: 'text-savings' },
-  HOLDING_SKIP: { label: '종목 · 잔액 동기화 안 함', tone: 'text-muted-foreground' },
-  IGNORE:       { label: '무시',      tone: 'text-muted-foreground/60' },
-  NEW_ACCOUNT:  { label: '신규 계좌', tone: 'text-ai-400' },
-}
-
-const SOURCE_LABEL: Record<DecisionSource, string> = {
-  binding: '저장된 연결',
-  auto: '자동 제안',
-  user: '방금 선택',
-}
-
-const REASON_LABEL: Record<UnresolvedReason, string> = {
-  no_match: '일치하는 계좌가 없어요',
-  fuzzy_only: '비슷한 계좌가 있어요 — 골라주세요',
-  ambiguous: '같은 이름 계좌가 여러 개예요 — 골라주세요',
-  owner_mismatch: '다른 구성원 명의 계좌예요 — 확인해 주세요',
-  binding_target_missing: '연결됐던 계좌가 삭제됐어요 — 다시 골라주세요',
-}
-
-/** 후보 select 값 인코딩: kind|accountId */
-function encodeChoice(kind: SyncDecisionKind, accountId?: string | null) {
-  return accountId ? `${kind}|${accountId}` : kind
-}
-function decodeChoice(v: string): SyncDecisionInput | null {
-  if (!v) return null
-  const [kind, accountId] = v.split('|') as [SyncDecisionKind, string | undefined]
-  return { kind, targetAccountId: accountId ?? null }
-}
-
-/**
- * 행 하나의 대상 선택 UI — 후보 계좌(잔액/예수금 분기) + 무시 + 신규.
- * 자동 제안·저장된 연결이 있는 행도 "바꾸기"로 열어 다른 대상을 고를 수 있다.
- */
-function DecisionSelect({
-  row, candidates, value, onChange,
-}: {
-  row: PlannedRow
-  candidates: SyncCandidate[]
-  value: string
-  onChange: (v: string) => void
-}) {
-  return (
-    <select
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      className="w-full text-[11px] rounded-md px-1.5 py-1 border border-border bg-background text-foreground outline-hidden"
-    >
-      <option value="">— 대상 선택 —</option>
-      {candidates.map(c => (
-        <optgroup key={c.accountId} label={`${c.accountName}${c.ownerName ? ` · ${c.ownerName}` : ''}`}>
-          <option value={encodeChoice('ACCOUNT', c.accountId)}>
-            계좌 잔액으로 ({formatCurrency(c.balance)})
-          </option>
-          {c.hasHoldings && (
-            <option value={encodeChoice('ACCOUNT_CASH', c.accountId)}>
-              예수금으로 ({formatCurrency(c.cashBalance)})
-            </option>
-          )}
-          {c.hasHoldings && (
-            <option value={encodeChoice('HOLDING_SKIP', c.accountId)}>
-              이 계좌의 종목 (잔액 동기화 안 함)
-            </option>
-          )}
-        </optgroup>
-      ))}
-      <optgroup label="기타">
-        <option value={encodeChoice('NEW_ACCOUNT')}>신규 계좌 만들기 ({row.type})</option>
-        <option value={encodeChoice('IGNORE')}>무시 (앞으로도 동기화 안 함)</option>
-      </optgroup>
-    </select>
-  )
-}
+// ━━ 자산 연결 미리보기 — 명의자 선택 + 연결 보드 (2026-09-07 재설계) ━━━━━━━━━━
 
 export function AccountBalanceDiff({
   plan,
@@ -251,182 +172,56 @@ export function AccountBalanceDiff({
   /** 사용자가 고른 행별 결정 (excelName → 결정) */
   decisions: Record<string, SyncDecisionInput>
   onDecide: (excelName: string, decision: SyncDecisionInput | null) => void
-  /** "바꾸기"에서 후보가 없을 때 고를 전체 계좌 목록 */
+  /** 오른쪽 열 — 가족 계좌 전체 (서버 계획과 같은 스냅샷) */
   allAccounts: SyncCandidate[]
 }) {
-  const [editing, setEditing] = useState<Set<string>>(new Set())
   if (!plan && !loading) return null
 
   const rows = plan?.rows ?? []
   const toggleable = rows.filter(r => r.decision.kind !== 'HOLDING_SKIP')
   const allOn = toggleable.length > 0 && toggleable.every(r => !excludedNames.has(r.excelName))
   const someOn = toggleable.some(r => !excludedNames.has(r.excelName))
-  const blockingCount = plan?.blocking.length ?? 0
+  const ownerName = owners.find(o => o.id === ownerUserId)?.name ?? null
 
   return (
     <div className="mt-1 space-y-2">
-      {owners.length > 1 && (
-        <div className="flex items-center justify-between gap-2 px-0.5">
-          <span className="text-[11px] text-muted-foreground">이 파일의 자산 명의자</span>
-          <select
-            value={ownerUserId}
-            onChange={e => onOwnerChange(e.target.value)}
-            className="text-[11px] rounded-md px-1.5 py-1 border border-border bg-background text-foreground outline-hidden"
-          >
-            {owners.map(o => (
-              <option key={o.id} value={o.id}>{o.name}{o.isSelf ? ' (나)' : ''}</option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      <div className="rounded-lg border border-border overflow-hidden">
-        <div className="grid grid-cols-[28px_1fr_auto] items-center bg-muted/40 px-2.5 py-1.5 border-b border-border">
+      <div className="flex items-center justify-between gap-2 px-0.5">
+        <label className="flex items-center gap-1.5 text-[11px] text-muted-foreground cursor-pointer">
           <input
             type="checkbox"
             checked={allOn}
             ref={el => { if (el) el.indeterminate = !allOn && someOn }}
             onChange={() => onToggleAll(!allOn)}
             className="w-3.5 h-3.5 cursor-pointer accent-foreground"
-            title="동기화 전체 on/off"
           />
-          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">엑셀 행 → 대상</span>
-          <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wide text-right">
-            {loading ? <Loader2 className="w-3 h-3 animate-spin inline" /> : '잔액 변경'}
-          </span>
-        </div>
-        <div className={cn('divide-y divide-border/60 max-h-[260px] overflow-y-auto', loading && 'opacity-60')}>
-          {rows.map(r => {
-            const d = r.decision
-            const excluded = excludedNames.has(r.excelName)
-            const isEditing = editing.has(r.excelName)
-            const userChoice = decisions[r.excelName]
-            const choiceValue = userChoice ? encodeChoice(userChoice.kind, userChoice.targetAccountId) : ''
-            const candidates = d.kind === 'UNRESOLVED' && d.candidates.length > 0 ? d.candidates : allAccounts
-            const needsInput = d.kind === 'UNRESOLVED' || d.kind === 'CONFLICT'
-
-            // 종목: 토글 불가, 잔액 안 씀
-            if (d.kind === 'HOLDING_SKIP' && !isEditing) {
-              return (
-                <div key={r.excelName} className="grid grid-cols-[28px_1fr_auto] items-center px-2.5 py-1.5">
-                  <span className="text-[10px] text-muted-foreground/40 select-none">—</span>
-                  <div className="min-w-0">
-                    <p className="text-xs text-foreground truncate">{r.excelName}</p>
-                    <span className="text-[10px] text-muted-foreground">
-                      {d.accountName ? `${d.accountName} 안의 종목` : '종목'} — 잔액 동기화 안 함
-                      <button type="button" onClick={() => setEditing(prev => new Set(prev).add(r.excelName))} className="ml-1.5 underline-offset-2 hover:underline">바꾸기</button>
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground tabular-nums pl-2 shrink-0">{formatCurrency(r.balance)}</p>
-                </div>
-              )
-            }
-
-            // 대상 확정 행 (계좌 잔액 · 예수금 · 신규 · 무시)
-            if (!needsInput && !isEditing) {
-              const meta = KIND_LABEL[d.kind] ?? KIND_LABEL.ACCOUNT
-              const target = d.kind === 'ACCOUNT' || d.kind === 'ACCOUNT_CASH' ? d.accountName : null
-              const old = d.kind === 'ACCOUNT' || d.kind === 'ACCOUNT_CASH' ? d.oldBalance : null
-              const diff = old === null ? null : r.balance - old
-              const source = 'source' in d ? SOURCE_LABEL[d.source] : ''
-              return (
-                <label
-                  key={r.excelName}
-                  className={cn('grid grid-cols-[28px_1fr_auto] items-center px-2.5 py-1.5 cursor-pointer', excluded && 'opacity-40')}
-                >
-                  <input
-                    type="checkbox"
-                    checked={!excluded}
-                    onChange={() => onToggle(r.excelName)}
-                    className="w-3.5 h-3.5 cursor-pointer accent-foreground"
-                  />
-                  <div className="min-w-0">
-                    <p className="text-xs text-foreground truncate">
-                      {r.excelName}
-                      {target && target !== r.excelName && <span className="text-muted-foreground"> → {target}</span>}
-                    </p>
-                    <span className={cn('text-[10px]', meta.tone)}>
-                      {meta.label}{source ? ` · ${source}` : ''}
-                      {r.mergedCount > 1 && ` · ${r.mergedCount}행 합산 (${(r.parts ?? []).map(p => formatCurrency(p)).join(' + ')})`}
-                      {d.kind === 'IGNORE' && ' · 이 행은 앞으로 동기화하지 않아요'}
-                      <button
-                        type="button"
-                        onClick={e => { e.preventDefault(); setEditing(prev => new Set(prev).add(r.excelName)) }}
-                        className="ml-1.5 text-muted-foreground underline-offset-2 hover:underline"
-                      >바꾸기</button>
-                    </span>
-                  </div>
-                  <div className="text-right pl-2 shrink-0">
-                    <p className="text-xs text-foreground tabular-nums">{formatCurrency(r.balance)}</p>
-                    {diff !== null && diff !== 0 && (
-                      <p className={cn('text-[10px] tabular-nums', diff > 0 ? 'text-income' : 'text-destructive')}>
-                        {diff > 0 ? '+' : '-'}{formatCurrency(Math.abs(diff))}
-                      </p>
-                    )}
-                    {diff === 0 && <p className="text-[10px] text-muted-foreground/50">변동 없음</p>}
-                  </div>
-                </label>
-              )
-            }
-
-            // 확인 필요 · 충돌 · 편집 중
-            const reason = d.kind === 'UNRESOLVED'
-              ? REASON_LABEL[d.reason]
-              : d.kind === 'CONFLICT'
-                ? `'${d.withExcelNames.join(', ')}'와 같은 대상(${d.accountName})이에요 — 하나만 남기거나 다른 대상을 골라주세요`
-                : '대상을 바꿔주세요'
-            return (
-              <div
-                key={r.excelName}
-                className={cn(
-                  'grid grid-cols-[28px_1fr_auto] items-start px-2.5 py-1.5 gap-y-1',
-                  excluded && 'opacity-40',
-                  needsInput && !excluded && 'bg-warning-soft/40',
-                )}
-              >
-                <input
-                  type="checkbox"
-                  checked={!excluded}
-                  onChange={() => onToggle(r.excelName)}
-                  className="w-3.5 h-3.5 cursor-pointer accent-foreground mt-0.5"
-                />
-                <div className="min-w-0 space-y-1">
-                  <p className="text-xs text-foreground truncate">
-                    {r.excelName}
-                    {r.mergedCount > 1 && <span className="text-muted-foreground"> · {r.mergedCount}행 합산</span>}
-                  </p>
-                  <p className={cn('text-[10px] flex items-center gap-1', d.kind === 'CONFLICT' ? 'text-destructive' : 'text-warning')}>
-                    <AlertCircle className="w-3 h-3 shrink-0" />
-                    <span className="truncate">{reason}</span>
-                  </p>
-                  {!excluded && (
-                    <DecisionSelect
-                      row={r}
-                      candidates={candidates}
-                      value={choiceValue}
-                      onChange={v => {
-                        onDecide(r.excelName, decodeChoice(v))
-                        if (v) setEditing(prev => { const n = new Set(prev); n.delete(r.excelName); return n })
-                      }}
-                    />
-                  )}
-                </div>
-                <p className="text-xs text-foreground tabular-nums pl-2 shrink-0">{formatCurrency(r.balance)}</p>
-              </div>
-            )
-          })}
-          {rows.length === 0 && loading && (
-            <div className="px-2.5 py-3 text-[11px] text-muted-foreground">계좌와 맞춰보는 중...</div>
-          )}
-        </div>
+          전체 {allOn ? '해제' : '선택'}
+        </label>
+        {owners.length > 1 && (
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] text-muted-foreground">이 파일의 자산 명의자</span>
+            <select
+              value={ownerUserId}
+              onChange={e => onOwnerChange(e.target.value)}
+              className="text-[11px] rounded-md px-1.5 py-1 border border-border bg-background text-foreground outline-hidden"
+            >
+              {owners.map(o => (
+                <option key={o.id} value={o.id}>{o.name}{o.isSelf ? ' (나)' : ''}</option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
-      {blockingCount > 0 && (
-        <p className="text-[11px] text-warning flex items-center gap-1 px-0.5">
-          <AlertCircle className="w-3 h-3 shrink-0" />
-          확인이 필요한 행 {blockingCount}개 — 대상을 고르거나 체크를 해제하면 등록할 수 있어요.
-        </p>
-      )}
+      <SyncLinkBoard
+        plan={plan}
+        loading={loading}
+        accounts={allAccounts}
+        ownerName={ownerName}
+        excludedNames={excludedNames}
+        decisions={decisions}
+        onToggle={onToggle}
+        onDecide={onDecide}
+      />
     </div>
   )
 }

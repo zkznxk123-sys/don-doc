@@ -113,7 +113,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
   const [sourceOwnerId, setSourceOwnerId] = useState<string>(userId)
   // 사용자가 미리보기에서 고른 행별 결정 (excelName → 결정)
   const [syncDecisions, setSyncDecisions] = useState<Record<string, SyncDecisionInput>>({})
-  // "바꾸기"에서 고를 전체 계좌 후보 (계획 스냅샷과 같은 소스)
+  // 연결 보드 오른쪽 열 — 가족 계좌 전체 (계획 스냅샷과 같은 소스)
   const [allSyncCandidates, setAllSyncCandidates] = useState<SyncCandidate[]>([])
 
   // 월 필터 (뱅크샐러드 전용)
@@ -169,17 +169,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         if (res.success) {
           setSyncPlan(res.plan)
           setSyncOwners(res.owners)
-          // 후보 전체 목록: 계획에 등장한 후보 + 계좌 API (한 번만)
-          if (allSyncCandidates.length === 0) {
-            fetch('/api/accounts').then(r => r.json()).then(d => {
-              if (d.success && d.accounts) {
-                setAllSyncCandidates((d.accounts as { id: string; name: string; balance: number; cashBalance?: number; holdingNames?: string[] }[]).map(a => ({
-                  accountId: a.id, accountName: a.name, ownerName: null,
-                  hasHoldings: (a.holdingNames?.length ?? 0) > 0, balance: a.balance, cashBalance: a.cashBalance ?? 0,
-                })))
-              }
-            }).catch(() => {})
-          }
+          setAllSyncCandidates(res.accounts)
         } else {
           toast.error(res.error)
         }
@@ -188,8 +178,6 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
       }
     }, 150)
     return () => { cancelled = true; clearTimeout(timer) }
-    // allSyncCandidates는 1회 로드 트리거용 — 의존성에 넣으면 재계획 루프
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [accountBalances, sourceOwnerId, syncDecisions, excludedAccountNames, assetTemplate])
 
   // ── AI 카테고리 매핑 (중복 체크 선행) ──

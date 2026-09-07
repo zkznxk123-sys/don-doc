@@ -343,3 +343,13 @@ npx tsx prisma/seed-demo.ts        # 데모 가족 시드 (가명 데이터)
 - 색상은 ad-hoc Tailwind(`text-emerald-500`·`text-red-500` 등) 금지 — globals.css의 `.text-income`·`.text-expense`·`.text-warning`·`.text-savings` viz 유틸 사용
 - 랜딩 페이지(`components/marketing/LandingPage.tsx`)는 Solid Modern(`docs/BRAND_GUIDE.md` §6 시각 정체성·§14 랜딩 히어로) — 딥 포레스트 다크+골드, 2026-07-08 다크 전환(구 라이트 단일·dark-luxury 서술 모두 폐기). 다른 페이지는 globals.css 토큰 우회 금지. 히어로는 `landing/VideoHeroLight.tsx`(자체 제작 다크+골드 브랜드 영상 `public/landing/hero.mp4`, 2026-07-08 완성. docs/design/hero-explorations.md)
 - `app/api/demo/data/route.ts`는 무인증 — demo 계정 데이터(description·memo·feedPost.content)에 실명·실숫자가 섞이지 않게 시드 점검 필요
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->
