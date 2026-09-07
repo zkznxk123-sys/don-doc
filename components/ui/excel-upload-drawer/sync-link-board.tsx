@@ -241,13 +241,38 @@ export function SyncLinkBoard({
   }
   const onGrabUp = (e: React.PointerEvent<Element>) => {
     if (!drag) return
-    const { excelName, moved } = drag
-    const at = contentPoint(e)
-    const target = moved ? targetUnder(e.clientX, e.clientY) : null
-    setDrag(null); setHoverTarget(null)
-    if (!moved) { setSelected(prev => (prev === excelName ? null : excelName)); return }
-    if (target) decideTarget(excelName, target, at)
+    // 짧게 누름 = 고정 선택 토글. 이동한 드래그의 드롭 처리는 window pointerup 리스너가 맡는다(중복 방지).
+    if (!drag.moved) {
+      const { excelName } = drag
+      setDrag(null); setHoverTarget(null)
+      setSelected(prev => (prev === excelName ? null : excelName))
+    }
+    try { e.currentTarget.releasePointerCapture(e.pointerId) } catch {}
   }
+  // 안전망: 포인터 캡처를 잃어(요소 재마운트 등) pointerup이 안 오면 window에서 드래그를 끝낸다. Esc로 취소.
+  useEffect(() => {
+    if (!drag) return
+    const end = (e: PointerEvent) => {
+      const { excelName, moved } = drag
+      const target = moved ? targetUnder(e.clientX, e.clientY) : null
+      const c = containerRef.current
+      const cr = c?.getBoundingClientRect()
+      setDrag(null); setHoverTarget(null)
+      if (moved && target && cr && c) decideTarget(excelName, target, { x: e.clientX - cr.left + c.scrollLeft, y: e.clientY - cr.top + c.scrollTop })
+    }
+    const cancel = (e: KeyboardEvent) => { if (e.key === 'Escape') { setDrag(null); setHoverTarget(null) } }
+    window.addEventListener('pointerup', end)
+    window.addEventListener('pointercancel', end)
+    window.addEventListener('keydown', cancel)
+    return () => {
+      window.removeEventListener('pointerup', end)
+      window.removeEventListener('pointercancel', end)
+      window.removeEventListener('keydown', cancel)
+    }
+    // decideTarget·targetUnder는 렌더마다 새로 만들어지는 클로저 — drag가 바뀔 때만 다시 걸면 충분
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drag])
+
   const grabHandlers = (excelName: string) => ({
     onPointerDown: onGrabDown(excelName),
     onPointerMove: onGrabMove,
@@ -323,7 +348,7 @@ export function SyncLinkBoard({
             const width = isActive ? l.style.width + 1.5 : l.style.width
             // 선 자체 — hover로 강조, 누른 채 끌면 연결 이동, 짧게 누르면 고정 선택
             const hit = {
-              className: cn('cursor-grab active:cursor-grabbing touch-none', drag ? 'pointer-events-none' : 'pointer-events-auto'),
+              className: 'pointer-events-auto cursor-grab active:cursor-grabbing touch-none',
               stroke: 'transparent', strokeWidth: 16, fill: 'none',
               onMouseEnter: () => !drag && setHoverRow(l.key),
               onMouseLeave: () => !drag && setHoverRow(null),
@@ -334,7 +359,7 @@ export function SyncLinkBoard({
               <circle
                 cx={cx} cy={cy} r={isActive ? 7 : 5}
                 fill="currentColor"
-                className={cn('cursor-grab active:cursor-grabbing touch-none', drag ? 'pointer-events-none' : 'pointer-events-auto')}
+                className={'pointer-events-auto cursor-grab active:cursor-grabbing touch-none'}
                 onMouseEnter={() => !drag && setHoverRow(l.key)}
                 onMouseLeave={() => !drag && setHoverRow(null)}
                 {...(l.excluded ? {} : grabHandlers(l.key))}
@@ -353,7 +378,7 @@ export function SyncLinkBoard({
                   {/* 미연결 행은 ? 원 자체가 손잡이 */}
                   <circle
                     cx={l.from.x + 30} cy={l.from.y} r={9} fill="transparent"
-                    className={cn('cursor-grab active:cursor-grabbing touch-none', drag ? 'pointer-events-none' : 'pointer-events-auto')}
+                    className={'pointer-events-auto cursor-grab active:cursor-grabbing touch-none'}
                     onMouseEnter={() => !drag && setHoverRow(l.key)}
                     onMouseLeave={() => !drag && setHoverRow(null)}
                     {...(l.excluded ? {} : grabHandlers(l.key))}
