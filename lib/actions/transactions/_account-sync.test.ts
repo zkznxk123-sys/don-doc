@@ -1,370 +1,289 @@
 /**
- * _account-sync.test.ts — resolveAccountSyncPlan 분기 검증.
+ * _account-sync.test.ts — planBalanceSync(순수 함수) 분기 검증. (2026-09-07 근원 재설계)
  *
- * dev-2026-06-11 권고 P0 (테스트 갭). 6/10 사고 4건의 공통 원인이 이 함수의
- * 분기 잘못된 경로였음. 회귀 차단을 위해 4 분기를 모두 직접 테스트.
- *
- * mock: prisma + findExcelMapping. 테스트 환경에서 prisma 호출이 mock으로
- * 대체되어 실제 DB 없이 분기 로직만 검증.
+ * 실제 사고를 그대로 케이스로 둔다:
+ *  - 2026-08-09: 업로더 파일이 배우자 동명 계좌 잔액을 덮어씀
+ *  - 2026-09-04: userId=null 레거시 매핑이 동명 가드를 우회해 배우자 계좌를 덮어씀
+ *  - 2026-08-07: 한 배치에서 같은 부모에 "예수금" 자식 2개 생성(이중 계상)
+ *  - 연금저축·연금저축계좌(신) 두 행 → 한 계좌로 합쳐져 업로드마다 flip-flop
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect } from 'vitest'
+import { planBalanceSync, type SnapshotAccount, type SyncSnapshot } from './_account-sync'
 
-vi.mock('@/lib/prisma', () => ({
-  prisma: {
-    account: {
-      findMany: vi.fn(),
-      findFirst: vi.fn(),
-      findUnique: vi.fn(),
-      create: vi.fn(),
-    },
-    excelMapping: {
-      upsert: vi.fn(),
-    },
-  },
-}))
+const ME = 'user_me'
+const SPOUSE = 'user_spouse'
 
-vi.mock('@/lib/actions/excel-mapping', () => ({
-  findExcelMapping: vi.fn(),
-}))
-
-import { resolveAccountSyncPlan } from './_account-sync'
-import { prisma } from '@/lib/prisma'
-import { findExcelMapping } from '@/lib/actions/excel-mapping'
-
-const fam = 'fam_1'
-const uid = 'user_1'
-
-// 헬퍼: prisma.account.findMany를 한 번에 셋업
-function setupAccounts(accounts: Array<{
-  id: string
-  name: string
-  type?: string
-  balance?: number
-  userId?: string | null
-  holdings?: Array<{ name: string }>
-  subAccounts?: Array<{ id: string; name: string; balance: number }>
-}>) {
-  ;(prisma.account.findMany as ReturnType<typeof vi.fn>).mockResolvedValue(
-    accounts.map(a => ({
-      id: a.id,
-      name: a.name,
-      type: a.type ?? 'CASH',
-      balance: a.balance ?? 0,
-      userId: a.userId ?? null,
-      holdings: a.holdings ?? [],
-      subAccounts: a.subAccounts ?? [],
-    }))
-  )
+function acc(partial: Partial<SnapshotAccount> & { id: string; name: string }): SnapshotAccount {
+  return {
+    type: 'CASH', balance: 0, cashBalance: 0, userId: null, ownerName: null, holdingNames: [],
+    ...partial,
+  }
 }
 
-describe('resolveAccountSyncPlan — 분기 검증', () => {
-  beforeEach(() => {
-    vi.clearAllMocks()
-    ;(findExcelMapping as ReturnType<typeof vi.fn>).mockResolvedValue(null)
+function snap(accounts: SnapshotAccount[], bindings: SyncSnapshot['bindings'] = []): SyncSnapshot {
+  return { accounts, bindings }
+}
+
+const decisionOf = (plan: ReturnType<typeof planBalanceSync>, name: string) =>
+  plan.rows.find(r => r.excelName === name)!.decision
+
+describe('planBalanceSync — 자동 제안 (바인딩 없음)', () => {
+  it('빈 입력 → 빈 plan, ready', () => {
+    const p = planBalanceSync({ rows: [], snapshot: snap([]), ownerUserId: ME })
+    expect(p.rows).toEqual([])
+    expect(p.ready).toBe(true)
   })
 
-  it('빈 입력 → 빈 plan', async () => {
-    const result = await resolveAccountSyncPlan({ familyId: fam, userId: uid, accountBalances: [] })
-    expect(result.pendings).toEqual([])
-    expect(result.skipped).toEqual([])
-    expect(result.mappingsToUpsert).toEqual([])
+  it('완전 일치 + 유일 + 명의 미설정 → ACCOUNT(balance) 자동', () => {
+    const p = planBalanceSync({
+      rows: [{ name: '급여', balance: 300 }],
+      snapshot: snap([acc({ id: 'a1', name: '급여', balance: 650 })]),
+      ownerUserId: ME,
+    })
+    expect(decisionOf(p, '급여')).toMatchObject({ kind: 'ACCOUNT', accountId: 'a1', field: 'balance', oldBalance: 650, source: 'auto' })
+    expect(p.ready).toBe(true)
   })
 
-  // ─── 0. ExcelMapping 분기 ───────────────────────────
-
-  it('findExcelMapping은 업로더 userId 축과 함께 조회한다 (부부 동명 계좌 구분, 2026-08-10)', async () => {
-    setupAccounts([])
-    await resolveAccountSyncPlan({
-      familyId: fam, userId: uid,
-      accountBalances: [{ name: '카카오뱅크', balance: 100 }],
+  it('완전 일치 + 보유 종목 계좌 → ACCOUNT_CASH(cashBalance) 자동 (예수금 자식 생성 안 함)', () => {
+    const p = planBalanceSync({
+      rows: [{ name: '한화투자증권 종합매매', balance: 249_410 }],
+      snapshot: snap([acc({ id: 'inv', name: '한화투자증권 종합매매', type: 'INVESTMENT', balance: 3_128_547, cashBalance: 0, userId: ME, holdingNames: ['삼성중공업'] })]),
+      ownerUserId: ME,
     })
-    expect(findExcelMapping).toHaveBeenCalledWith(fam, uid, '카카오뱅크')
+    expect(decisionOf(p, '한화투자증권 종합매매')).toMatchObject({ kind: 'ACCOUNT_CASH', accountId: 'inv', field: 'cashBalance', oldBalance: 0 })
   })
 
-  it('IGNORE mapping → skipped, pendings 없음', async () => {
-    setupAccounts([])
-    ;(findExcelMapping as ReturnType<typeof vi.fn>).mockResolvedValue({
-      mappingType: 'IGNORE',
-      targetAccountId: null,
+  it('공백·대소문자만 다른 이름은 완전 일치로 본다', () => {
+    const p = planBalanceSync({
+      rows: [{ name: 'kb 국민 one통장', balance: 1 }],
+      snapshot: snap([acc({ id: 'a1', name: 'KB국민ONE통장' })]),
+      ownerUserId: ME,
     })
-
-    const result = await resolveAccountSyncPlan({
-      familyId: fam, userId: uid,
-      accountBalances: [{ name: '안혜빈_IRP', balance: 1_000_000 }],
-    })
-
-    expect(result.pendings).toEqual([])
-    expect(result.skipped[0]).toContain('mapping:IGNORE')
-    expect(result.mappingsToUpsert).toEqual([])
+    expect(decisionOf(p, 'kb 국민 one통장').kind).toBe('ACCOUNT')
   })
 
-  it('HOLDING_SKIP mapping → skipped, pendings 없음', async () => {
-    setupAccounts([])
-    ;(findExcelMapping as ReturnType<typeof vi.fn>).mockResolvedValue({
-      mappingType: 'HOLDING_SKIP',
-      targetAccountId: 'acc_parent',
+  it('부분 일치(substring)만 있으면 자동 적용하지 않고 후보로만 — 6/10 안혜빈_IRP 사고 차단', () => {
+    const p = planBalanceSync({
+      rows: [{ name: 'IRP', balance: 100 }],
+      snapshot: snap([acc({ id: 'a1', name: '퇴직연금_IRP (안혜빈, 삼성)', userId: SPOUSE })]),
+      ownerUserId: ME,
     })
-
-    const result = await resolveAccountSyncPlan({
-      familyId: fam, userId: uid,
-      accountBalances: [{ name: '삼성전자', balance: 500_000 }],
-    })
-
-    expect(result.pendings).toEqual([])
-    expect(result.skipped[0]).toContain('mapping:HOLDING_SKIP')
+    const d = decisionOf(p, 'IRP')
+    expect(d).toMatchObject({ kind: 'UNRESOLVED', reason: 'fuzzy_only' })
+    expect(d.kind === 'UNRESOLVED' && d.candidates.map(c => c.accountId)).toEqual(['a1'])
+    expect(p.ready).toBe(false)
+    expect(p.blocking[0].excelName).toBe('IRP')
   })
 
-  it('ACCOUNT mapping + targetAccountId 존재 → pending 추가', async () => {
-    setupAccounts([])
-    ;(findExcelMapping as ReturnType<typeof vi.fn>).mockResolvedValue({
-      mappingType: 'ACCOUNT',
-      targetAccountId: 'acc_existing',
+  it('동명 계좌 2개 + 명의자 소유가 1개 → 그 계좌에만 (2026-08-09 사고 회귀)', () => {
+    const p = planBalanceSync({
+      rows: [{ name: '카카오뱅크 마이너스 통장', balance: 55_318_074, type: 'DEBT' }],
+      snapshot: snap([
+        acc({ id: 'mine', name: '카카오뱅크 마이너스 통장', type: 'DEBT', userId: ME }),
+        acc({ id: 'theirs', name: '카카오뱅크 마이너스 통장', type: 'DEBT', userId: SPOUSE }),
+      ]),
+      ownerUserId: ME,
     })
-    ;(prisma.account.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({ balance: 800_000 })
-
-    const result = await resolveAccountSyncPlan({
-      familyId: fam, userId: uid,
-      accountBalances: [{ name: '연금저축펀드-회사', balance: 1_200_000 }],
-    })
-
-    expect(result.pendings).toEqual([
-      { accountId: 'acc_existing', oldBalance: 800_000, newBalance: 1_200_000 },
-    ])
-    expect(result.skipped).toEqual([])
+    expect(decisionOf(p, '카카오뱅크 마이너스 통장')).toMatchObject({ kind: 'ACCOUNT', accountId: 'mine' })
   })
 
-  it('CASH_SUB mapping + 기존 예수금 → 그 예수금에 업데이트', async () => {
-    setupAccounts([{
-      id: 'acc_parent', name: '국내주식', balance: 0,
-      subAccounts: [{ id: 'sub_cash', name: '예수금', balance: 100_000 }],
-    }])
-    ;(findExcelMapping as ReturnType<typeof vi.fn>).mockResolvedValue({
-      mappingType: 'CASH_SUB',
-      targetAccountId: 'acc_parent',
+  it('동명 계좌 2개 + 명의로도 안 갈림 → UNRESOLVED(ambiguous), 후보 2개', () => {
+    const p = planBalanceSync({
+      rows: [{ name: '주택청약종합저축', balance: 1 }],
+      snapshot: snap([
+        acc({ id: 'x', name: '주택청약종합저축', userId: null }),
+        acc({ id: 'y', name: '주택청약종합저축', userId: null }),
+      ]),
+      ownerUserId: ME,
     })
-
-    const result = await resolveAccountSyncPlan({
-      familyId: fam, userId: uid,
-      accountBalances: [{ name: '국내주식 예수금', balance: 500_000 }],
-    })
-
-    expect(result.pendings).toEqual([
-      { accountId: 'sub_cash', oldBalance: 100_000, newBalance: 500_000 },
-    ])
-    expect(prisma.account.create).not.toHaveBeenCalled()
+    const d = decisionOf(p, '주택청약종합저축')
+    expect(d).toMatchObject({ kind: 'UNRESOLVED', reason: 'ambiguous' })
+    expect(d.kind === 'UNRESOLVED' && d.candidates).toHaveLength(2)
   })
 
-  it('CASH_SUB mapping + 예수금 없음 → 신규 생성', async () => {
-    setupAccounts([{
-      id: 'acc_parent', name: '국내주식', balance: 0, subAccounts: [],
-    }])
-    ;(findExcelMapping as ReturnType<typeof vi.fn>).mockResolvedValue({
-      mappingType: 'CASH_SUB',
-      targetAccountId: 'acc_parent',
+  it('완전 일치 1개지만 다른 구성원 명의 → 자동으로 쓰지 않음(owner_mismatch) — 2026-07-18 사고 회귀', () => {
+    const p = planBalanceSync({
+      rows: [{ name: '카카오뱅크 마이너스 통장', balance: 94_373_730 }],
+      snapshot: snap([acc({ id: 'theirs', name: '카카오뱅크 마이너스 통장', userId: SPOUSE, ownerName: '안혜빈' })]),
+      ownerUserId: ME,
     })
-    ;(prisma.account.create as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'sub_new' })
-
-    const result = await resolveAccountSyncPlan({
-      familyId: fam, userId: uid,
-      accountBalances: [{ name: '국내주식 예수금', balance: 500_000 }],
-    })
-
-    expect(prisma.account.create).toHaveBeenCalledTimes(1)
-    expect(result.pendings).toEqual([
-      { accountId: 'sub_new', oldBalance: 0, newBalance: 500_000 },
-    ])
-    expect(result.cashSubCreated[0]).toContain('국내주식')
+    expect(decisionOf(p, '카카오뱅크 마이너스 통장')).toMatchObject({ kind: 'UNRESOLVED', reason: 'owner_mismatch' })
   })
 
-  // ─── 1·2. fuzzy match + cash-sub 자동 분리 ───────────
-
-  it('증권계좌 fuzzy match (holdings>0) + 예수금 자동 생성', async () => {
-    setupAccounts([{
-      id: 'acc_kr', name: '국내주식 (MTS)', balance: 0,
-      holdings: [{ name: '삼성전자' }],
-      subAccounts: [],
-    }])
-    ;(prisma.account.create as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'sub_new' })
-
-    const result = await resolveAccountSyncPlan({
-      familyId: fam, userId: uid,
-      accountBalances: [{ name: '국내주식', balance: 300_000 }],
+  it('종목명 완전 일치 → HOLDING_SKIP (잔액 안 씀)', () => {
+    const p = planBalanceSync({
+      rows: [{ name: '삼성중공업', balance: 1_000_000 }],
+      snapshot: snap([acc({ id: 'inv', name: '한화투자증권 종합매매', holdingNames: ['삼성중공업'] })]),
+      ownerUserId: ME,
     })
-
-    expect(result.pendings).toEqual([
-      { accountId: 'sub_new', oldBalance: 0, newBalance: 300_000 },
-    ])
-    expect(result.mappingsToUpsert).toEqual([
-      { excelName: '국내주식', mappingType: 'CASH_SUB', targetAccountId: 'acc_kr' },
-    ])
+    expect(decisionOf(p, '삼성중공업')).toMatchObject({ kind: 'HOLDING_SKIP', accountId: 'inv', source: 'auto' })
+    expect(p.ready).toBe(true)
   })
 
-  // ─── 3. holding-skip ───────────────────────────────
-
-  it('계좌 매칭 안 됨 + holding 이름 매칭 → skipped + HOLDING_SKIP mapping', async () => {
-    setupAccounts([{
-      id: 'acc_kr', name: '국내주식', balance: 0,
-      holdings: [{ name: '삼성전자' }],
-      subAccounts: [],
-    }])
-
-    const result = await resolveAccountSyncPlan({
-      familyId: fam, userId: uid,
-      accountBalances: [{ name: '삼성전자', balance: 0 }],
-    })
-
-    expect(result.pendings).toEqual([])
-    expect(result.skipped).toContain('삼성전자')
-    expect(result.mappingsToUpsert).toEqual([
-      { excelName: '삼성전자', mappingType: 'HOLDING_SKIP', targetAccountId: 'acc_kr' },
-    ])
+  it('후보 없음 + autoCreate=false → UNRESOLVED(no_match), 신규 생성 안 함', () => {
+    const p = planBalanceSync({ rows: [{ name: '새 계좌', balance: 5 }], snapshot: snap([]), ownerUserId: ME })
+    expect(decisionOf(p, '새 계좌')).toMatchObject({ kind: 'UNRESOLVED', reason: 'no_match' })
   })
 
-  // ─── 4. 일반 분기 (1b 핵심) ─────────────────────────
-
-  it('4a. fuzzy accountHit 있음 → 그 계좌에 동기화 (6/10 안혜빈_IRP 사고 회귀 차단)', async () => {
-    // 시나리오: 엑셀 row "안혜빈_IRP", 마스터에 "퇴직연금_IRP (안혜빈, 삼성)"가 있음.
-    // 기존 버그: findOrCreateAccount 정확 이름 매칭 실패 → 새 계좌 생성.
-    // 1b 수정: fuzzy hit 사용 → 기존 계좌에 잔액 동기화.
-    setupAccounts([{
-      id: 'acc_irp_anh', name: '퇴직연금_IRP (안혜빈, 삼성)', balance: 5_000_000, holdings: [], subAccounts: [],
-    }])
-
-    const result = await resolveAccountSyncPlan({
-      familyId: fam, userId: uid,
-      accountBalances: [{ name: '안혜빈_IRP', balance: 5_500_000 }],
-    })
-
-    // ⚠️ "안혜빈" fuzzy match는 "안혜빈_IRP"가 "퇴직연금_IRP (안혜빈, 삼성)"의 substring이
-    // 아니라 거꾸로도 substring이 아니라 실제로는 match 못 함. → 4c (차단)로 떨어짐.
-    // 이건 의도된 동작 — 사용자가 ExcelMapping wizard로 명시 매핑하기 전엔 차단.
-    expect(prisma.account.create).not.toHaveBeenCalled()
-    expect(result.skipped[0]).toContain('no_match')
+  it('후보 없음 + autoCreate=true(자산 템플릿) → NEW_ACCOUNT 자동', () => {
+    const p = planBalanceSync({ rows: [{ name: '새 계좌', balance: 5, type: 'PENSION' }], snapshot: snap([]), ownerUserId: ME, autoCreate: true })
+    expect(decisionOf(p, '새 계좌')).toMatchObject({ kind: 'NEW_ACCOUNT', source: 'auto' })
+    expect(p.rows[0].type).toBe('PENSION')
   })
 
-  it('4a. fuzzy accountHit이 정상 매칭되는 경우 → 그 계좌에 동기화', async () => {
-    // 예: "IRP" row, 마스터에 "IRP_안혜빈" 있음 — "IRP"가 substring이라 fuzzy hit.
-    setupAccounts([{
-      id: 'acc_irp', name: 'IRP_안혜빈', balance: 5_000_000, holdings: [], subAccounts: [],
-    }])
-
-    const result = await resolveAccountSyncPlan({
-      familyId: fam, userId: uid,
-      accountBalances: [{ name: 'IRP', balance: 5_500_000 }],
+  it('autoCreate여도 부분 일치 후보가 있으면 생성하지 않고 확인을 요구한다', () => {
+    const p = planBalanceSync({
+      rows: [{ name: '연금저축', balance: 5 }],
+      snapshot: snap([acc({ id: 'a1', name: '연금저축계좌(신)' })]),
+      ownerUserId: ME, autoCreate: true,
     })
+    expect(decisionOf(p, '연금저축')).toMatchObject({ kind: 'UNRESOLVED', reason: 'fuzzy_only' })
+  })
+})
 
-    expect(prisma.account.create).not.toHaveBeenCalled()
-    expect(result.pendings).toEqual([
-      { accountId: 'acc_irp', oldBalance: 5_000_000, newBalance: 5_500_000 },
-    ])
-    expect(result.mappingsToUpsert).toEqual([
-      { excelName: 'IRP', mappingType: 'ACCOUNT', targetAccountId: 'acc_irp' },
-    ])
+describe('planBalanceSync — 바인딩·사용자 결정', () => {
+  it('바인딩(ACCOUNT)이 있으면 이름 매칭 없이 그 계좌로', () => {
+    const p = planBalanceSync({
+      rows: [{ name: '미래에셋', balance: 27_979 }],
+      snapshot: snap(
+        [acc({ id: 'm2', name: '미래에셋2', balance: 27_851, userId: ME })],
+        [{ excelName: '미래에셋', mappingType: 'ACCOUNT', targetAccountId: 'm2' }],
+      ),
+      ownerUserId: ME,
+    })
+    expect(decisionOf(p, '미래에셋')).toMatchObject({ kind: 'ACCOUNT', accountId: 'm2', source: 'binding' })
   })
 
-  it('4c. 매칭 실패 + 명시 의도 없음 → skipped, 신규 계좌 자동 생성 차단(1b)', async () => {
-    // 어떤 fuzzy·holding·mapping도 매칭 안 되는 row가 들어와도
-    // 자동 신규 계좌 생성되지 않고 skipped 처리됨.
-    setupAccounts([])
-
-    const result = await resolveAccountSyncPlan({
-      familyId: fam, userId: uid,
-      accountBalances: [{ name: '알 수 없는 계좌', balance: 100_000 }],
+  it('바인딩 대상 계좌가 삭제됐으면 UNRESOLVED(binding_target_missing) — 조용히 fuzzy로 넘어가지 않음', () => {
+    const p = planBalanceSync({
+      rows: [{ name: '급여', balance: 1 }],
+      snapshot: snap(
+        [acc({ id: 'other', name: '급여' })],
+        [{ excelName: '급여', mappingType: 'ACCOUNT', targetAccountId: 'deleted' }],
+      ),
+      ownerUserId: ME,
     })
-
-    expect(prisma.account.create).not.toHaveBeenCalled()
-    expect(result.pendings).toEqual([])
-    expect(result.skipped).toEqual(['알 수 없는 계좌 (no_match)'])
-    expect(result.mappingsToUpsert).toEqual([])
+    expect(decisionOf(p, '급여')).toMatchObject({ kind: 'UNRESOLVED', reason: 'binding_target_missing' })
   })
 
-  it('4c+autoCreate. 매칭 실패 + 자산 템플릿 import → 파서 type으로 신규 생성', async () => {
-    // 부자공식 등 자산 템플릿 import 경로. autoCreate=true면 미매칭 이름을
-    // 파서 type(REAL_ESTATE 등)으로 신규 생성. 신규 사용자 순자산 통째 등록.
-    setupAccounts([])
-    ;(prisma.account.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue(null)
-    ;(prisma.account.create as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'acc_buja' })
-    ;(prisma.account.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({ balance: 0 })
-
-    const result = await resolveAccountSyncPlan({
-      familyId: fam, userId: uid,
-      accountBalances: [{ name: '아파트', balance: 300_000_000, type: 'REAL_ESTATE' }],
-      autoCreate: true,
+  it('IGNORE·HOLDING_SKIP 바인딩 → 잔액 안 씀', () => {
+    const p = planBalanceSync({
+      rows: [{ name: '카드', balance: 1 }, { name: 'KODEX 2차전지', balance: 2 }],
+      snapshot: snap([], [
+        { excelName: '카드', mappingType: 'IGNORE', targetAccountId: null },
+        { excelName: 'KODEX 2차전지', mappingType: 'HOLDING_SKIP', targetAccountId: null },
+      ]),
+      ownerUserId: ME,
     })
-
-    expect(prisma.account.create).toHaveBeenCalled()
-    expect(result.pendings).toEqual([
-      { accountId: 'acc_buja', oldBalance: 0, newBalance: 300_000_000 },
-    ])
-    expect(result.skipped).toEqual([])
-    // 매핑은 저장 안 함 — 다음 업로드는 fuzzy match로 잡힘
-    expect(result.mappingsToUpsert).toEqual([])
+    expect(decisionOf(p, '카드').kind).toBe('IGNORE')
+    expect(decisionOf(p, 'KODEX 2차전지').kind).toBe('HOLDING_SKIP')
+    expect(p.ready).toBe(true)
   })
 
-  it('autoCreate 기본값 false → 미지정 시 기존 차단 동작 유지', async () => {
-    setupAccounts([])
-    const result = await resolveAccountSyncPlan({
-      familyId: fam, userId: uid,
-      accountBalances: [{ name: '미지의 계좌', balance: 100_000 }],
+  it('사용자 결정 > 바인딩 > 자동 — 결정이 UNRESOLVED를 푼다', () => {
+    const p = planBalanceSync({
+      rows: [{ name: 'IRP', balance: 100 }],
+      snapshot: snap([acc({ id: 'a1', name: '퇴직연금_IRP (한상빈, 미래)', userId: ME, holdingNames: ['채권'] })]),
+      ownerUserId: ME,
+      decisions: { IRP: { kind: 'ACCOUNT_CASH', targetAccountId: 'a1' } },
     })
-    expect(prisma.account.create).not.toHaveBeenCalled()
-    expect(result.skipped).toEqual(['미지의 계좌 (no_match)'])
+    expect(decisionOf(p, 'IRP')).toMatchObject({ kind: 'ACCOUNT_CASH', accountId: 'a1', source: 'user' })
+    expect(p.ready).toBe(true)
   })
 
-  it('4b. 매칭 실패 + NEW_ACCOUNT 명시 매핑 → 신규 생성 허용', async () => {
-    setupAccounts([])
-    ;(findExcelMapping as ReturnType<typeof vi.fn>).mockResolvedValue({
-      mappingType: 'NEW_ACCOUNT',
-      targetAccountId: null,
+  it('사용자 결정이 바인딩을 덮는다 (다음 업로드부터 새 결정이 바인딩됨)', () => {
+    const p = planBalanceSync({
+      rows: [{ name: '연금저축', balance: 40_508 }],
+      snapshot: snap(
+        [acc({ id: 'new', name: '연금저축계좌(신)', userId: ME }), acc({ id: 'mirae', name: '개인연금_연저펀 (한상빈, 미래)', userId: ME, holdingNames: ['펀드'] })],
+        [{ excelName: '연금저축', mappingType: 'ACCOUNT', targetAccountId: 'new' }],
+      ),
+      ownerUserId: ME,
+      decisions: { 연금저축: { kind: 'ACCOUNT_CASH', targetAccountId: 'mirae' } },
     })
-    // findOrCreateAccount 내부 호출: findFirst → findMany → create
-    ;(prisma.account.findFirst as ReturnType<typeof vi.fn>).mockResolvedValue(null)
-    ;(prisma.account.create as ReturnType<typeof vi.fn>).mockResolvedValue({ id: 'acc_new' })
-    ;(prisma.account.findUnique as ReturnType<typeof vi.fn>).mockResolvedValue({ balance: 0 })
-
-    const result = await resolveAccountSyncPlan({
-      familyId: fam, userId: uid,
-      accountBalances: [{ name: '새 계좌', balance: 200_000, type: 'CASH' }],
-    })
-
-    expect(prisma.account.create).toHaveBeenCalled()
-    expect(result.pendings).toEqual([
-      { accountId: 'acc_new', oldBalance: 0, newBalance: 200_000 },
-    ])
+    expect(decisionOf(p, '연금저축')).toMatchObject({ kind: 'ACCOUNT_CASH', accountId: 'mirae', source: 'user' })
   })
 
-  // ─── 동명 계좌 방어 (2026-08-10 부부 '카카오뱅크 마이너스 통장' 사고 회귀) ───
-
-  it('동명 계좌 2개 + 명의로도 안 갈림 → 자동 반영 안 함(skip), 조용한 덮어쓰기 없음', async () => {
-    setupAccounts([
-      { id: 'acc_wife', name: '카카오뱅크 마이너스 통장', balance: 52_341_705, userId: 'user_wife', type: 'DEBT' },
-      { id: 'acc_other', name: '카카오뱅크 마이너스 통장', balance: 92_929_060, userId: 'user_other', type: 'DEBT' },
-    ])
-
-    const result = await resolveAccountSyncPlan({
-      familyId: fam, userId: uid, // 업로더는 둘 중 어느 것도 소유 안 함
-      accountBalances: [{ name: '카카오뱅크 마이너스 통장', balance: 94_431_236, type: 'DEBT' }],
+  it('제외(excludedNames)된 행은 EXCLUDED — 충돌·blocking 계산에서 빠진다', () => {
+    const p = planBalanceSync({
+      rows: [{ name: '없는 계좌', balance: 1 }],
+      snapshot: snap([]),
+      ownerUserId: ME,
+      excludedNames: ['없는 계좌'],
     })
+    expect(decisionOf(p, '없는 계좌').kind).toBe('EXCLUDED')
+    expect(p.ready).toBe(true)
+  })
+})
 
-    expect(result.pendings).toEqual([])          // 어느 계좌도 덮어쓰지 않음
-    expect(result.skipped[0]).toContain('동명 계좌')
-    expect(result.mappingsToUpsert).toEqual([])  // 애매하면 자동 매핑도 안 남김
+describe('planBalanceSync — 같은 표기명 행 합산', () => {
+  it('한 파일에 같은 이름 2행(뱅샐 종합매매 원화·외화 예수금) → 한 행으로 합산, 충돌 아님 (2026-08-07 예수금 자식 2개 회귀)', () => {
+    const p = planBalanceSync({
+      rows: [{ name: '종합매매', balance: 1_174_550, type: 'INVESTMENT' }, { name: '종합매매', balance: 177_233, type: 'INVESTMENT' }],
+      snapshot: snap(
+        [acc({ id: 'inv', name: '한화투자증권 종합매매', userId: ME, holdingNames: ['삼성중공업'], cashBalance: 1_414_220 })],
+        [{ excelName: '종합매매', mappingType: 'ACCOUNT_CASH', targetAccountId: 'inv' }],
+      ),
+      ownerUserId: ME,
+    })
+    expect(p.rows).toHaveLength(1)
+    expect(p.rows[0]).toMatchObject({ excelName: '종합매매', balance: 1_351_783, mergedCount: 2, parts: [1_174_550, 177_233] })
+    expect(p.rows[0].decision).toMatchObject({ kind: 'ACCOUNT_CASH', accountId: 'inv', oldBalance: 1_414_220 })
+    expect(p.ready).toBe(true)
   })
 
-  it('동명 계좌 2개 + 업로더 명의로 유일하게 좁혀지면 → 그 계좌에만 반영', async () => {
-    setupAccounts([
-      { id: 'acc_spouse', name: '카카오뱅크 마이너스 통장', balance: 52_341_705, userId: 'user_spouse', type: 'DEBT' },
-      { id: 'acc_mine', name: '카카오뱅크 마이너스 통장', balance: 92_929_060, userId: uid, type: 'DEBT' },
-    ])
+  it('단일 행은 mergedCount 1, parts 없음', () => {
+    const p = planBalanceSync({ rows: [{ name: 'A', balance: 1 }], snapshot: snap([acc({ id: 'a', name: 'A' })]), ownerUserId: ME })
+    expect(p.rows[0].mergedCount).toBe(1)
+    expect(p.rows[0].parts).toBeUndefined()
+  })
+})
 
-    const result = await resolveAccountSyncPlan({
-      familyId: fam, userId: uid,
-      accountBalances: [{ name: '카카오뱅크 마이너스 통장', balance: 94_431_236, type: 'DEBT' }],
+describe('planBalanceSync — 대상 충돌', () => {
+  it('두 행이 같은 계좌·필드를 가리키면 둘 다 CONFLICT (연금저축 flip-flop 회귀)', () => {
+    const p = planBalanceSync({
+      rows: [{ name: '연금저축', balance: 40_508 }, { name: '연금저축계좌(신)', balance: 25 }],
+      snapshot: snap(
+        [acc({ id: 'new', name: '연금저축계좌(신)', userId: ME })],
+        [
+          { excelName: '연금저축', mappingType: 'ACCOUNT', targetAccountId: 'new' },
+          { excelName: '연금저축계좌(신)', mappingType: 'ACCOUNT', targetAccountId: 'new' },
+        ],
+      ),
+      ownerUserId: ME,
     })
+    expect(decisionOf(p, '연금저축')).toMatchObject({ kind: 'CONFLICT', accountId: 'new', withExcelNames: ['연금저축계좌(신)'] })
+    expect(decisionOf(p, '연금저축계좌(신)')).toMatchObject({ kind: 'CONFLICT', withExcelNames: ['연금저축'] })
+    expect(p.ready).toBe(false)
+    expect(p.blocking).toHaveLength(2)
+  })
 
-    expect(result.pendings).toEqual([
-      { accountId: 'acc_mine', oldBalance: 92_929_060, newBalance: 94_431_236 },
-    ])
-    expect(result.skipped).toEqual([])
+  it('같은 계좌라도 필드가 다르면(balance vs cashBalance) 충돌 아님', () => {
+    const p = planBalanceSync({
+      rows: [{ name: '평가액', balance: 1 }, { name: '예수금행', balance: 2 }],
+      snapshot: snap(
+        [acc({ id: 'inv', name: '증권', holdingNames: ['x'] })],
+        [
+          { excelName: '평가액', mappingType: 'ACCOUNT', targetAccountId: 'inv' },
+          { excelName: '예수금행', mappingType: 'ACCOUNT_CASH', targetAccountId: 'inv' },
+        ],
+      ),
+      ownerUserId: ME,
+    })
+    expect(p.ready).toBe(true)
+  })
+
+  it('한 행을 제외하면 충돌이 풀린다', () => {
+    const p = planBalanceSync({
+      rows: [{ name: 'A', balance: 1 }, { name: 'B', balance: 2 }],
+      snapshot: snap([acc({ id: 't', name: 'T' })], [
+        { excelName: 'A', mappingType: 'ACCOUNT', targetAccountId: 't' },
+        { excelName: 'B', mappingType: 'ACCOUNT', targetAccountId: 't' },
+      ]),
+      ownerUserId: ME,
+      excludedNames: ['B'],
+    })
+    expect(decisionOf(p, 'A').kind).toBe('ACCOUNT')
+    expect(p.ready).toBe(true)
   })
 })

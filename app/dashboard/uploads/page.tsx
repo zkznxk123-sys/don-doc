@@ -1,11 +1,13 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { ChevronDown, ChevronRight, FileSpreadsheet, History, TrendingUp, TrendingDown, Loader2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, FileSpreadsheet, History, TrendingUp, TrendingDown, Loader2, Undo2 } from 'lucide-react'
+import { toast } from 'sonner'
 import { cn, formatCurrency } from '@/lib/utils'
 import {
   getRecentUploadBatches,
   getUploadBatchDetail,
+  revertUploadBatch,
   type UploadBatchSummary,
   type UploadBatchDetail,
 } from '@/lib/actions/uploads'
@@ -13,7 +15,11 @@ import {
 const SOURCE_LABEL: Record<string, string> = {
   excel: '엑셀 업로드',
   'manual-sync': '잔액 동기화',
+  'excel-revert': '되돌리기',
+  'manual-repair': '데이터 복구',
   banksalad: '뱅크샐러드',
+  'chat-ai': 'AI 챗',
+  'chat-ai-revert': 'AI 챗 되돌리기',
 }
 
 function formatDateTime(iso: string): string {
@@ -28,16 +34,13 @@ export default function UploadsPage() {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({})
   const [loadingDetail, setLoadingDetail] = useState<Record<string, boolean>>({})
 
-  useEffect(() => {
-    let alive = true
-    getRecentUploadBatches({ days: 90, limit: 50 }).then(b => {
-      if (alive) {
-        setBatches(b)
-        setLoading(false)
-      }
-    })
-    return () => { alive = false }
+  const loadBatches = useCallback(async () => {
+    const b = await getRecentUploadBatches({ days: 90, limit: 50 })
+    setBatches(b)
+    setLoading(false)
   }, [])
+
+  useEffect(() => { void loadBatches() }, [loadBatches])
 
   const toggle = useCallback(async (batchId: string) => {
     setExpanded(prev => ({ ...prev, [batchId]: !prev[batchId] }))
@@ -113,7 +116,12 @@ export default function UploadsPage() {
                       <>
                         {detail.balanceChanges.length > 0 && (
                           <section>
-                            <h3 className="text-xs font-semibold text-muted-foreground mb-2">자산 변경</h3>
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="text-xs font-semibold text-muted-foreground">자산 변경</h3>
+                              {detail.revertible && (
+                                <RevertButton batchId={detail.batchId} onDone={() => { void loadBatches(); setDetails(prev => { const n = { ...prev }; delete n[detail.batchId]; return n }) }} />
+                              )}
+                            </div>
                             <ul className="divide-y divide-border/40 rounded-lg border border-border/40 bg-background/40 px-3">
                               {detail.balanceChanges.map(c => (
                                 <BalanceChangeRow key={c.id} change={c} />
@@ -168,14 +176,57 @@ function formatPercent(pct: number | null, up: boolean): string | null {
   return `${up ? '+' : ''}${pct}%`
 }
 
-function BalanceChangeRow({ change }: { change: { accountName: string; oldBalance: number; newBalance: number; delta: number; deltaPercent: number | null } }) {
+function RevertButton({ batchId, onDone }: { batchId: string; onDone: () => void }) {
+  const [busy, setBusy] = useState(false)
+  const [confirming, setConfirming] = useState(false)
+  const run = async () => {
+    setBusy(true)
+    try {
+      const res = await revertUploadBatch(batchId)
+      if (res.success) {
+        const skip = res.skipped?.length ? ` · ${res.skipped.length}건은 이후 변경이 있어 건너뛰었어요` : ''
+        toast.success(`계좌 ${res.revertedCount}개 잔액을 되돌렸어요${skip}`)
+        onDone()
+      } else {
+        toast.error(res.error ?? '되돌리기에 실패했어요.')
+      }
+    } finally {
+      setBusy(false); setConfirming(false)
+    }
+  }
+  if (confirming) {
+    return (
+      <span className="flex items-center gap-1.5 text-[11px]">
+        <span className="text-muted-foreground">이 배치의 잔액 변경을 전부 되돌릴까요?</span>
+        <button type="button" onClick={run} disabled={busy} className="px-2 py-0.5 rounded-md bg-foreground text-background disabled:opacity-50">
+          {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : '되돌리기'}
+        </button>
+        <button type="button" onClick={() => setConfirming(false)} disabled={busy} className="px-2 py-0.5 rounded-md border border-border text-muted-foreground">취소</button>
+      </span>
+    )
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => setConfirming(true)}
+      className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+    >
+      <Undo2 className="h-3 w-3" /> 되돌리기
+    </button>
+  )
+}
+
+function BalanceChangeRow({ change }: { change: { accountName: string; oldBalance: number; newBalance: number; delta: number; deltaPercent: number | null; field?: string } }) {
   const up = change.delta > 0
   const flat = change.delta === 0
   const pctLabel = formatPercent(change.deltaPercent, up)
   const isNewAsset = change.oldBalance === 0 && change.delta > 0
   return (
     <li className="grid grid-cols-[minmax(0,1fr)_auto] sm:grid-cols-[minmax(0,1fr)_auto_auto] gap-x-3 gap-y-0.5 items-center text-xs py-2">
-      <span className="font-medium truncate">{change.accountName}</span>
+      <span className="font-medium truncate">
+        {change.accountName}
+        {change.field === 'cashBalance' && <span className="ml-1 text-[10px] text-savings">예수금</span>}
+      </span>
       <span className="hidden sm:flex items-center gap-1.5 tabular-nums whitespace-nowrap text-muted-foreground">
         {isNewAsset ? (
           <span className="text-[10px] text-muted-foreground/60">신규</span>

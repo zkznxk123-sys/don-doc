@@ -14,6 +14,8 @@ import {
   createManyTransactions, syncAccountBalancesOnly, checkTransactionDuplicates,
   type BulkTransactionRow,
 } from '@/lib/actions/transactions/bulk'
+import { planAccountSync, type SyncOwnerOption } from '@/lib/actions/transactions/sync-plan'
+import type { BalanceSyncPlan, SyncCandidate, SyncDecisionInput } from '@/lib/actions/transactions/_account-sync'
 import { autoDetectAndExcludeTransfers, autoDetectAndExcludeCancellations, autoDetectAndExcludeSharedCardDuplicates } from '@/lib/actions/transactions/auto-exclude'
 import { syncBanksaladCategories } from '@/lib/actions/categories'
 import { useDefaultVisibility } from '@/lib/hooks/useDefaultVisibility'
@@ -34,32 +36,29 @@ import { InputGuide } from '@/components/dashboard/InputGuide'
 import { mapRow, detectMonthlyLedger, parseMonthlyLedger, type ParsedRow, type AiStatus, type UploadMode } from './excel-upload-drawer/parsers'
 import {
   AiMappingStatus, BanksaladPreviewRow, GenericPreviewRow, AccountBalanceDiff, ColSelect,
-  listToggleableBalanceNames, DetectionBadge, ImagePreExtractPanel,
-  type DbAccountWithHoldings,
+  countSyncTargets, DetectionBadge, ImagePreExtractPanel,
 } from './excel-upload-drawer/preview-components'
 
 /**
- * 잔액 sync skip 사유를 두 종류로 갈라 안내한다 (2026-08-10 동명계좌 사고 후속).
- * - 동명 계좌 중복: 엑셀이 이름만 보고 계좌를 못 가린 것 → 별도 경고 토스트로 계좌명 노출,
- *   "직접 수정" 안내(계좌 추가는 오히려 악화라 안내 안 함).
- * - 미매칭: 기존대로 "계좌 추가 후 재업로드" 안내 문자열로 반환(성공 토스트에 합류).
- * @returns 미매칭 안내 문구(없으면 '')
+ * 동기화 결과의 skip 요약(무시·종목)을 성공 토스트 설명으로. (2026-09-07 재설계 —
+ * 이름 매칭 실패는 더 이상 조용히 건너뛰지 않고 미리보기에서 확정을 요구하므로 여기서 안내할 게 없다.)
  */
-function reportSyncSkips(skipped: string[] | undefined): string {
+function describeSyncSkips(skipped: string[] | undefined): string {
   if (!skipped?.length) return ''
-  const ambiguous = skipped.filter(s => s.includes('동명 계좌'))
-  const noMatch = skipped.filter(s => !s.includes('동명 계좌'))
-  if (ambiguous.length > 0) {
-    const names = ambiguous.map(s => s.split(' (')[0]).join(', ')
-    toast.warning(`같은 이름 계좌가 여러 개라 ${ambiguous.length}건은 자동 반영하지 않았어요`, {
-      description: `${names} — 자산 관리에서 해당 계좌 잔액을 직접 수정해 주세요.`,
-      duration: Infinity,
-      action: { label: '자산 관리로', onClick: () => { window.location.href = '/dashboard/assets' } },
-    })
-  }
-  return noMatch.length > 0
-    ? ` 계좌를 찾지 못한 ${noMatch.length}건은 건너뛰었어요. 자산 관리에서 계좌를 추가한 뒤 다시 업로드해 주세요.`
-    : ''
+  const ignored = skipped.filter(s => s.endsWith('(무시)')).length
+  const holdings = skipped.filter(s => s.endsWith('(종목)')).length
+  const parts: string[] = []
+  if (holdings > 0) parts.push(`종목 ${holdings}건은 시세로 관리`)
+  if (ignored > 0) parts.push(`무시 ${ignored}건`)
+  return parts.length > 0 ? ` · ${parts.join(' · ')}` : ''
+}
+
+/** 서버가 확정 필요 행을 돌려줬을 때의 안내 */
+function reportBlocking(blocking: { excelName: string; reason: string }[] | undefined, fallback: string) {
+  if (!blocking?.length) { toast.error(fallback); return }
+  toast.error(`확정이 필요한 계좌가 ${blocking.length}개 있어요.`, {
+    description: blocking.slice(0, 3).map(b => `${b.excelName}: ${b.reason}`).join(' / '),
+  })
 }
 
 // ━━ 메인 컴포넌트 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -104,10 +103,18 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
 
   // 뱅샐현황 계좌 잔액 목록
   const [accountBalances, setAccountBalances] = useState<AccountBalance[]>([])
-  // DB 현재 계좌 잔액 (자산 diff 미리보기용). holdingNames 포함 — 종목을 holding으로 옮긴 경우 매칭에 사용
-  const [dbAccounts, setDbAccounts] = useState<DbAccountWithHoldings[]>([])
   // 사용자가 잔액 동기화에서 제외한 계좌명 set — 체크박스 unchecked
   const [excludedAccountNames, setExcludedAccountNames] = useState<Set<string>>(new Set())
+  // 잔액 동기화 계획 (서버 planAccountSync) — 행별 대상·확인 필요·충돌. 2026-09-07 재설계.
+  const [syncPlan, setSyncPlan] = useState<BalanceSyncPlan | null>(null)
+  const [syncPlanLoading, setSyncPlanLoading] = useState(false)
+  const [syncOwners, setSyncOwners] = useState<SyncOwnerOption[]>([])
+  // 이 파일의 자산 명의자 — 기본은 업로더. 배우자 파일을 대신 올릴 때 바꾼다.
+  const [sourceOwnerId, setSourceOwnerId] = useState<string>(userId)
+  // 사용자가 미리보기에서 고른 행별 결정 (excelName → 결정)
+  const [syncDecisions, setSyncDecisions] = useState<Record<string, SyncDecisionInput>>({})
+  // "바꾸기"에서 고를 전체 계좌 후보 (계획 스냅샷과 같은 소스)
+  const [allSyncCandidates, setAllSyncCandidates] = useState<SyncCandidate[]>([])
 
   // 월 필터 (뱅크샐러드 전용)
   const [availableMonths, setAvailableMonths] = useState<string[]>([])
@@ -143,6 +150,47 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
       })
       .catch(() => {})
   }, [isOpen])
+
+  // ── 잔액 동기화 계획 — 행·명의자·결정·제외가 바뀔 때마다 서버에 재계획 요청 ──
+  useEffect(() => {
+    if (accountBalances.length === 0) { setSyncPlan(null); return }
+    let cancelled = false
+    setSyncPlanLoading(true)
+    const timer = setTimeout(async () => {
+      try {
+        const res = await planAccountSync({
+          accountBalances,
+          ownerUserId: sourceOwnerId,
+          decisions: syncDecisions,
+          excludedNames: Array.from(excludedAccountNames),
+          autoCreate: !!assetTemplate,
+        })
+        if (cancelled) return
+        if (res.success) {
+          setSyncPlan(res.plan)
+          setSyncOwners(res.owners)
+          // 후보 전체 목록: 계획에 등장한 후보 + 계좌 API (한 번만)
+          if (allSyncCandidates.length === 0) {
+            fetch('/api/accounts').then(r => r.json()).then(d => {
+              if (d.success && d.accounts) {
+                setAllSyncCandidates((d.accounts as { id: string; name: string; balance: number; cashBalance?: number; holdingNames?: string[] }[]).map(a => ({
+                  accountId: a.id, accountName: a.name, ownerName: null,
+                  hasHoldings: (a.holdingNames?.length ?? 0) > 0, balance: a.balance, cashBalance: a.cashBalance ?? 0,
+                })))
+              }
+            }).catch(() => {})
+          }
+        } else {
+          toast.error(res.error)
+        }
+      } finally {
+        if (!cancelled) setSyncPlanLoading(false)
+      }
+    }, 150)
+    return () => { cancelled = true; clearTimeout(timer) }
+    // allSyncCandidates는 1회 로드 트리거용 — 의존성에 넣으면 재계획 루프
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountBalances, sourceOwnerId, syncDecisions, excludedAccountNames, assetTemplate])
 
   // ── AI 카테고리 매핑 (중복 체크 선행) ──
   const runAiMapping = useCallback(async (parsedRows: ParsedRow[]) => {
@@ -277,24 +325,9 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
           setIsBanksalad(true)
           setBanksaladMeta({ skipped: banksaladResult.skippedCount, sheet: banksaladResult.sheetName })
           setExcludedAccountNames(new Set())   // 새 파일 = 전부 선택 상태로 시작
+          setSyncDecisions({})
           setAccountBalances(banksaladResult.accountBalances)
           setRows(parsed)
-
-          // DB 계좌 잔액 로드 (자산 diff 미리보기용)
-          if (banksaladResult.accountBalances.length > 0) {
-            fetch('/api/accounts')
-              .then(r => r.json())
-              .then(d => {
-                if (d.success && d.accounts) {
-                  setDbAccounts((d.accounts as DbAccountWithHoldings[]).map(a => ({
-                    name: a.name,
-                    balance: a.balance,
-                    holdingNames: a.holdingNames ?? [],
-                  })))
-                }
-              })
-              .catch(() => {})
-          }
           setRawHeaders([]); setColMap(null); setRawData([])
 
           toast.success('뱅크샐러드 양식을 감지했어요.', {
@@ -319,6 +352,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
           setIsBanksalad(false); setBanksaladMeta(null)
           setRawHeaders([]); setColMap(null); setRawData([]); setRows([])
           setExcludedAccountNames(new Set())   // 새 파일 = 전부 선택 상태로 시작
+          setSyncDecisions({})
           setAccountBalances(balances)
           setAssetTemplate({
             name: assetResult.name, count: balances.length,
@@ -326,17 +360,6 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
             monthlyCount: assetResult.monthlyCount,
           })
           setUploadMode('assets')   // 거래 없음 — 자산만 고정
-
-          fetch('/api/accounts')
-            .then(r => r.json())
-            .then(d => {
-              if (d.success && d.accounts) {
-                setDbAccounts((d.accounts as DbAccountWithHoldings[]).map(a => ({
-                  name: a.name, balance: a.balance, holdingNames: a.holdingNames ?? [],
-                })))
-              }
-            })
-            .catch(() => {})
 
           toast.success(`${assetResult.name} 양식을 감지했어요.`, {
             description: assetResult.monthlyCount > 1
@@ -428,7 +451,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         const balances: AccountBalance[] = result.assets.map((a: { name: string; balance: number; type: AccountBalance['type'] }) => ({
           name: a.name, balance: a.balance, type: a.type,
         }))
-        setExcludedAccountNames(new Set())
+        setExcludedAccountNames(new Set()); setSyncDecisions({})
         setAccountBalances(balances)
         setRows([]); setColMap(null); setDetectedPreset(null)
         setAssetTemplate({
@@ -470,7 +493,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         const balances: AccountBalance[] = result.assets.map((a: { name: string; balance: number; type: AccountBalance['type'] }) => ({
           name: a.name, balance: a.balance, type: a.type,
         }))
-        setExcludedAccountNames(new Set())
+        setExcludedAccountNames(new Set()); setSyncDecisions({})
         setAccountBalances(balances)
         setRows([]); setColMap(null); setDetectedPreset(null)
         setAssetTemplate({
@@ -501,7 +524,8 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
     setAssetTemplate(null)
     setBanksaladMeta(null); setColMap(null); setRawData([])
     setRows([]); setRawHeaders([]); setAiStatus('idle'); setAiMappedCount(0)
-    setAccountBalances([]); setDbAccounts([]); setExcludedAccountNames(new Set())
+    setAccountBalances([]); setExcludedAccountNames(new Set())
+    setSyncPlan(null); setSyncDecisions({}); setSourceOwnerId(userId); setAllSyncCandidates([])
     setAvailableMonths([]); setSelectedMonths(new Set())
     setUploadMode('cashflow')
     setLlmGrid(null); setAiExtracting(false); setPendingImage(null)
@@ -545,13 +569,23 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
     setIsLoading(true)
     const startedAt = Date.now()
     try {
-      // 사용자가 unchecked한 항목은 동기화에서 제외
+      // 사용자가 unchecked한 항목은 동기화에서 제외 — 서버도 excludedNames로 같은 판단
       const filteredBalances = accountBalances.filter(ab => !excludedAccountNames.has(ab.name))
+      // 잔액 동기화 옵션 — 명의자·행별 결정·제외를 서버에 그대로 넘겨 재계획 후 적용
+      const syncOptions = {
+        ownerUserId: sourceOwnerId,
+        decisions: syncDecisions,
+        excludedNames: Array.from(excludedAccountNames),
+        autoCreate: !!assetTemplate,
+      }
+      if (uploadMode !== 'cashflow' && filteredBalances.length > 0 && syncPlan && !syncPlan.ready) {
+        reportBlocking(syncPlan.blocking, '확정이 필요한 계좌가 있어요.')
+        return
+      }
 
       // ── 자산만 업데이트 모드 ──
       if (uploadMode === 'assets') {
-        // 자산 템플릿 import는 미매칭 계좌 자동 생성 (신규 사용자 순자산 통째 등록)
-        const result = await syncAccountBalancesOnly(familyId, userId, filteredBalances, { fileName: fileName ?? undefined, autoCreate: !!assetTemplate })
+        const result = await syncAccountBalancesOnly(familyId, userId, filteredBalances, { fileName: fileName ?? undefined, ...syncOptions })
         if (result.success) {
           const skipCount = result.skipped?.length ?? 0
 
@@ -566,14 +600,11 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
           }
 
           const histDesc = historyCount > 0 ? ` · 순자산 추이 ${historyCount}개월 등록` : ''
-          const noMatchDesc = reportSyncSkips(result.skipped)
-          if (noMatchDesc) {
-            toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료${histDesc}`, {
-              description: noMatchDesc.trim(),
-            })
-          } else {
-            toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료${histDesc}`)
-          }
+          const createdDesc = result.createdCount ? ` · 신규 계좌 ${result.createdCount}개` : ''
+          const skipDesc = describeSyncSkips(result.skipped)
+          toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료${histDesc}`, {
+            description: (createdDesc + skipDesc).replace(/^ · /, '') || undefined,
+          })
           track('excel_upload_completed', {
             upload_mode: 'assets',
             row_count: 0,
@@ -585,7 +616,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
           })
           handleClose(); onSuccess()
         } else {
-          toast.error(result.error ?? '잔액 업데이트에 실패했어요.')
+          reportBlocking(result.blocking, result.error ?? '잔액 업데이트에 실패했어요.')
         }
         return
       }
@@ -594,9 +625,9 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
       if (validRows.length === 0) {
         // 신규 거래 없어도 both 모드에서 자산 잔액은 업데이트
         if (uploadMode === 'both' && filteredBalances.length > 0) {
-          const result = await syncAccountBalancesOnly(familyId, userId, filteredBalances, { fileName: fileName ?? undefined })
+          const result = await syncAccountBalancesOnly(familyId, userId, filteredBalances, { fileName: fileName ?? undefined, ...syncOptions })
           if (result.success) {
-            const desc = `새로 등록할 거래 내역이 없어요.${reportSyncSkips(result.skipped)}`
+            const desc = `새로 등록할 거래 내역이 없어요.${describeSyncSkips(result.skipped)}`
             toast.success(`계좌 잔액 ${result.syncedCount}개 업데이트 완료`, { description: desc })
             track('excel_upload_completed', {
               upload_mode: 'both_assets_only',
@@ -609,7 +640,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
             })
             handleClose(); onSuccess()
           } else {
-            toast.error(result.error ?? '잔액 업데이트에 실패했어요.')
+            reportBlocking(result.blocking, result.error ?? '잔액 업데이트에 실패했어요.')
           }
           return
         }
@@ -627,7 +658,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         accountName: r.accountName || r._paymentMethod || '기본 계좌',
       }))
       const submitOptions = {
-        ...(uploadMode === 'both' && filteredBalances.length > 0 ? { accountBalances: filteredBalances } : {}),
+        ...(uploadMode === 'both' && filteredBalances.length > 0 ? { accountBalances: filteredBalances, ...syncOptions } : {}),
         ...(fileName ? { fileName } : {}),
       }
       const result = await createManyTransactions(userId, familyId, submitRows, submitOptions)
@@ -644,9 +675,8 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         const dupDesc = skipped > 0
           ? `총 ${total}건 중 ${skipped}건은 이미 존재하여 무시됨`
           : null
-        // 동명 계좌 중복은 reportSyncSkips가 별도 경고 토스트로 처리, 미매칭만 문구 반환
-        const noMatchDesc = reportSyncSkips(result.skippedSync)
-        const syncSkipDesc = noMatchDesc ? noMatchDesc.trim() : null
+        const skipDesc = describeSyncSkips(result.skippedSync)
+        const syncSkipDesc = skipDesc ? skipDesc.replace(/^ · /, '') : null
 
         if (saved === 0) {
           const desc = [dupDesc, syncSkipDesc].filter(Boolean).join(' · ') || undefined
@@ -694,7 +724,7 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         })
         handleClose(); onSuccess()
       } else {
-        toast.error(result.error ?? '등록에 실패했어요.')
+        reportBlocking(result.blocking, result.error ?? '등록에 실패했어요.')
       }
     } finally {
       setIsLoading(false)
@@ -940,8 +970,11 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                   </header>
                   <div className="p-3">
                     <AccountBalanceDiff
-                      accountBalances={accountBalances}
-                      dbAccounts={dbAccounts}
+                      plan={syncPlan}
+                      loading={syncPlanLoading}
+                      owners={syncOwners}
+                      ownerUserId={sourceOwnerId}
+                      onOwnerChange={id => { setSourceOwnerId(id); setSyncDecisions({}) }}
                       excludedNames={excludedAccountNames}
                       onToggle={name => setExcludedAccountNames(prev => {
                         const next = new Set(prev)
@@ -951,8 +984,18 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
                       })}
                       onToggleAll={allOn => {
                         if (allOn) setExcludedAccountNames(new Set())
-                        else setExcludedAccountNames(new Set(listToggleableBalanceNames(accountBalances, dbAccounts)))
+                        else setExcludedAccountNames(new Set(
+                          (syncPlan?.rows ?? []).filter(r => r.decision.kind !== 'HOLDING_SKIP').map(r => r.excelName)
+                        ))
                       }}
+                      decisions={syncDecisions}
+                      onDecide={(name, decision) => setSyncDecisions(prev => {
+                        const next = { ...prev }
+                        if (decision) next[name] = decision
+                        else delete next[name]
+                        return next
+                      })}
+                      allAccounts={allSyncCandidates}
                     />
                   </div>
                 </section>
@@ -974,27 +1017,36 @@ export function ExcelUploadDrawer({ isOpen, onClose, onSuccess, userId, familyId
         {/* ── 등록 버튼 ── */}
         {hasFile && (
           <DrawerFooter className="shrink-0 pt-0 px-4 pb-6 space-y-2">
+            {(() => {
+              // 자산 동기화가 포함된 모드에서 계획이 확정되지 않았으면(확인 필요·충돌) 등록 차단
+              const syncActive = uploadMode !== 'cashflow' && accountBalances.length > 0
+              const syncBlocked = syncActive && (syncPlanLoading || !syncPlan || !syncPlan.ready)
+              const syncCount = countSyncTargets(syncPlan, excludedAccountNames)
+              const disabled = isLoading || syncBlocked || (
+                uploadMode === 'assets' ? false : uploadMode === 'both' && accountBalances.length > 0 ? false : validRows.length === 0
+              )
+              return (
             <button
               onClick={handleSubmit}
-              disabled={isLoading || (uploadMode === 'assets' ? false : uploadMode === 'both' && accountBalances.length > 0 ? false : validRows.length === 0)}
+              disabled={disabled}
               className={cn(
                 'w-full h-12 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2',
-                isLoading || (uploadMode !== 'assets' && validRows.length === 0)
+                disabled
                   ? 'bg-muted text-muted-foreground cursor-not-allowed'
                   : 'bg-foreground text-background hover:bg-foreground/90 active:scale-[0.98]'
               )}
             >
               {(() => {
-                // holding 매칭(서버 skip) 제외 + 사용자 unchecked 제외 = 실제 등록될 개수
-                const toggleable = new Set(listToggleableBalanceNames(accountBalances, dbAccounts))
-                const syncCount = accountBalances.filter(ab => toggleable.has(ab.name) && !excludedAccountNames.has(ab.name)).length
                 if (isLoading) return <><Loader2 className="w-4 h-4 animate-spin" />{uploadMode === 'assets' ? '업데이트 중...' : '등록 중...'}</>
+                if (syncActive && syncPlan && !syncPlan.ready) return `확인 필요 ${syncPlan.blocking.length}개 — 대상을 골라주세요`
                 if (uploadMode === 'assets') return `계좌 잔액 ${syncCount}개 업데이트`
                 if (validRows.length === 0 && uploadMode === 'both' && syncCount > 0) return `계좌 잔액 ${syncCount}개 업데이트`
                 if (aiStatus === 'pending') return `${validRows.length}건 등록하기 (분류 생략)`
                 return `${validRows.length}건 등록하기`
               })()}
             </button>
+              )
+            })()}
           </DrawerFooter>
         )}
       </DrawerContent>

@@ -78,9 +78,10 @@ lib/
   feature-flags.ts  # 제품 라인 분리 (full/lite) — 단일 진입점, features 8-flag
   actions/          # 서버 액션 ('use server')
     transactions/
-      bulk.ts            # createManyTransactions·syncAccountBalancesOnly (server action)
-      _account-sync.ts   # resolveAccountSyncPlan helper (private, testable, no 'use server')
-      _dedup.ts          # dedupPendings helper
+      bulk.ts            # createManyTransactions·syncAccountBalancesOnly (server action) — 계획 확정 → $transaction 적용
+      sync-plan.ts       # planAccountSync (server action) — 업로드 미리보기용 읽기 전용 계획
+      _account-sync.ts   # planBalanceSync 순수 함수 + loadSyncSnapshot (no 'use server', 테스트 22건)
+      _apply-sync.ts     # applyBalanceSyncPlan — 트랜잭션 안에서 계좌 생성·잔액/예수금 갱신·로그·바인딩
     transaction.ts  # 거래 CRUD, bulkUpdate
     investments.ts  # 매매 기록 (addTradeRecord — prisma.$transaction 원자성)
     categories.ts   # getFamilyCategories, addCustomCategory
@@ -203,11 +204,13 @@ if (isLite()) { /* lite 분기 */ }
 - **ExchangeRate** — USD-KRW 환율 스냅샷
 - **FamilyPost** — 가족 피드 게시물 (+PostComment·PostReaction)
 - **Scenario** — 시나리오 분석 (임베딩 기반 부분 대체·비교 뷰)
-- **ExcelMapping** — 엑셀 표기명 → dondoc 계좌 매핑 (Phase A~D 신규, 6/5 도입). 일괄 등록 시 자동 lookup + 사용자 결정 자동 upsert. 관리 UI: `/dashboard/settings/excel-mappings`
+- **ExcelMapping** — 엑셀 표기명 → dondoc 계좌 **바인딩**(2026-09-07 재설계). 축은 `(familyId, userId=명의자, excelName)` — 업로더가 아니라 "이 파일이 누구 명의 자산인가". userId=null 레거시 행은 조회하지 않는다. 관리 UI: `/dashboard/settings/excel-mappings`
+- **Account.cashBalance** — 보유 종목 계좌의 예수금(현금). 표시 잔액 = balance(Σ종목 평가액) + cashBalance. 구 "예수금" 자식 계좌 모델은 폐지·이관(2026-09-07)
+- **BalanceChangeLog.field** — 'balance' | 'cashBalance'. **UploadBatch.revertedAt** — `revertUploadBatch`로 되돌린 배치
 
 ### Prisma enum
 - **Role** — CFO · CO_CFO · MEMBER
-- **ExcelMappingType** — ACCOUNT · CASH_SUB · HOLDING_SKIP · NEW_ACCOUNT · IGNORE (엑셀 매핑 타입)
+- **ExcelMappingType** — ACCOUNT(계좌 잔액) · ACCOUNT_CASH(예수금) · HOLDING_SKIP · NEW_ACCOUNT · IGNORE (구 CASH_SUB는 ACCOUNT_CASH로 이관)
 - **AccountType** — CASH · INVESTMENT · CRYPTO · STO · PENSION · REAL_ESTATE · DEBT · CREDIT_CARD
 - **ShareLevel** — PUBLIC · BALANCE_ONLY · PRIVATE
 - **DebtType** — MORTGAGE · JEONSE_DEPOSIT · CREDIT_LOAN · OVERDRAFT · ETC
@@ -238,6 +241,18 @@ if (isLite()) { /* lite 분기 */ }
 - 대분류 우선, 없으면 소분류 fallback
 - `CATEGORY_MAP` 에서 매핑 정의
 - 이후 `/api/ai/map-categories` 에서 AI로 DB 카테고리 ID 매핑
+
+### 자산 잔액 동기화 (2026-09-07 근원 재설계)
+
+원칙: **추측하지 말고, 멈추고, 보여주고, 되돌릴 수 있게.** 배경: 이름 fuzzy 매칭 + 이름 키 매핑이 배우자 계좌를 조용히 덮어쓴 사고(2026-08-09, 09-04), 같은 부모에 예수금 자식 2개 생성(이중 계상), 두 행 → 한 계좌 dedup flip-flop.
+
+- **식별은 바인딩으로만**: `ExcelMapping(명의자, 표기명) → 대상(계좌 잔액 / 예수금 / 종목 skip / 무시 / 신규)`. 바인딩이 없으면 정규화 **완전 일치 + 유일 + 명의 일치**일 때만 자동 제안을 적용. 부분 일치(substring)는 후보로만 보여주고 적용하지 않는다. 다른 구성원 명의 계좌엔 자동으로 쓰지 않는다.
+- **명의자 선택**: 드로어 자산 카드에서 "이 파일의 자산 명의자"(기본 = 업로더). 배우자 뱅샐 파일을 대신 올릴 때 바꾼다.
+- **충돌은 오류**: 두 행이 같은 (계좌, 필드)를 가리키면 CONFLICT — 하나를 제외하거나 대상을 바꿔야 등록 가능. 조용한 합산(dedup) 없음.
+- **계획/적용 분리**: `planBalanceSync`(순수, DB 쓰기 없음) → 미리보기 → 서버가 결정을 받아 재계획 → `applyBalanceSyncPlan`을 `prisma.$transaction` 안에서. 배치·거래·잔액·로그·바인딩이 전부 성공하거나 전부 취소.
+- **되돌리기**: `/dashboard/uploads` 배치 상세의 "되돌리기" → `revertUploadBatch`(oldBalance 복원, 이후 변경 있으면 그 계좌는 건너뜀, `excel-revert` 배치로 기록).
+- 금지: 이름 매칭 확대·휴리스틱 추가로 "더 똑똑한 추측" 만들기. 사람이 확정해야 할 순간은 미리보기로 넘긴다.
+- 데이터 이관: `scripts/migrate-asset-sync-20260907.ts` (dry-run 기본, `--apply`).
 
 ---
 

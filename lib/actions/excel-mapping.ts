@@ -12,6 +12,8 @@ export interface ExcelMappingData {
   targetAccountId: string | null
   targetAccountName: string | null
   targetAccountType: string | null
+  /** 명의자(바인딩 축) 이름 — null이면 레거시 공용 행(더 이상 조회되지 않음) */
+  ownerName: string | null
   updatedAt: Date
 }
 
@@ -25,7 +27,7 @@ async function getCurrentFamilyId(): Promise<string | null> {
   return user?.familyId ?? null
 }
 
-// familyId + 내부 userId 동시 필요할 때(매핑 저장은 업로더 축을 기록). 2026-08-10.
+// familyId + 내부 userId 동시 필요할 때. 설정 화면의 수동 바인딩은 본인 명의 축으로 저장한다.
 async function getCurrentUserFamily(): Promise<{ userId: string; familyId: string } | null> {
   const { userId: clerkId } = await auth()
   if (!clerkId) return null
@@ -58,13 +60,15 @@ export async function listExcelMappings(): Promise<ExcelMappingData[]> {
   const familyId = await getCurrentFamilyId()
   if (!familyId) return []
 
-  const rows = await prisma.excelMapping.findMany({
-    where: { familyId },
-    orderBy: { updatedAt: 'desc' },
-    include: {
+  const [rows, members] = await Promise.all([
+    prisma.excelMapping.findMany({
+      where: { familyId },
+      orderBy: { updatedAt: 'desc' },
       // targetAccountId가 String이라 relation 정의 안 함 — 별도 lookup
-    },
-  })
+    }),
+    prisma.user.findMany({ where: { familyId }, select: { id: true, name: true, email: true } }),
+  ])
+  const memberName = new Map(members.map(m => [m.id, m.name ?? m.email]))
 
   const accountIds = rows
     .map(r => r.targetAccountId)
@@ -86,6 +90,7 @@ export async function listExcelMappings(): Promise<ExcelMappingData[]> {
       targetAccountId: r.targetAccountId,
       targetAccountName: acc?.name ?? null,
       targetAccountType: acc?.type ?? null,
+      ownerName: r.userId ? memberName.get(r.userId) ?? null : null,
       updatedAt: r.updatedAt,
     }
   })
@@ -103,8 +108,8 @@ export async function upsertExcelMapping(input: {
   const excelName = input.excelName.trim()
   if (!excelName) return { success: false, error: '엑셀 표기명이 비어있습니다' }
 
-  // ACCOUNT/CASH_SUB/HOLDING_SKIP은 targetAccountId 필수 — NEW_ACCOUNT/IGNORE는 null 허용
-  const needsAccount = ['ACCOUNT', 'CASH_SUB', 'HOLDING_SKIP'].includes(input.mappingType)
+  // ACCOUNT/ACCOUNT_CASH/HOLDING_SKIP은 targetAccountId 필수 — NEW_ACCOUNT/IGNORE는 null 허용
+  const needsAccount = ['ACCOUNT', 'ACCOUNT_CASH', 'HOLDING_SKIP'].includes(input.mappingType)
   if (needsAccount && !input.targetAccountId) {
     return { success: false, error: '대상 계좌를 선택하세요' }
   }
@@ -152,6 +157,7 @@ export async function upsertExcelMapping(input: {
       targetAccountId: row.targetAccountId,
       targetAccountName: acc?.name ?? null,
       targetAccountType: acc?.type ?? null,
+      ownerName: null,
       updatedAt: row.updatedAt,
     },
   }
@@ -171,35 +177,4 @@ export async function deleteExcelMapping(id: string): Promise<{ success: boolean
   await prisma.excelMapping.delete({ where: { id } })
   revalidatePath('/dashboard/settings')
   return { success: true }
-}
-
-/**
- * 엑셀 자동 매칭 시 사용자가 미리 확정한 매핑을 우선 적용.
- * 호출 측은 mappingType에 따라 분기:
- * - ACCOUNT/CASH_SUB: targetAccountId 사용 (CASH_SUB은 부모 계좌 ID)
- * - HOLDING_SKIP/IGNORE: 잔액 동기화 skip
- * - NEW_ACCOUNT: 신규 계좌 생성 진행
- */
-export async function findExcelMapping(
-  familyId: string,
-  userId: string | null,
-  excelName: string,
-): Promise<{ mappingType: ExcelMappingType; targetAccountId: string | null } | null> {
-  const normalized = excelName.trim()
-  if (!normalized) return null
-
-  // 업로더(userId) 본인 매핑 우선 — 부부 동명 계좌 구분(2026-08-10).
-  if (userId) {
-    const own = await prisma.excelMapping.findUnique({
-      where: { familyId_userId_excelName: { familyId, userId, excelName: normalized } },
-      select: { mappingType: true, targetAccountId: true },
-    })
-    if (own) return own
-  }
-  // 폴백: 레거시 공용 매핑(userId=null). 축 도입 전 저장분 계속 유효.
-  const legacy = await prisma.excelMapping.findFirst({
-    where: { familyId, userId: null, excelName: normalized },
-    select: { mappingType: true, targetAccountId: true },
-  })
-  return legacy ?? null
 }

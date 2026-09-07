@@ -1,35 +1,24 @@
 /**
- * accountBalances 동기화 헬퍼 — private helpers.
+ * 자산 잔액 동기화 계획(plan) — 순수 함수 + 스냅샷 로더. (2026-09-07 근원 재설계)
  *
- * bulk.ts('use server')에서 분리한 이유: server action 파일 안 함수를 export하면
- * 자동으로 server action 엔드포인트가 되어 클라이언트 호출이 가능해진다. 이 헬퍼는
- * 내부용이라 직접 노출하지 않아야 하므로 일반 모듈로 분리. 동시에 테스트 가능해짐.
+ * 원칙 — "추측하지 말고, 멈추고, 보여주고, 되돌릴 수 있게":
+ *   1) 식별은 바인딩(ExcelMapping: 명의자 + 표기명 → 대상)으로만. 바인딩이 없으면
+ *      정규화 **완전 일치 + 유일** 일 때만 자동 제안을 적용하고, 부분 일치(substring)는
+ *      후보로만 보여준다(적용 안 함). 다른 구성원 명의 계좌에는 자동으로 쓰지 않는다.
+ *   2) 두 행이 같은 대상(계좌·필드)을 가리키면 조용히 합치지 않고 CONFLICT로 막는다.
+ *   3) 계획 단계는 DB에 아무것도 쓰지 않는다. 생성·갱신은 apply(_apply-sync.ts)에서
+ *      단일 트랜잭션으로.
+ *   4) 레거시(userId=null) 바인딩은 조회하지 않는다 — 8/10 동명 가드를 우회해 배우자
+ *      계좌를 덮어쓴 경로(2026-09-04 사고).
  *
- * 분기 우선순위:
- *   1) ExcelMapping lookup (사용자 명시 매핑이 진실)
- *   2) fuzzy account match → 증권계좌면 cash-sub '예수금' 자식 생성
- *   3) holding 이름 매칭 → 잔액 동기화 skip (이미 holding으로 들어감)
- *   4a) fuzzy hit → 매칭된 계좌에 잔액 sync
- *   4b) 매칭 실패 + NEW_ACCOUNT 명시 매핑 → 신규 생성 허용
- *   4c) 매칭 실패 + 명시 의도 없음 → 차단(asset-input-redesign 1b), pending mapping
+ * 이 파일은 'use server'가 아니다(내부 헬퍼를 엔드포인트로 노출하지 않기 위해).
+ * 순수 함수 planBalanceSync는 prisma 없이 테스트한다.
  */
 
 import { prisma } from '@/lib/prisma'
-import { findExcelMapping } from '@/lib/actions/excel-mapping'
-import type { PendingBalance } from './_dedup'
+import type { ExcelMappingType } from '@prisma/client'
 
-export type MappingToUpsert = {
-  excelName: string
-  mappingType: 'ACCOUNT' | 'CASH_SUB' | 'HOLDING_SKIP'
-  targetAccountId: string
-}
-
-export interface BalanceSyncPlan {
-  pendings: PendingBalance[]
-  mappingsToUpsert: MappingToUpsert[]
-  skipped: string[]
-  cashSubCreated: string[]
-}
+// ━━ 입력 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 export type AccountTypeForSync = 'CASH' | 'INVESTMENT' | 'PENSION' | 'REAL_ESTATE' | 'DEBT'
 
@@ -39,241 +28,303 @@ export interface AccountBalanceInput {
   type?: AccountTypeForSync
 }
 
-const normalize = (s: string) => s.toLowerCase().replace(/\s+/g, '')
+/** 사용자가 미리보기에서 확정한 행별 결정 (바인딩·자동 제안보다 우선) */
+export type SyncDecisionKind = 'ACCOUNT' | 'ACCOUNT_CASH' | 'HOLDING_SKIP' | 'IGNORE' | 'NEW_ACCOUNT'
+export interface SyncDecisionInput {
+  kind: SyncDecisionKind
+  targetAccountId?: string | null
+}
 
-/**
- * 계좌명으로 Account 조회 → 없으면 자동 생성 (4단계 매칭).
- * - 1) userId 소유 계좌 / 2) 공유 포함 가족 전체 / 3) 공백 정규화 fuzzy / 4) holding 이름 매칭
- * - 모두 실패 시 신규 생성. 1b 차단 후에는 resolveAccountSyncPlan 안에서만 명시적 NEW_ACCOUNT 경로로 호출.
- */
-export async function findOrCreateAccount(
-  name: string,
-  familyId: string,
-  type: AccountTypeForSync = 'CASH',
-  userId?: string
-): Promise<string> {
-  if (userId) {
-    const userOwned = await prisma.account.findFirst({
-      where: { familyId, name: { contains: name, mode: 'insensitive' }, userId },
-      select: { id: true },
-    })
-    if (userOwned) return userOwned.id
+// ━━ 스냅샷 (계획 입력 — DB 읽기 결과) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export interface SnapshotAccount {
+  id: string
+  name: string
+  type: string
+  balance: number
+  cashBalance: number
+  userId: string | null
+  ownerName: string | null
+  holdingNames: string[]
+}
+
+export interface SnapshotBinding {
+  excelName: string
+  mappingType: ExcelMappingType
+  targetAccountId: string | null
+}
+
+export interface SyncSnapshot {
+  accounts: SnapshotAccount[]
+  /** 명의자(ownerUserId) 축의 바인딩만 — null 레거시는 포함하지 않는다 */
+  bindings: SnapshotBinding[]
+}
+
+// ━━ 출력 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export type DecisionSource = 'binding' | 'auto' | 'user'
+export type SyncTargetField = 'balance' | 'cashBalance'
+
+export interface SyncCandidate {
+  accountId: string
+  accountName: string
+  ownerName: string | null
+  hasHoldings: boolean
+  balance: number
+  cashBalance: number
+}
+
+export type UnresolvedReason =
+  | 'no_match'               // 후보 없음
+  | 'fuzzy_only'             // 부분 일치 후보만 있음 — 자동 적용 안 함
+  | 'ambiguous'              // 완전 일치가 2개+ 이고 명의로도 안 갈림
+  | 'owner_mismatch'         // 완전 일치 1개지만 다른 구성원 명의
+  | 'binding_target_missing' // 바인딩/결정의 대상 계좌가 삭제됨
+
+export type PlannedDecision =
+  | { kind: 'ACCOUNT'; accountId: string; accountName: string; field: 'balance'; oldBalance: number; source: DecisionSource }
+  | { kind: 'ACCOUNT_CASH'; accountId: string; accountName: string; field: 'cashBalance'; oldBalance: number; source: DecisionSource }
+  | { kind: 'HOLDING_SKIP'; accountId: string | null; accountName: string | null; source: DecisionSource }
+  | { kind: 'IGNORE'; source: DecisionSource }
+  | { kind: 'NEW_ACCOUNT'; source: DecisionSource }
+  | { kind: 'EXCLUDED' }
+  | { kind: 'UNRESOLVED'; reason: UnresolvedReason; candidates: SyncCandidate[] }
+  | { kind: 'CONFLICT'; accountId: string; accountName: string; field: SyncTargetField; withExcelNames: string[] }
+
+export interface PlannedRow {
+  excelName: string
+  /** 같은 표기명 행이 한 파일에 여러 개면 합산값 (예: 뱅샐 "종합매매" 원화·외화 예수금 2행) */
+  balance: number
+  type: AccountTypeForSync
+  /** 합산된 원본 행 수 (1 = 단일 행) */
+  mergedCount: number
+  /** mergedCount > 1일 때 원본 금액들 — 미리보기에 투명하게 표시 */
+  parts?: number[]
+  decision: PlannedDecision
+}
+
+export interface BalanceSyncPlan {
+  rows: PlannedRow[]
+  /** 적용 가능 여부 — 제외되지 않은 행 중 UNRESOLVED·CONFLICT가 없을 때 true */
+  ready: boolean
+  /** 적용을 막는 행 요약 (excelName: 사유) */
+  blocking: { excelName: string; reason: string }[]
+}
+
+// ━━ 계획 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+export const normalizeName = (s: string) => s.toLowerCase().replace(/\s+/g, '')
+
+function toCandidate(a: SnapshotAccount): SyncCandidate {
+  return {
+    accountId: a.id, accountName: a.name, ownerName: a.ownerName,
+    hasHoldings: a.holdingNames.length > 0, balance: a.balance, cashBalance: a.cashBalance,
   }
-  const existing = await prisma.account.findFirst({
-    where: { familyId, name: { contains: name, mode: 'insensitive' } },
-    select: { id: true },
-  })
-  if (existing) return existing.id
+}
 
-  const normalized = normalize(name)
-  const allFamilyAccounts = await prisma.account.findMany({
-    where: { familyId },
-    select: { id: true, name: true, holdings: { select: { name: true } } },
-  })
-  const fuzzyMatch = allFamilyAccounts.find(a => {
-    const aNorm = normalize(a.name)
-    return aNorm.includes(normalized) || normalized.includes(aNorm)
-  })
-  if (fuzzyMatch) return fuzzyMatch.id
+function targetDecision(
+  kind: 'ACCOUNT' | 'ACCOUNT_CASH',
+  acc: SnapshotAccount,
+  source: DecisionSource,
+): PlannedDecision {
+  return kind === 'ACCOUNT'
+    ? { kind, accountId: acc.id, accountName: acc.name, field: 'balance', oldBalance: acc.balance, source }
+    : { kind, accountId: acc.id, accountName: acc.name, field: 'cashBalance', oldBalance: acc.cashBalance, source }
+}
 
-  const holdingMatch = allFamilyAccounts.find(a =>
-    a.holdings.some(h => {
-      const hNorm = normalize(h.name)
-      return hNorm.includes(normalized) || normalized.includes(hNorm)
-    })
-  )
-  if (holdingMatch) return holdingMatch.id
+/** 바인딩 또는 사용자 결정 1건을 PlannedDecision으로 — 대상이 사라졌으면 UNRESOLVED */
+function fromExplicit(
+  k: SyncDecisionKind,
+  targetAccountId: string | null | undefined,
+  byId: Map<string, SnapshotAccount>,
+  source: DecisionSource,
+): PlannedDecision {
+  if (k === 'IGNORE') return { kind: 'IGNORE', source }
+  if (k === 'NEW_ACCOUNT') return { kind: 'NEW_ACCOUNT', source }
+  const acc = targetAccountId ? byId.get(targetAccountId) : undefined
+  if (k === 'HOLDING_SKIP') {
+    return { kind: 'HOLDING_SKIP', accountId: acc?.id ?? null, accountName: acc?.name ?? null, source }
+  }
+  if (!acc) return { kind: 'UNRESOLVED', reason: 'binding_target_missing', candidates: [] }
+  return targetDecision(k, acc, source)
+}
 
-  const created = await prisma.account.create({
-    data: {
-      name,
-      type,
-      balance: 0,
-      isShared: false,
-      shareLevel: 'PUBLIC',
-      familyId,
-      ...(userId ? { userId } : {}),
-    },
+/** 바인딩·결정이 없을 때의 자동 제안 — 완전 일치·유일·명의 일치일 때만 적용 */
+function autoDecision(
+  row: AccountBalanceInput,
+  accounts: SnapshotAccount[],
+  ownerUserId: string,
+  autoCreate: boolean,
+): PlannedDecision {
+  const norm = normalizeName(row.name)
+  if (!norm) return { kind: 'UNRESOLVED', reason: 'no_match', candidates: [] }
+
+  // 1) 계좌명 완전 일치
+  const exact = accounts.filter(a => normalizeName(a.name) === norm)
+  if (exact.length > 0) {
+    let hit: SnapshotAccount | null = exact.length === 1 ? exact[0] : null
+    if (!hit) {
+      const owned = exact.filter(a => a.userId === ownerUserId)
+      if (owned.length === 1) hit = owned[0]
+    }
+    if (!hit) return { kind: 'UNRESOLVED', reason: 'ambiguous', candidates: exact.map(toCandidate) }
+    // 다른 구성원 명의 계좌엔 자동으로 쓰지 않는다 (명의 미설정/공동은 허용)
+    if (hit.userId && hit.userId !== ownerUserId) {
+      return { kind: 'UNRESOLVED', reason: 'owner_mismatch', candidates: [toCandidate(hit)] }
+    }
+    return targetDecision(hit.holdingNames.length > 0 ? 'ACCOUNT_CASH' : 'ACCOUNT', hit, 'auto')
+  }
+
+  // 2) 종목명 완전 일치 → 잔액 동기화 skip (종목 가치는 holdings 시세가 진실)
+  const holdingParents = accounts.filter(a => a.holdingNames.some(h => normalizeName(h) === norm))
+  if (holdingParents.length === 1) {
+    return { kind: 'HOLDING_SKIP', accountId: holdingParents[0].id, accountName: holdingParents[0].name, source: 'auto' }
+  }
+  if (holdingParents.length > 1) {
+    return { kind: 'HOLDING_SKIP', accountId: null, accountName: null, source: 'auto' }
+  }
+
+  // 3) 부분 일치 — 후보로만 (적용 안 함)
+  const fuzzy = accounts.filter(a => {
+    const an = normalizeName(a.name)
+    if (an.includes(norm) || norm.includes(an)) return true
+    return a.holdingNames.some(h => { const hn = normalizeName(h); return hn.includes(norm) || norm.includes(hn) })
   })
-  return created.id
+  if (fuzzy.length > 0) return { kind: 'UNRESOLVED', reason: 'fuzzy_only', candidates: fuzzy.map(toCandidate) }
+
+  // 4) 후보 없음 — 자산 템플릿 import(autoCreate)만 신규 생성
+  if (autoCreate) return { kind: 'NEW_ACCOUNT', source: 'auto' }
+  return { kind: 'UNRESOLVED', reason: 'no_match', candidates: [] }
+}
+
+const REASON_LABEL: Record<UnresolvedReason, string> = {
+  no_match: '일치하는 계좌가 없어요',
+  fuzzy_only: '비슷한 계좌가 있지만 확정이 필요해요',
+  ambiguous: '같은 이름의 계좌가 여러 개예요',
+  owner_mismatch: '다른 구성원 명의 계좌예요',
+  binding_target_missing: '연결됐던 계좌가 삭제됐어요',
 }
 
 /**
- * accountBalances를 분류해 BalanceSyncPlan 수립.
- * createManyTransactions·syncAccountBalancesOnly 공유.
+ * 같은 표기명 행을 한 파일 안에서 합산한다.
+ * 뱅크샐러드는 한 증권계좌의 원화·외화 예수금을 같은 상품명("종합매매")으로 두 줄 내보낸다.
+ * 이름이 곧 키인 바인딩 모델에서는 이 두 줄이 같은 대상을 가리켜야 맞으므로, 서로 다른
+ * 표기명이 한 대상으로 몰리는 CONFLICT와 달리 여기서는 합산이 정답이다. 합산 사실은
+ * mergedCount·parts로 미리보기에 그대로 드러낸다(조용한 dedup이 아니다).
  */
-export async function resolveAccountSyncPlan(args: {
-  familyId: string
-  userId: string
-  accountBalances: AccountBalanceInput[]
-  /**
-   * 미매칭 계좌 자동 생성 허용. 기본 false(1b 차단 유지 — 은행 export 잔액
-   * 동기화는 지저분한 이름이 쓰레기 계좌를 만들지 않게 skip). 자산 템플릿
-   * import(부자공식 등)는 "내 순자산을 통째로 등록"이 목적이고 type이 신뢰
-   * 가능하므로 true로 호출 → 미매칭 이름을 파서 type으로 신규 생성.
-   */
+function mergeSameNameRows(rows: AccountBalanceInput[]): (AccountBalanceInput & { mergedCount: number; parts?: number[] })[] {
+  const order: string[] = []
+  const byName = new Map<string, { name: string; balance: number; type?: AccountTypeForSync; parts: number[] }>()
+  for (const r of rows) {
+    const key = r.name.trim()
+    const cur = byName.get(key)
+    if (cur) { cur.balance += r.balance; cur.parts.push(r.balance) }
+    else { order.push(key); byName.set(key, { name: key, balance: r.balance, type: r.type, parts: [r.balance] }) }
+  }
+  return order.map(k => {
+    const m = byName.get(k)!
+    return m.parts.length > 1
+      ? { name: m.name, balance: m.balance, type: m.type, mergedCount: m.parts.length, parts: m.parts }
+      : { name: m.name, balance: m.balance, type: m.type, mergedCount: 1 }
+  })
+}
+
+/**
+ * 잔액 동기화 계획 수립 (순수 함수).
+ * 우선순위: 제외 > 사용자 결정 > 바인딩 > 자동 제안. 마지막에 대상 충돌 검사.
+ */
+export function planBalanceSync(args: {
+  rows: AccountBalanceInput[]
+  snapshot: SyncSnapshot
+  ownerUserId: string
+  decisions?: Record<string, SyncDecisionInput>
+  excludedNames?: string[]
   autoCreate?: boolean
-}): Promise<BalanceSyncPlan> {
-  const { familyId, userId, accountBalances, autoCreate = false } = args
-  const pendings: PendingBalance[] = []
-  const mappingsToUpsert: MappingToUpsert[] = []
-  const skipped: string[] = []
-  const cashSubCreated: string[] = []
+}): BalanceSyncPlan {
+  const { rows, snapshot, ownerUserId, decisions = {}, autoCreate = false } = args
+  const excluded = new Set(args.excludedNames ?? [])
+  const byId = new Map(snapshot.accounts.map(a => [a.id, a]))
+  const bindingByName = new Map(snapshot.bindings.map(b => [b.excelName.trim(), b]))
 
-  if (accountBalances.length === 0) return { pendings, mappingsToUpsert, skipped, cashSubCreated }
+  const planned: PlannedRow[] = mergeSameNameRows(rows).map(row => {
+    const excelName = row.name
+    const type = row.type ?? 'CASH'
+    const base = { excelName, balance: row.balance, type, mergedCount: row.mergedCount, ...(row.parts ? { parts: row.parts } : {}) }
+    if (excluded.has(excelName)) return { ...base, decision: { kind: 'EXCLUDED' } }
 
-  const allFamilyAccounts = await prisma.account.findMany({
-    where: { familyId },
-    select: {
-      id: true, name: true, type: true, balance: true, userId: true,
-      holdings: { select: { name: true } },
-      subAccounts: { select: { id: true, name: true, balance: true } },
-    },
+    const userDecision = decisions[excelName]
+    if (userDecision) {
+      return { ...base, decision: fromExplicit(userDecision.kind, userDecision.targetAccountId, byId, 'user') }
+    }
+    const binding = bindingByName.get(excelName)
+    if (binding) {
+      return { ...base, decision: fromExplicit(binding.mappingType, binding.targetAccountId, byId, 'binding') }
+    }
+    return { ...base, decision: autoDecision(row, snapshot.accounts, ownerUserId, autoCreate) }
   })
 
-  for (const ab of accountBalances) {
-    // 0. ExcelMapping 우선 lookup
-    const mapping = await findExcelMapping(familyId, userId, ab.name)
-    if (mapping) {
-      if (mapping.mappingType === 'IGNORE' || mapping.mappingType === 'HOLDING_SKIP') {
-        skipped.push(`${ab.name} (mapping:${mapping.mappingType})`)
-        continue
-      }
-      if (mapping.mappingType === 'CASH_SUB' && mapping.targetAccountId) {
-        const parent = allFamilyAccounts.find(a => a.id === mapping.targetAccountId)
-        if (parent) {
-          const existingCashSub = parent.subAccounts.find(s => s.name === '예수금')
-          if (existingCashSub) {
-            pendings.push({ accountId: existingCashSub.id, oldBalance: existingCashSub.balance, newBalance: ab.balance })
-          } else {
-            const created = await prisma.account.create({
-              data: {
-                name: '예수금', type: 'CASH', balance: ab.balance,
-                familyId, userId, parentAccountId: parent.id,
-                isShared: true, shareLevel: 'PUBLIC',
-              },
-            })
-            cashSubCreated.push(`${parent.name} 예수금 (mapping)`)
-            pendings.push({ accountId: created.id, oldBalance: 0, newBalance: ab.balance })
-          }
-          continue
-        }
-        // parent 사라진 경우 fall through to 일반
-      }
-      if (mapping.mappingType === 'ACCOUNT' && mapping.targetAccountId) {
-        const acc = await prisma.account.findUnique({
-          where: { id: mapping.targetAccountId },
-          select: { balance: true },
-        })
-        if (acc) {
-          pendings.push({ accountId: mapping.targetAccountId, oldBalance: acc.balance, newBalance: ab.balance })
-          continue
-        }
-        // 대상 계좌 삭제된 경우 fall through
-      }
-      // NEW_ACCOUNT는 4b 분기에서 명시 매핑 의도로 처리
+  // 대상 충돌 — 같은 (계좌, 필드)에 2행 이상이 쓰려 하면 전부 CONFLICT
+  const writers = new Map<string, number[]>()
+  planned.forEach((r, i) => {
+    const d = r.decision
+    if (d.kind === 'ACCOUNT' || d.kind === 'ACCOUNT_CASH') {
+      const key = `${d.accountId}|${d.field}`
+      writers.set(key, [...(writers.get(key) ?? []), i])
     }
-
-    // 1. fuzzy account match
-    // ⚠️ 동명 계좌가 2개+면 조용히 첫 번째를 고르지 않는다 — 부부가 같은 이름 계좌를
-    //    각자 가진 경우(예: '카카오뱅크 마이너스 통장' 부부 각 1개) 엉뚱한 계좌에 잔액이
-    //    적용돼 서로 덮어쓰던 사고 방지(2026-08-10). 명의로도 안 갈리면 자동 반영 없이
-    //    skip → 사용자가 수동 매핑/수정하게 표시. (ExcelMapping은 이름 기준이라 두 파일을
-    //    구분 못 하므로 자동 매핑도 안 남긴다.)
-    const abNorm = normalize(ab.name)
-    const accountMatches = allFamilyAccounts.filter(a => {
-      const aNorm = normalize(a.name)
-      return aNorm.includes(abNorm) || abNorm.includes(aNorm)
-    })
-    let accountHit = accountMatches[0]
-    if (accountMatches.length > 1) {
-      const ownedMatches = accountMatches.filter(a => a.userId === userId)
-      if (ownedMatches.length === 1) {
-        accountHit = ownedMatches[0]   // 업로더 명의로 유일하게 좁혀지면 그 계좌
-      } else {
-        skipped.push(`${ab.name} (동명 계좌 ${accountMatches.length}개 — 자동 반영 안 함, 수동 확인 필요)`)
-        continue
+  })
+  for (const idxs of writers.values()) {
+    if (idxs.length < 2) continue
+    for (const i of idxs) {
+      const d = planned[i].decision
+      if (d.kind !== 'ACCOUNT' && d.kind !== 'ACCOUNT_CASH') continue
+      planned[i] = {
+        ...planned[i],
+        decision: {
+          kind: 'CONFLICT', accountId: d.accountId, accountName: d.accountName, field: d.field,
+          withExcelNames: idxs.filter(j => j !== i).map(j => planned[j].excelName),
+        },
       }
     }
-
-    // 2. cash-sub: account 매칭됐는데 holdings 있는 증권계좌 → 자식 '예수금'
-    if (accountHit && accountHit.holdings.length > 0) {
-      const existingCashSub = accountHit.subAccounts.find(s => s.name === '예수금')
-      if (existingCashSub) {
-        pendings.push({ accountId: existingCashSub.id, oldBalance: existingCashSub.balance, newBalance: ab.balance })
-      } else {
-        const created = await prisma.account.create({
-          data: {
-            name: '예수금', type: 'CASH', balance: ab.balance,
-            familyId, userId, parentAccountId: accountHit.id,
-            isShared: true, shareLevel: 'PUBLIC',
-          },
-        })
-        cashSubCreated.push(`${accountHit.name} 예수금`)
-        pendings.push({ accountId: created.id, oldBalance: 0, newBalance: ab.balance })
-      }
-      if (!mapping) mappingsToUpsert.push({ excelName: ab.name, mappingType: 'CASH_SUB', targetAccountId: accountHit.id })
-      continue
-    }
-
-    // 3. holding-skip: account 매칭 안 됐고 holding 이름 매칭 → 잔액 동기화 skip
-    if (!accountHit) {
-      const holdingHit = allFamilyAccounts.find(a =>
-        a.holdings.some(h => {
-          const hNorm = normalize(h.name)
-          return hNorm.includes(abNorm) || abNorm.includes(hNorm)
-        })
-      )
-      if (holdingHit) {
-        skipped.push(ab.name)
-        if (!mapping) mappingsToUpsert.push({ excelName: ab.name, mappingType: 'HOLDING_SKIP', targetAccountId: holdingHit.id })
-        continue
-      }
-    }
-
-    // 4. 일반 분기 — 2026-06-11 [asset-input-redesign 1b] 신규 계좌 자동 생성 차단
-    // 4a. fuzzy accountHit 있음: 매칭된 계좌에 잔액 동기화
-    if (accountHit) {
-      pendings.push({ accountId: accountHit.id, oldBalance: accountHit.balance, newBalance: ab.balance })
-      if (!mapping) mappingsToUpsert.push({ excelName: ab.name, mappingType: 'ACCOUNT', targetAccountId: accountHit.id })
-      continue
-    }
-
-    // 4b. 매칭 실패 + 사용자가 NEW_ACCOUNT를 명시 매핑한 경우: 신규 생성 허용
-    if (mapping?.mappingType === 'NEW_ACCOUNT') {
-      const id = await findOrCreateAccount(ab.name, familyId, ab.type ?? 'CASH', userId)
-      const acc = await prisma.account.findUnique({ where: { id }, select: { balance: true } })
-      pendings.push({ accountId: id, oldBalance: acc?.balance ?? 0, newBalance: ab.balance })
-      continue
-    }
-
-    // 4c. 매칭 실패 + 자산 템플릿 import: 파서 type으로 신규 생성.
-    // 매핑은 저장 안 함 — 같은 이름으로 생성됐으니 다음 업로드는 4a fuzzy match로 잡힘.
-    if (autoCreate) {
-      const id = await findOrCreateAccount(ab.name, familyId, ab.type ?? 'CASH', userId)
-      const acc = await prisma.account.findUnique({ where: { id }, select: { balance: true } })
-      pendings.push({ accountId: id, oldBalance: acc?.balance ?? 0, newBalance: ab.balance })
-      continue
-    }
-
-    // 4d. 매칭 실패 + 명시 의도 없음: 신규 자동 생성 차단(1b)
-    skipped.push(`${ab.name} (no_match)`)
   }
 
-  return { pendings, mappingsToUpsert, skipped, cashSubCreated }
+  const blocking = planned.flatMap(r => {
+    if (r.decision.kind === 'UNRESOLVED') return [{ excelName: r.excelName, reason: REASON_LABEL[r.decision.reason] }]
+    if (r.decision.kind === 'CONFLICT') {
+      return [{ excelName: r.excelName, reason: `'${r.decision.withExcelNames.join(', ')}'와 같은 계좌(${r.decision.accountName})를 가리켜요` }]
+    }
+    return []
+  })
+
+  return { rows: planned, ready: blocking.length === 0, blocking }
 }
 
+// ━━ 스냅샷 로더 (DB 읽기 전용) ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 /**
- * ExcelMapping 자동 upsert — mappingsToUpsert를 DB에 반영.
- * 다음 업로드부터 같은 row가 동일 결정으로 자동 분기.
+ * 계획에 필요한 가족 계좌 + 명의자 축 바인딩을 읽는다. 쓰기 없음.
+ * 바인딩은 (familyId, ownerUserId)로만 조회 — userId=null 레거시 행은 의도적으로 제외.
  */
-export async function upsertMappings(familyId: string, userId: string, mappings: MappingToUpsert[]): Promise<void> {
-  for (const m of mappings) {
-    // 새 매핑은 항상 업로더(userId)를 축으로 저장 — 부부 동명 계좌 구분(2026-08-10).
-    await prisma.excelMapping.upsert({
-      where: { familyId_userId_excelName: { familyId, userId, excelName: m.excelName } },
-      create: { familyId, userId, excelName: m.excelName, mappingType: m.mappingType, targetAccountId: m.targetAccountId },
-      update: { mappingType: m.mappingType, targetAccountId: m.targetAccountId },
-    })
+export async function loadSyncSnapshot(familyId: string, ownerUserId: string): Promise<SyncSnapshot> {
+  const [accounts, bindings] = await Promise.all([
+    prisma.account.findMany({
+      where: { familyId },
+      select: {
+        id: true, name: true, type: true, balance: true, cashBalance: true, userId: true,
+        user: { select: { name: true } },
+        holdings: { select: { name: true } },
+      },
+      orderBy: { name: 'asc' },
+    }),
+    prisma.excelMapping.findMany({
+      where: { familyId, userId: ownerUserId },
+      select: { excelName: true, mappingType: true, targetAccountId: true },
+    }),
+  ])
+  return {
+    accounts: accounts.map(a => ({
+      id: a.id, name: a.name, type: a.type, balance: a.balance, cashBalance: a.cashBalance,
+      userId: a.userId, ownerName: a.user?.name ?? null, holdingNames: a.holdings.map(h => h.name),
+    })),
+    bindings,
   }
 }

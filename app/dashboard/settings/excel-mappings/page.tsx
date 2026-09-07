@@ -26,22 +26,22 @@ import {
 import type { ExcelMappingType } from '@prisma/client'
 
 const TYPE_LABEL: Record<string, { label: string; tone: string }> = {
-  ACCOUNT:      { label: '계좌 매칭',     tone: 'text-foreground bg-muted' },
-  CASH_SUB:     { label: '예수금 (부모)', tone: 'text-savings bg-savings-soft' },
+  ACCOUNT:      { label: '계좌 잔액',     tone: 'text-foreground bg-muted' },
+  ACCOUNT_CASH: { label: '예수금',        tone: 'text-savings bg-savings-soft' },
   HOLDING_SKIP: { label: '종목 (skip)',   tone: 'text-warning bg-warning-soft' },
   NEW_ACCOUNT:  { label: '신규 계좌',     tone: 'text-income bg-income-soft' },
   IGNORE:       { label: '영구 제외',     tone: 'text-muted-foreground bg-muted/60' },
 }
 
 const TYPE_DESC: Record<string, string> = {
-  ACCOUNT:      '엑셀 잔액을 해당 계좌에 동기화',
-  CASH_SUB:     '엑셀 잔액을 부모 계좌의 자식 "예수금"에 동기화',
+  ACCOUNT:      '엑셀 잔액을 해당 계좌 잔액에 동기화',
+  ACCOUNT_CASH: '엑셀 잔액을 보유 종목 계좌의 예수금(cashBalance)에 동기화',
   HOLDING_SKIP: '엑셀 row가 부모 계좌의 holding으로 등록됨 — 동기화 skip',
   NEW_ACCOUNT:  '다음 업로드 시 신규 계좌 생성',
   IGNORE:       '동기화 영구 제외 (예: dondoc에 등록 안 하는 카드)',
 }
 
-const TYPES_REQUIRING_ACCOUNT: ExcelMappingType[] = ['ACCOUNT', 'CASH_SUB', 'HOLDING_SKIP']
+const TYPES_REQUIRING_ACCOUNT: ExcelMappingType[] = ['ACCOUNT', 'ACCOUNT_CASH', 'HOLDING_SKIP']
 
 export default function ExcelMappingsPage() {
   const [mappings, setMappings] = useState<ExcelMappingData[]>([])
@@ -142,8 +142,8 @@ export default function ExcelMappingsPage() {
         <h1 className="text-lg font-bold text-foreground">엑셀 매핑 관리</h1>
       </div>
       <p className="text-xs text-muted-foreground mb-6">
-        뱅크샐러드 엑셀에서 발견된 표기명을 돈독 계좌에 어떻게 매핑할지 한 번 확정한 결과입니다.
-        다음 업로드부터 자동 적용되며, 잘못 매핑된 항목은 여기서 삭제할 수 있습니다.
+        엑셀에서 발견된 표기명을 어느 계좌의 잔액·예수금에 연결할지 한 번 확정한 결과예요.
+        명의자(파일 주인) 기준으로 저장되고 다음 업로드부터 자동 적용돼요. 잘못된 연결은 여기서 삭제하면 다음 업로드 미리보기에서 다시 고를 수 있어요.
       </p>
 
       {/* 신규 매핑 폼 */}
@@ -252,6 +252,11 @@ export default function ExcelMappingsPage() {
                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${tone}`}>
                       {label}
                     </span>
+                    {m.ownerName ? (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-muted text-muted-foreground">{m.ownerName} 명의</span>
+                    ) : (
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-warning-soft text-warning" title="명의자가 없는 옛 매핑은 더 이상 자동 적용되지 않아요. 다음 업로드 미리보기에서 다시 확정하세요.">명의 없음 · 미적용</span>
+                    )}
                   </div>
                   {m.targetAccountName && (
                     <p className="text-xs text-muted-foreground mb-1">

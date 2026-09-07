@@ -55,6 +55,8 @@ export interface CreateAccountInput {
   name: string
   type: AccountType
   balance: number
+  /** 예수금 — 보유 종목 계좌 전용 (표시 잔액 = balance + cashBalance). 미지정 시 유지 */
+  cashBalance?: number
   shareLevel: ShareLevel
   ownerId?: string | null   // 명의자 (미설정=null, 공동=null+isJoint)
   isJoint?: boolean         // 공동 명의
@@ -534,6 +536,7 @@ export async function updateAccount(
       ...(name !== undefined && { name }),
       ...(input.type !== undefined && { type: input.type }),
       ...(input.balance !== undefined && { balance: input.balance }),
+      ...(input.cashBalance !== undefined && { cashBalance: input.cashBalance }),
       ...('linkedAssetId' in input && { linkedAssetId: input.linkedAssetId ?? null }),
       ...(shareLevel !== undefined && { shareLevel, isShared: isShared! }),
       ...(newUserId !== undefined && { userId: newUserId }),

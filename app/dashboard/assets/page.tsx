@@ -135,6 +135,7 @@ export default function AssetsPage() {
         userId: a.userId ?? null,
         isJoint: a.isJoint ?? false,
         subAccounts: a.subAccounts ?? [],
+        cashBalance: a.cashBalance ?? 0,
         realEstateDetail: a.realEstateDetail ?? null,
       })
 
