@@ -38,7 +38,7 @@ function targetOf(row: PlannedRow): string | null {
   switch (d.kind) {
     case 'ACCOUNT': case 'ACCOUNT_CASH': case 'CONFLICT': return d.accountId
     case 'HOLDING_SKIP': return d.accountId
-    case 'NEW_ACCOUNT': return NEW_TARGET
+    case 'NEW_ACCOUNT': return `${NEW_TARGET}:${row.excelName}`
     case 'IGNORE': return IGNORE_TARGET
     default: return null
   }
@@ -168,7 +168,13 @@ export function SyncLinkBoard({
     }
     return m
   }, [rows, excludedNames])
-  const inboundCount = (t: string) => { const i = inbound.get(t); return i ? i.balance + i.cash + i.holdings + i.other : 0 }
+  const inboundCount = (t: string) => {
+    if (t === NEW_TARGET) return rows.filter(r => r.decision.kind === 'NEW_ACCOUNT' && !excludedNames.has(r.excelName)).length
+    const i = inbound.get(t); return i ? i.balance + i.cash + i.holdings + i.other : 0
+  }
+  const TYPE_LABEL: Record<string, string> = { CASH: '현금·예적금', INVESTMENT: '주식·펀드', PENSION: '연금', REAL_ESTATE: '부동산', DEBT: '부채' }
+  // 신규 계좌로 결정된 행 — 오른쪽 열에 "적용 시 생성될 계좌" 가상 행으로 보여준다 (즉시 피드백)
+  const pendingNew = rows.filter(r => r.decision.kind === 'NEW_ACCOUNT' && !excludedNames.has(r.excelName))
   const isConflict = (i: Inbound | undefined) => !!i && (i.balance > 1 || i.cash > 1)
   const inboundLabel = (i: Inbound) => {
     const parts: string[] = []
@@ -221,8 +227,18 @@ export function SyncLinkBoard({
     return { x: e.clientX - cr.left + c.scrollLeft, y: e.clientY - cr.top + c.scrollTop }
   }
 
+  /** 오른쪽 대상 클릭 — 고정 선택된 행이 있으면 그 행을 이 대상에 연결한다 */
+  const connectSelectedTo = (targetId: string) => {
+    if (!selected || drag) return
+    const el = rightRefs.current.get(targetId)
+    const c = containerRef.current
+    if (!el || !c) return
+    const r = el.getBoundingClientRect(); const cr = c.getBoundingClientRect()
+    decideTarget(selected, targetId, { x: r.left - cr.left + c.scrollLeft, y: r.top + r.height / 2 - cr.top + c.scrollTop })
+  }
+
   const decideTarget = (excelName: string, targetId: string, at: Pt) => {
-    if (targetId === NEW_TARGET) { onDecide(excelName, { kind: 'NEW_ACCOUNT' }); return }
+    if (targetId === NEW_TARGET || targetId.startsWith(`${NEW_TARGET}:`)) { onDecide(excelName, { kind: 'NEW_ACCOUNT' }); return }
     if (targetId === IGNORE_TARGET) { onDecide(excelName, { kind: 'IGNORE' }); return }
     const acc = accounts.find(a => a.accountId === targetId)
     if (!acc) return
@@ -243,6 +259,8 @@ export function SyncLinkBoard({
   // 약해 pointerup을 잃고 굳는 사례가 있었다. 6px 미만 이동은 클릭(고정 선택 토글).
   const dragRef = useRef(drag)
   useEffect(() => { dragRef.current = drag }, [drag])
+  const hoverTargetRef = useRef(hoverTarget)
+  useEffect(() => { hoverTargetRef.current = hoverTarget }, [hoverTarget])
   const onGrabDown = (excelName: string) => (e: React.PointerEvent<Element>) => {
     if (excludedNames.has(excelName) || e.button !== 0) return
     e.preventDefault(); e.stopPropagation()
@@ -274,7 +292,8 @@ export function SyncLinkBoard({
       setDrag(null); setHoverTarget(null)
       if (!d || !c) return
       if (!d.moved) { setSelected(prev => (prev === d.excelName ? null : d.excelName)); return }
-      const target = targetUnder(e.clientX, e.clientY)
+      // 놓은 지점의 대상 → 없으면 드래그 중 마지막으로 강조됐던 대상
+      const target = targetUnder(e.clientX, e.clientY) ?? hoverTargetRef.current
       if (target) decideTarget(d.excelName, target, toContent(e))
     }
     const cancel = (e: KeyboardEvent) => { if (e.key === 'Escape') { setDrag(null); setHoverTarget(null) } }
@@ -304,8 +323,10 @@ export function SyncLinkBoard({
         data-sync-target={a.accountId}
         onMouseEnter={() => !drag && setHoverTarget(a.accountId)}
         onMouseLeave={() => !drag && setHoverTarget(null)}
+        onClick={() => connectSelectedTo(a.accountId)}
         className={cn(
           'flex items-center gap-2 px-2.5 py-1.5 border-t border-border/40 transition-colors',
+          selected && !drag && 'cursor-pointer',
           (hot || activeTargets.has(a.accountId)) && 'bg-muted/60 ring-1 ring-inset ring-ring',
           conflict && 'bg-destructive/5',
           anyActive && !hot && !activeTargets.has(a.accountId) && 'opacity-50',
@@ -466,7 +487,7 @@ export function SyncLinkBoard({
                       </div>
                       <p className={cn('text-[10px] mt-0.5 flex items-center gap-1', st.tone)}>
                         {st.needsInput && <AlertCircle className="w-3 h-3 shrink-0" />}
-                        <span className="truncate">{st.text}</span>
+                        <span className="truncate">{selected === r.excelName && !drag ? '선택됨 — 오른쪽에서 연결할 계좌를 클릭하세요' : st.text}</span>
                         {userChanged && (
                           <button
                             type="button"
@@ -507,6 +528,38 @@ export function SyncLinkBoard({
             </div>
             {linked.length > 0 && <div className="px-2.5 pt-2 pb-1 text-[10px] text-muted-foreground/70">연결된 계좌 · {linked.length}</div>}
             {linked.map(renderAccountRow)}
+            {pendingNew.length > 0 && <div className="px-2.5 pt-2 pb-1 text-[10px] text-ai-400">적용하면 생성될 계좌 · {pendingNew.length}</div>}
+            {pendingNew.map(r => {
+              const id = `${NEW_TARGET}:${r.excelName}`
+              const active = activeTargets.has(id) || hoverTarget === id
+              return (
+                <div
+                  key={id}
+                  ref={el => { if (el) rightRefs.current.set(id, el); else rightRefs.current.delete(id) }}
+                  data-sync-target={id}
+                  onMouseEnter={() => !drag && setHoverTarget(id)}
+                  onMouseLeave={() => !drag && setHoverTarget(null)}
+                  className={cn(
+                    'flex items-center gap-2 px-2.5 py-1.5 border-t border-dashed border-ai-400/40 transition-colors',
+                    active && 'bg-muted/60 ring-1 ring-inset ring-ring',
+                    anyActive && !active && 'opacity-50',
+                  )}
+                >
+                  <Plus className="w-3.5 h-3.5 shrink-0 text-ai-400" />
+                  <p className={cn('text-xs truncate flex-1 min-w-0', active ? 'text-secondary font-medium' : 'text-foreground')}>
+                    {r.excelName}
+                    <span className="ml-1 text-[10px] text-muted-foreground">{TYPE_LABEL[r.type] ?? r.type} · 신규</span>
+                  </p>
+                  <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">{formatCurrency(r.balance)}</span>
+                  <button
+                    type="button"
+                    onClick={e => { e.stopPropagation(); onDecide(r.excelName, null) }}
+                    className="text-[10px] text-muted-foreground hover:text-foreground"
+                    title="신규 생성 취소"
+                  >취소</button>
+                </div>
+              )
+            })}
             {/* 가상 대상: 신규 · 무시 — 연결된 계좌 바로 아래(끌어다 놓기 가까이) */}
             <div className="px-2.5 pt-2 pb-1 text-[10px] text-muted-foreground/70">기타</div>
             <div
@@ -514,10 +567,11 @@ export function SyncLinkBoard({
               data-sync-target={NEW_TARGET}
               onMouseEnter={() => !drag && setHoverTarget(NEW_TARGET)}
               onMouseLeave={() => !drag && setHoverTarget(null)}
-              className={cn('flex items-center gap-2 px-2.5 py-1.5 border-t border-border/40 border-dashed text-ai-400 transition-colors', (hoverTarget === NEW_TARGET || activeTargets.has(NEW_TARGET)) && 'bg-muted/60 ring-1 ring-inset ring-ring', anyActive && hoverTarget !== NEW_TARGET && !activeTargets.has(NEW_TARGET) && 'opacity-50')}
+              onClick={() => connectSelectedTo(NEW_TARGET)}
+              className={cn('flex items-center gap-2 px-2.5 py-1.5 border-t border-border/40 border-dashed text-ai-400 transition-colors', selected && !drag && 'cursor-pointer', (hoverTarget === NEW_TARGET || activeTargets.has(NEW_TARGET)) && 'bg-muted/60 ring-1 ring-inset ring-ring', anyActive && hoverTarget !== NEW_TARGET && !activeTargets.has(NEW_TARGET) && 'opacity-50')}
             >
               <Plus className="w-3.5 h-3.5 shrink-0" />
-              <p className="text-xs flex-1 min-w-0 truncate">신규 계좌로 만들기</p>
+              <p className="text-xs flex-1 min-w-0 truncate">신규 계좌로 만들기 <span className="text-[10px] text-muted-foreground">— 적용할 때 생성</span></p>
               {inboundCount(NEW_TARGET) > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{inboundCount(NEW_TARGET)}</span>}
             </div>
             <div
@@ -525,7 +579,8 @@ export function SyncLinkBoard({
               data-sync-target={IGNORE_TARGET}
               onMouseEnter={() => !drag && setHoverTarget(IGNORE_TARGET)}
               onMouseLeave={() => !drag && setHoverTarget(null)}
-              className={cn('flex items-center gap-2 px-2.5 py-1.5 border-t border-border/40 border-dashed text-muted-foreground transition-colors', (hoverTarget === IGNORE_TARGET || activeTargets.has(IGNORE_TARGET)) && 'bg-muted/60 ring-1 ring-inset ring-ring', anyActive && hoverTarget !== IGNORE_TARGET && !activeTargets.has(IGNORE_TARGET) && 'opacity-50')}
+              onClick={() => connectSelectedTo(IGNORE_TARGET)}
+              className={cn('flex items-center gap-2 px-2.5 py-1.5 border-t border-border/40 border-dashed text-muted-foreground transition-colors', selected && !drag && 'cursor-pointer', (hoverTarget === IGNORE_TARGET || activeTargets.has(IGNORE_TARGET)) && 'bg-muted/60 ring-1 ring-inset ring-ring', anyActive && hoverTarget !== IGNORE_TARGET && !activeTargets.has(IGNORE_TARGET) && 'opacity-50')}
             >
               <Ban className="w-3.5 h-3.5 shrink-0" />
               <p className="text-xs flex-1 min-w-0 truncate">무시 (앞으로도 동기화 안 함)</p>
@@ -583,7 +638,7 @@ export function SyncLinkBoard({
         <span><span className="inline-block w-4 border-t-2 border-dashed border-current text-savings align-middle mr-1" />예수금</span>
         <span><span className="inline-block w-4 border-t-2 border-dotted border-current align-middle mr-1" />종목·무시 (잔액 안 씀)</span>
         <span className="text-secondary"><span className="inline-block w-4 border-t-[3px] border-current align-middle mr-1" />선택됨</span>
-        <span className="ml-auto">선이나 계좌 쪽 끝점(●)을 끌어 다른 계좌에 놓으면 연결이 바뀌어요 · 짧게 누르면 고정 선택</span>
+        <span className="ml-auto">행을 누르고 오른쪽 계좌를 클릭하거나, 선·끝점(●)을 끌어 놓으면 연결이 바뀌어요</span>
       </div>
 
       {blockingCount > 0 && (
