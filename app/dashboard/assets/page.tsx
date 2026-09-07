@@ -20,6 +20,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { formatCurrency, formatLargeNumber, cn } from '@/lib/utils'
 import { useCountUp } from '@/components/ui/number-ticker'
+import Link from 'next/link'
 import { useDashboardActions } from '@/components/layout/DashboardShell'
 import {
   getNetWorthHistory,
@@ -52,7 +53,7 @@ import {
   type PriceHistoryPoint,
   type TargetPropertyData,
 } from '@/lib/actions/realestate'
-import { TrendingUp, TrendingDown, Wallet, Building2, Landmark, CreditCard, Camera, Plus, PiggyBank } from 'lucide-react'
+import { TrendingUp, TrendingDown, Wallet, Building2, Landmark, CreditCard, Camera, Plus, PiggyBank, FileSpreadsheet, Link2 } from 'lucide-react'
 import { LoadingPrompt } from '@/components/ui/loading-prompt'
 import { toast } from 'sonner'
 
@@ -71,7 +72,7 @@ function getCurrentYearMonth(): string {
 }
 
 export default function AssetsPage() {
-  const { refreshKey, bumpRefresh, setPageActions, shellUser } = useDashboardActions()
+  const { refreshKey, bumpRefresh, setPageActions, shellUser, openExcelDrawer } = useDashboardActions()
   const searchParams = useSearchParams()
   const [accounts, setAccounts] = useState<AccountInitialData[]>([])
   const [liabilities, setLiabilities] = useState<AccountInitialData[]>([])
@@ -197,16 +198,33 @@ export default function AssetsPage() {
 
   useEffect(() => { loadData() }, [refreshKey, loadData])
 
-  // TopBar에 자산 추가 버튼 등록
+  // TopBar 액션: 연결 보드 · 엑셀 업로드(보조) + 자산 추가(주)
   useEffect(() => {
     setPageActions(
-      <button
-        onClick={openAdd}
-        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-semibold hover:bg-foreground/90 transition-colors active:scale-[0.97]"
-      >
-        <Plus className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline">자산 추가</span>
-      </button>
+      <div className="flex items-center gap-2">
+        <Link
+          href="/dashboard/assets/link"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-ring transition-colors"
+          title="엑셀 자산 행을 계좌에 선으로 연결"
+        >
+          <Link2 className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">자산 연결</span>
+        </Link>
+        <button
+          onClick={() => openExcelDrawer()}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-card border border-border text-xs font-medium text-muted-foreground hover:text-foreground hover:border-ring transition-colors"
+        >
+          <FileSpreadsheet className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">엑셀 업로드</span>
+        </button>
+        <button
+          onClick={openAdd}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-foreground text-background text-xs font-semibold hover:bg-foreground/90 transition-colors active:scale-[0.97]"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span className="hidden sm:inline">자산 추가</span>
+        </button>
+      </div>
     )
     return () => setPageActions(null)
   // eslint-disable-next-line react-hooks/exhaustive-deps
