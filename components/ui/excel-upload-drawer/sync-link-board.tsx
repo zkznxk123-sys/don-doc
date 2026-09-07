@@ -149,16 +149,34 @@ export function SyncLinkBoard({
     return { linked, groups }
   }, [accounts, ownerName, rows, filter])
 
-  // 연결 수 (오른쪽 행 배지용)
+  // 대상별 들어오는 행 구성 (오른쪽 행 배지용). 충돌은 "같은 필드에 2행 이상"일 때만 —
+  // 종목(HOLDING_SKIP)은 그 계좌의 하위 항목이라 몇 개가 와도 충돌이 아니다.
+  type Inbound = { balance: number; cash: number; holdings: number; other: number }
   const inbound = useMemo(() => {
-    const m = new Map<string, number>()
+    const m = new Map<string, Inbound>()
     for (const r of rows) {
       if (excludedNames.has(r.excelName)) continue
       const t = targetOf(r)
-      if (t) m.set(t, (m.get(t) ?? 0) + 1)
+      if (!t) continue
+      const cur = m.get(t) ?? { balance: 0, cash: 0, holdings: 0, other: 0 }
+      const d = r.decision
+      if (d.kind === 'ACCOUNT' || (d.kind === 'CONFLICT' && d.field === 'balance')) cur.balance++
+      else if (d.kind === 'ACCOUNT_CASH' || (d.kind === 'CONFLICT' && d.field === 'cashBalance')) cur.cash++
+      else if (d.kind === 'HOLDING_SKIP') cur.holdings++
+      else cur.other++
+      m.set(t, cur)
     }
     return m
   }, [rows, excludedNames])
+  const inboundCount = (t: string) => { const i = inbound.get(t); return i ? i.balance + i.cash + i.holdings + i.other : 0 }
+  const isConflict = (i: Inbound | undefined) => !!i && (i.balance > 1 || i.cash > 1)
+  const inboundLabel = (i: Inbound) => {
+    const parts: string[] = []
+    if (i.balance) parts.push('잔액')
+    if (i.cash) parts.push('예수금')
+    if (i.holdings) parts.push(`종목 ${i.holdings}`)
+    return parts.join(' · ') || '연결'
+  }
 
   // ── 좌표 계산 ──
   const measure = useCallback(() => {
@@ -276,7 +294,8 @@ export function SyncLinkBoard({
 
   // 오른쪽 계좌 행 — 한 줄(이름 · 잔액), 연결 수 배지, 드롭 대상
   const renderAccountRow = (a: SyncCandidate) => {
-    const n = inbound.get(a.accountId) ?? 0
+    const inb = inbound.get(a.accountId)
+    const conflict = isConflict(inb)
     const hot = hoverTarget === a.accountId
     return (
       <div
@@ -288,7 +307,7 @@ export function SyncLinkBoard({
         className={cn(
           'flex items-center gap-2 px-2.5 py-1.5 border-t border-border/40 transition-colors',
           (hot || activeTargets.has(a.accountId)) && 'bg-muted/60 ring-1 ring-inset ring-ring',
-          n > 1 && 'bg-destructive/5',
+          conflict && 'bg-destructive/5',
           anyActive && !hot && !activeTargets.has(a.accountId) && 'opacity-50',
         )}
         title={a.hasHoldings ? `잔액 ${formatCurrency(a.balance)} · 예수금 ${formatCurrency(a.cashBalance)}` : formatCurrency(a.balance)}
@@ -300,9 +319,9 @@ export function SyncLinkBoard({
         <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
           {formatCurrency(a.hasHoldings ? a.cashBalance : a.balance)}{a.hasHoldings && <span className="text-savings"> 예수금</span>}
         </span>
-        {n > 0 && (
-          <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full shrink-0', n > 1 ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground')}>
-            {n > 1 ? `${n}행 충돌` : '연결'}
+        {inb && (
+          <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full shrink-0', conflict ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground')}>
+            {conflict ? `${inb.balance > 1 ? inb.balance : inb.cash}행 충돌` : inboundLabel(inb)}
           </span>
         )}
       </div>
@@ -499,7 +518,7 @@ export function SyncLinkBoard({
             >
               <Plus className="w-3.5 h-3.5 shrink-0" />
               <p className="text-xs flex-1 min-w-0 truncate">신규 계좌로 만들기</p>
-              {(inbound.get(NEW_TARGET) ?? 0) > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{inbound.get(NEW_TARGET)}</span>}
+              {inboundCount(NEW_TARGET) > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{inboundCount(NEW_TARGET)}</span>}
             </div>
             <div
               ref={el => { if (el) rightRefs.current.set(IGNORE_TARGET, el); else rightRefs.current.delete(IGNORE_TARGET) }}
@@ -510,7 +529,7 @@ export function SyncLinkBoard({
             >
               <Ban className="w-3.5 h-3.5 shrink-0" />
               <p className="text-xs flex-1 min-w-0 truncate">무시 (앞으로도 동기화 안 함)</p>
-              {(inbound.get(IGNORE_TARGET) ?? 0) > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{inbound.get(IGNORE_TARGET)}</span>}
+              {inboundCount(IGNORE_TARGET) > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{inboundCount(IGNORE_TARGET)}</span>}
             </div>
             <div className="px-2.5 pt-3 pb-1 flex items-center gap-2">
               <span className="text-[10px] text-muted-foreground/70 shrink-0">다른 계좌 · {accounts.length - linked.length}</span>
