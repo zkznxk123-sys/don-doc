@@ -646,6 +646,8 @@ export async function deleteAccount(
         data: { parentAccountId: null },
       })
     }
+    // 이 계좌를 가리키던 엑셀 바인딩 제거 — 남기면 다음 업로드에서 '연결됐던 계좌가 삭제됨'으로만 뜬다
+    await tx.excelMapping.deleteMany({ where: { targetAccountId: id } })
     // BalanceChangeLog / RealEstateDetail / DebtDetail / FinancialAssetDetail / PensionDetail 등은 schema에 onDelete: Cascade 박혀 있어 자동
     await tx.account.delete({ where: { id } })
   })

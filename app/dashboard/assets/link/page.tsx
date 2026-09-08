@@ -22,6 +22,7 @@ import { tryParseBanksalad, type AccountBalance } from '@/utils/excel-parser'
 import { detectAssetTemplate } from '@/utils/asset-templates'
 import { planAccountSync, type SyncOwnerOption } from '@/lib/actions/transactions/sync-plan'
 import { syncAccountBalancesOnly } from '@/lib/actions/transactions/bulk'
+import { deleteAccount } from '@/lib/actions/accounts'
 import type { BalanceSyncPlan, SyncCandidate, SyncDecisionInput } from '@/lib/actions/transactions/_account-sync'
 import { SyncLinkBoard } from '@/components/ui/excel-upload-drawer/sync-link-board'
 import { countSyncTargets } from '@/components/ui/excel-upload-drawer/preview-components'
@@ -45,6 +46,8 @@ export default function AssetLinkPage() {
   const [decisions, setDecisions] = useState<Record<string, SyncDecisionInput>>({})
   const [applying, setApplying] = useState(false)
   const [handoffLoaded, setHandoffLoaded] = useState(false)
+  // 계좌 삭제 등 서버 상태가 바뀐 뒤 재계획 트리거
+  const [planVersion, setPlanVersion] = useState(0)
 
   // ── 드로어에서 넘어온 상태 이어받기 ──
   useEffect(() => {
@@ -85,7 +88,7 @@ export default function AssetLinkPage() {
       }
     }, 150)
     return () => { cancelled = true; clearTimeout(timer) }
-  }, [handoffLoaded, accountBalances, ownerUserId, decisions, excluded, autoCreate])
+  }, [handoffLoaded, accountBalances, ownerUserId, decisions, excluded, autoCreate, planVersion])
 
   // ── 파일 파싱 (자산 행만) ──
   const processFile = useCallback((file: File) => {
@@ -224,6 +227,18 @@ export default function AssetLinkPage() {
             decisions={decisions}
             onToggle={name => setExcluded(prev => { const n = new Set(prev); if (n.has(name)) n.delete(name); else n.add(name); return n })}
             onDecide={(name, d) => setDecisions(prev => { const n = { ...prev }; if (d) n[name] = d; else delete n[name]; return n })}
+            onDeleteAccount={async (accountId, force) => {
+              const res = await deleteAccount(accountId, force ? { force: true } : undefined)
+              if (res.success) {
+                toast.success('계좌를 삭제했어요.')
+                setAccounts(prev => prev.filter(a => a.accountId !== accountId))
+                setPlanVersion(v => v + 1)
+                bumpRefresh()
+              } else if (!(res.transactionCount || res.holdingCount || res.subAccountCount)) {
+                toast.error(res.error ?? '삭제에 실패했어요.')
+              }
+              return res
+            }}
           />
 
           <div className="flex items-center justify-end gap-3 pt-1">

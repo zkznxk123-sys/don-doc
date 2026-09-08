@@ -13,7 +13,7 @@
  */
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
-import { AlertCircle, Plus, Ban, X, Loader2 } from 'lucide-react'
+import { AlertCircle, Plus, Ban, X, Loader2, Trash2 } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
 import type {
   BalanceSyncPlan, PlannedRow, SyncCandidate, SyncDecisionInput, SyncDecisionKind, UnresolvedReason,
@@ -88,7 +88,7 @@ const activeClass = (kind: PlannedRow['decision']['kind'], base: string) =>
   KEEP_SEMANTIC_WHEN_ACTIVE.has(kind) ? base : 'text-secondary'
 
 export function SyncLinkBoard({
-  plan, loading, accounts, ownerName, excludedNames, decisions, onToggle, onDecide,
+  plan, loading, accounts, ownerName, excludedNames, decisions, onToggle, onDecide, onDeleteAccount,
 }: {
   plan: BalanceSyncPlan | null
   loading: boolean
@@ -99,7 +99,27 @@ export function SyncLinkBoard({
   decisions: Record<string, SyncDecisionInput>
   onToggle: (excelName: string) => void
   onDecide: (excelName: string, decision: SyncDecisionInput | null) => void
+  /** 연결 안 된 계좌 삭제. force=false는 probe(의존 데이터 있으면 실패+개수), true는 cascade */
+  onDeleteAccount?: (accountId: string, force: boolean) => Promise<{ success: boolean; error?: string; transactionCount?: number; holdingCount?: number; subAccountCount?: number }>
 }) {
+  // 삭제 확인 상태 — 의존 데이터가 있으면 첫 클릭은 probe, 두 번째 클릭이 cascade
+  const [deleting, setDeleting] = useState<{ id: string; message: string } | null>(null)
+  const [deleteBusy, setDeleteBusy] = useState<string | null>(null)
+  const requestDelete = async (a: SyncCandidate, force: boolean) => {
+    if (!onDeleteAccount) return
+    setDeleteBusy(a.accountId)
+    try {
+      const res = await onDeleteAccount(a.accountId, force)
+      if (res.success) { setDeleting(null); return }
+      if (!force && (res.transactionCount || res.holdingCount || res.subAccountCount)) {
+        setDeleting({ id: a.accountId, message: res.error ?? '연결 데이터가 있어요. 한 번 더 누르면 함께 삭제돼요.' })
+      } else {
+        setDeleting(null)
+      }
+    } finally {
+      setDeleteBusy(null)
+    }
+  }
   const containerRef = useRef<HTMLDivElement>(null)
   const leftRefs = useRef(new Map<string, HTMLDivElement>())
   const rightRefs = useRef(new Map<string, HTMLDivElement>())
@@ -316,6 +336,8 @@ export function SyncLinkBoard({
     const inb = inbound.get(a.accountId)
     const conflict = isConflict(inb)
     const hot = hoverTarget === a.accountId
+    const deletable = !!onDeleteAccount && !inb && !drag
+    const confirming = deleting?.id === a.accountId
     return (
       <div
         key={a.accountId}
@@ -344,6 +366,33 @@ export function SyncLinkBoard({
           <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full shrink-0', conflict ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground')}>
             {conflict ? `${inb.balance > 1 ? inb.balance : inb.cash}행 충돌` : inboundLabel(inb)}
           </span>
+        )}
+        {deletable && (
+          confirming ? (
+            <span className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+              <span className="text-[10px] text-destructive max-w-[160px] truncate" title={deleting.message}>{deleting.message}</span>
+              <button
+                type="button"
+                disabled={deleteBusy === a.accountId}
+                onClick={() => requestDelete(a, true)}
+                className="text-[10px] px-1.5 py-0.5 rounded-md bg-destructive text-destructive-foreground disabled:opacity-50"
+              >
+                {deleteBusy === a.accountId ? <Loader2 className="w-3 h-3 animate-spin" /> : '모두 삭제'}
+              </button>
+              <button type="button" onClick={() => setDeleting(null)} className="text-[10px] px-1.5 py-0.5 rounded-md border border-border text-muted-foreground">취소</button>
+            </span>
+          ) : (
+            <button
+              type="button"
+              disabled={deleteBusy === a.accountId}
+              onClick={e => { e.stopPropagation(); void requestDelete(a, false) }}
+              className={cn('p-1 rounded-md text-muted-foreground/40 hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0', hot ? 'opacity-100' : 'opacity-0')}
+              title="이 계좌 삭제 (돈독에서 관리하지 않는 계좌)"
+              aria-label={`${a.accountName} 삭제`}
+            >
+              {deleteBusy === a.accountId ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+            </button>
+          )
         )}
       </div>
     )
