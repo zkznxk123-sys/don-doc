@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     console.error('[POST /api/family/join] ERROR:', e)
     return NextResponse.json(
-      { success: false, error: String(e) },
+      { success: false, error: '가족 합류에 실패했어요.' },
       { status: 500 }
     )
   }

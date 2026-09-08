@@ -7,6 +7,9 @@ import { prisma } from '@/lib/prisma'
 /**
  * Clerk userId → Prisma User 동기화
  * 로그인 직후 또는 온보딩에서 초대 코드와 함께 호출
+ * ⚠️ getAuthUser() 미사용 — 이 라우트의 목적 자체가 "Prisma User가 아직 없는" 최초 로그인 유저를
+ * 만드는 것이라 getAuthUser()의 자동생성 로직과 겹친다. 대신 Clerk auth()로 직접 인증 확인(가드 있음,
+ * 무인증 아님) — carry 재조사 시 "가드 누락"으로 오분류하지 말 것.
  */
 export async function POST(req: Request) {
   try {
@@ -149,7 +152,7 @@ export async function POST(req: Request) {
   } catch (e) {
     console.error('[POST /api/auth/sync-user] ERROR:', e)
     return NextResponse.json(
-      { success: false, error: String(e) },
+      { success: false, error: '계정 동기화에 실패했어요.' },
       { status: 500 }
     )
   }

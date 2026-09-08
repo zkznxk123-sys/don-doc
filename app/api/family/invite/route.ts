@@ -59,7 +59,7 @@ export async function POST() {
   } catch (e) {
     console.error('[POST /api/family/invite] ERROR:', e)
     return NextResponse.json(
-      { success: false, error: String(e) },
+      { success: false, error: '초대 코드를 생성하지 못했어요.' },
       { status: 500 }
     )
   }
@@ -108,7 +108,7 @@ export async function GET() {
   } catch (e) {
     console.error('[GET /api/family/invite] ERROR:', e)
     return NextResponse.json(
-      { success: false, error: String(e) },
+      { success: false, error: '초대 코드를 불러오지 못했어요.' },
       { status: 500 }
     )
   }

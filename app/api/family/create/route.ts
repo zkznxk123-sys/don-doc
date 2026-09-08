@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
   } catch (e) {
     console.error('[POST /api/family/create] ERROR:', e)
     return NextResponse.json(
-      { success: false, error: String(e) },
+      { success: false, error: '가족을 만들지 못했어요.' },
       { status: 500 }
     )
   }

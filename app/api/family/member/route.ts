@@ -43,6 +43,6 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ success: true })
   } catch (e) {
     console.error('[PATCH /api/family/member] ERROR:', e)
-    return NextResponse.json({ success: false, error: String(e) }, { status: 500 })
+    return NextResponse.json({ success: false, error: '구성원 정보를 수정하지 못했어요.' }, { status: 500 })
   }
 }

@@ -99,6 +99,6 @@ export async function GET(req: NextRequest) {
     })
   } catch (e) {
     console.error('[GET /api/transactions/list] ERROR:', e)
-    return NextResponse.json({ success: false, error: String(e) }, { status: 500 })
+    return NextResponse.json({ success: false, error: '거래 내역을 불러오지 못했어요.' }, { status: 500 })
   }
 }

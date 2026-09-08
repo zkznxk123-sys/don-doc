@@ -75,6 +75,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, id: transaction.id })
   } catch (e) {
     console.error('[POST /api/transactions] ERROR:', e)
-    return NextResponse.json({ success: false, error: String(e) }, { status: 500 })
+    return NextResponse.json({ success: false, error: '거래를 등록하지 못했어요.' }, { status: 500 })
   }
 }

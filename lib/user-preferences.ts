@@ -14,6 +14,8 @@ export interface UserPreferences {
   assetThreshold?: number
   /** 새 거래(수동 입력·엑셀 업로드) 기본 가시성 — UI 초기값 */
   defaultVisibility?: 'SHARED' | 'PRIVATE'
+  /** 정리 제안에서 "유지"로 표시한 계좌 id — 다시 제안하지 않음 (2026-09-09) */
+  dismissedCleanupAccountIds?: string[]
 }
 
 /** 알 수 없는 키 제거 + 값 검증. 유효 키만 남긴다(부분 객체). */
@@ -26,6 +28,10 @@ export function sanitizePreferences(raw: unknown): UserPreferences {
   }
   if (r.defaultVisibility === 'SHARED' || r.defaultVisibility === 'PRIVATE') {
     out.defaultVisibility = r.defaultVisibility
+  }
+  if (Array.isArray(r.dismissedCleanupAccountIds)) {
+    const ids = r.dismissedCleanupAccountIds.filter((x): x is string => typeof x === 'string' && x.length > 0 && x.length <= 64)
+    out.dismissedCleanupAccountIds = Array.from(new Set(ids)).slice(0, 500)
   }
   return out
 }

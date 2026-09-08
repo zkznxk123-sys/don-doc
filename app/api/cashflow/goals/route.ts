@@ -27,7 +27,7 @@ export async function GET(req: Request) {
     })
   } catch (e) {
     console.error('[GET /api/cashflow/goals] ERROR:', e)
-    return NextResponse.json({ success: false, error: String(e) }, { status: 500 })
+    return NextResponse.json({ success: false, error: '현금흐름 목표를 불러오지 못했어요.' }, { status: 500 })
   }
 }
 
@@ -50,6 +50,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true })
   } catch (e) {
     console.error('[POST /api/cashflow/goals] ERROR:', e)
-    return NextResponse.json({ success: false, error: String(e) }, { status: 500 })
+    return NextResponse.json({ success: false, error: '현금흐름 목표를 저장하지 못했어요.' }, { status: 500 })
   }
 }

@@ -120,6 +120,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ results })
   } catch (e) {
     console.error('[realestate/search]', e)
-    return NextResponse.json({ error: String(e), results: [] }, { status: 500 })
+    return NextResponse.json({ error: '부동산 시세를 불러오지 못했어요.', results: [] }, { status: 500 })
   }
 }

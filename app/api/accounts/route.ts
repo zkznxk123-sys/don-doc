@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
   } catch (e) {
     console.error('[GET /api/accounts] ERROR:', e)
     return NextResponse.json(
-      { success: false, error: String(e) },
+      { success: false, error: '계좌 정보를 불러오지 못했어요.' },
       { status: 500 }
     )
   }

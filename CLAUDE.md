@@ -27,7 +27,8 @@
 app/
   api/              # API 라우트
     ai/             # categorize · chat · insights · map-categories · recategorize · status · oauth-*
-    auth/           # me · sync-user · logout · demo
+    auth/           # me · sync-user(Clerk auth() 직접 가드, getAuthUser 미사용 — 신규 유저 생성 목적이라 의도적) ·
+                    # logout · demo(둘 다 무인증 의도 — DB 조회·데이터 노출 없는 리다이렉트/no-op)
     transactions/   # CRUD + list
     accounts/       # CRUD + holdings
     family/         # create · info · invite · join · member · reset
