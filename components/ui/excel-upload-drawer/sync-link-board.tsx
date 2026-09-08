@@ -88,7 +88,7 @@ const activeClass = (kind: PlannedRow['decision']['kind'], base: string) =>
   KEEP_SEMANTIC_WHEN_ACTIVE.has(kind) ? base : 'text-secondary'
 
 export function SyncLinkBoard({
-  plan, loading, accounts, ownerName, excludedNames, decisions, onToggle, onDecide, onDeleteAccount,
+  plan, loading, accounts, ownerName, excludedNames, decisions, onToggle, onDecide, onDeleteAccount, cleanup, onKeepAccount, onDeleteAll,
 }: {
   plan: BalanceSyncPlan | null
   loading: boolean
@@ -101,7 +101,13 @@ export function SyncLinkBoard({
   onDecide: (excelName: string, decision: SyncDecisionInput | null) => void
   /** 연결 안 된 계좌 삭제. force=false는 probe(의존 데이터 있으면 실패+개수), true는 cascade */
   onDeleteAccount?: (accountId: string, force: boolean) => Promise<{ success: boolean; error?: string; transactionCount?: number; holdingCount?: number; subAccountCount?: number }>
+  /** 오래 쓰지 않은 계좌 정리 후보 (accountId → 사유). 오른쪽 열 '다른 계좌' 위에 접이식 그룹으로 */
+  cleanup?: { reasons: Record<string, string>; idleMonths: number }
+  onKeepAccount?: (accountId: string) => Promise<void>
+  onDeleteAll?: (accountIds: string[]) => Promise<void>
 }) {
+  const [cleanupOpen, setCleanupOpen] = useState(false)
+  const [cleanupBusy, setCleanupBusy] = useState(false)
   // 삭제 확인 상태 — 의존 데이터가 있으면 첫 클릭은 probe, 두 번째 클릭이 cascade
   const [deleting, setDeleting] = useState<{ id: string; message: string } | null>(null)
   const [deleteBusy, setDeleteBusy] = useState<string | null>(null)
@@ -138,7 +144,7 @@ export function SyncLinkBoard({
 
   // 오른쪽 열 순서: (1) 연결된 계좌를 왼쪽 행 순서대로 — 선이 짧고 평행하게 보이도록
   //                (2) 나머지 계좌는 명의자 본인 → 명의 없음 → 다른 구성원, 필터 가능
-  const { linked, groups } = useMemo(() => {
+  const { linked, groups, cleanupCandidates } = useMemo(() => {
     const byId = new Map(accounts.map(a => [a.accountId, a]))
     const linkedIds: string[] = []
     for (const r of rows) {
@@ -146,7 +152,9 @@ export function SyncLinkBoard({
       if (t && byId.has(t) && !linkedIds.includes(t)) linkedIds.push(t)
     }
     const linked = linkedIds.map(id => byId.get(id)!)
-    const rest = accounts.filter(a => !linkedIds.includes(a.accountId))
+    const cleanupIds = new Set(Object.keys(cleanup?.reasons ?? {}))
+    const cleanupCandidates = accounts.filter(a => !linkedIds.includes(a.accountId) && cleanupIds.has(a.accountId))
+    const rest = accounts.filter(a => !linkedIds.includes(a.accountId) && !cleanupIds.has(a.accountId))
     const q = filter.trim().toLowerCase().replace(/\s+/g, '')
     const filtered = q ? rest.filter(a => a.accountName.toLowerCase().replace(/\s+/g, '').includes(q)) : rest
     const byOwner = new Map<string, SyncCandidate[]>()
@@ -166,8 +174,8 @@ export function SyncLinkBoard({
         label: k === '' ? '명의 없음 · 공동' : k === ownerName ? `${k} 명의 (이 파일)` : `${k} 명의`,
         accounts: (byOwner.get(k) ?? []).slice().sort((a, b) => a.accountName.localeCompare(b.accountName, 'ko')),
       }))
-    return { linked, groups }
-  }, [accounts, ownerName, rows, filter])
+    return { linked, groups, cleanupCandidates }
+  }, [accounts, ownerName, rows, filter, cleanup])
 
   // 대상별 들어오는 행 구성 (오른쪽 행 배지용). 충돌은 "같은 필드에 2행 이상"일 때만 —
   // 종목(HOLDING_SKIP)은 그 계좌의 하위 항목이라 몇 개가 와도 충돌이 아니다.
@@ -635,8 +643,36 @@ export function SyncLinkBoard({
               <p className="text-xs flex-1 min-w-0 truncate">무시 (앞으로도 동기화 안 함)</p>
               {inboundCount(IGNORE_TARGET) > 0 && <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground">{inboundCount(IGNORE_TARGET)}</span>}
             </div>
+            {cleanupCandidates.length > 0 && (
+              <div className="mt-2 border-t border-border/60">
+                <div className="px-2.5 pt-2 pb-1 flex items-center gap-2">
+                  <button type="button" onClick={() => setCleanupOpen(o => !o)} className="flex items-center gap-1 text-[10px] text-warning">
+                    {cleanupOpen ? '▾' : '▸'} 정리 후보 · {cleanupCandidates.length}
+                    <span className="text-muted-foreground/70 hidden sm:inline">— {cleanup!.idleMonths}개월 이상 움직임 없는 잔액 0 계좌</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={cleanupBusy || !onDeleteAll}
+                    onClick={async () => { setCleanupBusy(true); try { await onDeleteAll?.(cleanupCandidates.map(a => a.accountId)) } finally { setCleanupBusy(false) } }}
+                    className="ml-auto text-[10px] px-1.5 py-0.5 rounded-md bg-foreground text-background disabled:opacity-50"
+                  >
+                    {cleanupBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : '모두 정리'}
+                  </button>
+                </div>
+                {cleanupOpen && cleanupCandidates.map(a => (
+                  <div key={a.accountId} className="flex items-center gap-2 px-2.5 py-1.5 border-t border-border/40">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-foreground truncate">{a.accountName}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{cleanup!.reasons[a.accountId]}</p>
+                    </div>
+                    <button type="button" disabled={cleanupBusy} onClick={() => onKeepAccount?.(a.accountId)} className="text-[10px] px-1.5 py-0.5 rounded-md border border-border text-muted-foreground hover:text-foreground">유지</button>
+                    <button type="button" disabled={cleanupBusy} onClick={() => requestDelete(a, false)} className="text-[10px] px-1.5 py-0.5 rounded-md border border-border text-destructive hover:bg-destructive/10">삭제</button>
+                  </div>
+                ))}
+              </div>
+            )}
             <div className="px-2.5 pt-3 pb-1 flex items-center gap-2">
-              <span className="text-[10px] text-muted-foreground/70 shrink-0">다른 계좌 · {accounts.length - linked.length}</span>
+              <span className="text-[10px] text-muted-foreground/70 shrink-0">다른 계좌 · {accounts.length - linked.length - cleanupCandidates.length}</span>
               <input
                 value={filter}
                 onChange={e => setFilter(e.target.value)}

@@ -23,6 +23,7 @@ import { detectAssetTemplate } from '@/utils/asset-templates'
 import { planAccountSync, type SyncOwnerOption } from '@/lib/actions/transactions/sync-plan'
 import { syncAccountBalancesOnly } from '@/lib/actions/transactions/bulk'
 import { deleteAccount } from '@/lib/actions/accounts'
+import { getCleanupCandidates, dismissCleanupCandidate, deleteCleanupCandidates } from '@/lib/actions/account-cleanup'
 import type { BalanceSyncPlan, SyncCandidate, SyncDecisionInput } from '@/lib/actions/transactions/_account-sync'
 import { SyncLinkBoard } from '@/components/ui/excel-upload-drawer/sync-link-board'
 import { countSyncTargets } from '@/components/ui/excel-upload-drawer/preview-components'
@@ -48,6 +49,15 @@ export default function AssetLinkPage() {
   const [handoffLoaded, setHandoffLoaded] = useState(false)
   // 계좌 삭제 등 서버 상태가 바뀐 뒤 재계획 트리거
   const [planVersion, setPlanVersion] = useState(0)
+  // 오래 쓰지 않은 계좌 정리 후보 (id → 사유)
+  const [cleanup, setCleanup] = useState<{ reasons: Record<string, string>; idleMonths: number }>({ reasons: {}, idleMonths: 6 })
+  useEffect(() => {
+    if (!shellUser) return
+    getCleanupCandidates().then(r => setCleanup({
+      idleMonths: r.idleMonths,
+      reasons: Object.fromEntries(r.candidates.map(c => [c.id, c.reason])),
+    })).catch(() => {})
+  }, [shellUser, planVersion])
 
   // ── 드로어에서 넘어온 상태 이어받기 ──
   useEffect(() => {
@@ -238,6 +248,21 @@ export default function AssetLinkPage() {
                 toast.error(res.error ?? '삭제에 실패했어요.')
               }
               return res
+            }}
+            cleanup={cleanup}
+            onKeepAccount={async id => {
+              const r = await dismissCleanupCandidate(id)
+              if (r.success) { toast.success('이 계좌는 앞으로 제안하지 않아요.'); setCleanup(c => { const n = { ...c.reasons }; delete n[id]; return { ...c, reasons: n } }) }
+              else toast.error(r.error ?? '저장에 실패했어요.')
+            }}
+            onDeleteAll={async ids => {
+              const r = await deleteCleanupCandidates(ids)
+              if (r.deleted > 0) toast.success(`계좌 ${r.deleted}개를 정리했어요.`)
+              if (r.skipped.length > 0) toast.warning(`${r.skipped.length}개는 건너뛰었어요.`, { description: r.skipped[0].reason })
+              const skippedIds = new Set(r.skipped.map(s => s.id))
+              setAccounts(prev => prev.filter(a => !ids.includes(a.accountId) || skippedIds.has(a.accountId)))
+              setPlanVersion(v => v + 1)
+              bumpRefresh()
             }}
           />
 

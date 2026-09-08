@@ -22,6 +22,7 @@ import { formatCurrency, formatLargeNumber, cn } from '@/lib/utils'
 import { useCountUp } from '@/components/ui/number-ticker'
 import Link from 'next/link'
 import { useDashboardActions } from '@/components/layout/DashboardShell'
+import { CleanupBanner } from '@/components/dashboard/CleanupBanner'
 import {
   getNetWorthHistory,
   checkMissingSnapshot,
@@ -287,6 +288,9 @@ export default function AssetsPage() {
           { label: '자산 추가', icon: <Plus className="w-3 h-3" />, onClick: openAdd },
         ]}
       />
+
+      {/* 오래 쓰지 않은 잔액 0 계좌 정리 제안 */}
+      {!loading && <CleanupBanner refreshKey={refreshKey} onChanged={() => bumpRefresh()} />}
 
       {/* 스냅샷 누락 배너 */}
       {showBanner && (
