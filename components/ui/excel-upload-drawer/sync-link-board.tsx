@@ -27,6 +27,7 @@ const REASON_LABEL: Record<UnresolvedReason, string> = {
   fuzzy_only: '비슷한 계좌가 있어요',
   ambiguous: '같은 이름 계좌가 여러 개예요',
   owner_mismatch: '다른 구성원 명의 계좌예요',
+  broker_ambiguous: '같은 금융사 계좌가 여러 개예요 — 골라주세요',
   binding_target_missing: '연결됐던 계좌가 삭제됐어요',
 }
 
@@ -539,6 +540,7 @@ export function SyncLinkBoard({
                         <p className="text-xs text-foreground truncate">
                           {r.excelName}
                           {r.mergedCount > 1 && <span className="text-muted-foreground"> · {r.mergedCount}행 합산</span>}
+                          {r.broker && <span className="ml-1 text-[10px] text-muted-foreground">{r.broker}</span>}
                         </p>
                         <p className="text-xs text-foreground tabular-nums shrink-0">{formatCurrency(r.balance)}</p>
                       </div>
