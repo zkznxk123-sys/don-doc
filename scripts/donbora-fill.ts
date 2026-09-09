@@ -88,7 +88,7 @@ async function main() {
 
   const accounts = await prisma.account.findMany({
     where: { familyId },
-    select: { id: true, name: true, type: true, balance: true,
+    select: { id: true, name: true, type: true, balance: true, cashBalance: true,
               debtDetail: { select: { debtType: true, monthlyPayment: true } } },
   })
 
@@ -102,8 +102,8 @@ async function main() {
   const cashSum = cashAccounts.reduce((s, a) => s + a.balance, 0) - depositBalance - subscriptionSum
 
   // ── 투자자산계 ── 주식/펀드류(INVESTMENT+CRYPTO) + 청약저축
-  const investSum = accounts.filter(a => a.type === 'INVESTMENT').reduce((s, a) => s + a.balance, 0)
-  const cryptoSum = accounts.filter(a => a.type === 'CRYPTO').reduce((s, a) => s + a.balance, 0)
+  const investSum = accounts.filter(a => a.type === 'INVESTMENT').reduce((s, a) => s + a.balance + a.cashBalance, 0)
+  const cryptoSum = accounts.filter(a => a.type === 'CRYPTO').reduce((s, a) => s + a.balance + a.cashBalance, 0)
   const stockSum = investSum + cryptoSum
   const investmentTotal = stockSum + subscriptionSum
 
@@ -115,10 +115,10 @@ async function main() {
   let nationalPension = 0
   const pensionUnmapped: string[] = []
   for (const a of pensionAccounts) {
-    if (nameHasAny(a.name, config.assets.pension_exclude_keywords)) { nationalPension += a.balance; continue }
+    if (nameHasAny(a.name, config.assets.pension_exclude_keywords)) { nationalPension += a.balance + a.cashBalance; continue }
     const field = pensionFields.find(f => nameHasAny(a.name, config.assets.pension_field_map[f]))
-    if (field) retirementBuckets[field] += a.balance
-    else { retirementBuckets[pensionFields[pensionFields.length - 1]] += a.balance; pensionUnmapped.push(a.name) }
+    if (field) retirementBuckets[field] += a.balance + a.cashBalance
+    else { retirementBuckets[pensionFields[pensionFields.length - 1]] += a.balance + a.cashBalance; pensionUnmapped.push(a.name) }
   }
   const retirementTotal = pensionFields.reduce((s, f) => s + retirementBuckets[f], 0)
 

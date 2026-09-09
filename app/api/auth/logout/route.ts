@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { NextResponse } from 'next/server'
+import { safeRedirect } from '@/lib/safe-redirect'
 
 // Clerk handles sign-out on the client via <SignOutButton /> or useClerk().signOut()
 // This route remains for backward compatibility but just redirects
@@ -12,5 +13,5 @@ export async function POST() {
 export async function GET(req: Request) {
   const url = new URL(req.url)
   const redirectTo = url.searchParams.get('redirect') || '/sign-in'
-  return NextResponse.redirect(new URL(redirectTo, req.url))
+  return NextResponse.redirect(new URL(safeRedirect(redirectTo, req.url), req.url))
 }
