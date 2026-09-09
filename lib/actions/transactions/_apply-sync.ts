@@ -97,6 +97,25 @@ export async function applyBalanceSyncPlan(
           data: d.field === 'balance' ? { balance: row.balance } : { cashBalance: row.balance },
         })
         synced++
+        // 뱅샐 대출현황(금리·만기)이 있으면 DebtDetail 보강 — 사용자가 이미 넣은 값은 유지, 빈 칸만 채운다
+        if (d.kind === 'ACCOUNT' && row.loan && (row.loan.interestRate != null || row.loan.maturityDate)) {
+          const acc = await tx.account.findUnique({ where: { id: d.accountId }, select: { type: true, debtDetail: { select: { interestRate: true, maturityDate: true } } } })
+          if (acc?.type === 'DEBT' || acc?.type === 'CREDIT_CARD') {
+            const isOverdraft = /마이너스|한도대출/.test(row.excelName)
+            await tx.debtDetail.upsert({
+              where: { accountId: d.accountId },
+              create: {
+                accountId: d.accountId, debtType: isOverdraft ? 'OVERDRAFT' : 'ETC',
+                interestRate: row.loan.interestRate ?? null,
+                maturityDate: row.loan.maturityDate ? new Date(row.loan.maturityDate) : null,
+              },
+              update: {
+                ...(acc.debtDetail?.interestRate == null && row.loan.interestRate != null ? { interestRate: row.loan.interestRate } : {}),
+                ...(acc.debtDetail?.maturityDate == null && row.loan.maturityDate ? { maturityDate: new Date(row.loan.maturityDate) } : {}),
+              },
+            })
+          }
+        }
         if (d.oldBalance !== row.balance) {
           logs.push({
             accountId: d.accountId, oldBalance: d.oldBalance, newBalance: row.balance,
