@@ -89,7 +89,7 @@ async function main() {
   const accounts = await prisma.account.findMany({
     where: { familyId },
     select: { id: true, name: true, type: true, balance: true, cashBalance: true,
-              debtDetail: { select: { debtType: true, monthlyPayment: true } } },
+              debtDetail: { select: { debtType: true, monthlyPayment: true, interestRate: true } } },
   })
 
   // ── 현금자산계 ── 청약저축·보증금은 여기서 분리
