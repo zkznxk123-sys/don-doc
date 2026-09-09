@@ -26,6 +26,8 @@ export interface AccountBalanceInput {
   name: string
   balance: number
   type?: AccountTypeForSync
+  /** 뱅샐 대출현황에서 온 대출 조건 — ACCOUNT 적용 시 DebtDetail(금리·만기)에 반영 */
+  loan?: { lender: string | null; principal: number | null; interestRate: number | null; startDate: string | null; maturityDate: string | null }
 }
 
 /** 사용자가 미리보기에서 확정한 행별 결정 (바인딩·자동 제안보다 우선) */
@@ -100,6 +102,7 @@ export interface PlannedRow {
   mergedCount: number
   /** mergedCount > 1일 때 원본 금액들 — 미리보기에 투명하게 표시 */
   parts?: number[]
+  loan?: AccountBalanceInput['loan']
   decision: PlannedDecision
 }
 
@@ -214,18 +217,19 @@ const REASON_LABEL: Record<UnresolvedReason, string> = {
  */
 function mergeSameNameRows(rows: AccountBalanceInput[]): (AccountBalanceInput & { mergedCount: number; parts?: number[] })[] {
   const order: string[] = []
-  const byName = new Map<string, { name: string; balance: number; type?: AccountTypeForSync; parts: number[] }>()
+  const byName = new Map<string, { name: string; balance: number; type?: AccountTypeForSync; loan?: AccountBalanceInput['loan']; parts: number[] }>()
   for (const r of rows) {
     const key = r.name.trim()
     const cur = byName.get(key)
-    if (cur) { cur.balance += r.balance; cur.parts.push(r.balance) }
-    else { order.push(key); byName.set(key, { name: key, balance: r.balance, type: r.type, parts: [r.balance] }) }
+    if (cur) { cur.balance += r.balance; cur.parts.push(r.balance); cur.loan = cur.loan ?? r.loan }
+    else { order.push(key); byName.set(key, { name: key, balance: r.balance, type: r.type, loan: r.loan, parts: [r.balance] }) }
   }
   return order.map(k => {
     const m = byName.get(k)!
+    const loan = m.loan ? { loan: m.loan } : {}
     return m.parts.length > 1
-      ? { name: m.name, balance: m.balance, type: m.type, mergedCount: m.parts.length, parts: m.parts }
-      : { name: m.name, balance: m.balance, type: m.type, mergedCount: 1 }
+      ? { name: m.name, balance: m.balance, type: m.type, ...loan, mergedCount: m.parts.length, parts: m.parts }
+      : { name: m.name, balance: m.balance, type: m.type, ...loan, mergedCount: 1 }
   })
 }
 
@@ -249,7 +253,7 @@ export function planBalanceSync(args: {
   const planned: PlannedRow[] = mergeSameNameRows(rows).map(row => {
     const excelName = row.name
     const type = row.type ?? 'CASH'
-    const base = { excelName, balance: row.balance, type, mergedCount: row.mergedCount, ...(row.parts ? { parts: row.parts } : {}) }
+    const base = { excelName, balance: row.balance, type, mergedCount: row.mergedCount, ...(row.parts ? { parts: row.parts } : {}), ...(row.loan ? { loan: row.loan } : {}) }
     if (excluded.has(excelName)) return { ...base, decision: { kind: 'EXCLUDED' } }
 
     const userDecision = decisions[excelName]

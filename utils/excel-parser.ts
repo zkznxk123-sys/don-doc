@@ -28,6 +28,17 @@ export interface AccountBalance {
   name: string
   balance: number
   type: 'CASH' | 'INVESTMENT' | 'PENSION' | 'REAL_ESTATE' | 'DEBT'
+  /** 뱅샐현황 "6.대출현황"에서 같은 상품명으로 찾은 대출 조건 — 동기화 시 DebtDetail에 반영 (2026-09-09) */
+  loan?: LoanInfo
+}
+
+export interface LoanInfo {
+  lender: string | null
+  principal: number | null
+  /** 연 금리 % (예: 7.2) */
+  interestRate: number | null
+  startDate: string | null     // YYYY-MM-DD
+  maturityDate: string | null  // YYYY-MM-DD
 }
 
 export interface ParseBanksaladResult {
@@ -342,13 +353,52 @@ export function parseBanksaladSummary(wb: XLSX.WorkBook): AccountBalance[] {
   return result
 }
 
+/**
+ * 뱅샐현황 시트 하단 "6.대출현황" 표 파싱 — 대출종류|금융사|상품명|대출원금|대출잔액|대출금리|대출신규일|대출만기일.
+ * 상품명 기준으로 현황 자산 행(부채)에 붙여 DebtDetail(금리·만기)을 채우는 데 쓴다.
+ */
+export function parseBanksaladLoans(wb: XLSX.WorkBook): Map<string, LoanInfo> {
+  const out = new Map<string, LoanInfo>()
+  const summarySheet = wb.SheetNames.find(n => n.includes('현황') || n.includes('뱅샐'))
+  if (!summarySheet) return out
+  const allRows = XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[summarySheet], { header: 1, defval: '', raw: true })
+  const cell = (r: unknown[], i: number) => String(r[i] ?? '').trim()
+  const num = (v: unknown) => { const n = typeof v === 'number' ? v : parseFloat(String(v ?? '').replace(/[,%]/g, '')); return Number.isFinite(n) ? n : null }
+  // 엑셀 날짜 serial → YYYY-MM-DD
+  const date = (v: unknown) => {
+    if (typeof v === 'number' && v > 20000) { const d = XLSX.SSF.parse_date_code(v); return d ? `${d.y}-${String(d.m).padStart(2, '0')}-${String(d.d).padStart(2, '0')}` : null }
+    const s = String(v ?? '').trim(); return /^\d{4}-\d{2}-\d{2}/.test(s) ? s.slice(0, 10) : null
+  }
+  const h = allRows.findIndex(r => r.map(c => String(c ?? '').trim()).includes('대출금리'))
+  if (h < 0) return out
+  const hc = allRows[h].map(c => String(c ?? '').trim())
+  const I = { lender: hc.indexOf('금융사'), name: hc.indexOf('상품명'), principal: hc.indexOf('대출원금'), rate: hc.indexOf('대출금리'), start: hc.indexOf('대출신규일'), end: hc.indexOf('대출만기일') }
+  for (let i = h + 1; i < allRows.length; i++) {
+    const r = allRows[i]
+    const name = I.name >= 0 ? cell(r, I.name) : ''
+    if (!name || cell(r, 0) === '총계') break
+    out.set(name, {
+      lender: I.lender >= 0 ? cell(r, I.lender) || null : null,
+      principal: I.principal >= 0 ? num(r[I.principal]) : null,
+      interestRate: I.rate >= 0 ? num(r[I.rate]) : null,
+      startDate: I.start >= 0 ? date(r[I.start]) : null,
+      maturityDate: I.end >= 0 ? date(r[I.end]) : null,
+    })
+  }
+  return out
+}
+
 /** XLSX WorkBook에서 뱅크샐러드 파일 여부 판단 + 파싱 원스텝 */
 export function tryParseBanksalad(wb: XLSX.WorkBook, familyNames: string[] = []): ParseBanksaladResult | null {
   const { ws, sheetName, headerRowIndex } = detectBanksaladSheet(wb)
   if (!ws || headerRowIndex < 0) return null
 
   const result = parseBanksaladSheet(ws, headerRowIndex, familyNames)
-  const accountBalances = parseBanksaladSummary(wb)
+  const loans = parseBanksaladLoans(wb)
+  const accountBalances = parseBanksaladSummary(wb).map(ab => {
+    const loan = ab.type === 'DEBT' ? loans.get(ab.name) : undefined
+    return loan ? { ...ab, loan } : ab
+  })
   return { ...result, sheetName, accountBalances }
 }
 

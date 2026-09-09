@@ -190,6 +190,22 @@ async function main() {
   }
 
   const totalIncome = Object.values(incomeMap).reduce((s, v) => s + v, 0)
+  // 대출이자가 거래로 안 잡힌 경우(마통 이자가 대출계좌 안에서 빠져 뱅샐 가계부에 없음) — 금리×잔액/12 로 추정
+  let interestEstimated = false
+  const interestNotes: string[] = []
+  if ((expenseMap['대출이자'] ?? 0) === 0) {
+    let est = 0
+    for (const d of debts) {
+      const dt = d.debtDetail?.debtType ?? 'ETC'
+      if (config.debts.exclude_types.includes(dt)) continue
+      const rate = d.debtDetail?.interestRate
+      if (rate == null || rate <= 0 || d.balance <= 0) continue
+      const m = Math.round(d.balance * rate / 100 / 12)
+      est += m
+      interestNotes.push(`${d.name} ${(d.balance / 10000).toLocaleString()}만 × ${rate}% ÷ 12 ≈ ${(m / 10000).toFixed(1)}만`)
+    }
+    if (est > 0) { expenseMap['대출이자'] = est; interestEstimated = true }
+  }
   const totalExpense = Object.values(expenseMap).reduce((s, v) => s + v, 0)
   const savings = totalIncome - totalExpense
   const savingsRate = totalIncome > 0 ? (savings / totalIncome) * 100 : 0
@@ -270,7 +286,7 @@ async function main() {
   out(`## 월 지출 — ${label} 키워드 자동 분배`)
   for (const slot of config.form_expense_categories) {
     const v = expenseMap[slot]
-    out(`- ${slot}: ${fmtNumOnly(v).toLocaleString()}만원`)
+    out(`- ${slot}: ${fmtNumOnly(v).toLocaleString()}만원${slot === '대출이자' && interestEstimated ? ` (추정: ${interestNotes.join(' + ')})` : ''}`)
   }
   out(`- **총 지출**: ${fmtNumOnly(totalExpense).toLocaleString()}만원`)
   out()
