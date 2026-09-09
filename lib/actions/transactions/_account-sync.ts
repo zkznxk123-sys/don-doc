@@ -28,6 +28,8 @@ export interface AccountBalanceInput {
   type?: AccountTypeForSync
   /** 뱅샐 대출현황에서 온 대출 조건 — ACCOUNT 적용 시 DebtDetail(금리·만기)에 반영 */
   loan?: { lender: string | null; principal: number | null; interestRate: number | null; startDate: string | null; maturityDate: string | null }
+  /** 뱅샐 투자현황의 금융사 — 종목 행을 어느 증권계좌 종목으로 볼지 제안 (예: "한국투자증권") */
+  broker?: string
 }
 
 /** 사용자가 미리보기에서 확정한 행별 결정 (바인딩·자동 제안보다 우선) */
@@ -81,6 +83,7 @@ export type UnresolvedReason =
   | 'fuzzy_only'             // 부분 일치 후보만 있음 — 자동 적용 안 함
   | 'ambiguous'              // 완전 일치가 2개+ 이고 명의로도 안 갈림
   | 'owner_mismatch'         // 완전 일치 1개지만 다른 구성원 명의
+  | 'broker_ambiguous'       // 금융사 기준 후보 계좌가 2개+
   | 'binding_target_missing' // 바인딩/결정의 대상 계좌가 삭제됨
 
 export type PlannedDecision =
@@ -103,6 +106,7 @@ export interface PlannedRow {
   /** mergedCount > 1일 때 원본 금액들 — 미리보기에 투명하게 표시 */
   parts?: number[]
   loan?: AccountBalanceInput['loan']
+  broker?: string
   decision: PlannedDecision
 }
 
@@ -187,6 +191,16 @@ function autoDecision(
     return { kind: 'HOLDING_SKIP', accountId: null, accountName: null, source: 'auto' }
   }
 
+  // 2.5) 뱅샐 투자현황 금융사 → 그 증권사 계좌의 종목으로. HOLDING_SKIP은 잔액을 쓰지 않아
+  //      위험이 없으므로 후보가 유일하면 자동 적용, 여럿이면 후보로.
+  if (row.broker) {
+    const cands = accountsByBroker(row.broker, accounts, ownerUserId)
+    if (cands.length === 1) {
+      return { kind: 'HOLDING_SKIP', accountId: cands[0].id, accountName: cands[0].name, source: 'auto' }
+    }
+    if (cands.length > 1) return { kind: 'UNRESOLVED', reason: 'broker_ambiguous', candidates: cands.map(toCandidate) }
+  }
+
   // 3) 부분 일치 — 후보로만 (적용 안 함)
   const fuzzy = accounts.filter(a => {
     const an = normalizeName(a.name)
@@ -200,11 +214,32 @@ function autoDecision(
   return { kind: 'UNRESOLVED', reason: 'no_match', candidates: [] }
 }
 
+const INVESTMENT_TYPES = new Set(['INVESTMENT', 'PENSION', 'CRYPTO', 'STO'])
+
+/**
+ * 금융사명으로 증권·연금 계좌 후보. "한화투자증권" → "한화투자증권 종합매매", "유진투자증권" → "유진증권",
+ * "미래에셋증권" → "미래에셋2". 명의자 소유 계좌가 있으면 그쪽으로 좁힌다.
+ */
+function accountsByBroker(broker: string, accounts: SnapshotAccount[], ownerUserId: string): SnapshotAccount[] {
+  const full = normalizeName(broker)
+  const keys = Array.from(new Set([full, full.replace(/투자증권$/, ''), full.replace(/증권$/, '')])).filter(k => k.length >= 2)
+  const pool = accounts.filter(a => INVESTMENT_TYPES.has(a.type))
+  for (const k of keys) {
+    const hits = pool.filter(a => normalizeName(a.name).includes(k))
+    if (hits.length === 0) continue
+    if (hits.length === 1) return hits
+    const owned = hits.filter(a => a.userId === ownerUserId)
+    return owned.length >= 1 ? owned : hits
+  }
+  return []
+}
+
 const REASON_LABEL: Record<UnresolvedReason, string> = {
   no_match: '일치하는 계좌가 없어요',
   fuzzy_only: '비슷한 계좌가 있지만 확정이 필요해요',
   ambiguous: '같은 이름의 계좌가 여러 개예요',
   owner_mismatch: '다른 구성원 명의 계좌예요',
+  broker_ambiguous: '같은 금융사 계좌가 여러 개예요',
   binding_target_missing: '연결됐던 계좌가 삭제됐어요',
 }
 
@@ -217,16 +252,16 @@ const REASON_LABEL: Record<UnresolvedReason, string> = {
  */
 function mergeSameNameRows(rows: AccountBalanceInput[]): (AccountBalanceInput & { mergedCount: number; parts?: number[] })[] {
   const order: string[] = []
-  const byName = new Map<string, { name: string; balance: number; type?: AccountTypeForSync; loan?: AccountBalanceInput['loan']; parts: number[] }>()
+  const byName = new Map<string, { name: string; balance: number; type?: AccountTypeForSync; loan?: AccountBalanceInput['loan']; broker?: string; parts: number[] }>()
   for (const r of rows) {
     const key = r.name.trim()
     const cur = byName.get(key)
-    if (cur) { cur.balance += r.balance; cur.parts.push(r.balance); cur.loan = cur.loan ?? r.loan }
-    else { order.push(key); byName.set(key, { name: key, balance: r.balance, type: r.type, loan: r.loan, parts: [r.balance] }) }
+    if (cur) { cur.balance += r.balance; cur.parts.push(r.balance); cur.loan = cur.loan ?? r.loan; cur.broker = cur.broker ?? r.broker }
+    else { order.push(key); byName.set(key, { name: key, balance: r.balance, type: r.type, loan: r.loan, broker: r.broker, parts: [r.balance] }) }
   }
   return order.map(k => {
     const m = byName.get(k)!
-    const loan = m.loan ? { loan: m.loan } : {}
+    const loan = { ...(m.loan ? { loan: m.loan } : {}), ...(m.broker ? { broker: m.broker } : {}) }
     return m.parts.length > 1
       ? { name: m.name, balance: m.balance, type: m.type, ...loan, mergedCount: m.parts.length, parts: m.parts }
       : { name: m.name, balance: m.balance, type: m.type, ...loan, mergedCount: 1 }
@@ -253,7 +288,7 @@ export function planBalanceSync(args: {
   const planned: PlannedRow[] = mergeSameNameRows(rows).map(row => {
     const excelName = row.name
     const type = row.type ?? 'CASH'
-    const base = { excelName, balance: row.balance, type, mergedCount: row.mergedCount, ...(row.parts ? { parts: row.parts } : {}), ...(row.loan ? { loan: row.loan } : {}) }
+    const base = { excelName, balance: row.balance, type, mergedCount: row.mergedCount, ...(row.parts ? { parts: row.parts } : {}), ...(row.loan ? { loan: row.loan } : {}), ...(row.broker ? { broker: row.broker } : {}) }
     if (excluded.has(excelName)) return { ...base, decision: { kind: 'EXCLUDED' } }
 
     const userDecision = decisions[excelName]

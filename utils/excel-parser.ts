@@ -30,6 +30,15 @@ export interface AccountBalance {
   type: 'CASH' | 'INVESTMENT' | 'PENSION' | 'REAL_ESTATE' | 'DEBT'
   /** 뱅샐현황 "6.대출현황"에서 같은 상품명으로 찾은 대출 조건 — 동기화 시 DebtDetail에 반영 (2026-09-09) */
   loan?: LoanInfo
+  /** 뱅샐현황 "5.투자현황"의 금융사 — 종목 행을 어느 증권계좌의 종목으로 볼지 자동 제안에 사용 (2026-09-09) */
+  broker?: string
+}
+
+export interface InvestmentInfo {
+  kind: string | null       // 주식 · 펀드 · ...
+  broker: string | null     // 금융사
+  principal: number | null  // 투자원금
+  value: number | null      // 평가금액
 }
 
 export interface LoanInfo {
@@ -388,6 +397,35 @@ export function parseBanksaladLoans(wb: XLSX.WorkBook): Map<string, LoanInfo> {
   return out
 }
 
+/**
+ * 뱅샐현황 "5.투자현황" 표 파싱 — 투자상품종류|금융사|상품명|투자원금|평가금액|수익률|가입일자|만기일자.
+ * 상품명 → 금융사. 같은 상품명이 두 금융사에 있으면 마지막 것이 남는다(드묾).
+ */
+export function parseBanksaladInvestments(wb: XLSX.WorkBook): Map<string, InvestmentInfo> {
+  const out = new Map<string, InvestmentInfo>()
+  const summarySheet = wb.SheetNames.find(n => n.includes('현황') || n.includes('뱅샐'))
+  if (!summarySheet) return out
+  const allRows = XLSX.utils.sheet_to_json<unknown[]>(wb.Sheets[summarySheet], { header: 1, defval: '', raw: true })
+  const cell = (r: unknown[], i: number) => String(r[i] ?? '').trim()
+  const num = (v: unknown) => { const n = typeof v === 'number' ? v : parseFloat(String(v ?? '').replace(/[,%]/g, '')); return Number.isFinite(n) ? n : null }
+  const h = allRows.findIndex(r => { const c = r.map(x => String(x ?? '').trim()); return c.includes('투자상품종류') && c.includes('금융사') })
+  if (h < 0) return out
+  const hc = allRows[h].map(c => String(c ?? '').trim())
+  const I = { kind: hc.indexOf('투자상품종류'), broker: hc.indexOf('금융사'), name: hc.indexOf('상품명'), principal: hc.indexOf('투자원금'), value: hc.indexOf('평가금액') }
+  for (let i = h + 1; i < allRows.length; i++) {
+    const r = allRows[i]
+    const name = I.name >= 0 ? cell(r, I.name) : ''
+    if (!name || cell(r, 0) === '총계') break
+    out.set(name, {
+      kind: I.kind >= 0 ? cell(r, I.kind) || null : null,
+      broker: I.broker >= 0 ? cell(r, I.broker) || null : null,
+      principal: I.principal >= 0 ? num(r[I.principal]) : null,
+      value: I.value >= 0 ? num(r[I.value]) : null,
+    })
+  }
+  return out
+}
+
 /** XLSX WorkBook에서 뱅크샐러드 파일 여부 판단 + 파싱 원스텝 */
 export function tryParseBanksalad(wb: XLSX.WorkBook, familyNames: string[] = []): ParseBanksaladResult | null {
   const { ws, sheetName, headerRowIndex } = detectBanksaladSheet(wb)
@@ -395,9 +433,11 @@ export function tryParseBanksalad(wb: XLSX.WorkBook, familyNames: string[] = [])
 
   const result = parseBanksaladSheet(ws, headerRowIndex, familyNames)
   const loans = parseBanksaladLoans(wb)
+  const investments = parseBanksaladInvestments(wb)
   const accountBalances = parseBanksaladSummary(wb).map(ab => {
     const loan = ab.type === 'DEBT' ? loans.get(ab.name) : undefined
-    return loan ? { ...ab, loan } : ab
+    const broker = investments.get(ab.name)?.broker ?? undefined
+    return { ...ab, ...(loan ? { loan } : {}), ...(broker ? { broker } : {}) }
   })
   return { ...result, sheetName, accountBalances }
 }

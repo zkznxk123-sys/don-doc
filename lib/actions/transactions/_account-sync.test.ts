@@ -141,6 +141,52 @@ describe('planBalanceSync — 자동 제안 (바인딩 없음)', () => {
   })
 })
 
+describe('planBalanceSync — 투자현황 금융사 제안', () => {
+  it('종목 행 + 금융사 → 그 증권사 계좌가 유일하면 HOLDING_SKIP 자동 (잔액 안 씀)', () => {
+    const p = planBalanceSync({
+      rows: [{ name: 'SPDR S&P 500', balance: 1_049_076, type: 'INVESTMENT', broker: '한국투자증권' }],
+      snapshot: snap([acc({ id: 'kis', name: '한국투자증권 (해외주식)', type: 'INVESTMENT', userId: ME, holdingNames: ['SPDR S&P 500 ETF Trust'] }), acc({ id: 'cash', name: '한국투자 CMA', type: 'CASH' })]),
+      ownerUserId: ME,
+    })
+    expect(decisionOf(p, 'SPDR S&P 500')).toMatchObject({ kind: 'HOLDING_SKIP', accountId: 'kis', source: 'auto' })
+    expect(p.rows[0].broker).toBe('한국투자증권')
+    expect(p.ready).toBe(true)
+  })
+
+  it('금융사 표기 차이(유진투자증권 ↔ 유진증권, 미래에셋증권 ↔ 미래에셋2)도 잡는다', () => {
+    const p = planBalanceSync({
+      rows: [
+        { name: 'KB중국본토A주', balance: 1, type: 'INVESTMENT', broker: '유진투자증권' },
+        { name: 'RISE 채권', balance: 1, type: 'INVESTMENT', broker: '미래에셋증권' },
+      ],
+      snapshot: snap([acc({ id: 'yj', name: '유진증권', type: 'INVESTMENT' }), acc({ id: 'mr', name: '미래에셋2', type: 'INVESTMENT' })]),
+      ownerUserId: ME,
+    })
+    expect(decisionOf(p, 'KB중국본토A주')).toMatchObject({ kind: 'HOLDING_SKIP', accountId: 'yj' })
+    expect(decisionOf(p, 'RISE 채권')).toMatchObject({ kind: 'HOLDING_SKIP', accountId: 'mr' })
+  })
+
+  it('같은 금융사 계좌가 여럿이고 명의로도 안 갈리면 UNRESOLVED(broker_ambiguous) + 후보', () => {
+    const p = planBalanceSync({
+      rows: [{ name: '삼성중공업', balance: 1, type: 'INVESTMENT', broker: '한화투자증권' }],
+      snapshot: snap([acc({ id: 'a', name: '한화투자증권 종합매매', type: 'INVESTMENT' }), acc({ id: 'b', name: '한화투자증권 ISA', type: 'INVESTMENT' })]),
+      ownerUserId: ME,
+    })
+    const d = decisionOf(p, '삼성중공업')
+    expect(d).toMatchObject({ kind: 'UNRESOLVED', reason: 'broker_ambiguous' })
+    expect(d.kind === 'UNRESOLVED' && d.candidates.map(c => c.accountId).sort()).toEqual(['a', 'b'])
+  })
+
+  it('계좌명 완전 일치·바인딩이 있으면 금융사 제안보다 우선', () => {
+    const p = planBalanceSync({
+      rows: [{ name: '애플', balance: 3_563, type: 'INVESTMENT', broker: '카카오페이 증권' }],
+      snapshot: snap([acc({ id: 'apple', name: '애플', type: 'INVESTMENT', userId: ME }), acc({ id: 'kp', name: '카카오페이증권', type: 'INVESTMENT' })]),
+      ownerUserId: ME,
+    })
+    expect(decisionOf(p, '애플')).toMatchObject({ kind: 'ACCOUNT', accountId: 'apple' })
+  })
+})
+
 describe('planBalanceSync — 바인딩·사용자 결정', () => {
   it('바인딩(ACCOUNT)이 있으면 이름 매칭 없이 그 계좌로', () => {
     const p = planBalanceSync({
