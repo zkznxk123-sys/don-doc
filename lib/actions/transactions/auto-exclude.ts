@@ -91,7 +91,7 @@ export async function autoDetectAndExcludeTransfers(
     return { success: true, pairCount: toExclude.size / 2 }
   } catch (e) {
     console.error('[autoDetectAndExcludeTransfers] ERROR:', e)
-    return { success: false, pairCount: 0, error: String(e) }
+    return { success: false, pairCount: 0, error: '계좌 간 이체를 자동으로 찾지 못했어요.' }
   }
 }
 
@@ -167,7 +167,7 @@ export async function autoDetectAndExcludeCancellations(
     return { success: true, pairCount: toExclude.size / 2 }
   } catch (e) {
     console.error('[autoDetectAndExcludeCancellations] ERROR:', e)
-    return { success: false, pairCount: 0, error: String(e) }
+    return { success: false, pairCount: 0, error: '취소 거래를 자동으로 찾지 못했어요.' }
   }
 }
 
@@ -248,6 +248,6 @@ export async function autoDetectAndExcludeSharedCardDuplicates(
     return { success: true, dupCount: toExclude.size }
   } catch (e) {
     console.error('[autoDetectAndExcludeSharedCardDuplicates] ERROR:', e)
-    return { success: false, dupCount: 0, error: String(e) }
+    return { success: false, dupCount: 0, error: '카드 중복 거래를 자동으로 찾지 못했어요.' }
   }
 }
