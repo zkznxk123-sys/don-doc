@@ -155,7 +155,7 @@ const KIND_LABEL: Record<string, { label: string; tone: string }> = {
   ACCOUNT_CASH: { label: '예수금',    tone: 'text-savings' },
   HOLDING_SKIP: { label: '종목 · 잔액 동기화 안 함', tone: 'text-muted-foreground' },
   IGNORE:       { label: '무시',      tone: 'text-muted-foreground/60' },
-  NEW_ACCOUNT:  { label: '신규 계좌', tone: 'text-ai-400' },
+  NEW_ACCOUNT:  { label: '신규 계좌', tone: 'text-foreground' },
 }
 
 const SOURCE_LABEL: Record<DecisionSource, string> = {

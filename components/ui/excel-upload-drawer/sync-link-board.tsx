@@ -51,7 +51,7 @@ function lineStyle(row: PlannedRow): LineStyle {
     case 'ACCOUNT': return { className: 'text-foreground', width: 1.5 }
     case 'ACCOUNT_CASH': return { className: 'text-savings', dash: '6 3', width: 1.5 }
     case 'HOLDING_SKIP': return { className: 'text-muted-foreground', dash: '2 3', width: 1.25 }
-    case 'NEW_ACCOUNT': return { className: 'text-ai-400', width: 1.5 }
+    case 'NEW_ACCOUNT': return { className: 'text-foreground', width: 1.5 }
     case 'IGNORE': return { className: 'text-muted-foreground', dash: '2 3', width: 1 }
     case 'CONFLICT': return { className: 'text-destructive', width: 2 }
     default: return { className: 'text-warning', dash: '4 3', width: 1.5 }
@@ -72,7 +72,7 @@ function statusOf(row: PlannedRow): { text: string; tone: string; needsInput: bo
       return { text: `예수금 · ${SOURCE_LABEL[d.source]} · ${diffText}`, tone: 'text-savings', needsInput: false }
     }
     case 'HOLDING_SKIP': return { text: `종목 · 잔액은 시세로 관리 · ${SOURCE_LABEL[d.source]}`, tone: 'text-muted-foreground', needsInput: false }
-    case 'NEW_ACCOUNT': return { text: `신규 계좌로 만들어요 (${row.type}) · ${SOURCE_LABEL[d.source]}`, tone: 'text-ai-400', needsInput: false }
+    case 'NEW_ACCOUNT': return { text: `신규 계좌로 만들어요 (${row.type}) · ${SOURCE_LABEL[d.source]}`, tone: 'text-foreground', needsInput: false }
     case 'IGNORE': return { text: '무시 · 앞으로도 동기화 안 함', tone: 'text-muted-foreground', needsInput: false }
     case 'EXCLUDED': return { text: '이번 업로드에서 제외', tone: 'text-muted-foreground', needsInput: false }
     case 'UNRESOLVED': return { text: `확인 필요 · ${REASON_LABEL[d.reason]} — ? 를 끌어 계좌에 놓으세요`, tone: 'text-warning', needsInput: true }
@@ -355,6 +355,9 @@ export function SyncLinkBoard({
         onMouseEnter={() => !drag && setHoverTarget(a.accountId)}
         onMouseLeave={() => !drag && setHoverTarget(null)}
         onClick={() => connectSelectedTo(a.accountId)}
+        role="button"
+        tabIndex={selected && !drag ? 0 : -1}
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); connectSelectedTo(a.accountId) } }}
         className={cn(
           'flex items-center gap-2 px-2.5 py-1.5 border-t border-border/40 transition-colors',
           selected && !drag && 'cursor-pointer',
@@ -520,6 +523,13 @@ export function SyncLinkBoard({
                       if ((e.target as HTMLElement).closest('input,button')) return
                       setSelected(prev => (prev === r.excelName ? null : r.excelName))
                     }}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={e => {
+                      if (e.key !== 'Enter' && e.key !== ' ') return
+                      e.preventDefault()
+                      setSelected(prev => (prev === r.excelName ? null : r.excelName))
+                    }}
                     className={cn(
                       'relative grid grid-cols-[20px_minmax(0,1fr)] gap-x-1 items-start pl-2 pr-4 py-1.5 cursor-pointer transition-colors',
                       excluded && 'opacity-40',
@@ -587,7 +597,7 @@ export function SyncLinkBoard({
             </div>
             {linked.length > 0 && <div className="px-2.5 pt-2 pb-1 text-[10px] text-muted-foreground/70">연결된 계좌 · {linked.length}</div>}
             {linked.map(renderAccountRow)}
-            {pendingNew.length > 0 && <div className="px-2.5 pt-2 pb-1 text-[10px] text-ai-400">적용하면 생성될 계좌 · {pendingNew.length}</div>}
+            {pendingNew.length > 0 && <div className="px-2.5 pt-2 pb-1 text-[10px] text-foreground">적용하면 생성될 계좌 · {pendingNew.length}</div>}
             {pendingNew.map(r => {
               const id = `${NEW_TARGET}:${r.excelName}`
               const active = activeTargets.has(id) || hoverTarget === id
@@ -599,12 +609,12 @@ export function SyncLinkBoard({
                   onMouseEnter={() => !drag && setHoverTarget(id)}
                   onMouseLeave={() => !drag && setHoverTarget(null)}
                   className={cn(
-                    'flex items-center gap-2 px-2.5 py-1.5 border-t border-dashed border-ai-400/40 transition-colors',
+                    'flex items-center gap-2 px-2.5 py-1.5 border-t border-dashed border-border/40 transition-colors',
                     active && 'bg-muted/60 ring-1 ring-inset ring-ring',
                     anyActive && !active && 'opacity-50',
                   )}
                 >
-                  <Plus className="w-3.5 h-3.5 shrink-0 text-ai-400" />
+                  <Plus className="w-3.5 h-3.5 shrink-0 text-foreground" />
                   <p className={cn('text-xs truncate flex-1 min-w-0', active ? 'text-secondary font-medium' : 'text-foreground')}>
                     {r.excelName}
                     <span className="ml-1 text-[10px] text-muted-foreground">{TYPE_LABEL[r.type] ?? r.type} · 신규</span>
@@ -627,7 +637,10 @@ export function SyncLinkBoard({
               onMouseEnter={() => !drag && setHoverTarget(NEW_TARGET)}
               onMouseLeave={() => !drag && setHoverTarget(null)}
               onClick={() => connectSelectedTo(NEW_TARGET)}
-              className={cn('flex items-center gap-2 px-2.5 py-1.5 border-t border-border/40 border-dashed text-ai-400 transition-colors', selected && !drag && 'cursor-pointer', (hoverTarget === NEW_TARGET || activeTargets.has(NEW_TARGET)) && 'bg-muted/60 ring-1 ring-inset ring-ring', anyActive && hoverTarget !== NEW_TARGET && !activeTargets.has(NEW_TARGET) && 'opacity-50')}
+              role="button"
+              tabIndex={selected && !drag ? 0 : -1}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); connectSelectedTo(NEW_TARGET) } }}
+              className={cn('flex items-center gap-2 px-2.5 py-1.5 border-t border-border/40 border-dashed text-foreground transition-colors', selected && !drag && 'cursor-pointer', (hoverTarget === NEW_TARGET || activeTargets.has(NEW_TARGET)) && 'bg-muted/60 ring-1 ring-inset ring-ring', anyActive && hoverTarget !== NEW_TARGET && !activeTargets.has(NEW_TARGET) && 'opacity-50')}
             >
               <Plus className="w-3.5 h-3.5 shrink-0" />
               <p className="text-xs flex-1 min-w-0 truncate">신규 계좌로 만들기 <span className="text-[10px] text-muted-foreground">— 적용할 때 생성</span></p>
@@ -639,6 +652,9 @@ export function SyncLinkBoard({
               onMouseEnter={() => !drag && setHoverTarget(IGNORE_TARGET)}
               onMouseLeave={() => !drag && setHoverTarget(null)}
               onClick={() => connectSelectedTo(IGNORE_TARGET)}
+              role="button"
+              tabIndex={selected && !drag ? 0 : -1}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); connectSelectedTo(IGNORE_TARGET) } }}
               className={cn('flex items-center gap-2 px-2.5 py-1.5 border-t border-border/40 border-dashed text-muted-foreground transition-colors', selected && !drag && 'cursor-pointer', (hoverTarget === IGNORE_TARGET || activeTargets.has(IGNORE_TARGET)) && 'bg-muted/60 ring-1 ring-inset ring-ring', anyActive && hoverTarget !== IGNORE_TARGET && !activeTargets.has(IGNORE_TARGET) && 'opacity-50')}
             >
               <Ban className="w-3.5 h-3.5 shrink-0" />

@@ -187,14 +187,19 @@ function calcEstimatedMonthly(
   interestRate: number,
   repaymentType: string | null,
   maturityDate: string | null,
-): { amount: number; label: string } | null {
+): { amount: number; label: string; expired?: boolean } | null {
   const monthlyRate = interestRate / 100 / 12
   if (monthlyRate <= 0 || balance <= 0) return null
 
-  // 만기일 기준 잔여 개월수
-  const remainingMonths = maturityDate
-    ? Math.max(1, Math.round((new Date(maturityDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30.44)))
+  // 만기일 기준 잔여 개월수 — 이미 지난 만기는 n=1로 강제하면 PMT가 잔액 전액에 가깝게
+  // 부풀려지므로(n이 작을수록 분모가 작아짐) 별도 "만기 지남" 상태로 분리한다.
+  const monthsUntilMaturity = maturityDate
+    ? Math.round((new Date(maturityDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30.44))
     : null
+  if (monthsUntilMaturity != null && monthsUntilMaturity <= 0) {
+    return { amount: 0, label: '만기가 지났어요', expired: true }
+  }
+  const remainingMonths = monthsUntilMaturity
 
   if (repaymentType === 'EQUAL_PRINCIPAL_INTEREST' && remainingMonths) {
     // 원리금균등: PMT = P × r(1+r)^n / ((1+r)^n - 1)
@@ -227,7 +232,10 @@ function DebtCard({
   onEdit: () => void
 }) {
   const meta = DEBT_TYPE_META[debt.debtType] ?? DEBT_TYPE_META.ETC
-  const isNearMaturity = debt.maturityDate
+  const isExpired = debt.maturityDate
+    ? new Date(debt.maturityDate).getTime() - Date.now() <= 0
+    : false
+  const isNearMaturity = !isExpired && debt.maturityDate
     ? (new Date(debt.maturityDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 365) < 1
     : false
 
@@ -282,6 +290,11 @@ function DebtCard({
               <p className="text-base font-bold tabular-nums text-foreground">{formatLargeNumber(debt.monthlyPayment)}</p>
               <p className="text-[10px] text-muted-foreground/50">연 {formatLargeNumber(debt.monthlyPayment * 12)}</p>
             </div>
+          ) : estimated?.expired ? (
+            <div className="text-right">
+              <p className="text-[10px] text-destructive mb-0.5">{estimated.label}</p>
+              <p className="text-xs font-medium text-destructive">재계약 여부를 확인해 주세요</p>
+            </div>
           ) : estimated != null ? (
             <div className="text-right">
               <p className="text-[10px] text-warning mb-0.5">예상 월 납입</p>
@@ -302,16 +315,23 @@ function DebtCard({
             </p>
           </div>
           <div
-            className={cn('rounded-xl p-3', isNearMaturity ? 'bg-warning-soft border' : 'bg-muted/40')}
-            style={isNearMaturity ? { borderColor: 'color-mix(in srgb, var(--viz-copper) 30%, transparent)' } : undefined}
+            className={cn(
+              'rounded-xl p-3',
+              isExpired ? 'bg-destructive/10 border border-destructive/20' : isNearMaturity ? 'bg-warning-soft border' : 'bg-muted/40',
+            )}
+            style={!isExpired && isNearMaturity ? { borderColor: 'color-mix(in srgb, var(--viz-copper) 30%, transparent)' } : undefined}
           >
             <p className="text-[10px] text-muted-foreground/60 mb-1">만기일</p>
-            <p className={cn('text-sm font-bold tabular-nums', isNearMaturity ? 'text-warning' : 'text-foreground')}>
+            <p className={cn('text-sm font-bold tabular-nums', isExpired ? 'text-destructive' : isNearMaturity ? 'text-warning' : 'text-foreground')}>
               {debt.maturityDate
                 ? debt.maturityDate.slice(0, 7).replace('-', '.')
                 : '—'}
             </p>
-            {isNearMaturity && <p className="text-[9px] text-warning mt-0.5">1년 이내</p>}
+            {isExpired ? (
+              <p className="text-[9px] text-destructive mt-0.5">만기 지남</p>
+            ) : isNearMaturity ? (
+              <p className="text-[9px] text-warning mt-0.5">1년 이내</p>
+            ) : null}
           </div>
           <div className="bg-muted/40 rounded-xl p-3">
             <p className="text-[10px] text-muted-foreground/60 mb-1">상환방식</p>
