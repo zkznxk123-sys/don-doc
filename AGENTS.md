@@ -253,6 +253,16 @@ if (isLite()) { /* lite 분기 */ }
 - **되돌리기**: `/dashboard/uploads` 배치 상세의 "되돌리기" → `revertUploadBatch`(oldBalance 복원, 이후 변경 있으면 그 계좌는 건너뜀, `excel-revert` 배치로 기록).
 - 금지: 이름 매칭 확대·휴리스틱 추가로 "더 똑똑한 추측" 만들기. 사람이 확정해야 할 순간은 미리보기로 넘긴다.
 - 데이터 이관: `scripts/migrate-asset-sync-20260907.ts` (dry-run 기본, `--apply`).
+- **뱅샐현황 하단 표도 읽는다(2026-09-09)**: `parseBanksaladLoans`(6.대출현황 → 금리·원금·만기 → 동기화 시 `DebtDetail` 빈 칸 보강), `parseBanksaladInvestments`(5.투자현황 → 상품명별 금융사). 종목 행은 금융사로 증권계좌를 찾아 유일하면 HOLDING_SKIP 자동 제안(`accountsByBroker`), 여럿이면 `broker_ambiguous` 후보.
+- **연결 보드** `/dashboard/assets/link` (`components/ui/excel-upload-drawer/sync-link-board.tsx`): 엑셀 행 ↔ 계좌를 선으로 잇고 계좌 쪽 끝점·선을 끌거나(행 선택 후 대상 클릭도 가능) 연결 변경. 드로어의 select 목록과 같은 계획을 씀. 드로어→보드 핸드오프는 sessionStorage(`sync-link-handoff.ts`).
+
+### 총자산 계산 계약 (2026-09-16 통일)
+
+dashboard·wealth 라우트, 순자산 스냅샷(`createSnapshotFromCurrentBalances`), 인사이트(`getFinancialInsights`)는 **`lib/actions/_wealth-accounts.ts loadWealthAccounts`** 한 조회 + **`computeWealthSummary`** 한 계산만 쓴다. 규칙: 최상위 계좌만, 보유 종목 계좌 = balance(Σ종목) + cashBalance(예수금) + CASH 하위, 종목 없는 부모 + 하위 = 하위 합, 부채 타입은 부채합. **가족 합산 스냅샷·인사이트는 `excludePrivate: true`(PRIVATE 제외)**, 대시보드는 역할별 마스킹. 회귀 테스트 `lib/networth-calc.test.ts` "총자산 계약" 6건. 새 집계 지점을 만들 때 `prisma.account.findMany`로 직접 합산 금지.
+
+### 계좌 정리 (2026-09-09 도입 · 정책 확정 2026-09-16)
+
+`lib/account-cleanup-calc.ts findCleanupCandidates`(순수): 잔액·예수금 0, 종목·하위·연결부채 없음, 최근 6개월(`CLEANUP_IDLE_MONTHS`) 거래·잔액변경·바인딩 갱신 없음, "유지"(`User.preferences.dismissedCleanupAccountIds`) 아님. 자산 관리 상단 `CleanupBanner` + 연결 보드 "정리 후보" 그룹. **삭제 정책 = 하드 삭제 + AlertDialog 확인**(이력 함께 삭제·되돌리기 불가 명시). `deleteCleanupCandidates`는 삭제 직전 재판정 후 `force: true`. `deleteAccount`는 그 계좌를 가리키던 `ExcelMapping`도 지운다.
 
 ---
 
@@ -327,6 +337,12 @@ npx tsx prisma/seed-demo.ts        # 데모 가족 시드 (가명 데이터)
 
 이유: SheetJS는 0.18.5 이후 npm 배포를 중단하고 CDN 자체 배포로 전환했고, npm 0.18.5에는 high 취약점 2건(Prototype Pollution, ReDoS)이 fix 없이 남아 있다. CDN 0.20.3은 두 취약점 모두 해소.
 
+
+---
+
+## 에이전트 브랜치 자동 병합 (2026-09-16 정책)
+
+맥미니 루틴(`~/Developer/dondoc-agents`)이 만드는 `dondoc-auto/*`·`dondoc-issue/*` 브랜치는 검증(tsc·vitest·eslint·check-tone·check-css-tokens) 전부 통과 시 push + `gh pr create`까지 자동. 병합은 `auto-merge-gate.sh`가 **PR 생성 12시간 뒤, 충돌 0 + 체크 전부 통과**인 것만 merge commit으로 처리(`team-rounds.sh`·`issue-sweep.sh` 시작 시 실행, 로그 `logs/auto-merge-gate.log`). 사람이 막으려면 12시간 안에 PR을 Draft로 바꾸거나 닫는다. main 직접 commit/merge는 여전히 금지.
 
 ---
 
