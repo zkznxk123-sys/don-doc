@@ -10,6 +10,10 @@ import { Eraser as Broom, ChevronDown, ChevronRight, Loader2, Trash2, X } from '
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
+import {
   getCleanupCandidates, dismissCleanupCandidate, deleteCleanupCandidates,
   type CleanupCandidateData,
 } from '@/lib/actions/account-cleanup'
@@ -59,15 +63,33 @@ export function CleanupBanner({ refreshKey, onChanged }: { refreshKey?: number; 
           </span>
           <span className="text-xs text-muted-foreground hidden sm:inline">— 정리해도 순자산은 바뀌지 않아요</span>
         </button>
-        <button
-          type="button"
-          disabled={busy !== null}
-          onClick={() => remove(items.map(i => i.id))}
-          className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-foreground text-background hover:bg-foreground/90 disabled:opacity-50"
-        >
-          {busy === 'all' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-          모두 정리
-        </button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <button
+              type="button"
+              disabled={busy !== null}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-foreground text-background hover:bg-foreground/90 disabled:opacity-50"
+            >
+              {busy === 'all' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+              모두 정리
+            </button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>계좌 {items.length}개를 삭제할까요?</AlertDialogTitle>
+              <AlertDialogDescription>
+                잔액 0이고 {idleMonths}개월 이상 움직임이 없던 계좌예요. 과거 거래 이력과 잔액 변경 기록도 함께 지워지고 되돌릴 수 없어요. 순자산은 바뀌지 않아요.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <ul className="max-h-40 overflow-y-auto text-xs text-muted-foreground space-y-0.5 px-1">
+              {items.map(i => <li key={i.id} className="truncate">· {i.name}{i.transactionCount > 0 ? ` (거래 ${i.transactionCount}건)` : ''}</li>)}
+            </ul>
+            <AlertDialogFooter>
+              <AlertDialogCancel>취소</AlertDialogCancel>
+              <AlertDialogAction onClick={() => remove(items.map(i => i.id))} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">모두 삭제</AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         <button type="button" onClick={() => setHidden(true)} className="p-1 rounded-md text-muted-foreground hover:text-foreground" title="이번엔 닫기">
           <X className="w-3.5 h-3.5" />
         </button>
@@ -81,9 +103,25 @@ export function CleanupBanner({ refreshKey, onChanged }: { refreshKey?: number; 
                 <p className="text-[10px] text-muted-foreground truncate">{i.reason}</p>
               </div>
               <button type="button" disabled={busy !== null} onClick={() => keep(i.id)} className="text-[11px] px-2 py-1 rounded-md border border-border text-muted-foreground hover:text-foreground">유지</button>
-              <button type="button" disabled={busy !== null} onClick={() => remove([i.id])} className="text-[11px] px-2 py-1 rounded-md border border-border text-destructive hover:bg-destructive/10 flex items-center gap-1">
-                {busy === i.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}삭제
-              </button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button type="button" disabled={busy !== null} className="text-[11px] px-2 py-1 rounded-md border border-border text-destructive hover:bg-destructive/10 flex items-center gap-1">
+                    {busy === i.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}삭제
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>&apos;{i.name}&apos; 계좌를 삭제할까요?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      {i.transactionCount > 0 ? `과거 거래 ${i.transactionCount}건과 ` : ''}잔액 변경 기록이 함께 지워지고 되돌릴 수 없어요. 잔액이 0이라 순자산은 바뀌지 않아요.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>취소</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => remove([i.id])} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">삭제</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </li>
           ))}
         </ul>

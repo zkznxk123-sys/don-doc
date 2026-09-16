@@ -15,6 +15,10 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { AlertCircle, Plus, Ban, X, Loader2, Trash2 } from 'lucide-react'
 import { cn, formatCurrency } from '@/lib/utils'
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog'
 import type {
   BalanceSyncPlan, PlannedRow, SyncCandidate, SyncDecisionInput, SyncDecisionKind, UnresolvedReason,
 } from '@/lib/actions/transactions/_account-sync'
@@ -668,14 +672,32 @@ export function SyncLinkBoard({
                     {cleanupOpen ? '▾' : '▸'} 정리 후보 · {cleanupCandidates.length}
                     <span className="text-muted-foreground/70 hidden sm:inline">— {cleanup!.idleMonths}개월 이상 움직임 없는 잔액 0 계좌</span>
                   </button>
-                  <button
-                    type="button"
-                    disabled={cleanupBusy || !onDeleteAll}
-                    onClick={async () => { setCleanupBusy(true); try { await onDeleteAll?.(cleanupCandidates.map(a => a.accountId)) } finally { setCleanupBusy(false) } }}
-                    className="ml-auto text-[10px] px-1.5 py-0.5 rounded-md bg-foreground text-background disabled:opacity-50"
-                  >
-                    {cleanupBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : '모두 정리'}
-                  </button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button
+                        type="button"
+                        disabled={cleanupBusy || !onDeleteAll}
+                        className="ml-auto text-[10px] px-1.5 py-0.5 rounded-md bg-foreground text-background disabled:opacity-50"
+                      >
+                        {cleanupBusy ? <Loader2 className="w-3 h-3 animate-spin" /> : '모두 정리'}
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>계좌 {cleanupCandidates.length}개를 삭제할까요?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          잔액 0이고 {cleanup!.idleMonths}개월 이상 움직임이 없던 계좌예요. 과거 거래 이력과 잔액 변경 기록도 함께 지워지고 되돌릴 수 없어요.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>취소</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={async () => { setCleanupBusy(true); try { await onDeleteAll?.(cleanupCandidates.map(a => a.accountId)) } finally { setCleanupBusy(false) } }}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >모두 삭제</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
                 {cleanupOpen && cleanupCandidates.map(a => (
                   <div key={a.accountId} className="flex items-center gap-2 px-2.5 py-1.5 border-t border-border/40">

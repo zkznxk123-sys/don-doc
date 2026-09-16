@@ -213,3 +213,60 @@ describe('computeWealthSummary — dashboard·wealth 공유 자산 집계', () =
     expect(r.assetsByType).toEqual([])
   })
 })
+
+
+// ━━ 총자산 계약 (2026-09-16 통일) — dashboard·wealth·스냅샷·인사이트가 공유하는 단일 규칙 ━━
+describe('computeWealthSummary — 총자산 계약', () => {
+  const CFO = { userId: 'u1', role: 'CFO' }
+  const row = (p: Partial<WealthAccountRow> & { id: string; type: string }): WealthAccountRow => ({
+    name: p.id, balance: 0, cashBalance: 0, isShared: true, shareLevel: 'PUBLIC', userId: null, isJoint: false,
+    linkedAssetId: null, user: null, linkedDebts: [], subAccounts: [], _count: { holdings: 0 }, ...p,
+  })
+
+  it('보유 종목 계좌 = 종목 평가액(balance) + 예수금(cashBalance) + CASH 하위 계좌', () => {
+    const s = computeWealthSummary([row({ id: 'inv', type: 'INVESTMENT', balance: 3_000_000, cashBalance: 1_351_783, _count: { holdings: 3 },
+      subAccounts: [{ id: 's', name: '수동 현금', balance: 10_000, type: 'CASH' }, { id: 'x', name: '펀드', balance: 999, type: 'INVESTMENT' }] })], CFO)
+    expect(s.totalAssets).toBe(3_000_000 + 1_351_783 + 10_000)
+  })
+
+  it('종목 없는 부모 + 하위 계좌 = 하위 합만 (옛 sub-account 모델, 부모 balance 무시)', () => {
+    const s = computeWealthSummary([row({ id: 'irp', type: 'PENSION', balance: 0,
+      subAccounts: [{ id: 'a', name: '채권', balance: 1_000, type: 'INVESTMENT' }, { id: 'b', name: '주식', balance: 2_000, type: 'INVESTMENT' }] })], CFO)
+    expect(s.totalAssets).toBe(3_000)
+  })
+
+  it('하위도 종목도 없는 계좌 = balance 그대로 (cashBalance는 종목 계좌에서만 합산)', () => {
+    const s = computeWealthSummary([row({ id: 'cash', type: 'CASH', balance: 500, cashBalance: 999 })], CFO)
+    expect(s.totalAssets).toBe(500)
+  })
+
+  it('excludePrivate: PRIVATE 계좌는 CFO여도 합산에서 빠진다 (가족 합산 스냅샷·인사이트 계약)', () => {
+    const rows = [row({ id: 'pub', type: 'CASH', balance: 100 }), row({ id: 'prv', type: 'CASH', balance: 900, shareLevel: 'PRIVATE', userId: 'u2' })]
+    expect(computeWealthSummary(rows, CFO).totalAssets).toBe(1_000)
+    expect(computeWealthSummary(rows, { ...CFO, excludePrivate: true }).totalAssets).toBe(100)
+    expect(computeWealthSummary(rows, { ...CFO, excludePrivate: true }).accountSummary.map(a => a.id)).toEqual(['pub'])
+  })
+
+  it('MEMBER: 타인 PRIVATE 제외·BALANCE_ONLY 마스킹, 본인 계좌는 그대로', () => {
+    const rows = [
+      row({ id: 'mine', type: 'CASH', balance: 100, shareLevel: 'PRIVATE', userId: 'u1' }),
+      row({ id: 'theirs-private', type: 'CASH', balance: 200, shareLevel: 'PRIVATE', userId: 'u2' }),
+      row({ id: 'theirs-balance', type: 'CASH', balance: 300, shareLevel: 'BALANCE_ONLY', userId: 'u2' }),
+    ]
+    const s = computeWealthSummary(rows, { userId: 'u1', role: 'MEMBER' })
+    expect(s.accountSummary.map(a => a.id)).toEqual(['mine', 'theirs-balance'])
+    expect(s.accountSummary.find(a => a.id === 'theirs-balance')?.isMasked).toBe(true)
+    expect(s.totalAssets).toBe(400)
+  })
+
+  it('부채 타입은 자산에서 빠지고 부채합·순자산에 반영, 스냅샷용 typeBreakdown과 일치', () => {
+    const rows = [row({ id: 'apt', type: 'REAL_ESTATE', balance: 1_000 }), row({ id: 'loan', type: 'DEBT', balance: 400 }), row({ id: 'card', type: 'CREDIT_CARD', balance: 50 })]
+    const s = computeWealthSummary(rows, CFO)
+    expect(s.totalAssets).toBe(1_000)
+    expect(s.totalLiabilities).toBe(450)
+    expect(s.totalNetWorth).toBe(550)
+    const bd = aggregateTypeBreakdown(s.accountSummary.map(a => ({ type: a.type, balance: a.balance })))
+    expect(bd.realEstate).toBe(1_000)
+    expect(bd.debt).toBe(450)
+  })
+})

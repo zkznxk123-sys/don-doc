@@ -143,10 +143,19 @@ export interface WealthSummary {
  */
 export function computeWealthSummary(
   accounts: WealthAccountRow[],
-  { userId, role }: { userId: string; role: string },
+  { userId, role, excludePrivate = false }: {
+    userId: string
+    role: string
+    /**
+     * PRIVATE 계좌를 합산 자체에서 제외 (가족 합산 스냅샷·인사이트 계약, 2026-09-14 팀 결정).
+     * false면 역할별 마스킹만 — CFO는 PRIVATE도 보이고 합산됨(대시보드·자산 화면).
+     */
+    excludePrivate?: boolean
+  },
 ): WealthSummary {
   const accountSummary: WealthAccountSummary[] = []
   for (const acc of accounts) {
+    if (excludePrivate && acc.shareLevel === 'PRIVATE') continue
     const isOwn = acc.userId === userId
     // 잔액 계산: holdings 보유 시 부모.balance(시가평가액) + cashBalance(예수금, 2026-09-07) + CASH sub(수동 구조).
     // holdings 없으면 옛 sub-account 모델.

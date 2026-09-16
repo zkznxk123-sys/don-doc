@@ -7,6 +7,7 @@ import { getFinancialInsights } from '@/lib/actions/stats'
 import { aggregateMonthlyCashflow } from '@/lib/cashflow-calc'
 import { computeBudgetSummary } from '@/lib/budget-calc'
 import { computeWealthSummary } from '@/lib/networth-calc'
+import { loadWealthAccounts } from '@/lib/actions/_wealth-accounts'
 
 /**
  * GET /api/dashboard?month=YYYY-MM
@@ -52,18 +53,7 @@ export async function GET(req: NextRequest) {
       insights,
     ] = await Promise.all([
       // 1) 자산 (wealth)
-      prisma.account.findMany({
-        where: { familyId, parentAccountId: null },
-        include: {
-          linkedDebts: { select: { id: true, name: true, balance: true } },
-          user: { select: { name: true } },
-          subAccounts: {
-            select: { id: true, name: true, balance: true, type: true },
-            orderBy: { name: 'asc' },
-          },
-          _count: { select: { holdings: true } },
-        },
-      }),
+      loadWealthAccounts(familyId),
 
       // 2) 월별 거래 (transactions/list)
       prisma.transaction.findMany({

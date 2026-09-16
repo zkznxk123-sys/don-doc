@@ -75,16 +75,22 @@ export async function dismissCleanupCandidate(accountId: string): Promise<{ succ
 }
 
 /**
- * 정리 후보 일괄 삭제. 후보는 정의상 거래·종목·하위 계좌가 없으므로 force 없이 삭제되며,
- * 그 사이 데이터가 생긴 계좌는 건너뛰고 보고한다.
+ * 정리 후보 일괄 삭제 — 하드 삭제 정책(2026-09-16 결정): 후보는 잔액 0·6개월 무활동 계좌라 복구 가치가
+ * 낮고, 소프트 삭제는 모든 집계 쿼리에 필터를 요구한다. 대신 UI에서 확인 다이얼로그를 거친다.
+ * 후보에는 과거 거래(이력)가 남아 있을 수 있으므로 force=true로 함께 삭제한다. 삭제 시점에 다시
+ * 활동이 생긴 계좌(최근 6개월 거래·잔액≠0)는 건너뛰고 보고한다.
  */
 export async function deleteCleanupCandidates(accountIds: string[]): Promise<{ success: boolean; deleted: number; skipped: { id: string; reason: string }[] }> {
   const user = await getAuthUser()
   if (!user?.familyId) return { success: false, deleted: 0, skipped: [] }
   let deleted = 0
   const skipped: { id: string; reason: string }[] = []
+  // 삭제 직전 재판정 — 제안 이후 잔액이 생겼거나 최근 거래가 붙었으면 건너뛴다
+  const { candidates } = await getCleanupCandidates()
+  const stillCandidate = new Set(candidates.map(c => c.id))
   for (const id of accountIds) {
-    const res = await deleteAccount(id)
+    if (!stillCandidate.has(id)) { skipped.push({ id, reason: '제안 이후 활동이 생겨 건너뛰었어요' }); continue }
+    const res = await deleteAccount(id, { force: true })
     if (res.success) deleted++
     else skipped.push({ id, reason: res.error ?? '삭제 실패' })
   }
