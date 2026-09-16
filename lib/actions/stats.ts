@@ -1,7 +1,8 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
-import { computeNetWorth } from '@/lib/networth-calc'
+import { computeWealthSummary } from '@/lib/networth-calc'
+import { loadWealthAccounts } from '@/lib/actions/_wealth-accounts'
 import {
   aggregateMonthlyFlows,
   computeMonthSavings,
@@ -50,12 +51,9 @@ export async function getFinancialInsights(
   const currentEnd = new Date(y, m, 1)
   const twelveMonthsAgo = new Date(y, m - 13, 1) // 12개월 이전 시작
 
-  // 현재 총자산 — 부채 타입 제외(networth-calc 계약) + PRIVATE 계좌 제외(트랜잭션 쿼리와 대칭).
-  const accounts = await prisma.account.findMany({
-    where: { familyId, shareLevel: { not: 'PRIVATE' } },
-    select: { type: true, balance: true },
-  })
-  const currentAssets = computeNetWorth(accounts).totalAssets
+  // 현재 총자산 — 총자산 계약(2026-09-16): loadWealthAccounts + computeWealthSummary(PRIVATE 제외).
+  // 스냅샷·대시보드와 같은 규칙(예수금·CASH 하위 합산, 부채 타입 제외).
+  const currentAssets = computeWealthSummary(await loadWealthAccounts(familyId), { userId: '', role: 'CFO', excludePrivate: true }).totalAssets
 
   // 최근 12개월 + 이번 달 트랜잭션 (PRIVATE 계좌 제외)
   const transactions = await prisma.transaction.findMany({

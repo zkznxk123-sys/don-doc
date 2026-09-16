@@ -2,8 +2,9 @@
 
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
+import { loadWealthAccounts } from '@/lib/actions/_wealth-accounts'
 import { isCFOLevel } from '@/lib/roles'
-import { computeNetWorth, aggregateTypeBreakdown, type NetWorthTypeBreakdown } from '@/lib/networth-calc'
+import { aggregateTypeBreakdown, computeWealthSummary, type NetWorthTypeBreakdown } from '@/lib/networth-calc'
 
 // ⚠️ 'use server' 파일의 export는 전부 서버 액션으로 등록된다 — 타입 re-export(`export type { X }`)를
 // 두면 액션 매니페스트가 값을 찾다 ReferenceError로 이 모듈을 쓰는 모든 POST가 500
@@ -187,15 +188,12 @@ export async function createSnapshotFromCurrentBalances(
     return { success: false, error: '잘못된 연월 형식입니다. (YYYY-MM)' }
   }
 
-  const rawAccounts = await prisma.account.findMany({
-    where: { familyId: authUser.familyId },
-    select: { type: true, balance: true, cashBalance: true },
-  })
-  // 보유 종목 계좌의 예수금(cashBalance)은 잔액에 합산 (2026-09-07)
-  const accounts = rawAccounts.map(a => ({ type: a.type, balance: a.balance + a.cashBalance }))
-
-  const { totalAssets, totalLiabilities, netWorth } = computeNetWorth(accounts)
-  const typeBreakdown = aggregateTypeBreakdown(accounts)
+  // 총자산 계약(2026-09-16): dashboard·wealth와 같은 계좌 조회 + computeWealthSummary.
+  // 가족 합산 스냅샷은 PRIVATE 계좌 제외(팀 결정 2026-09-14). 예수금·CASH 하위 합산도 같은 규칙.
+  const rows = await loadWealthAccounts(authUser.familyId)
+  const summary = computeWealthSummary(rows, { userId: authUser.id, role: 'CFO', excludePrivate: true })
+  const { totalAssets, totalLiabilities, totalNetWorth: netWorth } = summary
+  const typeBreakdown = aggregateTypeBreakdown(summary.accountSummary.map(a => ({ type: a.type, balance: a.balance })))
 
   // 빈 스냅샷 가드 — 계좌가 없거나 잔액 합이 0이면 0 크레이터를 만든다. 기록하지 않음.
   if (totalAssets === 0 && totalLiabilities === 0) {

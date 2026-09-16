@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { loadWealthAccounts } from '@/lib/actions/_wealth-accounts'
 import { getAuthUser } from '@/lib/auth'
 import { computeWealthSummary } from '@/lib/networth-calc'
 
@@ -19,21 +20,8 @@ export async function GET(req: NextRequest) {
 
     const role = authUser?.role || 'MEMBER'
 
-    const accounts = await prisma.account.findMany({
-      where: { familyId, parentAccountId: null },   // 최상위 계좌만
-      include: {
-        linkedDebts: { select: { id: true, name: true, balance: true } },
-        user: { select: { name: true } },
-        subAccounts: {
-          select: { id: true, name: true, balance: true, type: true },
-          orderBy: { name: 'asc' },
-        },
-        realEstateDetail: {
-          select: { complexName: true, bjdCode: true, area: true, floor: true, propertyType: true },
-        },
-        _count: { select: { holdings: true } },
-      },
-    })
+    // 총자산 계약(2026-09-16): dashboard·스냅샷·인사이트와 같은 로더
+    const accounts = await loadWealthAccounts(familyId)
 
     const summary = computeWealthSummary(accounts, { userId, role })
 
