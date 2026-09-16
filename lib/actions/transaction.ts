@@ -361,7 +361,7 @@ export async function addTransaction(input: {
     return { success: true, id: transaction.id }
   } catch (e) {
     console.error('[addTransaction] ERROR:', e)
-    return { success: false, error: String(e) }
+    return { success: false, error: '거래를 추가하지 못했어요.' }
   }
 }
 

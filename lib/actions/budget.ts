@@ -60,7 +60,7 @@ export async function saveFamilyBudgets(
     return { success: true }
   } catch (e) {
     console.error('[saveFamilyBudgets] ERROR:', e)
-    return { success: false, error: String(e) }
+    return { success: false, error: '예산을 저장하지 못했어요.' }
   }
 }
 

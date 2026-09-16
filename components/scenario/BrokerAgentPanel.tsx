@@ -66,7 +66,7 @@ export function BrokerAgentPanel({
       }
     } catch (e) {
       console.error('[BrokerAgent] analyze error:', e)
-      setError('네트워크 오류: ' + String(e))
+      setError('분석을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.')
     } finally {
       setAnalyzing(false)
     }

@@ -137,7 +137,7 @@ export async function detectAutoExcludeItems(
     return { success: true, groups }
   } catch (e) {
     console.error('[detectAutoExcludeItems] ERROR:', e)
-    return { success: false, groups: [], error: String(e) }
+    return { success: false, groups: [], error: '정리할 항목을 불러오지 못했어요.' }
   }
 }
 
@@ -163,6 +163,6 @@ export async function applyAutoExclusions(
     return { success: true, count: ids.length }
   } catch (e) {
     console.error('[applyAutoExclusions] ERROR:', e)
-    return { success: false, count: 0, error: String(e) }
+    return { success: false, count: 0, error: '자동 제외를 적용하지 못했어요.' }
   }
 }
