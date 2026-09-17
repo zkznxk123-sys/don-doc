@@ -25,6 +25,7 @@ const TYPE_META: Record<string, { label: string; Icon: React.ElementType; color:
   STO:         { label: '토큰증권',       Icon: Layers,     color: assetColor('STO') },
   DEBT:        { label: '대출',           Icon: HandCoins,  color: assetColor('DEBT') },
   CREDIT_CARD: { label: '신용카드',       Icon: CreditCard, color: assetColor('CREDIT_CARD') },
+  PAYMENT:     { label: '결제수단',       Icon: CreditCard, color: assetColor('PAYMENT') },
 }
 
 interface AssetListProps {

@@ -66,7 +66,7 @@ export function buildAccountTools(ctx: ToolContext) {
         '가족의 계좌(자산·부채) 목록과 잔액을 조회. 부분 일치 이름 검색 가능. ' +
         'liability=true 면 부채(DEBT/CREDIT_CARD)만 반환. 가시성 규칙 적용 (PRIVATE 계좌는 본인만, BALANCE_ONLY는 이름 마스킹).',
       inputSchema: z.object({
-        type: z.enum(['CASH', 'INVESTMENT', 'PENSION', 'CRYPTO', 'REAL_ESTATE', 'STO', 'DEBT', 'CREDIT_CARD']).optional()
+        type: z.enum(['CASH', 'INVESTMENT', 'PENSION', 'CRYPTO', 'REAL_ESTATE', 'STO', 'DEBT', 'CREDIT_CARD', 'PAYMENT']).optional()
           .describe('자산/부채 유형 필터'),
         nameKeyword: z.string().optional().describe('계좌명 부분일치 (예: 카카오, 마이너스)'),
         liability: z.boolean().optional().describe('true 면 부채만, false 면 자산만'),
@@ -80,7 +80,8 @@ export function buildAccountTools(ctx: ToolContext) {
           where: {
             familyId,
             parentAccountId: null,
-            ...(type ? { type: type as AccountType } : {}),
+            // 결제수단(PAYMENT)은 자산·부채 어느 쪽도 아님 — 명시적으로 type을 주지 않으면 제외
+            ...(type ? { type: type as AccountType } : { type: { not: AccountType.PAYMENT } }),
             ...(liability === true ? { type: { in: DEBT_TYPES } } : {}),
             ...(liability === false ? { type: { notIn: DEBT_TYPES } } : {}),
             ...(nameKeyword ? { name: { contains: nameKeyword, mode: 'insensitive' } } : {}),

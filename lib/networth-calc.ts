@@ -7,6 +7,7 @@
  * server action 파일은 동기 export가 불가하므로 순수 로직은 여기에.
  */
 import { isCFOLevel } from '@/lib/roles'
+import { NON_ASSET_TYPES } from '@/lib/payment-method-calc'
 
 export interface NetWorthTypeBreakdown {
   realEstate: number  // REAL_ESTATE
@@ -30,6 +31,7 @@ export function computeNetWorth(
   let totalAssets = 0
   let totalLiabilities = 0
   for (const acc of accounts) {
+    if (NON_ASSET_TYPES.has(acc.type)) continue   // 결제수단(PAYMENT)은 자산도 부채도 아님
     if (DEBT_TYPES.has(acc.type)) totalLiabilities += acc.balance
     else totalAssets += acc.balance
   }
@@ -74,6 +76,7 @@ export const WEALTH_TYPE_LABELS: Record<string, string> = {
   STO:         '토큰증권',
   DEBT:        '대출 (미연결)',
   CREDIT_CARD: '신용카드 (미연결)',
+  PAYMENT:     '결제수단',
 }
 
 export const WEALTH_LIABILITY_TYPES = new Set(['DEBT', 'CREDIT_CARD'])
@@ -155,6 +158,7 @@ export function computeWealthSummary(
 ): WealthSummary {
   const accountSummary: WealthAccountSummary[] = []
   for (const acc of accounts) {
+    if (NON_ASSET_TYPES.has(acc.type)) continue   // 결제수단(PAYMENT)은 자산 화면·합산에서 제외
     if (excludePrivate && acc.shareLevel === 'PRIVATE') continue
     const isOwn = acc.userId === userId
     // 잔액 계산: holdings 보유 시 부모.balance(시가평가액) + cashBalance(예수금, 2026-09-07) + CASH sub(수동 구조).

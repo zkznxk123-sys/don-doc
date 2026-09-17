@@ -56,6 +56,7 @@ export function findCleanupCandidates(
   const out: CleanupCandidate[] = []
   for (const a of accounts) {
     if (a.dismissed) continue
+    if (a.type === 'PAYMENT') continue   // 결제수단은 자산이 아니라 정리 대상도 아님 (거래 필터용으로 남김)
     if (a.balance !== 0 || a.cashBalance !== 0) continue
     if (a.holdingCount > 0 || a.subAccountCount > 0 || a.linkedDebtCount > 0) continue
     const stamps = [a.lastTransactionAt, a.lastBalanceChangeAt, a.lastBindingUpdatedAt].filter((d): d is Date => !!d)
