@@ -21,6 +21,7 @@ export const ACCOUNT_TYPES: {
   { value: 'REAL_ESTATE', label: '부동산',         desc: '아파트, 토지, 상가',           Icon: Building2,  color: assetColor('REAL_ESTATE') },
   { value: 'DEBT',        label: '대출',           desc: '주택담보대출, 신용대출 등',    Icon: HandCoins,  color: assetColor('DEBT'),  isLiability: true },
   { value: 'CREDIT_CARD', label: '신용카드',       desc: '카드 사용액, 미결제 금액',     Icon: CreditCard, color: assetColor('CREDIT_CARD'),  isLiability: true },
+  { value: 'PAYMENT',     label: '결제수단',       desc: '카드·간편결제 채널 — 자산 아님, 거래 필터용', Icon: CreditCard, color: assetColor('PAYMENT') },
 ]
 
 export const SHARE_LEVELS: {

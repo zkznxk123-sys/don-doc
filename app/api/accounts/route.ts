@@ -41,6 +41,7 @@ export async function GET(req: NextRequest) {
       CRYPTO: '가상자산',
       REAL_ESTATE: '부동산',
       STO: '토큰증권',
+      PAYMENT: '결제수단',
     }
 
     return NextResponse.json({

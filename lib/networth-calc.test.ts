@@ -270,3 +270,17 @@ describe('computeWealthSummary — 총자산 계약', () => {
     expect(bd.debt).toBe(450)
   })
 })
+
+describe('computeWealthSummary/computeNetWorth — 결제수단(PAYMENT) 제외 (2026-09-17)', () => {
+  it('PAYMENT 계좌는 자산 목록·합산·부채 어디에도 안 들어간다', () => {
+    const rows: WealthAccountRow[] = [
+      { id: 'cash', name: '통장', type: 'CASH', balance: 100, cashBalance: 0, isShared: true, shareLevel: 'PUBLIC', userId: null, isJoint: false, linkedAssetId: null, user: null, linkedDebts: [], subAccounts: [], _count: { holdings: 0 } },
+      { id: 'card', name: '네이버 현대카드', type: 'PAYMENT', balance: 999, cashBalance: 0, isShared: true, shareLevel: 'PUBLIC', userId: null, isJoint: false, linkedAssetId: null, user: null, linkedDebts: [], subAccounts: [], _count: { holdings: 0 } },
+    ]
+    const s = computeWealthSummary(rows, { userId: 'u', role: 'CFO' })
+    expect(s.accountSummary.map(a => a.id)).toEqual(['cash'])
+    expect(s.totalAssets).toBe(100)
+    expect(s.totalLiabilities).toBe(0)
+    expect(computeNetWorth([{ type: 'PAYMENT', balance: 999 }, { type: 'CASH', balance: 1 }])).toEqual({ totalAssets: 1, totalLiabilities: 0, netWorth: 1 })
+  })
+})

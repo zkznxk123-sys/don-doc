@@ -14,6 +14,7 @@ export const ASSET_COLORS: Record<string, string> = {
   STO:         '#7E8AA0', // 뮤트 슬레이트블루 — 구분용
   DEBT:        '#C0553D', // 테라코타 — 부채
   CREDIT_CARD: '#A8452F', // 러스트 — 부채
+  PAYMENT:     '#8A8574', // 워엄 그레이 — 결제수단(자산 아님)
 }
 
 export const ASSET_COLOR_FALLBACK = '#8A8574' // 워엄 그레이

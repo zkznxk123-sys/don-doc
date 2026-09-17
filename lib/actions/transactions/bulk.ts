@@ -12,6 +12,7 @@ import {
   type SyncDecisionInput,
 } from './_account-sync'
 import { applyBalanceSyncPlan } from './_apply-sync'
+import { classifyPaymentMethod } from '@/lib/payment-method-calc'
 
 // ━━ 일괄 등록 입력 타입 ━━
 export interface BulkTransactionRow {
@@ -61,8 +62,8 @@ async function resolveSyncActor(familyId: string, ownerUserId?: string) {
 }
 
 /**
- * 거래 결제수단명 → 계좌 (없으면 CASH로 생성).
- * ⚠️ 자산 잔액 동기화와는 다른 경로 — 거래 적재용 계좌 식별. 타입 구분(카드·페이)은 후속 작업.
+ * 거래 결제수단명 → 계좌. 없으면 생성하되 카드·간편결제·포인트는 PAYMENT(거래 채널, 자산 아님),
+ * 통장·머니·현금은 CASH (2026-09-17). 자산 잔액 동기화와는 다른 경로 — 거래 적재용 계좌 식별.
  */
 async function findOrCreateTransactionAccount(name: string, familyId: string, userId: string): Promise<string> {
   const userOwned = await prisma.account.findFirst({
@@ -76,7 +77,7 @@ async function findOrCreateTransactionAccount(name: string, familyId: string, us
   })
   if (existing) return existing.id
   const created = await prisma.account.create({
-    data: { name, type: 'CASH', balance: 0, isShared: false, shareLevel: 'PUBLIC', familyId, userId },
+    data: { name, type: classifyPaymentMethod(name), balance: 0, isShared: false, shareLevel: 'PUBLIC', familyId, userId },
     select: { id: true },
   })
   return created.id

@@ -37,6 +37,7 @@ enum AccountType {
   STO // 토큰증권 (장기 확장성)
   DEBT // 대출 (부채)
   CREDIT_CARD // 신용카드 (부채)
+  PAYMENT // 결제수단 (카드·간편결제·포인트) — 자산 아님, 거래 채널. 자산 합산·자산 화면·연결 후보·정리 제안 제외 (2026-09-17)
 }
 
 enum ShareLevel {

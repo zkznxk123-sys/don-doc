@@ -346,7 +346,7 @@ export function planBalanceSync(args: {
 export async function loadSyncSnapshot(familyId: string, ownerUserId: string): Promise<SyncSnapshot> {
   const [accounts, bindings] = await Promise.all([
     prisma.account.findMany({
-      where: { familyId },
+      where: { familyId, type: { not: 'PAYMENT' } },   // 결제수단 계좌는 자산 연결 대상이 아님
       select: {
         id: true, name: true, type: true, balance: true, cashBalance: true, userId: true,
         user: { select: { name: true } },

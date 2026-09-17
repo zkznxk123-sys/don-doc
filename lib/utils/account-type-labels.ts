@@ -6,4 +6,5 @@ export const DEFAULT_ACCOUNT_TYPE_LABELS: Record<string, string> = {
   STO:         '토큰증권(STO)',
   DEBT:        '대출/부채',
   CREDIT_CARD: '신용카드',
+  PAYMENT:     '결제수단',
 }

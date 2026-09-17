@@ -211,7 +211,7 @@ if (isLite()) { /* lite 분기 */ }
 ### Prisma enum
 - **Role** — CFO · CO_CFO · MEMBER
 - **ExcelMappingType** — ACCOUNT(계좌 잔액) · ACCOUNT_CASH(예수금) · HOLDING_SKIP · NEW_ACCOUNT · IGNORE (구 CASH_SUB는 ACCOUNT_CASH로 이관)
-- **AccountType** — CASH · INVESTMENT · CRYPTO · STO · PENSION · REAL_ESTATE · DEBT · CREDIT_CARD
+- **AccountType** — CASH · INVESTMENT · CRYPTO · STO · PENSION · REAL_ESTATE · DEBT · CREDIT_CARD · **PAYMENT**(결제수단 — 카드·간편결제·포인트 채널, 자산 아님. 2026-09-17)
 - **ShareLevel** — PUBLIC · BALANCE_ONLY · PRIVATE
 - **DebtType** — MORTGAGE · JEONSE_DEPOSIT · CREDIT_LOAN · OVERDRAFT · ETC
 - **RepaymentType** — EQUAL_PRINCIPAL_INTEREST · EQUAL_PRINCIPAL · BULLET · INTEREST_ONLY
@@ -255,6 +255,10 @@ if (isLite()) { /* lite 분기 */ }
 - 데이터 이관: `scripts/migrate-asset-sync-20260907.ts` (dry-run 기본, `--apply`).
 - **뱅샐현황 하단 표도 읽는다(2026-09-09)**: `parseBanksaladLoans`(6.대출현황 → 금리·원금·만기 → 동기화 시 `DebtDetail` 빈 칸 보강), `parseBanksaladInvestments`(5.투자현황 → 상품명별 금융사). 종목 행은 금융사로 증권계좌를 찾아 유일하면 HOLDING_SKIP 자동 제안(`accountsByBroker`), 여럿이면 `broker_ambiguous` 후보.
 - **연결 보드** `/dashboard/assets/link` (`components/ui/excel-upload-drawer/sync-link-board.tsx`): 엑셀 행 ↔ 계좌를 선으로 잇고 계좌 쪽 끝점·선을 끌거나(행 선택 후 대상 클릭도 가능) 연결 변경. 드로어의 select 목록과 같은 계획을 씀. 드로어→보드 핸드오프는 sessionStorage(`sync-link-handoff.ts`).
+
+### 결제수단 계좌 = PAYMENT (2026-09-17)
+
+거래 업로드는 뱅샐 '결제수단' 이름마다 계좌를 만든다(거래에 accountId 필수). 카드·간편결제·포인트는 돈이 머무는 곳이 아니라 채널이므로 `lib/payment-method-calc.ts classifyPaymentMethod`가 **PAYMENT** 타입으로 만들고(통장·머니·현금은 CASH), PAYMENT는 `NON_ASSET_TYPES`로 **자산 합산·자산 화면·연결 후보·정리 제안·AI 계좌 목록(기본)에서 제외**된다. 거래 목록 필터엔 그대로 보인다. 기존 계좌 이관: `scripts/migrate-payment-accounts-20260917.ts`(동명 결제수단 병합 포함).
 
 ### 총자산 계산 계약 (2026-09-16 통일)
 

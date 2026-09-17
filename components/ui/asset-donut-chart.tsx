@@ -19,6 +19,7 @@ const ASSET_PALETTE: Record<string, { color: string; icon: React.ReactNode }> = 
   STO:         { color: assetColor('STO'),         icon: <Layers     className="w-4 h-4" /> },
   DEBT:        { color: assetColor('DEBT'),        icon: <HandCoins  className="w-4 h-4" /> },
   CREDIT_CARD: { color: assetColor('CREDIT_CARD'), icon: <CreditCard className="w-4 h-4" /> },
+  PAYMENT:     { color: assetColor('PAYMENT'),     icon: <CreditCard className="w-4 h-4" /> },
 }
 
 const FALLBACK = { color: ASSET_COLOR_FALLBACK, icon: <Banknote className="w-4 h-4" /> }
