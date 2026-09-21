@@ -15,6 +15,7 @@ import { PrismaClient } from '@prisma/client'
 import * as fs from 'fs'
 import * as yaml from 'js-yaml'
 import * as path from 'path'
+import { calcSimpleInterest } from '../lib/debt-calc'
 
 const prisma = new PrismaClient()
 const CONFIG_PATH = path.resolve(process.env.HOME!, '.claude/skills/donbora-fill/config.yml')
@@ -200,7 +201,7 @@ async function main() {
       if (config.debts.exclude_types.includes(dt)) continue
       const rate = d.debtDetail?.interestRate
       if (rate == null || rate <= 0 || d.balance <= 0) continue
-      const m = Math.round(d.balance * rate / 100 / 12)
+      const m = Math.round(calcSimpleInterest(d.balance, rate).monthly)
       est += m
       interestNotes.push(`${d.name} ${(d.balance / 10000).toLocaleString()}만 × ${rate}% ÷ 12 ≈ ${(m / 10000).toFixed(1)}만`)
     }
