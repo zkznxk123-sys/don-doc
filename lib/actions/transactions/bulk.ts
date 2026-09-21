@@ -67,12 +67,12 @@ async function resolveSyncActor(familyId: string, ownerUserId?: string) {
  */
 async function findOrCreateTransactionAccount(name: string, familyId: string, userId: string): Promise<string> {
   const userOwned = await prisma.account.findFirst({
-    where: { familyId, name: { equals: name, mode: 'insensitive' }, userId },
+    where: { familyId, name: { equals: name, mode: 'insensitive' }, userId, type: { in: ['PAYMENT', 'CASH'] } },
     select: { id: true },
   })
   if (userOwned) return userOwned.id
   const existing = await prisma.account.findFirst({
-    where: { familyId, name: { equals: name, mode: 'insensitive' } },
+    where: { familyId, name: { equals: name, mode: 'insensitive' }, type: { in: ['PAYMENT', 'CASH'] } },
     select: { id: true },
   })
   if (existing) return existing.id
