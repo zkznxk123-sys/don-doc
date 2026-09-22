@@ -27,6 +27,34 @@ type LogRow = {
   field: 'balance' | 'cashBalance'; source: string; uploadBatchId: string
 }
 
+type DebtDetailPatch = {
+  create: { debtType: 'OVERDRAFT' | 'ETC'; interestRate: number | null; maturityDate: Date | null }
+  update: { interestRate?: number; maturityDate?: Date }
+}
+
+/**
+ * 뱅샐 대출현황(금리·만기) → DebtDetail upsert 페이로드. 순수 함수 — DB 접근 없음.
+ * 사용자가 이미 넣은 값(existing)은 유지, 빈 칸만 채운다.
+ */
+export function buildDebtDetailPatch(
+  excelName: string,
+  existing: { interestRate: number | null; maturityDate: Date | null } | null,
+  loan: { interestRate: number | null; maturityDate: string | null },
+): DebtDetailPatch {
+  const isOverdraft = /마이너스|한도대출/.test(excelName)
+  return {
+    create: {
+      debtType: isOverdraft ? 'OVERDRAFT' : 'ETC',
+      interestRate: loan.interestRate ?? null,
+      maturityDate: loan.maturityDate ? new Date(loan.maturityDate) : null,
+    },
+    update: {
+      ...(existing?.interestRate == null && loan.interestRate != null ? { interestRate: loan.interestRate } : {}),
+      ...(existing?.maturityDate == null && loan.maturityDate ? { maturityDate: new Date(loan.maturityDate) } : {}),
+    },
+  }
+}
+
 export async function applyBalanceSyncPlan(
   tx: Prisma.TransactionClient,
   args: {
@@ -101,18 +129,11 @@ export async function applyBalanceSyncPlan(
         if (d.kind === 'ACCOUNT' && row.loan && (row.loan.interestRate != null || row.loan.maturityDate)) {
           const acc = await tx.account.findUnique({ where: { id: d.accountId }, select: { type: true, debtDetail: { select: { interestRate: true, maturityDate: true } } } })
           if (acc?.type === 'DEBT' || acc?.type === 'CREDIT_CARD') {
-            const isOverdraft = /마이너스|한도대출/.test(row.excelName)
+            const patch = buildDebtDetailPatch(row.excelName, acc.debtDetail, row.loan)
             await tx.debtDetail.upsert({
               where: { accountId: d.accountId },
-              create: {
-                accountId: d.accountId, debtType: isOverdraft ? 'OVERDRAFT' : 'ETC',
-                interestRate: row.loan.interestRate ?? null,
-                maturityDate: row.loan.maturityDate ? new Date(row.loan.maturityDate) : null,
-              },
-              update: {
-                ...(acc.debtDetail?.interestRate == null && row.loan.interestRate != null ? { interestRate: row.loan.interestRate } : {}),
-                ...(acc.debtDetail?.maturityDate == null && row.loan.maturityDate ? { maturityDate: new Date(row.loan.maturityDate) } : {}),
-              },
+              create: { accountId: d.accountId, ...patch.create },
+              update: patch.update,
             })
           }
         }
