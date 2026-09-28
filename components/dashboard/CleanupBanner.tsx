@@ -78,7 +78,7 @@ export function CleanupBanner({ refreshKey, onChanged }: { refreshKey?: number; 
             <AlertDialogHeader>
               <AlertDialogTitle>계좌 {items.length}개를 삭제할까요?</AlertDialogTitle>
               <AlertDialogDescription>
-                잔액 0이고 {idleMonths}개월 이상 움직임이 없던 계좌예요. 과거 거래 이력과 잔액 변경 기록도 함께 지워지고 되돌릴 수 없어요. 순자산은 바뀌지 않아요.
+                잔액 0이고 {idleMonths}개월 이상 움직임이 없던 계좌예요. 과거 거래 이력과 잔액 변경 기록도 함께 지워지고 되돌릴 수 없어요.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <ul className="max-h-40 overflow-y-auto text-xs text-muted-foreground space-y-0.5 px-1">
@@ -113,7 +113,7 @@ export function CleanupBanner({ refreshKey, onChanged }: { refreshKey?: number; 
                   <AlertDialogHeader>
                     <AlertDialogTitle>&apos;{i.name}&apos; 계좌를 삭제할까요?</AlertDialogTitle>
                     <AlertDialogDescription>
-                      {i.transactionCount > 0 ? `과거 거래 ${i.transactionCount}건과 ` : ''}잔액 변경 기록이 함께 지워지고 되돌릴 수 없어요. 잔액이 0이라 순자산은 바뀌지 않아요.
+                      {i.transactionCount > 0 ? `과거 거래 ${i.transactionCount}건과 ` : ''}잔액 변경 기록이 함께 지워지고 되돌릴 수 없어요.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
