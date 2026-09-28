@@ -25,7 +25,7 @@ const ACCOUNT_TYPES: { type: string; description: string }[] = [
   { type: 'STO',         description: '토큰증권 (장기 확장)' },
   { type: 'DEBT',        description: '대출, 부채' },
   { type: 'CREDIT_CARD', description: '신용카드 미결제금' },
-  { type: 'PAYMENT',     description: '결제수단 (카드·간편결제 채널, 자산 아님)' },
+  { type: 'PAYMENT',     description: '카드값, 간편결제, 포인트 — 자산에는 포함 안 돼요' },
 ]
 
 export default function CategoriesPage() {
