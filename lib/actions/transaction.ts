@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { type AppRole } from '@/lib/roles'
 import { canManageTransaction } from './transactions/permissions'
 import { upsertCategoryPreference } from './preferences'
+import { computeTransactionMask } from '@/lib/transaction-mask'
 
 // ━━ 추출된 모듈 (외부 import 경로 변경 필요) ━━
 // - bulk operations(`createManyTransactions`·`syncAccountBalancesOnly`·`checkTransactionDuplicates`·`BulkTransactionRow`·`MonthStat`)
@@ -78,29 +79,21 @@ export async function getFamilyTransactions(
   for (const tx of transactions) {
     const isOwner = tx.userId === currentUserId
     const shareLevel = tx.account.shareLevel
+    const mask = computeTransactionMask({ isOwner, shareLevel, visibility: tx.visibility })
 
-    // PRIVATE 계좌 → 타인에게 완전 제외
-    if (!isOwner && shareLevel === 'PRIVATE') continue
-
-    const shouldMask =
-      !isOwner &&
-      (shareLevel === 'BALANCE_ONLY' || tx.visibility === 'PRIVATE')
+    if (mask.excluded) continue
 
     result.push({
       id: tx.id,
       amount: tx.amount,
       date: tx.date,
-      description: shouldMask
-        ? shareLevel === 'BALANCE_ONLY'
-          ? '🔒 비공개 내역'
-          : '🔒 개인 지출'
-        : tx.description,
-      category: shouldMask ? '개인' : tx.category,
+      description: mask.shouldMask ? mask.maskedDescription : tx.description,
+      category: mask.shouldMask ? '개인' : tx.category,
       visibility: tx.visibility as 'SHARED' | 'PRIVATE',
       userId: tx.userId,
       accountId: tx.accountId,
-      userName: shouldMask ? null : tx.user.name,
-      isMasked: shouldMask,
+      userName: mask.shouldMask ? null : tx.user.name,
+      isMasked: mask.shouldMask,
     })
   }
 

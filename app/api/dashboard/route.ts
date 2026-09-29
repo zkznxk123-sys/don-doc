@@ -8,6 +8,7 @@ import { aggregateMonthlyCashflow } from '@/lib/cashflow-calc'
 import { computeBudgetSummary } from '@/lib/budget-calc'
 import { computeWealthSummary } from '@/lib/networth-calc'
 import { loadWealthAccounts } from '@/lib/actions/_wealth-accounts'
+import { computeTransactionMask } from '@/lib/transaction-mask'
 
 /**
  * GET /api/dashboard?month=YYYY-MM
@@ -131,10 +132,9 @@ export async function GET(req: NextRequest) {
       const isOwner = tx.userId === userId
       const shareLevel = tx.account.shareLevel
       const hasSubItems = tx.subItems.length > 0
+      const mask = computeTransactionMask({ isOwner, shareLevel, visibility: tx.visibility })
 
-      if (!isOwner && shareLevel === 'PRIVATE') return null
-
-      const shouldMask = !isOwner && (shareLevel === 'BALANCE_ONLY' || tx.visibility === 'PRIVATE')
+      if (mask.excluded) return null
 
       if (!tx.isExcluded && !tx.excludeFromBudget) {
         const amounts = hasSubItems
@@ -149,18 +149,16 @@ export async function GET(req: NextRequest) {
       return {
         id: tx.id, amount: tx.amount,
         date: tx.date.toISOString(),
-        description: shouldMask
-          ? shareLevel === 'BALANCE_ONLY' ? '🔒 비공개 내역' : '🔒 개인 지출'
-          : tx.description,
-        category: shouldMask ? '개인' : tx.category,
+        description: mask.shouldMask ? mask.maskedDescription : tx.description,
+        category: mask.shouldMask ? '개인' : tx.category,
         visibility: tx.visibility,
         isExcluded: tx.isExcluded,
         excludeFromBudget: tx.excludeFromBudget,
         userId: tx.userId,
-        userName: shouldMask ? null : tx.user.name,
-        isMasked: shouldMask,
+        userName: mask.shouldMask ? null : tx.user.name,
+        isMasked: mask.shouldMask,
         accountId: tx.accountId,
-        subItems: shouldMask ? [] : tx.subItems,
+        subItems: mask.shouldMask ? [] : tx.subItems,
       }
     }).filter(Boolean)
 
