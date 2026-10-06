@@ -68,7 +68,7 @@ export function CleanupBanner({ refreshKey, onChanged }: { refreshKey?: number; 
             <button
               type="button"
               disabled={busy !== null}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-foreground text-background hover:bg-foreground/90 disabled:opacity-50"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50"
             >
               {busy === 'all' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
               모두 정리

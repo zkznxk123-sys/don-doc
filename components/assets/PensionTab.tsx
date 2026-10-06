@@ -5,7 +5,7 @@ import type { PensionSummaryData, PensionAccountData } from '@/lib/actions/accou
 import type { AccountInitialData } from '@/components/ui/account-drawer'
 import type { FamilyMember } from '@/lib/actions/family'
 import { formatLargeNumber, cn } from '@/lib/utils'
-import { Banknote, PiggyBank, TrendingUp, Pencil, Clock, BadgePercent } from 'lucide-react'
+import { Banknote, PiggyBank, TrendingUp, Pencil, Clock, BadgePercent, Lock } from 'lucide-react'
 import { EmptyTab } from './EmptyTab'
 
 const PENSION_TYPE_META: Record<string, { label: string; color: string; bg: string }> = {
@@ -339,14 +339,18 @@ function PensionCard({
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2.5 min-w-0">
           <div className="w-9 h-9 rounded-xl bg-income-soft flex items-center justify-center shrink-0">
-            <PiggyBank className="w-4 h-4 text-income" />
+            {account.isMasked
+              ? <Lock className="w-4 h-4 text-income" />
+              : <PiggyBank className="w-4 h-4 text-income" />}
           </div>
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <p className="text-sm font-semibold text-foreground truncate">{account.name}</p>
-              <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-md', meta.color, meta.bg)}>
-                {meta.label}
-              </span>
+              {!account.isMasked && (
+                <span className={cn('text-[10px] font-medium px-1.5 py-0.5 rounded-md', meta.color, meta.bg)}>
+                  {meta.label}
+                </span>
+              )}
               {(() => {
                 if (account.isJoint) return (
                   <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md text-savings bg-savings-soft">
@@ -361,7 +365,7 @@ function PensionCard({
                 )
                 return null
               })()}
-              {account.taxDeductible && (
+              {!account.isMasked && account.taxDeductible && (
                 <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-md text-warning bg-warning-soft">
                   세액공제
                 </span>
@@ -372,12 +376,14 @@ function PensionCard({
             )}
           </div>
         </div>
-        <button
-          onClick={onEdit}
-          className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground/40 hover:text-foreground hover:bg-muted transition-colors shrink-0"
-        >
-          <Pencil className="w-3.5 h-3.5" />
-        </button>
+        {!account.isMasked && (
+          <button
+            onClick={onEdit}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground/40 hover:text-foreground hover:bg-muted transition-colors shrink-0"
+          >
+            <Pencil className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
 
       {/* 지표 그리드 */}
