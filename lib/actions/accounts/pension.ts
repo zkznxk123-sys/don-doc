@@ -52,11 +52,13 @@ export async function getFamilyPensionAccounts(): Promise<PensionSummaryData | n
   if (!user?.familyId) return null
 
   const raw = await prisma.account.findMany({
-    where: { familyId: user.familyId, type: 'PENSION' },
+    // 최상위 계좌만 — 하위 계좌는 부모 합산에 들어가므로 독립 행으로 또 세면 이중 계상된다
+    where: { familyId: user.familyId, type: 'PENSION', parentAccountId: null },
     include: {
       pensionDetail: true,
       user: { select: { name: true } },
-      subAccounts: { select: { id: true, name: true, balance: true }, orderBy: { name: 'asc' } },
+      subAccounts: { select: { id: true, name: true, balance: true, type: true }, orderBy: { name: 'asc' } },
+      _count: { select: { holdings: true } },
     },
     orderBy: { name: 'asc' },
   })
@@ -71,17 +73,24 @@ export async function getFamilyPensionAccounts(): Promise<PensionSummaryData | n
     if (!canSeeAll && shareLevel === 'PRIVATE') continue
 
     const isMasked = !canSeeAll && shareLevel === 'BALANCE_ONLY'
+    // 잔액 계산 — networth-calc.ts computeWealthSummary의 총자산 계약과 동일:
+    // holdings 보유 시 balance(Σ종목 평가액) + cashBalance(예수금) + CASH 하위 합,
+    // holdings 없으면 하위 있으면 하위 합, 아니면 직접값.
+    const hasHoldings = a._count.holdings > 0
+    const balance = hasHoldings
+      ? a.balance + a.cashBalance + a.subAccounts.filter(s => s.type === 'CASH').reduce((s, c) => s + c.balance, 0)
+      : a.subAccounts.length > 0
+        ? a.subAccounts.reduce((s, c) => s + c.balance, 0)
+        : a.balance
     accounts.push({
       id: a.id,
       name: isMasked ? '🔒 개인 보안 자산' : a.name,
-      balance: a.subAccounts.length > 0
-        ? a.subAccounts.reduce((s, c) => s + c.balance, 0)
-        : a.balance,
+      balance,
       shareLevel,
       userId: a.userId,
       isJoint: a.isJoint,
       ownerName: a.user?.name ?? null,
-      subAccounts: isMasked ? [] : a.subAccounts,
+      subAccounts: isMasked ? [] : a.subAccounts.map(s => ({ id: s.id, name: s.name, balance: s.balance })),
       pensionType: (a.pensionDetail?.pensionType as PensionType) ?? 'PERSONAL_PENSION',
       institutionName: isMasked ? null : (a.pensionDetail?.institutionName ?? null),
       expectedMonthlyPension: a.pensionDetail?.expectedMonthlyPension ?? null,

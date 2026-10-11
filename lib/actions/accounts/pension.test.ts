@@ -31,6 +31,8 @@ function rawAccount(overrides: Record<string, unknown> = {}) {
     isJoint: false,
     user: { name: '배우자' },
     subAccounts: [],
+    cashBalance: 0,
+    _count: { holdings: 0 },
     pensionDetail: {
       pensionType: 'IRP',
       institutionName: '미래에셋',
@@ -110,5 +112,54 @@ describe('getFamilyPensionAccounts — 역할별 마스킹', () => {
     expect(r?.accounts).toHaveLength(1)
     expect(r!.accounts[0].isMasked).toBe(false)
     expect(r!.accounts[0].name).toBe('배우자 IRP')
+  })
+})
+
+describe('getFamilyPensionAccounts — 잔액 계산 (총자산 계약 정합, 2026-10-12 이중계상 수정)', () => {
+  beforeEach(() => {
+    vi.mocked(getAuthUser).mockResolvedValue({ id: 'me', familyId: 'f1', role: 'CFO' } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+  })
+
+  it('조회는 최상위 계좌만 — where에 parentAccountId: null (하위 계좌 독립 행 이중계상 차단)', async () => {
+    vi.mocked(prisma.account.findMany).mockResolvedValue([] as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+    await getFamilyPensionAccounts()
+    const call = vi.mocked(prisma.account.findMany).mock.calls[0][0]
+    expect(call?.where).toMatchObject({ familyId: 'f1', type: 'PENSION', parentAccountId: null })
+  })
+
+  it('하위 계좌 보유 부모 — balance는 하위 합(부모 직접값 무시), 총합에 한 번만 계상', async () => {
+    vi.mocked(prisma.account.findMany).mockResolvedValue([
+      rawAccount({
+        shareLevel: 'PUBLIC',
+        balance: 999, // 하위 있으면 무시돼야 함
+        subAccounts: [
+          { id: 's1', name: '연금저축', balance: 3_000_000, type: 'PENSION' },
+          { id: 's2', name: '예수금', balance: 500_000, type: 'CASH' },
+        ],
+      }),
+    ] as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+
+    const r = await getFamilyPensionAccounts()
+    expect(r?.accounts).toHaveLength(1)
+    expect(r!.accounts[0].balance).toBe(3_500_000)
+    expect(r!.totalBalance).toBe(3_500_000)
+  })
+
+  it('holdings 보유 계좌 — balance(Σ종목) + cashBalance + CASH 하위 합 (networth-calc 계약)', async () => {
+    vi.mocked(prisma.account.findMany).mockResolvedValue([
+      rawAccount({
+        shareLevel: 'PUBLIC',
+        balance: 8_000_000,
+        cashBalance: 40_508,
+        _count: { holdings: 2 },
+        subAccounts: [
+          { id: 's1', name: '현금 하위', balance: 100_000, type: 'CASH' },
+          { id: 's2', name: '연금 하위', balance: 999_999, type: 'PENSION' }, // CASH 아니면 제외
+        ],
+      }),
+    ] as any) // eslint-disable-line @typescript-eslint/no-explicit-any
+
+    const r = await getFamilyPensionAccounts()
+    expect(r!.accounts[0].balance).toBe(8_140_508)
   })
 })
