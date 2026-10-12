@@ -89,7 +89,7 @@ export async function getFamilyPensionAccounts(): Promise<PensionSummaryData | n
       shareLevel,
       userId: a.userId,
       isJoint: a.isJoint,
-      ownerName: a.user?.name ?? null,
+      ownerName: isMasked ? null : (a.user?.name ?? null),
       subAccounts: isMasked ? [] : a.subAccounts.map(s => ({ id: s.id, name: s.name, balance: s.balance })),
       pensionType: (a.pensionDetail?.pensionType as PensionType) ?? 'PERSONAL_PENSION',
       institutionName: isMasked ? null : (a.pensionDetail?.institutionName ?? null),
