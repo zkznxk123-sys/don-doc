@@ -338,9 +338,9 @@ function PensionCard({
       {/* 헤더 */}
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex items-center gap-2.5 min-w-0">
-          <div className="w-9 h-9 rounded-xl bg-income-soft flex items-center justify-center shrink-0">
+          <div className={cn('w-9 h-9 rounded-xl flex items-center justify-center shrink-0', account.isMasked ? 'bg-muted' : 'bg-income-soft')}>
             {account.isMasked
-              ? <Lock className="w-4 h-4 text-income" />
+              ? <Lock className="w-4 h-4 text-muted-foreground" />
               : <PiggyBank className="w-4 h-4 text-income" />}
           </div>
           <div className="min-w-0">
