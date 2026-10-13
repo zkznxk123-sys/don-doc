@@ -81,6 +81,7 @@ describe('getFamilyPensionAccounts — 역할별 마스킹', () => {
     expect(a.ownerBirthYear).toBeNull()
     expect(a.pensionStartAge).toBeNull()
     expect(a.accumulatedMonths).toBeNull()
+    expect(a.ownerName).toBeNull()
     expect(r?.totalBalance).toBe(10_000_000)
   })
 
