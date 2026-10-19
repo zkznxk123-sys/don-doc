@@ -8,7 +8,7 @@
 
 | 분류 | 스택 |
 |------|------|
-| 프레임워크 | Next.js 16.2.x (App Router, Turbo dev) |
+| 프레임워크 | Next.js 16.4.x (App Router, Turbo dev) |
 | 인증 | Clerk (@clerk/nextjs) |
 | 런타임 | React 19 + TypeScript 6 |
 | DB | PostgreSQL + Prisma 6 |
