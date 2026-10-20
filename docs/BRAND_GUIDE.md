@@ -89,6 +89,7 @@
 **Must-have** — Owner-first(자산 주도자 중심) · Connected(연결·유대) · Trusted(신뢰·프라이버시)
 **Should-have** — Family-first · Intelligent(AI 분류·자동화) · Premium(전문가급) · Wealth-tech
 **Avoid** — "가계부" 단독(너무 소박) · "앱"(흔한 IT 느낌) → 서비스/플랫폼 · 과장된 수익 표현("돈 벌기", "재테크 꿀팁") · 이모지·느낌표 남발
+> 예외: 프라이버시 마스킹 마커(🔒)는 텍스트 전용 응답에서 허용, 장식적 반복과 구분
 
 ---
 
