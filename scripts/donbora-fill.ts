@@ -37,6 +37,7 @@ interface Config {
   }
   debts: { mortgage_types: string[]; credit_loan_types: string[]; etc_types: string[]; exclude_types: string[] }
   income: Record<string, string[]>
+  skip_keywords?: string[]   // 수입·지출 집계에서 통째로 제외할 내역 키워드 (카드대금 이중계상·공모주 환불 등)
   category_to_form: Record<string, string>
   ambiguous_categories: Record<string, { default: string; rules: Array<{ keywords: string[]; form: string }> }>
   form_expense_categories: string[]
@@ -163,6 +164,7 @@ async function main() {
   for (const t of txs) {
     const cat = t.category || ''
     const desc = t.description || ''
+    if (nameHasAny(desc, config.skip_keywords ?? [])) continue
 
     if (t.amount > 0) {
       const slot = catToIncomeSlot[cat]
@@ -317,9 +319,14 @@ async function main() {
   // stdout 출력
   console.log(output)
 
-  // vault 저장
+  // vault 저장 — 제출 완료 표시가 있는 파일은 덮어쓰지 않는다.
+  // 제출본은 그 시점 잔액·수기 보정이 담긴 기록이라, 재생성 결과는 .regen.md 로 따로 남긴다.
   fs.mkdirSync(VAULT_DIR, { recursive: true })
-  const filePath = path.join(VAULT_DIR, `donbora-${label}.md`)
+  let filePath = path.join(VAULT_DIR, `donbora-${label}.md`)
+  if (fs.existsSync(filePath) && fs.readFileSync(filePath, 'utf8').includes('제출 완료')) {
+    filePath = path.join(VAULT_DIR, `donbora-${label}.regen.md`)
+    console.error(`\n[skip] 제출 완료된 donbora-${label}.md 는 보존 — 재생성본은 별도 파일로 저장`)
+  }
   fs.writeFileSync(filePath, output, 'utf8')
   console.error(`\n[saved] ${filePath}`)
 }
