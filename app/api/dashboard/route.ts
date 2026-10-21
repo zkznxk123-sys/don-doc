@@ -132,7 +132,7 @@ export async function GET(req: NextRequest) {
       const isOwner = tx.userId === userId
       const shareLevel = tx.account.shareLevel
       const hasSubItems = tx.subItems.length > 0
-      const mask = computeTransactionMask({ isOwner, shareLevel, visibility: tx.visibility })
+      const mask = computeTransactionMask({ isOwner, shareLevel, visibility: tx.visibility, amount: tx.amount })
 
       if (mask.excluded) return null
 

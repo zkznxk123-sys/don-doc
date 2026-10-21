@@ -1,6 +1,7 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
+import { maskedLabel } from '@/lib/transaction-mask'
 
 export interface MaskedTransaction {
   id: string
@@ -49,7 +50,7 @@ export async function getFamilyTransactions(
       id: tx.id,
       amount: tx.amount,
       date: tx.date,
-      description: isPrivateAndNotOwn ? '🔒 개인 지출' : tx.description,
+      description: isPrivateAndNotOwn ? maskedLabel('PUBLIC', tx.amount) : tx.description,
       category: isPrivateAndNotOwn ? '개인' : tx.category,
       visibility: tx.visibility as 'SHARED' | 'PRIVATE',
       userId: tx.userId,
