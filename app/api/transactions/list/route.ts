@@ -1,6 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 import { NextRequest, NextResponse } from 'next/server'
+import { maskedLabel } from '@/lib/transaction-mask'
 import { prisma } from '@/lib/prisma'
 import { getAuthUser } from '@/lib/auth'
 
@@ -73,9 +74,7 @@ export async function GET(req: NextRequest) {
         id: tx.id,
         amount: tx.amount,
         date: tx.date.toISOString(),
-        description: shouldMask
-          ? shareLevel === 'BALANCE_ONLY' ? '🔒 비공개 내역' : '🔒 개인 지출'
-          : tx.description,
+        description: shouldMask ? maskedLabel(shareLevel, tx.amount) : tx.description,
         category: shouldMask ? '개인' : tx.category,
         visibility: tx.visibility,
         isExcluded: tx.isExcluded,
