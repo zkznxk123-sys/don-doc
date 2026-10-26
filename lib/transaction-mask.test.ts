@@ -24,6 +24,16 @@ describe('computeTransactionMask', () => {
     expect(r).toEqual({ excluded: false, shouldMask: true, maskedDescription: '🔒 개인 지출' })
   })
 
+  it('타인 + PUBLIC 계좌 + PRIVATE 수입(amount > 0) → "개인 수입" (2026-10-21 육아휴직급여 오독 방지)', () => {
+    const r = computeTransactionMask({ isOwner: false, shareLevel: 'PUBLIC', visibility: 'PRIVATE', amount: 2500000 })
+    expect(r.maskedDescription).toBe('🔒 개인 수입')
+    expect(computeTransactionMask({ isOwner: false, shareLevel: 'PUBLIC', visibility: 'PRIVATE', amount: -12000 }).maskedDescription)
+      .toBe('🔒 개인 지출')
+    // BALANCE_ONLY 는 수입이어도 '비공개 내역' 유지
+    expect(computeTransactionMask({ isOwner: false, shareLevel: 'BALANCE_ONLY', visibility: 'SHARED', amount: 2500000 }).maskedDescription)
+      .toBe('🔒 비공개 내역')
+  })
+
   it('타인 + PUBLIC 계좌 + SHARED 거래 → 마스킹 없음', () => {
     const r = computeTransactionMask({ isOwner: false, shareLevel: 'PUBLIC', visibility: 'SHARED' })
     expect(r.shouldMask).toBe(false)

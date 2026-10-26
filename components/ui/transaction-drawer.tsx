@@ -763,8 +763,8 @@ export function TransactionDrawer({
               <div className="flex items-start gap-2.5 rounded-xl px-4 py-3 bg-muted/50 border border-border">
                 <Lock className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  이 지출의 상세 내역은 가족에게 공개되지 않습니다.<br />
-                  <span className="text-muted-foreground/70">가족 대시보드에는 금액과 &lsquo;개인 지출&rsquo;만 표시됩니다.</span>
+                  이 거래의 상세 내역은 가족에게 공개되지 않습니다.<br />
+                  <span className="text-muted-foreground/70">가족 대시보드에는 금액과 &lsquo;개인 수입&rsquo;·&lsquo;개인 지출&rsquo; 표시만 나갑니다.</span>
                 </p>
               </div>
             )}
