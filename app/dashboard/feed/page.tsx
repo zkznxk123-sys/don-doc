@@ -389,7 +389,7 @@ function PostCard({
                   {post.isOwn && (
                     <button
                       onClick={handleDelete}
-                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-destructive hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                      className="w-full flex items-center gap-2 px-3 py-2 text-xs text-destructive-text hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />삭제
                     </button>

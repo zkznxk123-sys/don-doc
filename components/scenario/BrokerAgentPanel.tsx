@@ -159,7 +159,7 @@ export function BrokerAgentPanel({
 
               {error && (
                 <div className="bg-expense-soft border border-destructive/30 rounded-xl px-3 py-2">
-                  <p className="text-xs text-destructive">{error}</p>
+                  <p className="text-xs text-destructive-text">{error}</p>
                 </div>
               )}
 

@@ -155,7 +155,7 @@ export function SplitItems({
               const allocated = subItems.reduce((s, i) => s + (Number(i.amount) || 0), 0)
               const remaining = total - allocated
               return (
-                <p className={cn('text-[11px] tabular-nums', remaining === 0 ? 'text-income' : remaining < 0 ? 'text-destructive' : 'text-muted-foreground/60')}>
+                <p className={cn('text-[11px] tabular-nums', remaining === 0 ? 'text-income' : remaining < 0 ? 'text-destructive-text' : 'text-muted-foreground/60')}>
                   배분 {allocated.toLocaleString()}원 / 전체 {total.toLocaleString()}원
                   {remaining !== 0 && ` (${remaining > 0 ? '미배분' : '초과'} ${Math.abs(remaining).toLocaleString()}원)`}
                 </p>

@@ -68,7 +68,7 @@ export function CleanupBanner({ refreshKey, onChanged }: { refreshKey?: number; 
             <button
               type="button"
               disabled={busy !== null}
-              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-border text-destructive hover:bg-destructive/10 disabled:opacity-50"
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium border border-border text-destructive-text hover:bg-destructive/10 disabled:opacity-50"
             >
               {busy === 'all' ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
               모두 정리
@@ -105,7 +105,7 @@ export function CleanupBanner({ refreshKey, onChanged }: { refreshKey?: number; 
               <button type="button" disabled={busy !== null} onClick={() => keep(i.id)} className="text-[11px] px-2 py-1 rounded-md border border-border text-muted-foreground hover:text-foreground">유지</button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <button type="button" disabled={busy !== null} className="text-[11px] px-2 py-1 rounded-md border border-border text-destructive hover:bg-destructive/10 flex items-center gap-1">
+                  <button type="button" disabled={busy !== null} className="text-[11px] px-2 py-1 rounded-md border border-border text-destructive-text hover:bg-destructive/10 flex items-center gap-1">
                     {busy === i.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}삭제
                   </button>
                 </AlertDialogTrigger>

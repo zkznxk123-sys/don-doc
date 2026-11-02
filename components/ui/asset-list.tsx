@@ -259,7 +259,7 @@ function LinkedDebtRow({ debt }: { debt: { id: string; name: string; balance: nu
     <div className="flex items-center gap-2 pl-[52px] pr-5 py-2 border-t border-border/40 bg-background/30">
       <CornerDownRight className="w-3 h-3 text-border shrink-0" />
       <span className="text-xs text-muted-foreground flex-1 truncate">{debt.name}</span>
-      <span className="text-xs font-medium text-destructive/80 tabular-nums shrink-0">
+      <span className="text-xs font-medium text-destructive-text/80 tabular-nums shrink-0">
         -{formatCurrency(debt.balance)}
       </span>
     </div>

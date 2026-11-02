@@ -159,14 +159,14 @@ function SourceStatusBadge({ status }: { status: ContentSourceData['summaryStatu
   }
   if (status === 'failed') {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-expense-soft text-destructive">
+      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-expense-soft text-destructive-text">
         <AlertTriangle className="w-2.5 h-2.5" />요약 실패
       </span>
     )
   }
   if (status === 'fetch_failed') {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-expense-soft text-destructive">
+      <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded bg-expense-soft text-destructive-text">
         <AlertTriangle className="w-2.5 h-2.5" />추출 실패
       </span>
     )
@@ -260,7 +260,7 @@ function SourceRow({
             <p className="text-[11px] text-muted-foreground/60 mt-1.5 line-clamp-2">{plainPreview(src.summary)}</p>
           )}
           {!expanded && !src.summary && src.summaryError && (
-            <p className="text-[11px] text-destructive/70 mt-1.5 line-clamp-1">{src.summaryError}</p>
+            <p className="text-[11px] text-destructive-text/70 mt-1.5 line-clamp-1">{src.summaryError}</p>
           )}
         </div>
         <div className="flex items-center gap-0.5 shrink-0">
@@ -289,8 +289,8 @@ function SourceRow({
 
           {src.summaryError && (
             <div className="rounded-lg border bg-expense-soft px-3 py-2.5">
-              <div className="text-[10px] font-semibold text-destructive/80 mb-1">실패 사유</div>
-              <p className="text-[11px] text-destructive/80 whitespace-pre-wrap">{src.summaryError}</p>
+              <div className="text-[10px] font-semibold text-destructive-text/80 mb-1">실패 사유</div>
+              <p className="text-[11px] text-destructive-text/80 whitespace-pre-wrap">{src.summaryError}</p>
             </div>
           )}
 

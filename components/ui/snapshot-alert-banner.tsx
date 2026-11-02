@@ -53,7 +53,7 @@ export function SnapshotAlertBanner({ yearMonth, kind = 'last', onSaved, onDismi
         </p>
 
         {error && (
-          <p className="text-xs text-destructive mt-1">{error}</p>
+          <p className="text-xs text-destructive-text mt-1">{error}</p>
         )}
 
         <button

@@ -272,7 +272,7 @@ export function AssetDonutChart({ data, totalAssets, manageLink, hideZeroAccount
                         {item.accounts.filter(a => (!hideZeroAccounts || a.balance !== 0) && (!excludeSmall || a.balance >= threshold)).map(acc => (
                           <div key={acc.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg bg-red-950/20">
                             <span className="text-xs text-muted-foreground truncate mr-2">{acc.name}</span>
-                            <span className="text-xs font-medium text-destructive/80 tabular-nums shrink-0">
+                            <span className="text-xs font-medium text-destructive-text/80 tabular-nums shrink-0">
                               -{formatCurrency(acc.balance)}
                             </span>
                           </div>

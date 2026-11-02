@@ -251,8 +251,8 @@ function DebtCard({
             </div>
           ) : estimated?.expired ? (
             <div className="text-right">
-              <p className="text-[10px] text-destructive mb-0.5">{estimated.label}</p>
-              <p className="text-xs font-medium text-destructive">재계약 여부를 확인해 주세요</p>
+              <p className="text-[10px] text-destructive-text mb-0.5">{estimated.label}</p>
+              <p className="text-xs font-medium text-destructive-text">재계약 여부를 확인해 주세요</p>
             </div>
           ) : estimated != null ? (
             <div className="text-right">
@@ -287,7 +287,7 @@ function DebtCard({
                 : '—'}
             </p>
             {isExpired ? (
-              <p className="text-[9px] text-destructive mt-0.5">만기 지남</p>
+              <p className="text-[9px] text-destructive-text mt-0.5">만기 지남</p>
             ) : isNearMaturity ? (
               <p className="text-[9px] text-warning mt-0.5">1년 이내</p>
             ) : null}

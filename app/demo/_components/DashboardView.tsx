@@ -74,7 +74,7 @@ export function DashboardView({ data }: { data: DemoData }) {
                   </span>
                   <span className="text-xs text-foreground/80 truncate">{a.name}</span>
                 </div>
-                <span className={cn('text-xs font-semibold tabular-nums shrink-0', a.balance < 0 ? 'text-destructive' : 'text-foreground')}>
+                <span className={cn('text-xs font-semibold tabular-nums shrink-0', a.balance < 0 ? 'text-destructive-text' : 'text-foreground')}>
                   {a.balance < 0 ? '-' : ''}{formatLargeNumber(Math.abs(a.balance))}
                 </span>
               </div>

@@ -33,6 +33,7 @@
 
   --color-destructive: hsl(var(--destructive));
   --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-destructive-text: hsl(var(--destructive-text));
 
   --color-muted: hsl(var(--muted));
   --color-muted-foreground: hsl(var(--muted-foreground));
@@ -337,6 +338,7 @@
 
     --destructive: 11 52% 50%;       /* #C0553D  terracotta              */
     --destructive-foreground: 0 0% 98%;
+    --destructive-text: 11 52% 50%;  /* 12px 이하 텍스트용 — 라이트는 destructive와 동일 */
 
     /* Ghost Border */
     --border: 43 14% 88%;
@@ -407,6 +409,7 @@
 
     --destructive: 11 45% 45%;       /* terracotta dark                  */
     --destructive-foreground: 0 0% 98%;
+    --destructive-text: 11 55% 62%;  /* 12px 이하 텍스트용 — AA 4.5:1 충족 */
 
     --border: 158 14% 24%;
     --input: 158 14% 24%;
