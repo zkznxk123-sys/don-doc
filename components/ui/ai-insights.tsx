@@ -134,7 +134,7 @@ export function AiInsights({}: AiInsightsProps) {
               <div className="flex items-start gap-2.5 p-3 rounded-xl bg-red-950/20 border border-red-800/30">
                 <AlertCircle className="w-4 h-4 text-destructive shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-xs text-destructive">{error}</p>
+                  <p className="text-xs text-destructive-text">{error}</p>
                   {llmMuxDown && (
                     <div className="mt-2 space-y-1">
                       <p className="text-[11px] text-muted-foreground font-mono">$ llm-mux login codex</p>

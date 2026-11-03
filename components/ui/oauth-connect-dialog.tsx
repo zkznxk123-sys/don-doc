@@ -104,7 +104,7 @@ export function OAuthConnectDialog({ open, provider, providerLabel, onClose, onD
               </p>
             </div>
             {error && (
-              <p className="text-xs text-destructive">{error}</p>
+              <p className="text-xs text-destructive-text">{error}</p>
             )}
             <button
               onClick={handleStart}
@@ -156,7 +156,7 @@ export function OAuthConnectDialog({ open, provider, providerLabel, onClose, onD
               />
             </div>
             {error && (
-              <p className="text-xs text-destructive">{error}</p>
+              <p className="text-xs text-destructive-text">{error}</p>
             )}
             <div className="flex gap-2">
               <button

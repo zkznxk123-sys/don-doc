@@ -379,14 +379,14 @@ export function SyncLinkBoard({
           {formatCurrency(a.hasHoldings ? a.cashBalance : a.balance)}{a.hasHoldings && <span className="text-savings"> 예수금</span>}
         </span>
         {inb && (
-          <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full shrink-0', conflict ? 'bg-destructive/10 text-destructive' : 'bg-muted text-muted-foreground')}>
+          <span className={cn('text-[10px] px-1.5 py-0.5 rounded-full shrink-0', conflict ? 'bg-destructive/10 text-destructive-text' : 'bg-muted text-muted-foreground')}>
             {conflict ? `${inb.balance > 1 ? inb.balance : inb.cash}행 충돌` : inboundLabel(inb)}
           </span>
         )}
         {deletable && (
           confirming ? (
             <span className="flex items-center gap-1 shrink-0" onClick={e => e.stopPropagation()}>
-              <span className="text-[10px] text-destructive max-w-[160px] truncate" title={deleting.message}>{deleting.message}</span>
+              <span className="text-[10px] text-destructive-text max-w-[160px] truncate" title={deleting.message}>{deleting.message}</span>
               <button
                 type="button"
                 disabled={deleteBusy === a.accountId}
@@ -706,7 +706,7 @@ export function SyncLinkBoard({
                       <p className="text-[10px] text-muted-foreground truncate">{cleanup!.reasons[a.accountId]}</p>
                     </div>
                     <button type="button" disabled={cleanupBusy} onClick={() => onKeepAccount?.(a.accountId)} className="text-[10px] px-1.5 py-0.5 rounded-md border border-border text-muted-foreground hover:text-foreground">유지</button>
-                    <button type="button" disabled={cleanupBusy} onClick={() => requestDelete(a, false)} className="text-[10px] px-1.5 py-0.5 rounded-md border border-border text-destructive hover:bg-destructive/10">삭제</button>
+                    <button type="button" disabled={cleanupBusy} onClick={() => requestDelete(a, false)} className="text-[10px] px-1.5 py-0.5 rounded-md border border-border text-destructive-text hover:bg-destructive/10">삭제</button>
                   </div>
                 ))}
               </div>

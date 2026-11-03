@@ -90,19 +90,19 @@ export function BanksaladPreviewRow({ row, aiStatus }: { row: ParsedRow; aiStatu
       row._error ? 'bg-red-950/20' : isDup ? 'opacity-40' : ''
     )}>
       <div>
-        <p className={cn('text-xs tabular-nums', row._error ? 'text-destructive' : 'text-muted-foreground')}>{row.date || '—'}</p>
+        <p className={cn('text-xs tabular-nums', row._error ? 'text-destructive-text' : 'text-muted-foreground')}>{row.date || '—'}</p>
         {row._time && <p className="text-[10px] text-muted-foreground/60">{row._time}</p>}
       </div>
       <div className="min-w-0 pr-2">
         <p className="text-xs text-foreground truncate">{row.description || <span className="text-muted-foreground/60 italic">내용 없음</span>}</p>
         {row._paymentMethod && <p className="text-[10px] text-muted-foreground/60 truncate">{row._paymentMethod}</p>}
       </div>
-      <p className={cn('text-xs tabular-nums text-right', row._error ? 'text-destructive' : row.amount > 0 ? 'text-income' : 'text-foreground')}>
+      <p className={cn('text-xs tabular-nums text-right', row._error ? 'text-destructive-text' : row.amount > 0 ? 'text-income' : 'text-foreground')}>
         {row._error ? '?' : (row.amount > 0 ? '+' : '') + formatCurrency(row.amount)}
       </p>
       <div className="pl-1 min-w-0">
         {row._error ? (
-          <span className="text-destructive text-[10px]">{row._error}</span>
+          <span className="text-destructive-text text-[10px]">{row._error}</span>
         ) : isDup ? (
           <span className="text-[10px] text-muted-foreground/50">이미 등록됨</span>
         ) : row.categoryId ? (
@@ -128,14 +128,14 @@ export function BanksaladPreviewRow({ row, aiStatus }: { row: ParsedRow; aiStatu
 export function GenericPreviewRow({ row, aiStatus }: { row: ParsedRow; aiStatus: AiStatus }) {
   return (
     <div className={cn('grid grid-cols-[100px_1fr_90px_80px] px-3 py-2.5', row._error && 'bg-red-950/20')}>
-      <span className={cn('text-xs tabular-nums', row._error === '날짜 오류' ? 'text-destructive' : 'text-muted-foreground')}>{row.date || '—'}</span>
+      <span className={cn('text-xs tabular-nums', row._error === '날짜 오류' ? 'text-destructive-text' : 'text-muted-foreground')}>{row.date || '—'}</span>
       <span className="text-xs text-foreground truncate pr-2">{row.description || <span className="text-muted-foreground/60 italic">내용 없음</span>}</span>
-      <span className={cn('text-xs tabular-nums text-right', row._error === '금액 오류' ? 'text-destructive' : row.amount > 0 ? 'text-income' : 'text-foreground')}>
+      <span className={cn('text-xs tabular-nums text-right', row._error === '금액 오류' ? 'text-destructive-text' : row.amount > 0 ? 'text-income' : 'text-foreground')}>
         {row._error === '금액 오류' ? '?' : (row.amount > 0 ? '+' : '') + formatCurrency(row.amount)}
       </span>
       <div className="pl-1 min-w-0">
         {row._error ? (
-          <span className="text-destructive text-[10px]">{row._error}</span>
+          <span className="text-destructive-text text-[10px]">{row._error}</span>
         ) : row.categoryId ? (
           <span className="text-xs text-foreground">{row.categoryIcon} {row.categoryName}</span>
         ) : aiStatus === 'loading' ? (
@@ -360,7 +360,7 @@ export function AccountBalanceDiff({
                   <div className="text-right pl-2 shrink-0">
                     <p className="text-xs text-foreground tabular-nums">{formatCurrency(r.balance)}</p>
                     {diff !== null && diff !== 0 && (
-                      <p className={cn('text-[10px] tabular-nums', diff > 0 ? 'text-income' : 'text-destructive')}>
+                      <p className={cn('text-[10px] tabular-nums', diff > 0 ? 'text-income' : 'text-destructive-text')}>
                         {diff > 0 ? '+' : '-'}{formatCurrency(Math.abs(diff))}
                       </p>
                     )}
@@ -396,7 +396,7 @@ export function AccountBalanceDiff({
                     {r.excelName}
                     {r.mergedCount > 1 && <span className="text-muted-foreground"> · {r.mergedCount}행 합산</span>}
                   </p>
-                  <p className={cn('text-[10px] flex items-center gap-1', d.kind === 'CONFLICT' ? 'text-destructive' : 'text-warning')}>
+                  <p className={cn('text-[10px] flex items-center gap-1', d.kind === 'CONFLICT' ? 'text-destructive-text' : 'text-warning')}>
                     <AlertCircle className="w-3 h-3 shrink-0" />
                     <span className="truncate">{reason}</span>
                   </p>

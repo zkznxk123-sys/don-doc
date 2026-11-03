@@ -198,7 +198,7 @@ export function NetWorthHistoryModal({
 
           {/* 에러 */}
           {error && (
-            <p className="text-xs text-destructive px-1">{error}</p>
+            <p className="text-xs text-destructive-text px-1">{error}</p>
           )}
         </div>
 
