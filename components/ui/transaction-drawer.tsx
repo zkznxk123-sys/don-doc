@@ -764,7 +764,7 @@ export function TransactionDrawer({
                 <Lock className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   이 거래의 상세 내역은 가족에게 공개되지 않습니다.<br />
-                  <span className="text-muted-foreground/70">가족 대시보드에는 금액과 &lsquo;개인 수입&rsquo;·&lsquo;개인 지출&rsquo;로만 표시됩니다.</span>
+                  <span>가족 대시보드에는 금액과 &lsquo;{isExpense ? '개인 지출' : '개인 수입'}&rsquo;로만 표시됩니다.</span>
                 </p>
               </div>
             )}
