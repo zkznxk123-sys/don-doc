@@ -281,7 +281,7 @@ function DebtCard({
             style={!isExpired && isNearMaturity ? { borderColor: 'color-mix(in srgb, var(--viz-copper) 30%, transparent)' } : undefined}
           >
             <p className="text-[10px] text-muted-foreground/60 mb-1">만기일</p>
-            <p className={cn('text-sm font-bold tabular-nums', isExpired ? 'text-destructive' : isNearMaturity ? 'text-warning' : 'text-foreground')}>
+            <p className={cn('text-sm font-bold tabular-nums', isExpired ? 'text-destructive-text' : isNearMaturity ? 'text-warning' : 'text-foreground')}>
               {debt.maturityDate
                 ? debt.maturityDate.slice(0, 7).replace('-', '.')
                 : '—'}
