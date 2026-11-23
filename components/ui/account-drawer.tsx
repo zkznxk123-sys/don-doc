@@ -818,13 +818,13 @@ export function AccountDrawer({ isOpen, onClose, onSuccess, initialData, familyM
 
           {isEditMode && confirmDelete && deleteCounts && (
             <div className="rounded-xl border border-destructive/40 bg-expense-soft px-4 py-3 text-xs space-y-1.5">
-              <p className="text-destructive font-semibold">⚠️ 연결된 데이터가 함께 삭제됩니다</p>
-              <ul className="text-destructive/90 space-y-0.5 pl-1 tabular-nums">
+              <p className="text-destructive-text font-semibold">연결된 데이터가 함께 삭제됩니다</p>
+              <ul className="text-destructive-text space-y-0.5 pl-1 tabular-nums">
                 {deleteCounts.transactionCount > 0 && <li>· 거래 내역 {deleteCounts.transactionCount.toLocaleString()}건</li>}
                 {deleteCounts.holdingCount > 0 && <li>· 보유 종목 {deleteCounts.holdingCount.toLocaleString()}개</li>}
                 {deleteCounts.subAccountCount > 0 && <li>· 하위 계좌 {deleteCounts.subAccountCount.toLocaleString()}개</li>}
               </ul>
-              <p className="text-destructive/70 pt-0.5">이 작업은 되돌릴 수 없습니다.</p>
+              <p className="text-destructive-text pt-0.5">이 작업은 되돌릴 수 없습니다.</p>
             </div>
           )}
 
