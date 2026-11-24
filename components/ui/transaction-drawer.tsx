@@ -707,7 +707,7 @@ export function TransactionDrawer({
                 )}
               >
                 <div>
-                  <p className={cn('text-sm font-medium', isExcluded ? 'text-destructive dark:text-red-300' : 'text-foreground')}>
+                  <p className={cn('text-sm font-medium', isExcluded ? 'text-destructive-text' : 'text-foreground')}>
                     이 내역 제외
                   </p>
                   <p className="text-xs text-muted-foreground mt-0.5">
